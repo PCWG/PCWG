@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		
+	<ns1:Name>Dataset 1</ns1:Name>
+	
+	<ns1:StartDate>2011-10-07T12:50:00</ns1:StartDate>
+	<ns1:EndDate>2011-11-08T09:50:00</ns1:EndDate>
+  
+	<ns1:HubWindSpeedMode>Specified</ns1:HubWindSpeedMode>
+	<ns1:DensityMode>Specified</ns1:DensityMode>	
+		
+	<ns1:RotorEquivalentWindSpeed>
+		<ns1:NumberOfRotorLevels>9</ns1:NumberOfRotorLevels>
+		<ns1:RotorMode>ProfileLevels</ns1:RotorMode>
+		<ns1:HubMode>PiecewiseExponent</ns1:HubMode>
+	</ns1:RotorEquivalentWindSpeed>
+	
+	<ns1:Measurements>
+		<ns1:InputTimeSeriesPath>Data/Dataset 1 - Filtered - 06.dat</ns1:InputTimeSeriesPath>
+		<ns1:BadDataValue>-99.99</ns1:BadDataValue>
+		<ns1:DateFormat>%d/%m/%Y %H:%M</ns1:DateFormat>
+		<ns1:HeaderRows>0</ns1:HeaderRows>
+		<ns1:TimeStamp>TimeStamp</ns1:TimeStamp>	
+		<ns1:Density>Turbine Density</ns1:Density>
+		<ns1:Power>Turbine Power</ns1:Power>		
+		<ns1:ReferenceWindDirectionOffset>0.0</ns1:ReferenceWindDirectionOffset>
+		<ns1:HubWindSpeed>Turbine Wind Speed Mean</ns1:HubWindSpeed>	
+		<ns1:HubTurbulence>Mast - 96.0m Turbulence Intensity</ns1:HubTurbulence>	
+		<ns1:LowerWindSpeed>Mast - 40.0m Wind Speed Mean</ns1:LowerWindSpeed>	
+		<ns1:LowerWindSpeedHeight>40.0</ns1:LowerWindSpeedHeight>			
+		<ns1:UpperWindSpeed>Mast - 89.1m Wind Speed Mean</ns1:UpperWindSpeed>
+		<ns1:UpperWindSpeedHeight>89.1</ns1:UpperWindSpeedHeight>			
+		<ns1:ProfileLevels>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 142.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 142.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>142.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 137.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 137.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>137.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 127.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 127.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>127.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 117.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 117.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>117.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 107.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 107.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>107.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 97.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 97.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>97.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 87.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>87.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 77.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 77.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>77.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 67.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 67.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>67.5</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>LiDAR - 52.5m Wind Speed Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>LiDAR - 52.5m Wind Direction Mean</ns1:ProfileWindDirection>
+				<ns1:Height>52.5</ns1:Height>
+			</ns1:ProfileLevel>
+		</ns1:ProfileLevels>				
+	</ns1:Measurements>
+	
+	<ns1:Filters>
+	</ns1:Filters>
+	
+</ns1:Configuration>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	
+	<ns1:BaseLinePowerCurveMode>Specified</ns1:BaseLinePowerCurveMode>
+	<ns1:PowerCurveMode>Specified</ns1:PowerCurveMode>
+	
+	<ns1:PowerCurveMinimumCount>10</ns1:PowerCurveMinimumCount>	
+	
+	<ns1:InnerRange>
+		<ns1:InnerRangeLowerTurbulence>0.08</ns1:InnerRangeLowerTurbulence>
+		<ns1:InnerRangeUpperTurbulence>0.12</ns1:InnerRangeUpperTurbulence>
+		<ns1:InnerRangeLowerShear>0.15</ns1:InnerRangeLowerShear>
+		<ns1:InnerRangeUpperShear>0.25</ns1:InnerRangeUpperShear>
+	</ns1:InnerRange>
+	
+	<ns1:Turbine>
+		<ns1:HubHeight>96</ns1:HubHeight>
+		<ns1:Diameter>90</ns1:Diameter>	
+		<ns1:PowerCurve>
+			<ns1:SpecifiedPowerCurve>Data/PowerCurve.xml</ns1:SpecifiedPowerCurve>
+		</ns1:PowerCurve>
+	</ns1:Turbine>
+	
+	<ns1:TurbulenceRenormalisation>	
+		<ns1:Active>1</ns1:Active>	
+	</ns1:TurbulenceRenormalisation>
+	
+	<ns1:RotorEquivalentWindSpeed>
+		<ns1:Active>1</ns1:Active>	
+		<ns1:NumberOfRotorLevels>9</ns1:NumberOfRotorLevels>		
+		<ns1:RotorMode>ProfileLevels</ns1:RotorMode>
+		<ns1:HubMode>PiecewiseExponent</ns1:HubMode>		
+	</ns1:RotorEquivalentWindSpeed>
+
+	<ns1:Measurements>	
+		<ns1:InputTimeSeriesPath>Data/Dataset 2 - Filtered - 04.dat</ns1:InputTimeSeriesPath>
+		<ns1:BadDataValue>-99.9</ns1:BadDataValue>
+		<ns1:TimeStepInSeconds>600</ns1:TimeStepInSeconds>		
+		<ns1:TimeStamp>TimeStamp</ns1:TimeStamp>
+		<ns1:HubWindSpeed>Mast_WindSpeed_96m_Mean</ns1:HubWindSpeed>
+		<ns1:HubTurbulence>Mast_WindSpeed_96m_Turbulence_Intensity</ns1:HubTurbulence>		
+		<ns1:ProfileLevels>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_40m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_40m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>40</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_49m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_49m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>49</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_59m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_59m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>59</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_69m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_69m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>69</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_79m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_79m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>79</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_89m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_89m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>89</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_99m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_99m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>99</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_109m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_109m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>109</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_119m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_119m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>119</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_129m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_129m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>129</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_139m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_139m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>139</ns1:Height>
+			</ns1:ProfileLevel>
+			<ns1:ProfileLevel>
+				<ns1:ProfileWindSpeed>Lidar_WindSpeed_153m_Mean</ns1:ProfileWindSpeed>
+				<ns1:ProfileWindDirection>Lidar_WindDirection_153m_Mean</ns1:ProfileWindDirection>
+				<ns1:Height>153</ns1:Height>
+			</ns1:ProfileLevel>
+		</ns1:ProfileLevels>		
+	</ns1:Measurements>	
+	
+</ns1:Configuration>

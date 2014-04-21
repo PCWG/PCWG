@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	
+	<ns1:Name>Dataset 4</ns1:Name>
+	
+	<ns1:StartDate>2005-10-09T00:05:00</ns1:StartDate>
+	<ns1:EndDate>2007-04-30T23:55:00</ns1:EndDate>
+  
+	<ns1:HubWindSpeedMode>Calculated</ns1:HubWindSpeedMode>
+	<ns1:DensityMode>Calculated</ns1:DensityMode>
+		
+	<ns1:Measurements>
+		<ns1:InputTimeSeriesPath>Data\Dataset 4.dat</ns1:InputTimeSeriesPath>
+		<ns1:BadDataValue>-99.99</ns1:BadDataValue>
+		<ns1:DateFormat>%d/%m/%Y %H:%M</ns1:DateFormat>
+		<ns1:HeaderRows>0</ns1:HeaderRows>
+		<ns1:TimeStepInSeconds>600</ns1:TimeStepInSeconds>
+		<ns1:TimeStamp>time</ns1:TimeStamp>	
+		<ns1:Pressure>air pressure average 2m</ns1:Pressure>
+		<ns1:Temperature>air temperature average</ns1:Temperature>
+		<ns1:Power>active power average</ns1:Power>		
+		<ns1:ReferenceWindSpeed>ref wind speed average</ns1:ReferenceWindSpeed>
+		<ns1:ReferenceWindSpeedStdDev>ref wind speed standard deviation</ns1:ReferenceWindSpeedStdDev>
+		<ns1:ReferenceWindDirection>wind direction average</ns1:ReferenceWindDirection>
+		<ns1:ReferenceWindDirectionOffset>0.0</ns1:ReferenceWindDirectionOffset>				
+	</ns1:Measurements>
+
+	<ns1:Exclusions>
+		<ns1:Exclusion>
+			<ns1:ExclusionStartDate>2006-11-16T14:05:00</ns1:ExclusionStartDate>
+			<ns1:ExclusionEndDate>2006-12-19T19:45:00</ns1:ExclusionEndDate>
+			<ns1:ExclusionActive>1</ns1:ExclusionActive>
+		</ns1:Exclusion>
+		<ns1:Exclusion>
+			<ns1:ExclusionStartDate>2006-07-31T00:45:00</ns1:ExclusionStartDate>
+			<ns1:ExclusionEndDate>2006-07-31T17:55:00</ns1:ExclusionEndDate>
+			<ns1:ExclusionActive>1</ns1:ExclusionActive>
+		</ns1:Exclusion>		
+		<ns1:Exclusion>
+			<ns1:ExclusionStartDate>2006-09-18T19:35:00</ns1:ExclusionStartDate>
+			<ns1:ExclusionEndDate>2006-09-18T20:25:00</ns1:ExclusionEndDate>
+			<ns1:ExclusionActive>1</ns1:ExclusionActive>
+		</ns1:Exclusion>		
+		<ns1:Exclusion>
+			<ns1:ExclusionStartDate>2006-09-27T20:35:00</ns1:ExclusionStartDate>
+			<ns1:ExclusionEndDate>2006-09-27T23:25:00</ns1:ExclusionEndDate>
+			<ns1:ExclusionActive>1</ns1:ExclusionActive>
+		</ns1:Exclusion>		
+		<ns1:Exclusion>
+			<ns1:ExclusionStartDate>2007-01-19T00:05:00</ns1:ExclusionStartDate>
+			<ns1:ExclusionEndDate>2007-01-19T00:05:00</ns1:ExclusionEndDate>
+			<ns1:ExclusionActive>1</ns1:ExclusionActive>
+		</ns1:Exclusion>
+		<ns1:Exclusion>
+			<ns1:ExclusionStartDate>2007-02-27T15:55:00</ns1:ExclusionStartDate>
+			<ns1:ExclusionEndDate>2007-02-27T15:55:00</ns1:ExclusionEndDate>
+			<ns1:ExclusionActive>1</ns1:ExclusionActive>
+		</ns1:Exclusion>
+		<ns1:Exclusion>
+			<ns1:ExclusionStartDate>2007-03-17T18:25:00</ns1:ExclusionStartDate>
+			<ns1:ExclusionEndDate>2007-03-17T23:25:00</ns1:ExclusionEndDate>
+			<ns1:ExclusionActive>1</ns1:ExclusionActive>
+		</ns1:Exclusion>		
+	</ns1:Exclusions>
+
+
+	<ns1:Filters>
+		<ns1:Filter>
+			<ns1:DataColumn>active power average</ns1:DataColumn>
+			<ns1:FilterType>Below</ns1:FilterType>
+			<ns1:Inclusive>0</ns1:Inclusive>
+			<ns1:FilterValue>0</ns1:FilterValue>
+			<ns1:Active>1</ns1:Active>
+		</ns1:Filter>		
+		<ns1:Filter>
+			<ns1:DataColumn>air temperature average</ns1:DataColumn>
+			<ns1:FilterType>Below</ns1:FilterType>
+			<ns1:Inclusive>1</ns1:Inclusive>
+			<ns1:FilterValue>2</ns1:FilterValue>
+			<ns1:Active>1</ns1:Active>
+		</ns1:Filter>
+		<ns1:Filter>
+			<ns1:DataColumn>availab wea test</ns1:DataColumn>
+			<ns1:FilterType>AboveOrBelow</ns1:FilterType>
+			<ns1:Inclusive>0</ns1:Inclusive>
+			<ns1:FilterValue>100</ns1:FilterValue>
+			<ns1:Active>1</ns1:Active>
+		</ns1:Filter>	
+		<ns1:Filter>
+			<ns1:DataColumn>grid con obstacle</ns1:DataColumn>
+			<ns1:FilterType>AboveOrBelow</ns1:FilterType>
+			<ns1:Inclusive>0</ns1:Inclusive>
+			<ns1:FilterValue>0</ns1:FilterValue>
+			<ns1:Active>1</ns1:Active>
+		</ns1:Filter>					
+		<ns1:Filter>
+			<ns1:DataColumn>grid con wea test</ns1:DataColumn>
+			<ns1:FilterType>AboveOrBelow</ns1:FilterType>
+			<ns1:Inclusive>0</ns1:Inclusive>
+			<ns1:FilterValue>100</ns1:FilterValue>
+			<ns1:Active>0</ns1:Active>
+		</ns1:Filter>				
+	</ns1:Filters>
+	
+	<ns1:Calibration>
+		<ns1:NumberOfSectors>36</ns1:NumberOfSectors>
+		<ns1:CalibrationDirections>
+			<ns1:CalibrationDirection><ns1:Direction>0</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>10</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>20</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>30</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>40</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>50</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>60</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>70</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>80</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>90</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>100</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>110</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>120</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>130</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>140</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>150</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>160</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>170</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>180</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>190</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>200</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>210</ns1:Direction><ns1:Slope>0.986854</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>1</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>220</ns1:Direction><ns1:Slope>0.984931</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>1</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>230</ns1:Direction><ns1:Slope>0.995461</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>1</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>240</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>250</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>260</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>270</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>280</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>290</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>300</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>310</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>320</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>330</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>340</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+			<ns1:CalibrationDirection><ns1:Direction>350</ns1:Direction><ns1:Slope>1.0</ns1:Slope><ns1:Offset>0</ns1:Offset><ns1:Active>0</ns1:Active></ns1:CalibrationDirection>
+		</ns1:CalibrationDirections>
+	</ns1:Calibration>
+	
+</ns1:Configuration>
