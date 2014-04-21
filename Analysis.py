@@ -478,17 +478,14 @@ class Analysis:
         text = "Summary\n"
         text += self.summary
         return text
-    
-def BuildPath(folder, fileName):
-    return "%s%s%s" % (folder, os.sep, fileName)
 
 def RunCalc():
 
     #start = datetime.datetime.today()
 
-    analysis = Analysis(BuildPath("Data", "Dataset 1 - Analysis.xml"))
-    analysis.report(BuildPath("Results", "Dataset 1 Analysis.xls"))
-    analysis.export(BuildPath("Results", "Dataset 1 Analysis.dat"))
+    analysis = Analysis(os.path.join("Data", "Dataset 1 - Analysis.xml"))
+    analysis.report(os.path.join("Results", "Dataset 1 Analysis.xls"))
+    analysis.export(os.path.join("Results", "Dataset 1 Analysis.dat"))
 
     #analysis = Analysis("Data\Dataset 2 - Analysis.xml")
     #analysis = Analysis("Data\Dataset 3 - Analysis.xml")
