@@ -482,21 +482,16 @@ def RunCalc():
 
     #start = datetime.datetime.today()
 
-    #analysis = Analysis("Data\Dataset 1 - Analysis.xml")
+    analysis = Analysis("Data\Dataset 1 - Analysis.xml")
+    analysis.report("Results\Dataset 1 Analysis.xls")
+    analysis.export("Results\Dataset 1 Analysis.dat")
+
     #analysis = Analysis("Data\Dataset 2 - Analysis.xml")
     #analysis = Analysis("Data\Dataset 3 - Analysis.xml")
 
     #analysis = Analysis("Data\Dataset 4 Analysis.xml")
     #analysis.report("Results\Dataset 4 Analysis.xls")
     #analysis.export("Results\Dataset 4 Analysis.dat")
-
-    #analysis = Analysis("Data\Analysis_V90_Grid_Streamer.xml")
-    #analysis.report("Analysis_V90_Grid_Streamer.xls")
-    #analysis.export("Analysis_V90_Grid_Streamer.dat")
-    
-    analysis = Analysis("Data\Analysis_V90_DFIG.xml")
-    analysis.report("Results\Analysis_V90_DFIG.xls")
-    analysis.export("Results\Analysis_V90_DFIG.dat")
     
     print analysis
     
