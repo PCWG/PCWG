@@ -3,6 +3,7 @@ import numpy as np
 import scipy as sp
 
 import os
+import datetime
 import math
 import configuration
 import dataset
@@ -479,25 +480,41 @@ class Analysis:
         text += self.summary
         return text
 
-def RunCalc():
-
-    #start = datetime.datetime.today()
-
+def RunDataset1():
     analysis = Analysis(os.path.join("Data", "Dataset 1 Analysis.xml"))
     analysis.report(os.path.join("Results", "Dataset 1 Analysis.xls"))
     analysis.export(os.path.join("Results", "Dataset 1 Analysis.dat"))
-
-    #analysis = Analysis("Data\Dataset 2 Analysis.xml")
-    #analysis = Analysis("Data\Dataset 3 Analysis.xml")
-
-    #analysis = Analysis("Data\Dataset 4 Analysis.xml")
-    #analysis.report("Results\Dataset 4 Analysis.xls")
-    #analysis.export("Results\Dataset 4 Analysis.dat")
-    
     print analysis
+
+def RunDataset2():
+    analysis = Analysis(os.path.join("Data", "Dataset 2 Analysis.xml"))
+    analysis.report(os.path.join("Results", "Dataset 2 Analysis.xls"))
+    analysis.export(os.path.join("Results", "Dataset 2 Analysis.dat"))
+    print analysis
+
+def RunDataset3():
+    analysis = Analysis(os.path.join("Data", "Dataset 3 Analysis.xml"))
+    analysis.report(os.path.join("Results", "Dataset 3 Analysis.xls"))
+    analysis.export(os.path.join("Results", "Dataset 3 Analysis.dat"))
+    print analysis
+
+def RunDataset4():
+    analysis = Analysis(os.path.join("Data", "Dataset 4 Analysis.xml"))
+    analysis.report(os.path.join("Results", "Dataset 4 Analysis.xls"))
+    analysis.export(os.path.join("Results", "Dataset 4 Analysis.dat"))
+    print analysis
+
+def RunCalc():
+
+    start = datetime.datetime.today()
     
-    #end = datetime.datetime.today()
-    #print end - start
+    #RunDataset1()
+    #RunDataset2()
+    RunDataset3()
+    #RunDataset4()
+
+    end = datetime.datetime.today()
+    print end - start
 
 RunCalc()
 

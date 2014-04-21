@@ -1,10 +1,14 @@
 import xml.dom.minidom
 import dateutil
+import os
 
 class XmlBase:
 
     def readDoc(self, path):
         return xml.dom.minidom.parse(path)
+
+    def getPath(self, node):    
+        return self.getValue(node).replace("\\", os.sep)
 
     def getValue(self, node):    
         return node.firstChild.data
@@ -47,7 +51,7 @@ class AnalysisConfiguration(XmlBase):
         self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
         self.timeStepInSeconds = self.getNodeInt(configurationNode, 'TimeStepInSeconds')
         
-	self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
+        self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
         self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
         self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
 
@@ -66,7 +70,7 @@ class AnalysisConfiguration(XmlBase):
         self.datasets = []
         
         for node in self.getNodes(datasetsNode, 'Dataset'):
-            self.datasets.append(self.getValue(node))
+            self.datasets.append(self.getPath(node))
             
     def readInnerRange(self, configurationNode):
 
@@ -230,6 +234,8 @@ class DatasetConfiguration(XmlBase):
         if mode == "Calculated":
             return True
         elif mode == "Specified": 
+            return False
+        elif mode == "None": 
             return False
         else:
             raise Exception("Unrecognised calculation mode: %s" % mode)

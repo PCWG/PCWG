@@ -16,7 +16,7 @@
 	</ns1:RotorEquivalentWindSpeed>
 	
 	<ns1:Measurements>
-		<ns1:InputTimeSeriesPath>Data/Dataset 1 Filtered - 06.dat</ns1:InputTimeSeriesPath>
+		<ns1:InputTimeSeriesPath>Data/Dataset 1.dat</ns1:InputTimeSeriesPath>
 		<ns1:BadDataValue>-99.99</ns1:BadDataValue>
 		<ns1:DateFormat>%d/%m/%Y %H:%M</ns1:DateFormat>
 		<ns1:HeaderRows>0</ns1:HeaderRows>
@@ -87,4 +87,7 @@
 	<ns1:Filters>
 	</ns1:Filters>
 	
+	<ns1:Exclusions>
+	</ns1:Exclusions>
+
 </ns1:Configuration>
