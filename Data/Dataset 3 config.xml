@@ -1,40 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	
-	<ns1:BaseLinePowerCurveMode>Specified</ns1:BaseLinePowerCurveMode>
-	<ns1:PowerCurveMode>Specified</ns1:PowerCurveMode>	
-	
-	<ns1:PowerCurveMinimumCount>10</ns1:PowerCurveMinimumCount>	
-	
-	<ns1:InnerRange>
-		<ns1:InnerRangeLowerTurbulence>0.08</ns1:InnerRangeLowerTurbulence>
-		<ns1:InnerRangeUpperTurbulence>0.12</ns1:InnerRangeUpperTurbulence>
-		<ns1:InnerRangeLowerShear>0.15</ns1:InnerRangeLowerShear>
-		<ns1:InnerRangeUpperShear>0.25</ns1:InnerRangeUpperShear>
-	</ns1:InnerRange>
-		
-	<ns1:Turbine>
-		<ns1:HubHeight>96</ns1:HubHeight>
-		<ns1:Diameter>90</ns1:Diameter>	
-		<ns1:PowerCurve>
-			<ns1:SpecifiedPowerCurve>Data/PowerCurve.xml</ns1:SpecifiedPowerCurve>
-		</ns1:PowerCurve>
-	</ns1:Turbine>
-	
-	<ns1:TurbulenceRenormalisation>	
-		<ns1:Active>1</ns1:Active>		
-	</ns1:TurbulenceRenormalisation>	
-	
+	<ns1:Name>Dataset 3</ns1:Name>
+
+	<ns1:StartDate>06/12/2012 14:20</ns1:StartDate>
+	<ns1:EndDate>03/02/2013 05:00</ns1:EndDate>
+
+	<ns1:HubWindSpeedMode>Specified</ns1:HubWindSpeedMode>
+	<ns1:DensityMode>None</ns1:DensityMode>	
+
 	<ns1:RotorEquivalentWindSpeed>
-		<ns1:Active>1</ns1:Active>		
 		<ns1:NumberOfRotorLevels>9</ns1:NumberOfRotorLevels>		
 		<ns1:RotorMode>ProfileLevels</ns1:RotorMode>
 		<ns1:HubMode>PiecewiseExponent</ns1:HubMode>
 	</ns1:RotorEquivalentWindSpeed>
 
 	<ns1:Measurements>		
-		<ns1:InputTimeSeriesPath>Data/Dataset 3 - Filtered - 03.dat</ns1:InputTimeSeriesPath>
+		<ns1:InputTimeSeriesPath>Data/Dataset 3.dat</ns1:InputTimeSeriesPath>
 		<ns1:BadDataValue>-99.9</ns1:BadDataValue>
+		<ns1:DateFormat>%d/%m/%Y %H:%M</ns1:DateFormat>
+		<ns1:HeaderRows>0</ns1:HeaderRows>
 		<ns1:TimeStepInSeconds>600</ns1:TimeStepInSeconds>	
 		<ns1:TimeStamp>TimeStamp</ns1:TimeStamp>	
 		<ns1:HubWindSpeed>Mast_WindSpeed_96m_Mean</ns1:HubWindSpeed>
@@ -92,5 +77,11 @@
 			</ns1:ProfileLevel>
 		</ns1:ProfileLevels>		
 	</ns1:Measurements>		
+	
+	<ns1:Filters>
+	</ns1:Filters>
+	
+	<ns1:Exclusions>
+	</ns1:Exclusions>
 	
 </ns1:Configuration>

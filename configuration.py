@@ -8,7 +8,7 @@ class XmlBase:
         return xml.dom.minidom.parse(path)
 
     def getPath(self, node):    
-        return self.getValue(node).replace("\\", os.sep)
+        return self.getValue(node).replace("\\", os.sep).replace("/", os.sep)
 
     def getValue(self, node):    
         return node.firstChild.data
@@ -27,6 +27,9 @@ class XmlBase:
 
     def getNodeValue(self, node, query):    
         return self.getValue(self.getNode(node, query))
+    
+    def getNodePath(self, node, query):    
+        return self.getPath(self.getNode(node, query))
 
     def getNode(self, node, query):
 
@@ -175,7 +178,7 @@ class DatasetConfiguration(XmlBase):
 
         measurementsNode = self.getNode(configurationNode, 'Measurements')
 
-        self.inputTimeSeriesPath = self.getNodeValue(measurementsNode, 'InputTimeSeriesPath')
+        self.inputTimeSeriesPath = self.getNodePath(measurementsNode, 'InputTimeSeriesPath')
         self.dateFormat = self.getNodeValue(measurementsNode, 'DateFormat')
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
         self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
