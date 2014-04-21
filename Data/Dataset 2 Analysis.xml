@@ -9,7 +9,7 @@
 	<ns1:PowerCurveMode>Specified</ns1:PowerCurveMode>		
 		
 	<ns1:Datasets>
-		<ns1:Dataset>Data\Dataset 2 - config.xml</ns1:Dataset>
+		<ns1:Dataset>Data\Dataset 2 config.xml</ns1:Dataset>
 	</ns1:Datasets>
 	
 	<ns1:InnerRange>
