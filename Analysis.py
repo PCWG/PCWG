@@ -483,12 +483,12 @@ def RunCalc():
 
     #start = datetime.datetime.today()
 
-    analysis = Analysis(os.path.join("Data", "Dataset 1 - Analysis.xml"))
+    analysis = Analysis(os.path.join("Data", "Dataset 1 Analysis.xml"))
     analysis.report(os.path.join("Results", "Dataset 1 Analysis.xls"))
     analysis.export(os.path.join("Results", "Dataset 1 Analysis.dat"))
 
-    #analysis = Analysis("Data\Dataset 2 - Analysis.xml")
-    #analysis = Analysis("Data\Dataset 3 - Analysis.xml")
+    #analysis = Analysis("Data\Dataset 2 Analysis.xml")
+    #analysis = Analysis("Data\Dataset 3 Analysis.xml")
 
     #analysis = Analysis("Data\Dataset 4 Analysis.xml")
     #analysis.report("Results\Dataset 4 Analysis.xls")
