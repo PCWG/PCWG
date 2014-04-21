@@ -508,10 +508,10 @@ def RunCalc():
 
     start = datetime.datetime.today()
     
-    #RunDataset1()
+    RunDataset1()
     #RunDataset2()
     #RunDataset3()
-    RunDataset4()
+    #RunDataset4()
 
     end = datetime.datetime.today()
     print end - start
