@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import scipy as sp
 
+import os
 import math
 import configuration
 import dataset
@@ -478,13 +479,16 @@ class Analysis:
         text += self.summary
         return text
     
+def BuildPath(folder, fileName):
+    return "%s%s%s" % (folder, os.sep, fileName)
+
 def RunCalc():
 
     #start = datetime.datetime.today()
 
-    analysis = Analysis("Data\Dataset 1 - Analysis.xml")
-    analysis.report("Results\Dataset 1 Analysis.xls")
-    analysis.export("Results\Dataset 1 Analysis.dat")
+    analysis = Analysis(BuildPath("Data", "Dataset 1 - Analysis.xml"))
+    analysis.report(BuildPath("Results", "Dataset 1 Analysis.xls"))
+    analysis.export(BuildPath("Results", "Dataset 1 Analysis.dat"))
 
     #analysis = Analysis("Data\Dataset 2 - Analysis.xml")
     #analysis = Analysis("Data\Dataset 3 - Analysis.xml")
