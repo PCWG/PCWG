@@ -12,6 +12,11 @@ import turbine
 import rews
 import reporting
 
+class NullStatus:
+
+    def addMessage(self, message):
+        pass
+    
 class Aggregations:
 
     def __init__(self, minimumCount = 0):
@@ -70,12 +75,15 @@ class TurbulencePowerCalculator:
 
 class Analysis:
 
-    def __init__(self, configPath):
+    def __init__(self, config, status = NullStatus()):        
 
-        config = configuration.AnalysisConfiguration(configPath)
+        self.status = status
 
+        self.status.addMessage("Calculating (please wait)...")
+            
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
-        
+
+        self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
         
         self.timeStampHours = config.timeStepInSeconds / 3600.0
@@ -93,9 +101,9 @@ class Analysis:
 
         self.defineInnerRange(config)
 
-        self.summary = "Baseline Mode:\t%s\n" % self.baseLineMode
-        self.summary += "Filter Mode:\t%s\n" % self.filterMode
-        self.summary += "Power Curve Mode:\t%s\n" % self.powerCurveMode
+        self.status.addMessage("Baseline Mode: %s" % self.baseLineMode)
+        self.status.addMessage("Filter Mode: %s" % self.filterMode)
+        self.status.addMessage("Power Curve Mode: %s" % self.powerCurveMode)
 
         self.inputHubWindSpeed = "Input Hub Wind Speed"
         self.densityCorrectedHubWindSpeed = "Density Corrected Hub Wind Speed"
@@ -131,6 +139,8 @@ class Analysis:
         
         if self.hasActualPower:
 
+            self.status.addMessage("Calculating actual power curves...")
+
             self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower)
 
             self.innerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower)
@@ -139,6 +149,8 @@ class Analysis:
             if self.hasShear:
                 self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(1, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower)
                 self.outerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(4, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower)
+
+            self.status.addMessage("Actual Power Curves Complete.")
             
         self.powerCurve = self.selectPowerCurve(self.powerCurveMode)
 
@@ -146,15 +158,26 @@ class Analysis:
         self.calculateHub()
         
         if config.rewsActive:
+            self.status.addMessage("Calculating REWS Correction...")
             self.calculateREWS()
+            self.status.addMessage("REWS Correction Complete.")
+            
             self.rewsMatrix = self.calculateREWSMatrix(0)
             if self.hasShear: self.rewsMatrixInnerShear = self.calculateREWSMatrix(3)
             if self.hasShear: self.rewsMatrixOuterShear = self.calculateREWSMatrix(6)
             
-        if config.turbRenormActive: self.calculateTurbRenorm()            
-        if config.turbRenormActive and config.rewsActive: self.calculationCombined()
+        if config.turbRenormActive:
+            self.status.addMessage("Calculating Turbulence Correction...")
+            self.calculateTurbRenorm()
+            self.status.addMessage("Turbulence Correction Complete.")
+            
+        if config.turbRenormActive and config.rewsActive:
+            self.status.addMessage("Calculating Combined Correction...")
+            self.calculationCombined()
 
         if self.hasActualPower:
+            
+            self.status.addMessage("Calculating power deviation matrices...")
             
             allFilterMode = 0
             innerShearFilterMode = 3
@@ -173,6 +196,10 @@ class Analysis:
             if config.turbRenormActive and config.rewsActive:
                 self.combPowerDeviations = self.calculatePowerDeviationMatrix(self.combinedPower, allFilterMode)
                 if self.hasShear: self.combPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.combinedPower, innerShearFilterMode)
+
+            self.status.addMessage("Power Curve Deviation Matrices Complete.")
+
+        self.status.addMessage("Complete")
 
     def defineInnerRange(self, config):
 
@@ -311,6 +338,7 @@ class Analysis:
                 
             else:
 
+                innerMask = innerTurbMask & innerShearMask
                 mask = mask & (~innerMask)
 
                 if mode == 7:
@@ -448,7 +476,7 @@ class Analysis:
         self.hubYield = self.dataFrame[self.getFilter()][self.hubPower].sum() * self.timeStampHours
         self.hubYieldCount = self.dataFrame[self.getFilter()][self.hubPower].count()
         self.hubDelta = self.hubYield / self.baseYield - 1.0
-        self.summary += "Hub Delta:\t%f%%\t%d\n" % (self.hubDelta * 100.0, self.hubYieldCount)    
+        self.status.addMessage("Hub Delta: %f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))    
 
     def calculateREWS(self):
         self.dataFrame[self.rotorEquivalentWindSpeed] = self.dataFrame[self.inputHubWindSpeed] * self.dataFrame[self.profileHubToRotorRatio]    
@@ -456,66 +484,23 @@ class Analysis:
         self.rewsYield = self.dataFrame[self.getFilter()][self.rewsPower].sum() * self.timeStampHours
         self.rewsYieldCount = self.dataFrame[self.getFilter()][self.rewsPower].count()
         self.rewsDelta = self.rewsYield / self.baseYield - 1.0
-        self.summary += "REWS Delta:\t%f%%\t%d\n" % (self.rewsDelta * 100.0, self.rewsYieldCount)    
+        self.status.addMessage("REWS Delta: %f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))    
         
     def calculateTurbRenorm(self):
         self.dataFrame[self.turbulencePower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.inputHubWindSpeed, self.hubTurbulence).power, axis=1)
         self.turbulenceYield = self.dataFrame[self.getFilter()][self.turbulencePower].sum() * self.timeStampHours
         self.turbulenceYieldCount = self.dataFrame[self.getFilter()][self.turbulencePower].count()
         self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
-        self.summary += "Turb Delta:\t%f%%\t%d\n" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount)        
+        self.status.addMessage("Turb Delta: %f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))        
 
     def calculationCombined(self):
         self.dataFrame[self.combinedPower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.rotorEquivalentWindSpeed, self.hubTurbulence).power, axis=1)
         self.combinedYield = self.dataFrame[self.getFilter()][self.combinedPower].sum() * self.timeStampHours
         self.combinedYieldCount = self.dataFrame[self.getFilter()][self.combinedPower].count()
         self.combinedDelta = self.combinedYield / self.baseYield - 1.0
-        self.summary += "Comb Delta:\t%f%%\t%d\n" % (self.combinedDelta * 100.0, self.combinedYieldCount)        
+        self.status.addMessage("Comb Delta: %f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))        
 
     def export(self, path):        
         self.dataFrame.to_csv(path, sep = '\t')
-
-    def __str__(self):
-        text = "Summary\n"
-        text += self.summary
-        return text
-
-def RunDataset1():
-    analysis = Analysis(os.path.join("Data", "Dataset 1 Analysis.xml"))
-    analysis.report(os.path.join("Results", "Dataset 1 Analysis.xls"))
-    analysis.export(os.path.join("Results", "Dataset 1 Analysis.dat"))
-    print analysis
-
-def RunDataset2():
-    analysis = Analysis(os.path.join("Data", "Dataset 2 Analysis.xml"))
-    analysis.report(os.path.join("Results", "Dataset 2 Analysis.xls"))
-    analysis.export(os.path.join("Results", "Dataset 2 Analysis.dat"))
-    print analysis
-
-def RunDataset3():
-    analysis = Analysis(os.path.join("Data", "Dataset 3 Analysis.xml"))
-    analysis.report(os.path.join("Results", "Dataset 3 Analysis.xls"))
-    analysis.export(os.path.join("Results", "Dataset 3 Analysis.dat"))
-    print analysis
-
-def RunDataset4():
-    analysis = Analysis(os.path.join("Data", "Dataset 4 Analysis.xml"))
-    analysis.report(os.path.join("Results", "Dataset 4 Analysis.xls"))
-    analysis.export(os.path.join("Results", "Dataset 4 Analysis.dat"))
-    print analysis
-
-def RunCalc():
-
-    start = datetime.datetime.today()
-    
-    RunDataset1()
-    #RunDataset2()
-    #RunDataset3()
-    #RunDataset4()
-
-    end = datetime.datetime.today()
-    print end - start
-
-RunCalc()
 
 

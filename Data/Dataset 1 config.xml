@@ -4,7 +4,7 @@
 	<ns1:Name>Dataset 1</ns1:Name>
 	
 	<ns1:StartDate>2011-10-07T12:50:00</ns1:StartDate>
-	<ns1:EndDate>2011-11-08T09:50:00</ns1:EndDate>
+	<ns1:EndDate>2012-07-23T15:30:00</ns1:EndDate>
   
 	<ns1:HubWindSpeedMode>Specified</ns1:HubWindSpeedMode>
 	<ns1:DensityMode>Specified</ns1:DensityMode>	
