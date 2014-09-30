@@ -1111,21 +1111,73 @@ class UserInterface:
 
         def Benchmark(self):
 
-                self.analysis = None
-                self.analysisConfiguration = None
+                self.LoadAnalysisFromPath("")
                 
                 self.ClearConsole()
 
-                self.BenchmarkAnalysis("Data\Dataset 1 Analysis.xml")
-
-        def BenchmarkAnalysis(self, path):
-
+                benchmarks = []
                 
+                benchmarks.append(("Data\Dataset 1 Analysis.xml", 0.000000, 0.005083, 0.000066, 0.005264))
+                benchmarks.append(("Data\Dataset 2 Analysis.xml", 0.000000, -0.002431, 0.005824, 0.003457))
+                benchmarks.append(("Data\Dataset 3 Analysis.xml", 0.000000, -0.003406, -0.012377, -0.015839))
 
-                analysisConfiguration = configuration.AnalysisConfiguration(fileName)
-                analysis = Analysis.Analysis(self.analysisConfiguration)
+                benchmarkPassed = True
 
-                print "done"
+                for i in range(len(benchmarks)):
+                        benchmark = benchmarks[i]
+                        self.addMessage("Executing Benchmark %d of %d" % (i + 1, len(benchmarks)))
+                        benchmarkPassed = benchmarkPassed & self.BenchmarkAnalysis(benchmark[0], benchmark[1], benchmark[2], benchmark[3], benchmark[4])
+
+                if benchmarkPassed:
+                        self.addMessage("All benchmarks passed")
+                else:
+                        self.addMessage("There are failing benchmarks")
+                        
+        def BenchmarkAnalysis(self, path, hubDelta, rewsDelta, turbulenceDelta, combinedDelta):
+
+                self.addMessage("Calculating %s (please wait)..." % path)
+
+                benchmarkPassed = True
+                
+                try:
+   
+                        analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
+
+                except Exception as e:
+
+                        analysis = None
+                        self.addMessage(str(e))
+                        benchmarkPassed = False
+
+                if analysis != None:
+                        
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Hub Delta", hubDelta, analysis.hubDelta)
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("REWS Delta", rewsDelta, analysis.rewsDelta)
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Turbulence Delta", turbulenceDelta, analysis.turbulenceDelta)
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Combined Delta", combinedDelta, analysis.combinedDelta)
+                                         
+                if benchmarkPassed:
+                        self.addMessage("Benchmark Passed")
+                else:
+                        self.addMessage("Benchmark Failed")
+
+                self.addMessage("")
+                
+                return benchmarkPassed                
+
+        def compareBenchmark(self, title, expected, actual, tolerance = 0.000001):
+                
+                diff = abs(expected - actual)
+                passed = (diff < tolerance)
+
+                text = "%s: %f (expected) vs %f (actual) =>" % (title, expected, actual)
+                
+                if passed:
+                        self.addMessage("%s passed" % text)
+                else:
+                        self.addMessage("%s failed" % text)
+
+                return passed
                 
         def EditAnalysis(self):
 
@@ -1162,12 +1214,14 @@ class UserInterface:
                 self.analysis = None
                 self.analysisConfiguration = None
 
-                try:
-                    self.analysisConfiguration = configuration.AnalysisConfiguration(fileName)
-                except Exception as e:
-                    self.addMessage("ERROR loading config: %s" % e)                
+                if len(fileName) > 0:
+                        
+                        try:
+                            self.analysisConfiguration = configuration.AnalysisConfiguration(fileName)
+                        except Exception as e:
+                            self.addMessage("ERROR loading config: %s" % e)                
 
-                self.addMessage("Analysis config loaded: %s" % fileName)                
+                        self.addMessage("Analysis config loaded: %s" % fileName)                
 
         def ExportReport(self):
 
@@ -1195,22 +1249,28 @@ class UserInterface:
                 except Exception as e:
                         self.addMessage("ERROR Exporting Time Series: %s" % e)
         
-        def Calculate(self):
+        def Calculate(self, tryCatch = True):
 
                 if self.analysisConfiguration == None:
                         self.addMessage("ERROR: Analysis Config file not specified")
                         return
 
-                try:
-            
+                if tryCatch:
+
+                        try:
+                    
+                                self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
+
+                        except Exception as e:
+                                
+                                self.addMessage("ERROR Calculating Analysis: %s" % e)                    
+                else:
+
                         self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
-
-                except Exception as e:
                         
-                        self.addMessage("ERROR Calculating Analysis: %s" % e)                    
-
         def ClearConsole(self):
                 self.listbox.delete(0, END)
+                self.root.update()
             
         def addMessage(self, message):
                 self.listbox.insert(END, message)            

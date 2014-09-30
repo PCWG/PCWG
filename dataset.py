@@ -58,7 +58,7 @@ class Dataset:
         self.profileHubToRotorRatio = "Hub to Rotor Ratio"
         self.profileHubToRotorDeviation = "Hub to Rotor Deviation"
         
-        self.hasShear = (config.lowerWindSpeed != None) and (config.upperWindSpeed != None)        
+        self.hasShear = self.isValidText(config.lowerWindSpeed) and self.isValidText(config.upperWindSpeed)        
         self.rewsDefined = config.rewsDefined
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
@@ -107,6 +107,10 @@ class Dataset:
             dataFrame = self.defineREWS(dataFrame, config, rotorGeometry)
 
         self.dataFrame = self.extractColumns(dataFrame).dropna()
+
+    def isValidText(self, text):
+        if text == None: return False
+        return len(text) > 0 
 
     def excludeData(self, dataFrame, config):
 
