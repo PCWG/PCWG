@@ -44,28 +44,168 @@ class XmlBase:
     def nodeExists(self, node, query):
         return (len(self.getNodes(node, query)) > 0)   
 
+    def addNode(self, doc, parentNode, nodeName):
+        node = doc.createElement(nodeName)
+        parentNode.appendChild(node)
+        return node
+    
+    def addTextNode(self, doc, parentNode, nodeName, value):
+        node = self.addNode(doc, parentNode, nodeName)
+        node.appendChild(doc.createTextNode(value))
+
+    def addIntNode(self, doc, parentNode, nodeName, value):
+        self.addTextNode(doc, parentNode, nodeName, "%d" % value)
+
+    def addBoolNode(self, doc, parentNode, nodeName, value):
+        if value:
+            self.addTextNode(doc, parentNode, nodeName, "1")
+        else:
+            self.addTextNode(doc, parentNode, nodeName, "0")
+        
+    def addFloatNode(self, doc, parentNode, nodeName, value):
+        self.addTextNode(doc, parentNode, nodeName, "%f" % value)
+        
+    def createDocument(self):
+        return xml.dom.minidom.Document()
+
+    def addRootNode(self, doc, nodeName, namespace, schema = ""):
+    
+        root = self.addNode(doc, doc, nodeName)
+
+        root.setAttribute("xmlns", namespace)
+
+        if len(schema) > 0:
+            root.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
+            root.setAttribute("xsi:schemaLocation", "%s %s" % (namespace, schema))
+
+        return root
+
+    def saveDocument(self, doc, path):
+
+        file_handle = open(path,"wb")
+        file_handle.write(doc.toprettyxml())
+        file_handle.close()
+
+    def getNodeValueIfExists(self, parent, query, valueNotExist):
+        if self.nodeExists(parent, query):            
+            node = self.getNode(parent, query)
+            if node.firstChild != None:
+                return self.getNodeValue(parent, query)
+            else:
+                return valueNotExist
+        else:
+                return valueNotExist
+            
+class Preferences(XmlBase):
+
+    def __init__(self):
+
+        self.path = "preferences.xml"
+
+        try:
+            loaded = self.loadPreferences()
+        except Exception as e:
+            print e
+            loaded = False
+            
+        if not loaded:
+            
+            self.analysisLastOpened =  ""
+
+    def loadPreferences(self):
+
+            if os.path.isfile(self.path):
+                
+                doc = self.readDoc(self.path)
+                root = self.getNode(doc, "Preferences")
+
+                self.analysisLastOpened = self.getNodeValueIfExists(doc, "AnalysisLastOpened", "")
+
+                return True
+
+            else:
+
+                return False
+        
+    def save(self):
+
+        doc = self.createDocument()             
+        root = self.addRootNode(doc, "Preferences", "http://www.pcwg.org")
+
+        self.addTextNode(doc, root, "AnalysisLastOpened", self.analysisLastOpened)
+
+        self.saveDocument(doc, self.path)
+                
 class AnalysisConfiguration(XmlBase):
 
-    def __init__(self, path):
+    def __init__(self, path = None):
 
-        doc = self.readDoc(path)
-        configurationNode = self.getNode(doc, 'Configuration')
+        if path != None:
+            
+            self.path = path
+            
+            doc = self.readDoc(path)
+            configurationNode = self.getNode(doc, 'Configuration')
 
-        self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
-        self.timeStepInSeconds = self.getNodeInt(configurationNode, 'TimeStepInSeconds')
+            self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
+            self.timeStepInSeconds = self.getNodeInt(configurationNode, 'TimeStepInSeconds')
+            
+            self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
+            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
+            self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
+
+            self.readDatasets(configurationNode)
+            self.readInnerRange(configurationNode)
+            self.readTurbine(configurationNode)
+            
+            self.readDensityCorrection(configurationNode)
+            self.readREWS(configurationNode)
+            self.readTurbRenorm(configurationNode)
+
+    def save(self):
         
-        self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
-        self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
-        self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
+        doc = self.createDocument()             
+        root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
 
-        self.readDatasets(configurationNode)
-        self.readInnerRange(configurationNode)
-        self.readTurbine(configurationNode)
-        
-        self.readDensityCorrection(configurationNode)
-        self.readREWS(configurationNode)
-        self.readTurbRenorm(configurationNode)
+        self.addIntNode(doc, root, "TimeStepInSeconds", self.timeStepInSeconds)
+        self.addIntNode(doc, root, "PowerCurveMinimumCount", self.powerCurveMinimumCount)
 
+        self.addTextNode(doc, root, "FilterMode", self.filterMode)
+        self.addTextNode(doc, root, "BaseLineMode", self.baseLineMode)
+        self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
+
+        datasetsNode = self.addNode(doc, root, "Datasets")
+
+        for dataset in self.datasets:
+            self.addTextNode(doc, datasetsNode, "Dataset", dataset)
+
+        innerRangeNode = self.addNode(doc, root, "InnerRange")
+
+        self.addFloatNode(doc, innerRangeNode, "InnerRangeLowerTurbulence", self.innerRangeLowerTurbulence)
+        self.addFloatNode(doc, innerRangeNode, "InnerRangeUpperTurbulence", self.innerRangeUpperTurbulence)
+        self.addFloatNode(doc, innerRangeNode, "InnerRangeLowerShear", self.innerRangeLowerShear)
+        self.addFloatNode(doc, innerRangeNode, "InnerRangeUpperShear", self.innerRangeUpperShear)
+
+        turbineNode = self.addNode(doc, root, "Turbine")
+
+        self.addFloatNode(doc, turbineNode, "CutInWindSpeed", self.cutInWindSpeed)
+        self.addFloatNode(doc, turbineNode, "CutOutWindSpeed", self.cutOutWindSpeed)
+        self.addFloatNode(doc, turbineNode, "RatedPower", self.ratedPower)
+        self.addFloatNode(doc, turbineNode, "HubHeight", self.hubHeight)
+        self.addFloatNode(doc, turbineNode, "Diameter", self.diameter)
+        self.addTextNode(doc, turbineNode, "SpecifiedPowerCurve", self.specifiedPowerCurve)
+
+        densityCorrectionNode = self.addNode(doc, root, "DensityCorrection")
+        self.addBoolNode(doc, densityCorrectionNode, "Active", self.densityCorrectionActive)
+
+        turbulenceRenormNode = self.addNode(doc, root, "TurbulenceRenormalisation")
+        self.addBoolNode(doc, turbulenceRenormNode, "Active", self.turbRenormActive)
+
+        rewsNode = self.addNode(doc, root, "RotorEquivalentWindSpeed")
+        self.addBoolNode(doc, rewsNode, "Active", self.rewsActive)
+
+        self.saveDocument(doc, self.path)
+    
     def readDatasets(self, configurationNode):
 
         datasetsNode = self.getNode(configurationNode, 'Datasets')
@@ -95,24 +235,7 @@ class AnalysisConfiguration(XmlBase):
         self.cutOutWindSpeed = self.getNodeFloat(turbineNode, 'CutOutWindSpeed')
         self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
 
-        specifiedPowerCurve = self.getNodeValue(turbineNode, 'SpecifiedPowerCurve')
-        
-        self.readPowerCurve(specifiedPowerCurve)      
-
-    def readPowerCurve(self, path):
-
-        doc = self.readDoc(path)
-
-        powerCurveNode = self.getNode(doc, 'PowerCurve')
-        
-        self.powerCurveDensity = self.getNodeFloat(powerCurveNode, 'PowerCurveDensity')
-        self.powerCurveTurbulence = self.getNodeFloat(powerCurveNode, 'PowerCurveTurbulence')
-
-        self.powerCurveLevels = {}
-        
-        for node in self.getNodes(powerCurveNode, 'PowerCurveLevel'):
-            speed = self.getNodeFloat(node, 'PowerCurveLevelWindSpeed')
-            self.powerCurveLevels[speed] = self.getNodeFloat(node, 'PowerCurveLevelPower')
+        self.specifiedPowerCurve = self.getNodeValue(turbineNode, 'SpecifiedPowerCurve')
         
     def readREWS(self, configurationNode):
 
@@ -138,41 +261,150 @@ class AnalysisConfiguration(XmlBase):
         else:
             self.densityCorrectionActive = False
 
+class PowerCurveConfiguration(XmlBase):
+
+    def __init__(self, path = None):
+
+        if path != None:
+
+            doc = self.readDoc(path)
+
+            self.path = path
+
+            powerCurveNode = self.getNode(doc, 'PowerCurve')
+
+            self.name = self.getNodeValue(powerCurveNode, 'Name')
+            self.powerCurveDensity = self.getNodeFloat(powerCurveNode, 'PowerCurveDensity')
+            self.powerCurveTurbulence = self.getNodeFloat(powerCurveNode, 'PowerCurveTurbulence')
+
+            self.powerCurveLevels = {}
+            
+            for node in self.getNodes(powerCurveNode, 'PowerCurveLevel'):
+                speed = self.getNodeFloat(node, 'PowerCurveLevelWindSpeed')
+                self.powerCurveLevels[speed] = self.getNodeFloat(node, 'PowerCurveLevelPower')    
+
+        else:
+
+            self.name = ""
+            self.powerCurveDensity = 0.0
+            self.powerCurveTurbulence = 0.0
+            self.powerCurveLevels = {}
+            
+    def save(self):
+
+        doc = self.createDocument()             
+        root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
+
+        self.addTextNode(doc, root, "Name", self.name)
+        
+        self.addFloatNode(doc, root, "PowerCurveDensity", self.powerCurveDensity)
+        self.addFloatNode(doc, root, "PowerCurveTurbulence", self.powerCurveTurbulence)
+
+        for speed in self.powerCurveLevels:
+            levelNode = self.addNode(doc, root, "PowerCurveLevel")
+            self.addFloatNode(doc, levelNode, "NumberOfRotorLevels", speed)
+            self.addFloatNode(doc, levelNode, "RotorMode", self.powerCurveLevels[speed])
+        
+        self.saveDocument(doc, self.path)
+
 class DatasetConfiguration(XmlBase):
 
-    def __init__(self, path):
+    def __init__(self, path = None):
 
-        doc = self.readDoc(path)
-        configurationNode = self.getNode(doc, 'Configuration')
+        if path != None:
 
-        self.name = self.getNodeValue(configurationNode, 'Name')
+            self.path = path
+            
+            doc = self.readDoc(path)
+            configurationNode = self.getNode(doc, 'Configuration')
+
+            self.name = self.getNodeValue(configurationNode, 'Name')
+
+            self.startDate = self.getNodeDate(configurationNode, 'StartDate')
+            self.endDate = self.getNodeDate(configurationNode, 'EndDate')
+
+            self.hubWindSpeedMode = self.getNodeValue(configurationNode, 'HubWindSpeedMode')
+            self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
+
+            self.densityMode = self.getNodeValue(configurationNode, 'DensityMode')
+            self.calculateDensity = self.getCalculateMode(self.densityMode)
+
+            self.readREWS(configurationNode)        
+            self.readMeasurements(configurationNode)
+            self.readFilters(configurationNode)
+            self.readExclusions(configurationNode)
+            
+            if self.calculateHubWindSpeed:
+                self.readCalibration(configurationNode)    
+
+    def save(self):
+
+        doc = self.createDocument()             
+        root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
+
+        self.addTextNode(doc, root, "Name", self.name)
         
-        self.startDate = self.getNodeDate(configurationNode, 'StartDate')
-        self.endDate = self.getNodeDate(configurationNode, 'EndDate')
+        self.addTextNode(doc, root, "StartDate", self.startDate)
+        self.addTextNode(doc, root, "EndDate", self.endDate)
+        self.addTextNode(doc, root, "HubWindSpeedMode", self.hubWindSpeedMode)
+        self.addTextNode(doc, root, "DensityMode", self.densityMode)
 
-	self.calculateHubWindSpeed = self.getCalculateMode(self.getNodeValue(configurationNode, 'HubWindSpeedMode'))
-	self.calculateDensity = self.getCalculateMode(self.getNodeValue(configurationNode, 'DensityMode'))
-	
-        self.readREWS(configurationNode)        
-        self.readMeasurements(configurationNode)
-        self.readFilters(configurationNode)
-        self.readExclusions(configurationNode)
+        if self.rewsDefined:
+            rewsNode = self.addNode(doc, root, "RotorEquivalentWindSpeed")
+            self.addTextNode(doc, rewsNode, "NumberOfRotorLevels", self.numberOfRotorLevels)
+            self.addTextNode(doc, rewsNode, "RotorMode", self.rotorMode)
+            self.addTextNode(doc, rewsNode, "HubMode", self.hubMode)
         
-        if self.calculateHubWindSpeed:
-            self.readCalibration(configurationNode)    
+        measurementsNode = self.addNode(doc, root, "Measurements")
+                
+        self.addTextNode(doc, measurementsNode, "InputTimeSeriesPath", self.inputTimeSeriesPath)
+        self.addFloatNode(doc, measurementsNode, "BadDataValue", self.badData)
+        self.addTextNode(doc, measurementsNode, "DateFormat", self.dateFormat)
+        self.addIntNode(doc, measurementsNode, "HeaderRows", self.headerRows)
+        self.addTextNode(doc, measurementsNode, "TimeStamp", self.timeStamp)
+        self.addTextNode(doc, measurementsNode, "ReferenceWindSpeed", self.referenceWindSpeed)
+        self.addTextNode(doc, measurementsNode, "ReferenceWindSpeedStdDev", self.referenceWindSpeedStdDev)
+        self.addTextNode(doc, measurementsNode, "ReferenceWindDirection", self.referenceWindDirection)
+        self.addFloatNode(doc, measurementsNode, "ReferenceWindDirectionOffset", self.referenceWindDirectionOffset)
+        self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
+        self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
+
+        self.addTextNode(doc, measurementsNode, "LowerWindSpeed", self.lowerWindSpeed)
+        self.addFloatNode(doc, measurementsNode, "LowerWindSpeedHeight", self.lowerWindSpeedHeight)
+
+        self.addTextNode(doc, measurementsNode, "UpperWindSpeed", self.upperWindSpeed)
+        self.addFloatNode(doc, measurementsNode, "UpperWindSpeedHeight", self.upperWindSpeedHeight)
+
+        levelsNode = self.addNode(doc, measurementsNode, "ProfileLevels")
+
+        for height in self.windSpeedLevels:
+            levelNode = self.addNode(doc, levelsNode, "ProfileLevel")
+            self.addFloatNode(doc, levelNode, "Height", height)
+            self.addTextNode(doc, levelNode, "ProfileWindSpeed", self.windSpeedLevels[height])
+            self.addTextNode(doc, levelNode, "ProfileWindDirection", self.windDirectionLevels[height])
+
+        levelsNode = self.addNode(doc, root, "Filters")
+        levelsNode = self.addNode(doc, root, "Exclusions")
+
+        self.saveDocument(doc, self.path)
 
     def readREWS(self, configurationNode):
 
         if self.nodeExists(configurationNode, 'RotorEquivalentWindSpeed'):
+
             rewsNode = self.getNode(configurationNode, 'RotorEquivalentWindSpeed')
 
             self.rewsDefined = True
             self.rotorMode = self.getNodeValue(rewsNode, 'RotorMode')
             self.hubMode = self.getNodeValue(rewsNode, 'HubMode')
-
             self.numberOfRotorLevels = self.getNodeInt(rewsNode, 'NumberOfRotorLevels')
+
         else:
-            self.rewsDefined = False        
+
+            self.rewsDefined = False
+            self.rotorMode = ""
+            self.hubMode = ""
+            self.numberOfRotorLevels = 0
        
     def readMeasurements(self, configurationNode):
 
@@ -184,16 +416,13 @@ class DatasetConfiguration(XmlBase):
         self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
         self.headerRows = self.getNodeInt(measurementsNode, 'HeaderRows')
 
-        if self.calculateHubWindSpeed:
-            self.hubWindSpeed = "Hub Wind Speed"
-            self.hubTurbulence = "Hub Turbulence"
-            self.referenceWindSpeed = self.getNodeValue(measurementsNode, 'ReferenceWindSpeed')
-            self.referenceWindSpeedStdDev = self.getNodeValue(measurementsNode, 'ReferenceWindSpeedStdDev')
-            self.referenceWindDirection = self.getNodeValue(measurementsNode, 'ReferenceWindDirection')
-            self.referenceWindDirectionOffset = self.getNodeFloat(measurementsNode, 'ReferenceWindDirectionOffset')
-        else:
-            self.hubWindSpeed = self.getNodeValue(measurementsNode, 'HubWindSpeed')        
-            self.hubTurbulence = self.getNodeValue(measurementsNode, 'HubTurbulence')            
+        self.hubWindSpeed = self.getNodeValueIfExists(measurementsNode, 'HubWindSpeed', "Hub Wind Speed")        
+        self.hubTurbulence = self.getNodeValueIfExists(measurementsNode, 'HubTurbulence', "Hub Turbulence")
+
+        self.referenceWindSpeed = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindSpeed', "")
+        self.referenceWindSpeedStdDev = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindSpeedStdDev', "")
+        self.referenceWindDirection = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindDirection', "")
+        self.referenceWindDirectionOffset = float(self.getNodeValueIfExists(measurementsNode, 'ReferenceWindDirectionOffset', 0.0))
                 
         if self.calculateDensity:
             self.density = "Density"
@@ -209,15 +438,15 @@ class DatasetConfiguration(XmlBase):
             self.lowerWindSpeed = self.getNodeValue(measurementsNode, 'LowerWindSpeed')
             self.lowerWindSpeedHeight = self.getNodeFloat(measurementsNode, 'LowerWindSpeedHeight')
         else:
-            self.lowerWindSpeed = None
-            self.lowerWindSpeedHeight = None
+            self.lowerWindSpeed = ""
+            self.lowerWindSpeedHeight = 0.0
 
         if self.nodeExists(measurementsNode, 'UpperWindSpeed'):
             self.upperWindSpeed = self.getNodeValue(measurementsNode, 'UpperWindSpeed')
             self.upperWindSpeedHeight = self.getNodeFloat(measurementsNode, 'UpperWindSpeedHeight')
         else:
-            self.upperWindSpeed = None
-            self.upperWindSpeedHeight = None
+            self.upperWindSpeed = ""
+            self.upperWindSpeedHeight = 0.0
         
         if self.nodeExists(measurementsNode, 'Power'):
             self.power = self.getNodeValue(measurementsNode, 'Power')

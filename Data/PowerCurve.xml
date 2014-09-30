@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns1:PowerCurve xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<ns1:Name>Round Robin Power Curve</ns1:Name>
 	<ns1:PowerCurveTurbulence>0.10</ns1:PowerCurveTurbulence>
 	<ns1:PowerCurveDensity>1.225</ns1:PowerCurveDensity>	
 	<ns1:PowerCurveLevels>

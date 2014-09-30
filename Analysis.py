@@ -122,8 +122,9 @@ class Analysis:
         self.windSpeedBins = binning.Bins(1.0, 1.0, 30)
         self.turbulenceBins = binning.Bins(0.01, 0.02, 30)        
         self.aggregations = Aggregations(self.powerCurveMinimumCount)
-        
-        self.specifiedPowerCurve = turbine.PowerCurve(config.powerCurveLevels, config.powerCurveDensity, self.rotorGeometry, fixedTurbulence = config.powerCurveTurbulence)               
+
+        powerCurveConfig = configuration.PowerCurveConfiguration(config.specifiedPowerCurve)
+        self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, fixedTurbulence = powerCurveConfig.powerCurveTurbulence)               
 
         if self.densityCorrectionActive:
             if self.hasDensity:

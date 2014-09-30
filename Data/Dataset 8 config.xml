@@ -11,7 +11,7 @@
 		<HubMode>PiecewiseExponent</HubMode>
 	</RotorEquivalentWindSpeed>
 	<Measurements>
-		<InputTimeSeriesPath>D:/Git-PCWG/PCWG/Data/Dataset 1.dat</InputTimeSeriesPath>
+		<InputTimeSeriesPath>Data\Dataset 1 - Filtered - 06.dat</InputTimeSeriesPath>
 		<BadDataValue>-99.990000</BadDataValue>
 		<DateFormat>%d/%m/%Y %H:%M</DateFormat>
 		<HeaderRows>0</HeaderRows>
