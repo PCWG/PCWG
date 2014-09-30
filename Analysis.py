@@ -77,6 +77,7 @@ class Analysis:
 
     def __init__(self, config, status = NullStatus()):        
 
+        self.relativePath = configuration.RelativePath(config.path)
         self.status = status
 
         self.status.addMessage("Calculating (please wait)...")
@@ -123,7 +124,7 @@ class Analysis:
         self.turbulenceBins = binning.Bins(0.01, 0.02, 30)        
         self.aggregations = Aggregations(self.powerCurveMinimumCount)
 
-        powerCurveConfig = configuration.PowerCurveConfiguration(config.specifiedPowerCurve)
+        powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
         self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, fixedTurbulence = powerCurveConfig.powerCurveTurbulence)               
 
         if self.densityCorrectionActive:
@@ -217,7 +218,7 @@ class Analysis:
 
        for i in range(len(config.datasets)):
 
-            data = dataset.Dataset(config.datasets[i], rotorGeometry)
+            data = dataset.Dataset(self.relativePath.convertToAbsolutePath(config.datasets[i]), rotorGeometry)
 
             if i == 0:
 

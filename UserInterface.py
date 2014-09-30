@@ -300,16 +300,24 @@ class SetFileSaveAsCommand:
         def __call__(self):
                 fileName = asksaveasfilename(parent=self.master,defaultextension=".xml")
                 if len(fileName) > 0: self.variable.set(fileName)
-
+        
 class SetFileOpenCommand:
 
-        def __init__(self, master, variable):
+        def __init__(self, master, variable, basePathVariable = None):
                 self.master = master
                 self.variable = variable
+                self.basePathVariable = basePathVariable
 
         def __call__(self):
+
                 fileName = askopenfilename(parent=self.master,defaultextension=".xml")
-                if len(fileName) > 0: self.variable.set(fileName)
+
+                if len(fileName) > 0:
+                        if self.basePathVariable != None:
+                                relativePath = configuration.RelativePath(self.basePathVariable.get())
+                                self.variable.set(relativePath.convertToRelativePath(fileName))
+                        else:
+                                self.variable.set(fileName)
 
 class BaseDialog(tkSimpleDialog.Dialog):
 
@@ -329,7 +337,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 self.row = 0
                 
                 tkSimpleDialog.Dialog.__init__(self, master)
-                
+        
         def prepareColumns(self, master):
 
                 master.columnconfigure(self.titleColumn, pad=10, weight = 0)
@@ -402,11 +410,11 @@ class BaseDialog(tkSimpleDialog.Dialog):
 
                 return variable
         
-        def addFileOpenEntry(self, master, title, validation, value, width = 60):
+        def addFileOpenEntry(self, master, title, validation, value, basePathVariable = None, width = 60):
 
                 variable = self.addEntry(master, title, validation, value, width)
                 
-                button = Button(master, text="...", command = SetFileOpenCommand(master, variable), height=1)
+                button = Button(master, text="...", command = SetFileOpenCommand(master, variable, basePathVariable), height=1)
                 button.grid(row=(self.row - 1), sticky=E+W, column=self.buttonColumn)
 
                 return variable
@@ -605,7 +613,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.hubMode = self.addOption(master, "Hub Mode:", ["Interpolated", "PiecewiseExponent"], self.config.hubMode)                
 
                 self.addTitleRow(master, "Measurement Settings:")
-                self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath)
+                self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath)
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData)
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat)
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows)
@@ -714,6 +722,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         
         def setConfigValues(self):
 
+                relativePath = configuration.RelativePath(self.config.path)
+
                 self.config.name = self.name.get()
                 self.config.startDate = self.startDate.get()
                 self.config.endDate = self.endDate.get()
@@ -725,7 +735,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.rotorMode = self.rotorMode.get()
                 self.config.hubMode = self.hubMode.get()
 
-                self.config.inputTimeSeriesPath = self.inputTimeSeriesPath.get()
+                self.config.inputTimeSeriesPath = relativePath.convertToRelativePath(self.inputTimeSeriesPath.get())
                 self.config.badData = float(self.badData.get())
                 self.config.dateFormat = self.dateFormat.get()
                 self.config.headerRows = int(self.headerRows.get())
@@ -914,7 +924,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.ratedPower = self.addEntry(master, "Rated Power:", ValidatePositiveFloat(master), self.config.ratedPower)
                 self.hubHeight = self.addEntry(master, "Hub Height:", ValidatePositiveFloat(master), self.config.hubHeight)
                 self.diameter = self.addEntry(master, "Diameter:", ValidatePositiveFloat(master), self.config.diameter)
-                self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", ValidateSpecifiedPowerCurve(master), self.config.specifiedPowerCurve)
+                self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", ValidateSpecifiedPowerCurve(master), self.config.specifiedPowerCurve, self.filePath)
 
                 self.addPowerCurveButton = Button(master, text="New", command = self.NewPowerCurve, width=5, height=1)
                 self.addPowerCurveButton.grid(row=(self.row-1), sticky=E+N, column=self.secondButtonColumn)
@@ -954,7 +964,8 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                         path = self.datasetsListBox.get(index)
 
                         try:
-                                datasetConfig = configuration.DatasetConfiguration(path)
+                                relativePath = configuration.RelativePath(self.filePath.get()) 
+                                datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
                                 configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
                         except Exception as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
@@ -980,6 +991,9 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
         def addDatasetFromPath(self, path, index = None):
 
+                relativePath = configuration.RelativePath(self.filePath.get())
+                path = relativePath.convertToRelativePath(path)
+
                 if index != None:
                         self.datasetsListBox.delete(index, index)
                         self.datasetsListBox.insert(index, path)
@@ -1002,6 +1016,8 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
         
         def setConfigValues(self):
 
+                relativePath = configuration.RelativePath(self.config.path)
+
                 self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
                 self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
                 self.config.filterMode = self.filterMode.get()
@@ -1017,7 +1033,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.ratedPower = float(self.ratedPower.get())
                 self.config.hubHeight = float(self.hubHeight.get())
                 self.config.diameter = float(self.diameter.get())
-                self.config.specifiedPowerCurve = self.specifiedPowerCurve.get()
+                self.config.specifiedPowerCurve = relativePath.convertToRelativePath(self.specifiedPowerCurve.get())
 
                 self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
                 self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
@@ -1026,9 +1042,8 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.datasets = []
 
                 for i in range(self.datasetsListBox.size()):
-                        dataset = self.datasetsListBox.get(i)
+                        dataset = relativePath.convertToRelativePath(self.datasetsListBox.get(i))
                         self.config.datasets.append(dataset)
-
 
 class UserInterface:
 
@@ -1055,6 +1070,7 @@ class UserInterface:
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
+                benchmark_button = Button(commandframe, text="Benchmark", command = self.Benchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
 
                 self.analysisFilePathLabel = Label(labelsFrame, text="Analysis File")
@@ -1073,6 +1089,7 @@ class UserInterface:
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
+                benchmark_button.pack(side=LEFT, padx=5, pady=5)
                 clear_console_button.pack(side=LEFT, padx=5, pady=5)
                 
                 self.analysisFilePathLabel.pack(anchor=NW, padx=5, pady=5)
@@ -1092,6 +1109,24 @@ class UserInterface:
                         
                 self.root.mainloop()        
 
+        def Benchmark(self):
+
+                self.analysis = None
+                self.analysisConfiguration = None
+                
+                self.ClearConsole()
+
+                self.BenchmarkAnalysis("Data\Dataset 1 Analysis.xml")
+
+        def BenchmarkAnalysis(self, path):
+
+                
+
+                analysisConfiguration = configuration.AnalysisConfiguration(fileName)
+                analysis = Analysis.Analysis(self.analysisConfiguration)
+
+                print "done"
+                
         def EditAnalysis(self):
 
                 if self.analysisConfiguration == None:            

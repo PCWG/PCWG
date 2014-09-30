@@ -95,6 +95,33 @@ class XmlBase:
                 return valueNotExist
         else:
                 return valueNotExist
+
+class RelativePath:
+
+        def __init__(self, basePath):
+                self.baseFolder = self.replaceFileSeparators(os.path.dirname(os.path.abspath(basePath)))
+
+        def convertToAbsolutePath(self, path):
+                return os.path.join(self.baseFolder, path);
+        
+        def convertToRelativePath(self, path):
+
+                if len(path) <= len(self.baseFolder): return path
+                
+                filePath = self.replaceFileSeparators(path)
+                
+                folderLength = len(self.baseFolder)
+                pathLength = len(filePath)
+                
+                if self.baseFolder == filePath[0:folderLength]:
+                        return filePath[folderLength + 1: pathLength]
+                else:
+                        return filePath
+
+        def replaceFileSeparators(self, filePath):
+                replacedFilePath = filePath.replace("\\", os.path.sep)
+                replacedFilePath = filePath.replace("/", os.path.sep)
+                return replacedFilePath
             
 class Preferences(XmlBase):
 

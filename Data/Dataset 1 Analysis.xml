@@ -6,7 +6,7 @@
 	<BaseLineMode>Hub</BaseLineMode>
 	<PowerCurveMode>Specified</PowerCurveMode>
 	<Datasets>
-		<Dataset>D:\Git-PCWG\PCWG\Data\Dataset 1 config.xml</Dataset>
+		<Dataset>Dataset 1 config.xml</Dataset>
 	</Datasets>
 	<InnerRange>
 		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
@@ -20,7 +20,7 @@
 		<RatedPower>2000.000000</RatedPower>
 		<HubHeight>96.000000</HubHeight>
 		<Diameter>90.000000</Diameter>
-		<SpecifiedPowerCurve>Data/PowerCurve.xml</SpecifiedPowerCurve>
+		<SpecifiedPowerCurve>PowerCurve.xml</SpecifiedPowerCurve>
 	</Turbine>
 	<DensityCorrection>
 		<Active>0</Active>

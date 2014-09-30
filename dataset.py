@@ -41,7 +41,8 @@ class Dataset:
     def __init__(self, path, rotorGeometry):
 
         config = configuration.DatasetConfiguration(path)
-
+        self.relativePath = configuration.RelativePath(config.path)
+        
         self.name = "Name"
         self.timeStamp = "Time Stamp"
         
@@ -62,7 +63,7 @@ class Dataset:
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
         
-        dataFrame = pd.read_csv(config.inputTimeSeriesPath, index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = '\t', skiprows = config.headerRows).replace(config.badData, np.nan)
+        dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = '\t', skiprows = config.headerRows).replace(config.badData, np.nan)
 
         dataFrame = dataFrame[config.startDate : config.endDate]
 
