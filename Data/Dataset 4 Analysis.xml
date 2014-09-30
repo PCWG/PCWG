@@ -9,7 +9,7 @@
 	<ns1:PowerCurveMode>Specified</ns1:PowerCurveMode>		
 		
 	<ns1:Datasets>
-		<ns1:Dataset>Data\Dataset 4.xml</ns1:Dataset>
+		<ns1:Dataset>Dataset 4.xml</ns1:Dataset>
 	</ns1:Datasets>
 	
 	<ns1:InnerRange>
@@ -23,7 +23,7 @@
 		<ns1:RatedPower>2000</ns1:RatedPower>
 		<ns1:HubHeight>58</ns1:HubHeight>
 		<ns1:Diameter>70</ns1:Diameter>
-		<ns1:SpecifiedPowerCurve>Data/Dataset 4 PowerCurve.xml</ns1:SpecifiedPowerCurve>
+		<ns1:SpecifiedPowerCurve>Dataset 4 PowerCurve.xml</ns1:SpecifiedPowerCurve>
 	</ns1:Turbine>
 
 	<ns1:DensityCorrection>
