@@ -70,8 +70,7 @@ class TurbulencePowerCalculator:
         self.turbulenceColumn = turbulenceColumn
 
     def power(self, row):
-        return min(self.ratedPower, max(0, self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn])))
-
+        return self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn])
 
 class Analysis:
 

@@ -1116,61 +1116,79 @@ class UserInterface:
                 self.ClearConsole()
 
                 benchmarks = []
+
+                tolerance = 0.0001
                 
-                benchmarks.append(("Data\Dataset 1 Analysis.xml", 0.000000, 0.005083, 0.000066, 0.005264))
-                benchmarks.append(("Data\Dataset 2 Analysis.xml", 0.000000, -0.002431, 0.005824, 0.003457))
-                benchmarks.append(("Data\Dataset 3 Analysis.xml", 0.000000, -0.003406, -0.012377, -0.015839))
+                benchmarks.append(("Data\Dataset 1 Analysis.xml", 0.000000, 0.005083, 0.000072, 0.005271))
+                benchmarks.append(("Data\Dataset 2 Analysis.xml", 0.000000, -0.002431, 0.005831, 0.003464))
+                benchmarks.append(("Data\Dataset 3 Analysis.xml", 0.000000, -0.003406, -0.012374, -0.015835))
 
                 benchmarkPassed = True
-
+                totalTime = 0.0
+                
                 for i in range(len(benchmarks)):
                         benchmark = benchmarks[i]
                         self.addMessage("Executing Benchmark %d of %d" % (i + 1, len(benchmarks)))
-                        benchmarkPassed = benchmarkPassed & self.BenchmarkAnalysis(benchmark[0], benchmark[1], benchmark[2], benchmark[3], benchmark[4])
+                        benchmarkResults = self.BenchmarkAnalysis(benchmark[0], benchmark[1], benchmark[2], benchmark[3], benchmark[4], tolerance)
+                        benchmarkPassed = benchmarkPassed & benchmarkResults[0]
+                        totalTime += benchmarkResults[1]
 
                 if benchmarkPassed:
                         self.addMessage("All benchmarks passed")
                 else:
                         self.addMessage("There are failing benchmarks")
-                        
-        def BenchmarkAnalysis(self, path, hubDelta, rewsDelta, turbulenceDelta, combinedDelta):
+
+                self.addMessage("Total Time Taken: %fs" % totalTime)
+                
+        def BenchmarkAnalysis(self, path, hubDelta, rewsDelta, turbulenceDelta, combinedDelta, tolerance):
 
                 self.addMessage("Calculating %s (please wait)..." % path)
 
+                self.addMessage("Benchmark Tolerance: %s" % self.formatPercentTwoDP(tolerance))
+
                 benchmarkPassed = True
+                start = datetime.datetime.now()
                 
-                try:
+                #try:
    
-                        analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
+                analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
 
-                except Exception as e:
+                #except Exception as e:
 
-                        analysis = None
-                        self.addMessage(str(e))
-                        benchmarkPassed = False
+                #        analysis = None
+                #        self.addMessage(str(e))
+                #        benchmarkPassed = False
 
                 if analysis != None:
                         
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Hub Delta", hubDelta, analysis.hubDelta)
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("REWS Delta", rewsDelta, analysis.rewsDelta)
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Turbulence Delta", turbulenceDelta, analysis.turbulenceDelta)
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Combined Delta", combinedDelta, analysis.combinedDelta)
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Hub Delta", hubDelta, analysis.hubDelta, tolerance)
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("REWS Delta", rewsDelta, analysis.rewsDelta, tolerance)
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Turbulence Delta", turbulenceDelta, analysis.turbulenceDelta, tolerance)
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Combined Delta", combinedDelta, analysis.combinedDelta, tolerance)
                                          
                 if benchmarkPassed:
                         self.addMessage("Benchmark Passed")
                 else:
                         self.addMessage("Benchmark Failed")
 
+                end = datetime.datetime.now()
+
+                timeTaken = (end - start).total_seconds()
+                self.addMessage("Time Taken: %fs" % timeTaken)
+
                 self.addMessage("")
                 
-                return benchmarkPassed                
+                return (benchmarkPassed, timeTaken)                
 
-        def compareBenchmark(self, title, expected, actual, tolerance = 0.000001):
+        def formatPercentTwoDP(self, value):
+                return "%0.2f%%" % (value * 100.0)
+
+        def compareBenchmark(self, title, expected, actual, tolerance):
                 
                 diff = abs(expected - actual)
-                passed = (diff < tolerance)
+                passed = (diff <= tolerance)
 
-                text = "%s: %f (expected) vs %f (actual) =>" % (title, expected, actual)
+                text = "%s: %s (expected) vs %s (actual) =>" % (title, self.formatPercentTwoDP(expected), self.formatPercentTwoDP(actual))
                 
                 if passed:
                         self.addMessage("%s passed" % text)
