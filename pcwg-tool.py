@@ -7,7 +7,9 @@ import configuration
 import datetime
 import os
 import os.path
-       
+
+version = "0.5.0"
+
 class WindowStatus:
 
         def __init__(self, gui):
@@ -1072,6 +1074,7 @@ class UserInterface:
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
                 benchmark_button = Button(commandframe, text="Benchmark", command = self.Benchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
+                about_button = Button(commandframe, text="About", command = self.About)
 
                 self.analysisFilePathLabel = Label(labelsFrame, text="Analysis File")
                 self.analysisFilePathTextBox = Entry(settingsFrame)
@@ -1091,6 +1094,7 @@ class UserInterface:
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
                 benchmark_button.pack(side=LEFT, padx=5, pady=5)
                 clear_console_button.pack(side=LEFT, padx=5, pady=5)
+                about_button.pack(side=LEFT, padx=5, pady=5)
                 
                 self.analysisFilePathLabel.pack(anchor=NW, padx=5, pady=5)
                 self.analysisFilePathTextBox.pack(anchor=NW,fill=X, expand=1, padx=5, pady=5)
@@ -1149,15 +1153,15 @@ class UserInterface:
                 benchmarkPassed = True
                 start = datetime.datetime.now()
                 
-                #try:
+                try:
    
-                analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
+                        analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
 
-                #except Exception as e:
+                except Exception as e:
 
-                #        analysis = None
-                #        self.addMessage(str(e))
-                #        benchmarkPassed = False
+                        analysis = None
+                        self.addMessage(str(e))
+                        benchmarkPassed = False
 
                 if analysis != None:
                         
@@ -1289,7 +1293,10 @@ class UserInterface:
         def ClearConsole(self):
                 self.listbox.delete(0, END)
                 self.root.update()
-            
+
+        def About(self):
+                tkMessageBox.showinfo("PCWG-Tool About", "Version: %s" % version)
+
         def addMessage(self, message):
                 self.listbox.insert(END, message)            
                 self.root.update()               
