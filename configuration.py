@@ -352,17 +352,21 @@ class DatasetConfiguration(XmlBase):
 
             self.hubWindSpeedMode = self.getNodeValue(configurationNode, 'HubWindSpeedMode')
             self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
-
+            
             self.densityMode = self.getNodeValue(configurationNode, 'DensityMode')
             self.calculateDensity = self.getCalculateMode(self.densityMode)
 
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)
-            self.readFilters(configurationNode)
+            self.filters = self.readFilters(self.getNodes(configurationNode, 'Filter'))
             self.readExclusions(configurationNode)
-            
-            if self.calculateHubWindSpeed:
-                self.readCalibration(configurationNode)    
+
+            if self.nodeExists(configurationNode, 'CalibrationMethod'):
+                self.calibrationMethod = self.getNodeValue(configurationNode, 'CalibrationMethod')
+            else:
+                self.calibrationMethod = ""
+                
+            self.readCalibration(configurationNode)    
 
     def save(self):
 
@@ -374,6 +378,7 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, root, "StartDate", self.startDate)
         self.addTextNode(doc, root, "EndDate", self.endDate)
         self.addTextNode(doc, root, "HubWindSpeedMode", self.hubWindSpeedMode)
+        self.addTextNode(doc, root, "CalibrationMethod", self.calibrationMethod)
         self.addTextNode(doc, root, "DensityMode", self.densityMode)
 
         if self.rewsDefined:
@@ -389,10 +394,15 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "DateFormat", self.dateFormat)
         self.addIntNode(doc, measurementsNode, "HeaderRows", self.headerRows)
         self.addTextNode(doc, measurementsNode, "TimeStamp", self.timeStamp)
+        self.addTextNode(doc, measurementsNode, "TimeStepInSeconds", self.timeStepInSeconds)
+        
         self.addTextNode(doc, measurementsNode, "ReferenceWindSpeed", self.referenceWindSpeed)
         self.addTextNode(doc, measurementsNode, "ReferenceWindSpeedStdDev", self.referenceWindSpeedStdDev)
         self.addTextNode(doc, measurementsNode, "ReferenceWindDirection", self.referenceWindDirection)
         self.addFloatNode(doc, measurementsNode, "ReferenceWindDirectionOffset", self.referenceWindDirectionOffset)
+
+        self.addTextNode(doc, measurementsNode, "TurbineLocationWindSpeed", self.hubWindSpeed)
+
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
@@ -439,16 +449,20 @@ class DatasetConfiguration(XmlBase):
 
         self.inputTimeSeriesPath = self.getNodePath(measurementsNode, 'InputTimeSeriesPath')
         self.dateFormat = self.getNodeValue(measurementsNode, 'DateFormat')
+        self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
+
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
         self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
         self.headerRows = self.getNodeInt(measurementsNode, 'HeaderRows')
 
-        self.hubWindSpeed = self.getNodeValueIfExists(measurementsNode, 'HubWindSpeed', "Hub Wind Speed")        
-        self.hubTurbulence = self.getNodeValueIfExists(measurementsNode, 'HubTurbulence', "Hub Turbulence")
+        self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
+        
+        self.hubWindSpeed = self.getNodeValueIfExists(measurementsNode, 'HubWindSpeed', '')        
+        self.hubTurbulence = self.getNodeValueIfExists(measurementsNode, 'HubTurbulence', '')
 
-        self.referenceWindSpeed = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindSpeed', "")
-        self.referenceWindSpeedStdDev = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindSpeedStdDev', "")
-        self.referenceWindDirection = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindDirection', "")
+        self.referenceWindSpeed = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindSpeed', '')
+        self.referenceWindSpeedStdDev = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindSpeedStdDev', '')
+        self.referenceWindDirection = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindDirection', '')
         self.referenceWindDirectionOffset = float(self.getNodeValueIfExists(measurementsNode, 'ReferenceWindDirectionOffset', 0.0))
                 
         if self.calculateDensity:
@@ -499,13 +513,11 @@ class DatasetConfiguration(XmlBase):
         else:
             raise Exception("Unrecognised calculation mode: %s" % mode)
 
-    def readFilters(self, configurationNode):
+    def readFilters(self, filtersNode):
 
-        filtersNode = self.getNode(configurationNode, 'Filters')
-
-        self.filters = []
+        filters = []
         
-        for node in self.getNodes(filtersNode, 'Filter'):
+        for node in filtersNode:
             
             active = self.getNodeBool(node, 'Active')
             
@@ -514,8 +526,10 @@ class DatasetConfiguration(XmlBase):
                 filterType = self.getNodeValue(node, 'FilterType')
                 inclusive = self.getNodeBool(node, 'Inclusive')
                 value = self.getNodeFloat(node, 'FilterValue') 
-                self.filters.append((column, filterType, inclusive, value))
+                filters.append((column, filterType, inclusive, value))
 
+        return filters
+    
     def readExclusions(self, configurationNode):
 
         exclusionsNode = self.getNode(configurationNode, 'Exclusions')
@@ -525,7 +539,7 @@ class DatasetConfiguration(XmlBase):
         for node in self.getNodes(exclusionsNode, 'Exclusion'):
 
             active = self.getNodeBool(node, 'ExclusionActive')
-            
+             
             if active:
                 startDate = self.getNodeDate(node, 'ExclusionStartDate')
                 endDate = self.getNodeDate(node, 'ExclusionEndDate')
@@ -535,8 +549,25 @@ class DatasetConfiguration(XmlBase):
         
         calibrationNode = self.getNode(configurationNode, 'Calibration')
 
-        self.siteCalibrationNumberOfSectors = self.getNodeInt(calibrationNode, 'NumberOfSectors') 
+        if self.nodeExists(calibrationNode, 'CalibrationStartDate') and self.nodeExists(calibrationNode, 'CalibrationEndDate'):
+            self.calibrationStartDate = self.getNodeDate(configurationNode, 'CalibrationStartDate')
+            self.calibrationEndDate = self.getNodeDate(configurationNode, 'CalibrationEndDate')
+        else:
+            self.calibrationStartDate = None
+            self.calibrationEndDate = None
+            
+        self.siteCalibrationNumberOfSectors = self.getNodeInt(calibrationNode, 'NumberOfSectors')
 
+        if self.nodeExists(calibrationNode, 'CenterOfFirstSector'):
+            self.siteCalibrationCenterOfFirstSector = self.getNodeInt(calibrationNode, 'CenterOfFirstSector')
+        else:
+            self.siteCalibrationCenterOfFirstSector = 0.0
+
+        if self.nodeExists(calibrationNode, 'CalibrationFilters'):
+            self.calibrationFilters = self.readFilters(self.getNodes(calibrationNode, 'CalibrationFilter'))
+        else:
+            self.calibrationFilters = []
+            
         self.calibrationSlopes = {}
         self.calibrationOffsets = {}
 

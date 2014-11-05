@@ -18,3 +18,29 @@ class Bins:
     def binCenter(self, x):
         if np.isnan(x): return np.nan
         return self.binCenterForFirstCenterAndWidth(x, self.centerOfFirstBin, self.binWidth)
+
+class Aggregations:
+
+    def __init__(self, minimumCount = 0):
+        self.minimumCount = minimumCount
+
+    def stddev(self, x):
+        if self.count(x) >= self.minimumCount:
+            return x.std()
+        else:
+            return np.nan
+        
+    def average(self, x):
+        if self.count(x) >= self.minimumCount:
+            return x.mean()
+        else:
+            return np.nan
+
+    def count(self, x):
+        return x.count()
+
+    def minimum(self, x):
+        if self.count(x) >= 0:
+            return x.min()
+        else:
+            return np.nan

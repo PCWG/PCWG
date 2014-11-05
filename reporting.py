@@ -28,6 +28,9 @@ class report:
 
         if analysis.hasActualPower:
 
+            for name in analysis.residualWindSpeedMatrices:
+                self.reportPowerDeviations(book, "ResidualWindSpeed-%s" % name, analysis.residualWindSpeedMatrices[name], gradient)
+
             if analysis.hasShear: self.reportPowerCurve(sh, 1, 4, 'Inner', analysis.innerMeasuredPowerCurve)
             self.reportPowerCurve(sh, 1, 8, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve)
             if analysis.hasShear: self.reportPowerCurve(sh, 1, 12, 'Outer', analysis.outerMeasuredPowerCurve)

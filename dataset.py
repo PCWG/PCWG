@@ -4,7 +4,100 @@ import datetime
 import math
 import configuration
 import rews
+import binning
 
+class CalibrationBase:
+
+    def __init__(self, x, y):
+        
+        self.x = x
+        self.y = y
+
+        self.requiredColumns = [self.x, self.y]
+        
+    def variance(self, df, col):
+        return ((df[col].mean() - df[col]) ** 2.0).sum()
+
+    def covariance(self, df, colA, colB):
+        return ((df[colA].mean() - df[colA]) * (df[colB].mean() - df[colB])).sum()
+
+    def mean(self, df, col):
+        return df[col].mean()
+
+    def intercept(self, df, slope):
+        return self.mean(df, self.y) - slope * self.mean(df, self.x)
+    
+class York(CalibrationBase):
+
+    def __init__(self, x, y, timeStepInSeconds, df):
+        
+        movingAverageWindow = self.calculateMovingAverageWindow(timeStepInSeconds)
+
+        self.xRolling = "xRolling"
+        self.yRolling = "yRolling"
+
+        self.xDiffSq = "xDiffSq"
+        self.yDiffSq = "yDiffSq"
+        
+        df[self.xRolling] = pd.rolling_mean(df[x], window = movingAverageWindow, min_periods = movingAverageWindow)
+        df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = movingAverageWindow)
+
+        df[self.xDiffSq] = ((df[x] - df[self.xRolling])** 2.0)
+        df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0)
+    
+        CalibrationBase.__init__(self, x, y)                                        
+
+        self.requiredColumns += [self.xDiffSq, self.yDiffSq]
+        
+    def calculateMovingAverageWindow(self, timeStepInSeconds):
+
+        movingAverageMultiplier = 3
+        minimumMovingAveageWindowInSeconds = movingAverageMultiplier * 60 * 60
+        
+        movingAveageWindowInSeconds = max([minimumMovingAveageWindowInSeconds, movingAverageMultiplier * timeStepInSeconds])
+
+        if movingAveageWindowInSeconds % timeStepInSeconds != 0:
+            raise Exception("Cannot calculate moving average window. Moving average window (%ds) is not integer multiple of timestep (%ds)" % (movingAveageWindowInSeconds, timeStepInSeconds))
+        
+        movingAverageWindow = movingAveageWindowInSeconds / timeStepInSeconds
+
+        return movingAverageWindow
+    
+    def slope(self, df):
+        
+        alpha = self.calculateAlpha(df)
+
+        varianceX = self.variance(df, self.x)
+        varianceY = self.variance(df, self.y)
+        covarianceXY = self.covariance(df, self.x, self.y)
+        
+        gradientNumerator = math.sin(alpha) * varianceY + math.cos(alpha) * covarianceXY
+        gradientDenominator = math.sin(alpha) * covarianceXY + math.cos(alpha) * varianceX
+
+        return (gradientNumerator / gradientDenominator)
+        
+    def calculateAlpha(self, df):
+
+        xYorkVariance = df[self.xDiffSq].sum()
+        yYorkVariance = df[self.yDiffSq].sum()
+        
+        covarianceXY = self.covariance(df, self.x, self.y)
+        varianceX = self.variance(df, self.x)
+        
+        return math.atan2(covarianceXY ** 2.0 / varianceX ** 2.0 * xYorkVariance, yYorkVariance)
+    
+class RatioOfMeans(CalibrationBase):
+        
+    def slope(self, df):
+        return self.mean(df, self.y) / self.mean(df, self.x)
+    
+class LeastSquares(CalibrationBase):
+
+    def slope(self, df):
+        varianceX = self.variance(df, self.x)
+        covarianceXY = self.covariance(df, self.x, self.y)
+        return covarianceXY ** 2.0 / varianceX ** 2.0
+    
 class SiteCalibrationCalculator:
 
     def __init__(self, slopes, offsets, directionBinColumn, windSpeedColumn):
@@ -19,9 +112,12 @@ class SiteCalibrationCalculator:
         directionBin = row[self.directionBinColumn]
         
         if directionBin in self.slopes:
-            return self.offsets[directionBin] + self.slopes[directionBin] * row[self.windSpeedColumn]
+            return self.calibrate(directionBin, row[self.windSpeedColumn])
         else:
             return np.nan
+
+    def calibrate(self, directionBin, windSpeed):
+        return self.offsets[directionBin] + self.slopes[directionBin] * windSpeed
         
 class ShearExponentCalculator:
 
@@ -43,7 +139,7 @@ class Dataset:
         config = configuration.DatasetConfiguration(path)
         self.relativePath = configuration.RelativePath(config.path)
         
-        self.name = "Name"
+        self.name = config.name
         self.timeStamp = "Time Stamp"
         
         self.actualPower = "Actual Power"
@@ -57,6 +153,7 @@ class Dataset:
         self.profileHubWindSpeed = "Profile Hub Wind Speed"        
         self.profileHubToRotorRatio = "Hub to Rotor Ratio"
         self.profileHubToRotorDeviation = "Hub to Rotor Deviation"
+        self.residualWindSpeed = "Residual Wind Speed"
         
         self.hasShear = self.isValidText(config.lowerWindSpeed) and self.isValidText(config.upperWindSpeed)        
         self.rewsDefined = config.rewsDefined
@@ -72,17 +169,33 @@ class Dataset:
         
         if self.hasShear:
             dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.lowerWindSpeed, config.upperWindSpeed, config.lowerWindSpeedHeight, config.upperWindSpeedHeight).shearExponent, axis=1)
+
+        dataFrame[self.residualWindSpeed] = 0.0
         
         if config.calculateHubWindSpeed:
-            referenceDirectionBin = "Reference Direction Bin"
-            dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
-            siteCalibrationBinWidth = 360.0 / config.siteCalibrationNumberOfSectors
-            dataFrame[referenceDirectionBin] = siteCalibrationBinWidth * ((np.floor((dataFrame[config.referenceWindDirection] + siteCalibrationBinWidth) / siteCalibrationBinWidth) % config.siteCalibrationNumberOfSectors) - 1)
-            dataFrame[self.hubWindSpeed] = dataFrame.apply(SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, referenceDirectionBin, config.referenceWindSpeed).turbineWindSpeed, axis=1)
+
+            calibrationCalculator = self.createCalibration(dataFrame, config)        
+            dataFrame[self.hubWindSpeed] = dataFrame.apply(calibrationCalculator.turbineWindSpeed, axis=1)
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeed]
+
+            dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
+
+            windSpeedBin = "Wind Speed Bin"
+            turbulenceBin = "Turbulence Bin"
+        
+            windSpeedBins = binning.Bins(1.0, 1.0, 30)
+            turbulenceBins = binning.Bins(0.01, 0.02, 30)        
+            aggregations = binning.Aggregations(10)
+
+            dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
+            dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
+
+            self.residualWindSpeedMatrix = dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average)
+            
         else:
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            self.residualWindSpeedMatrix = None
             
         if config.calculateDensity:
             dataFrame[self.hubDensity] = 100.0 * dataFrame[config.pressure] / (273.15 + dataFrame[config.temperature]) / 287.058
@@ -100,7 +213,7 @@ class Dataset:
         else:
             self.hasActualPower = False
 
-        dataFrame = self.filterDataFrame(dataFrame, config)
+        dataFrame = self.filterDataFrame(dataFrame, config.filters)
         dataFrame = self.excludeData(dataFrame, config)
         
         if self.rewsDefined:
@@ -108,6 +221,59 @@ class Dataset:
 
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
+    def createCalibration(self, dataFrame, config):
+
+        referenceDirectionBin = "Reference Direction Bin"
+        
+        dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
+        siteCalibrationBinWidth = 360.0 / config.siteCalibrationNumberOfSectors
+
+        dataFrame[referenceDirectionBin] = (dataFrame[config.referenceWindDirection]  - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
+        dataFrame[referenceDirectionBin] = np.round(dataFrame[referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
+        dataFrame[referenceDirectionBin] = (dataFrame[referenceDirectionBin] + 360) % 360
+        
+        if config.calibrationMethod == "Specified":
+            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, referenceDirectionBin, config.referenceWindSpeed)
+
+        if config.calibrationMethod == "RatioOfMeans":
+            calibration = RatioOfMeans(config.referenceWindSpeed, config.turbineLocationWindSpeed)
+        elif config.calibrationMethod == "LeastSquares":
+            calibration = LeastSquares(config.referenceWindSpeed, config.turbineLocationWindSpeed)
+        elif config.calibrationMethod == "York":
+            calibration = York(config.referenceWindSpeed, config.turbineLocationWindSpeed, config.timeStepInSeconds, dataFrame)            
+        else:
+            raise Exception("Calibration method not recognised: %s" % config.calibrationMethod)
+
+        if config.calibrationStartDate != None and config.calibrationEndDate != None:
+            dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
+       
+        dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
+        dataFrame = dataFrame[calibration.requiredColumns + [referenceDirectionBin, config.referenceWindDirection]].dropna()
+        
+        #path = "D:\\Power Curves\\Working Group\\112 - Tool\\RES-DATA\\" + config.name + ".dat"
+        #dataFrame.to_csv(path, sep = '\t')
+        
+        groups = dataFrame[calibration.requiredColumns].groupby(dataFrame[referenceDirectionBin])
+
+        slopes = {}
+        intercepts = {}
+
+        print config.name
+        
+        for group in groups:
+
+            directionBinCenter = group[0]
+
+            sectorDataFrame = group[1].dropna()
+            
+            slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
+            intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
+            count = sectorDataFrame[config.referenceWindSpeed].count()
+            
+            print "%f\t%f\t%f\t%d" % (directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], count)
+
+        return SiteCalibrationCalculator(slopes, intercepts, referenceDirectionBin, config.referenceWindSpeed)
+        
     def isValidText(self, text):
         if text == None: return False
         return len(text) > 0 
@@ -152,14 +318,14 @@ class Dataset:
 
         return dataFrame[requiredCols]
         
-    def filterDataFrame(self, dataFrame, config):
+    def filterDataFrame(self, dataFrame, filters):
 
-        if len(config.filters) < 1: return dataFrame
+        if len(filters) < 1: return dataFrame
 
         dataFrame["Dummy"] = 1
         mask = dataFrame["Dummy"] == 0
         
-        for componentFilter in config.filters:
+        for componentFilter in filters:
             
             filterColumn = componentFilter[0]
             filterType = componentFilter[1]

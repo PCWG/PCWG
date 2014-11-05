@@ -606,11 +606,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.endDate = self.addEntry(master, "End Date:", None, self.config.endDate)
                 
                 self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["Calculated", "Specified", "None"], self.config.hubWindSpeedMode)
+                self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSqares", "None"], self.config.calibrationMethod)
                 self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified", "None"], self.config.densityMode)
 
                 self.addTitleRow(master, "REWS Settings:")
                 self.rewsDefined = self.addCheckBox(master, "REWS Active", self.config.rewsDefined)
-                self.numberOfRotorLevels = self.addEntry(master, "REWS Number of Rotor Levels:", ValidatePositiveInteger(master), self.config.numberOfRotorLevels)
+                self.numberOfRotorLevels = self.addEntry(master, "REWS Number of Rotor Levels:", ValidateNonNegativeInteger(master), self.config.numberOfRotorLevels)
                 self.rotorMode = self.addOption(master, "REWS Rotor Mode:", ["EvenlySpacedLevels", "ProfileLevels"], self.config.rotorMode)
                 self.hubMode = self.addOption(master, "Hub Mode:", ["Interpolated", "PiecewiseExponent"], self.config.hubMode)                
 
@@ -624,6 +625,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.referenceWindSpeedStdDev = self.addEntry(master, "Reference Wind Speed: Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60)
                 self.referenceWindDirection = self.addEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60)
                 self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset)
+                self.turbineLocationWindSpeed = self.addEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed)
                 self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", ValidateNotBlank(master), self.config.hubWindSpeed, width = 60)
                 self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", ValidateNotBlank(master), self.config.hubTurbulence, width = 60)
                 self.lowerWindSpeed = self.addEntry(master, "Lower Wind Speed:", ValidateNotBlank(master), self.config.lowerWindSpeed, width = 60)
@@ -730,6 +732,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.startDate = self.startDate.get()
                 self.config.endDate = self.endDate.get()
                 self.config.hubWindSpeedMode = self.hubWindSpeedMode.get()
+                self.config.calibrationMethod = self.calibrationMethod.get()
                 self.config.densityMode = self.densityMode.get()
 
                 self.config.rewsDefined = bool(self.rewsDefined.get())
@@ -1271,24 +1274,24 @@ class UserInterface:
                 except Exception as e:
                         self.addMessage("ERROR Exporting Time Series: %s" % e)
         
-        def Calculate(self, tryCatch = True):
+        def Calculate(self):
 
                 if self.analysisConfiguration == None:
                         self.addMessage("ERROR: Analysis Config file not specified")
                         return
 
-                if tryCatch:
 
-                        try:
-                    
-                                self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
-
-                        except Exception as e:
-                                
-                                self.addMessage("ERROR Calculating Analysis: %s" % e)                    
-                else:
-
+                self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
+                return
+        
+                try:
+            
                         self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
+
+                except Exception as e:
+                        
+                        self.addMessage("ERROR Calculating Analysis: %s" % e)                    
+
                         
         def ClearConsole(self):
                 self.listbox.delete(0, END)

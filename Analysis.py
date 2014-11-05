@@ -16,26 +16,6 @@ class NullStatus:
 
     def addMessage(self, message):
         pass
-    
-class Aggregations:
-
-    def __init__(self, minimumCount = 0):
-        self.minimumCount = minimumCount
-
-    def average(self, x):
-        if self.count(x) >= self.minimumCount:
-            return x.mean()
-        else:
-            return np.nan
-
-    def count(self, x):
-        return x.count()
-
-    def minimum(self, x):
-        if self.count(x) >= 0:
-            return x.min()
-        else:
-            return np.nan
         
 class DensityCorrectionCalculator:
 
@@ -121,14 +101,14 @@ class Analysis:
 
         self.windSpeedBins = binning.Bins(1.0, 1.0, 30)
         self.turbulenceBins = binning.Bins(0.01, 0.02, 30)        
-        self.aggregations = Aggregations(self.powerCurveMinimumCount)
+        self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
         powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
         self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, fixedTurbulence = powerCurveConfig.powerCurveTurbulence)               
 
         if self.densityCorrectionActive:
             if self.hasDensity:
-                self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(config.powerCurveDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
+                self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(powerCurveConfig.powerCurveDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
                 self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.densityCorrectedHubWindSpeed]
             else:
                 raise Exception("Density data column not specified.")
@@ -137,7 +117,7 @@ class Analysis:
             
         self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)
         self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
-        
+            
         if self.hasActualPower:
 
             self.status.addMessage("Calculating actual power curves...")
@@ -215,7 +195,9 @@ class Analysis:
         
     def loadData(self, config, rotorGeometry):
 
-       for i in range(len(config.datasets)):
+        self.residualWindSpeedMatrices = {}
+
+        for i in range(len(config.datasets)):
 
             data = dataset.Dataset(self.relativePath.convertToAbsolutePath(config.datasets[i]), rotorGeometry)
 
@@ -236,6 +218,7 @@ class Analysis:
                     self.profileHubToRotorDeviation = data.profileHubToRotorDeviation
                 
                 self.actualPower = data.actualPower
+                self.residualWindSpeed = data.residualWindSpeed
                 
                 self.dataFrame = data.dataFrame
                 self.hasActualPower = data.hasActualPower
@@ -251,6 +234,9 @@ class Analysis:
                 self.hasShear = self.hasShear & data.hasShear
                 self.hasDensity = self.hasDensity & data.hasDensity
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
+
+            #if data.residualWindSpeedMatrix != None:
+            self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
         
     def selectPowerCurve(self, powerCurveMode):
 
