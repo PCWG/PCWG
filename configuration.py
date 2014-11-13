@@ -465,10 +465,11 @@ class DatasetConfiguration(XmlBase):
         self.referenceWindDirection = self.getNodeValueIfExists(measurementsNode, 'ReferenceWindDirection', '')
         self.referenceWindDirectionOffset = float(self.getNodeValueIfExists(measurementsNode, 'ReferenceWindDirectionOffset', 0.0))
                 
+        self.temperature = self.getNodeValueIfExists(measurementsNode, 'Temperature', '')
+        self.pressure = self.getNodeValueIfExists(measurementsNode, 'Pressure', '')
+
         if self.calculateDensity:
             self.density = "Density"
-            self.temperature = self.getNodeValue(measurementsNode, 'Temperature')
-            self.pressure = self.getNodeValue(measurementsNode, 'Pressure')
         else:
             if self.nodeExists(measurementsNode, 'Density'):
                 self.density = self.getNodeValue(measurementsNode, 'Density')
@@ -547,6 +548,8 @@ class DatasetConfiguration(XmlBase):
                 
     def readCalibration(self, configurationNode):
         
+        if not self.nodeExists(configurationNode, 'Calibration'): return
+
         calibrationNode = self.getNode(configurationNode, 'Calibration')
 
         if self.nodeExists(calibrationNode, 'CalibrationStartDate') and self.nodeExists(calibrationNode, 'CalibrationEndDate'):

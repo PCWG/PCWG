@@ -56,6 +56,8 @@ class Analysis:
 
     def __init__(self, config, status = NullStatus()):        
 
+        self.config = config
+
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
 
@@ -196,10 +198,14 @@ class Analysis:
     def loadData(self, config, rotorGeometry):
 
         self.residualWindSpeedMatrices = {}
+        self.datasetConfigs = []
 
         for i in range(len(config.datasets)):
 
-            data = dataset.Dataset(self.relativePath.convertToAbsolutePath(config.datasets[i]), rotorGeometry)
+            datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
+            self.datasetConfigs.append(datasetConfig)
+
+            data = dataset.Dataset(datasetConfig, rotorGeometry)
 
             if i == 0:
 

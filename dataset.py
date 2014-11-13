@@ -134,9 +134,8 @@ class ShearExponentCalculator:
 
 class Dataset:
 
-    def __init__(self, path, rotorGeometry):
+    def __init__(self, config, rotorGeometry):
 
-        config = configuration.DatasetConfiguration(path)
         self.relativePath = configuration.RelativePath(config.path)
         
         self.name = config.name

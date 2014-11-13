@@ -23,7 +23,10 @@ class report:
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
             
         sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
-        
+        settingsSheet = book.add_sheet("Settings", cell_overwrite_ok=True)
+
+        self.reportSettings(settingsSheet, analysis)
+
         self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve)
 
         if analysis.hasActualPower:
@@ -56,6 +59,281 @@ class report:
                 #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
 
         book.save(path)
+
+    def reportSettings(self, sh, analysis):
+
+        config = analysis.config
+
+        row = 1
+
+        labelColumn = 1
+        dataColumn = 2
+
+        sh.col(labelColumn).width = 256 * 30
+        sh.col(dataColumn).width = 256 * 50
+        sh.col(dataColumn+1).width = 256 * 50
+
+        #Corretions
+        sh.write(row, labelColumn, "Density Correction Active", self.bold_style)
+        sh.write(row, dataColumn, config.densityCorrectionActive)
+        row += 1
+
+        sh.write(row, labelColumn, "REWS Correction Active", self.bold_style)
+        sh.write(row, dataColumn, config.rewsActive)
+        row += 1
+
+        sh.write(row, labelColumn, "Turbulence Correction Active", self.bold_style)
+        sh.write(row, dataColumn, config.turbRenormActive)
+        row += 1
+
+        #General Settings
+        row += 1
+
+        sh.write(row, labelColumn, "Time Step In Seconds", self.bold_style)
+        sh.write(row, dataColumn, config.timeStepInSeconds)
+        row += 1
+
+        sh.write(row, labelColumn, "Power Curve Minimum Count", self.bold_style)
+        sh.write(row, dataColumn, config.powerCurveMinimumCount)
+        row += 1
+
+        sh.write(row, labelColumn, "Rated Power", self.bold_style)
+        sh.write(row, dataColumn, config.ratedPower)
+        row += 1
+
+        sh.write(row, labelColumn, "Baseline Mode", self.bold_style)
+        sh.write(row, dataColumn, config.baseLineMode)
+        row += 1
+
+        sh.write(row, labelColumn, "Filter Mode", self.bold_style)
+        sh.write(row, dataColumn, config.filterMode)
+        row += 1
+
+        sh.write(row, labelColumn, "Power Curve Mode", self.bold_style)
+        sh.write(row, dataColumn, config.powerCurveMode)
+        row += 1
+
+        #Inner Range
+        row += 1
+        sh.write(row, labelColumn, "Inner Range", self.bold_style)
+        row += 1
+
+        sh.write(row, labelColumn, "Lower Turbulence", self.bold_style)
+        sh.write(row, dataColumn, config.innerRangeLowerTurbulence)
+        row += 1
+
+        sh.write(row, labelColumn, "Upper Turbulence", self.bold_style)
+        sh.write(row, dataColumn, config.innerRangeUpperTurbulence)
+        row += 1
+
+        sh.write(row, labelColumn, "Lower Shear", self.bold_style)
+        sh.write(row, dataColumn, config.innerRangeLowerShear)
+        row += 1
+
+        sh.write(row, labelColumn, "Upper Shear", self.bold_style)
+        sh.write(row, dataColumn, config.innerRangeUpperShear)
+        row += 1
+
+        #Turbine
+        row += 1
+        sh.write(row, labelColumn, "Turbine", self.bold_style)
+        row += 1
+
+        sh.write(row, labelColumn, "HubHeight", self.bold_style)
+        sh.write(row, dataColumn, config.hubHeight)
+        row += 1
+
+        sh.write(row, labelColumn, "Diameter", self.bold_style)
+        sh.write(row, dataColumn, config.diameter)
+        row += 1
+
+        sh.write(row, labelColumn, "Cut In Wind Speed", self.bold_style)
+        sh.write(row, dataColumn, config.cutInWindSpeed)
+        row += 1
+
+        sh.write(row, labelColumn, "Cut Out Wind Speed", self.bold_style)
+        sh.write(row, dataColumn, config.cutOutWindSpeed)
+        row += 1
+
+        sh.write(row, labelColumn, "Rated Power", self.bold_style)
+        sh.write(row, dataColumn, config.ratedPower)
+        row += 1
+
+        sh.write(row, labelColumn, "Specified Power Curve", self.bold_style)
+        sh.write(row, dataColumn, config.specifiedPowerCurve)
+        row += 1
+
+        #datasets
+        row += 1
+        sh.write(row, labelColumn, "Datasets", self.bold_style)
+        row += 2
+
+        for datasetConfig in analysis.datasetConfigs:
+
+            sh.write(row, labelColumn, "Name", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.name)
+            row += 1            
+
+            sh.write(row, labelColumn, "Path", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.path)
+            row += 1
+
+            sh.write(row, labelColumn, "Start Date", self.bold_style)
+            sh.write(row, dataColumn, str(datasetConfig.startDate))
+            row += 1
+
+            sh.write(row, labelColumn, "End Date", self.bold_style)
+            sh.write(row, dataColumn, str(datasetConfig.endDate))
+            row += 1
+
+            sh.write(row, labelColumn, "Hub Wind Speed Mode", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.hubWindSpeedMode)
+            row += 1
+
+            sh.write(row, labelColumn, "Density Mode", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.densityMode)
+            row += 2
+
+            sh.write(row, labelColumn, "REWS Defined", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.rewsDefined)
+            row += 1
+
+            sh.write(row, labelColumn, "Rotor Mode", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.rotorMode)
+            row += 1
+
+            sh.write(row, labelColumn, "Hub Mode", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.hubMode)
+            row += 1
+
+            sh.write(row, labelColumn, "Number of Rotor Levels", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.numberOfRotorLevels)
+            row += 2
+
+            sh.write(row, labelColumn, "Measurements", self.bold_style)
+            row += 1   
+
+            sh.write(row, labelColumn, "Input Time Series Path", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.inputTimeSeriesPath)
+            row += 1
+
+            sh.write(row, labelColumn, "Date Format", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.dateFormat)
+            row += 1
+
+            sh.write(row, labelColumn, "Time Step In Seconds", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.timeStepInSeconds)
+            row += 1
+            
+            sh.write(row, labelColumn, "Time Stamp", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.timeStamp)
+            row += 1
+            
+            sh.write(row, labelColumn, "Bad Data Value", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.badData)
+            row += 1
+
+            sh.write(row, labelColumn, "Header Rows", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.headerRows)
+            row += 1
+
+            sh.write(row, labelColumn, "Turbine Location Wind Speed", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.turbineLocationWindSpeed)
+            row += 1
+
+            sh.write(row, labelColumn, "Hub Wind Speed", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.hubWindSpeed)
+            row += 1
+
+            sh.write(row, labelColumn, "Hub Turbulence", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.hubTurbulence)
+            row += 1
+
+            sh.write(row, labelColumn, "Reference Wind Speed", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.referenceWindSpeed)
+            row += 1
+
+            sh.write(row, labelColumn, "Reference Wind Speed Std Dev", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.referenceWindSpeedStdDev)
+            row += 1
+
+            sh.write(row, labelColumn, "Reference Wind Direction", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.referenceWindDirection)
+            row += 1
+
+            sh.write(row, labelColumn, "Reference Wind Direction Offset", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.referenceWindDirectionOffset)
+            row += 1
+
+            sh.write(row, labelColumn, "Density", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.density)
+            row += 1
+
+            sh.write(row, labelColumn, "Temperature", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.temperature)
+            row += 1
+
+            sh.write(row, labelColumn, "Pressure", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.pressure)
+            row += 1
+
+            sh.write(row, labelColumn, "Lower Wind Speed", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.lowerWindSpeed)
+            row += 1
+
+            sh.write(row, labelColumn, "Lower Wind Speed Height", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.lowerWindSpeedHeight)
+            row += 1
+
+            sh.write(row, labelColumn, "Upper Wind Speed", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.upperWindSpeed)
+            row += 1
+
+            sh.write(row, labelColumn, "Upper Wind Speed Height", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.upperWindSpeedHeight)
+            row += 1
+
+            sh.write(row, labelColumn, "Power", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.power)
+            row += 2
+
+            sh.write(row, labelColumn, "Profile Levels", self.bold_style)
+            row += 1
+
+            sh.write(row, labelColumn, "Height", self.bold_style)
+            sh.write(row, dataColumn, "Speed", self.bold_style)
+            sh.write(row, dataColumn + 1, "Direction", self.bold_style)
+            row += 1
+
+            for height in sorted(datasetConfig.windSpeedLevels):
+
+                sh.write(row, labelColumn, height)
+                sh.write(row, dataColumn, datasetConfig.windSpeedLevels[height])
+                
+                if height in datasetConfig.windDirectionLevels:
+                    sh.write(row, dataColumn + 1, datasetConfig.windDirectionLevels[height])
+
+                row += 1
+
+            sh.write(row, labelColumn, "Filters", self.bold_style)
+            row += 1
+
+            sh.write(row, labelColumn, "Data Column", self.bold_style)
+            sh.write(row, dataColumn, "Filter Type", self.bold_style)
+            sh.write(row, dataColumn + 1, "Inclusive", self.bold_style)
+            sh.write(row, dataColumn + 2, "Filter Value", self.bold_style)
+            sh.write(row, dataColumn + 3, "Active", self.bold_style)
+            row += 1
+
+            for value in datasetConfig.filters:
+
+                sh.write(row, labelColumn, value.column)
+                sh.write(row, dataColumn, value.filterType)
+                sh.write(row, dataColumn + 1, value.inclusive)
+                sh.write(row, dataColumn + 2, value.filterValue)
+                sh.write(row, dataColumn + 3, value.value)
+
+                row += 1
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 
