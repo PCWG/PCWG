@@ -269,7 +269,7 @@ class Dataset:
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
             count = sectorDataFrame[config.referenceWindSpeed].count()
             
-            print "%f\t%f\t%f\t%d" % (directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], count)
+            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], count)
 
         return SiteCalibrationCalculator(slopes, intercepts, referenceDirectionBin, config.referenceWindSpeed)
         
@@ -329,8 +329,9 @@ class Dataset:
             filterColumn = componentFilter[0]
             filterType = componentFilter[1]
             filterInclusive = componentFilter[2]
-            filterValue = componentFilter[3]
-
+            filterValue = [float(filVal) for filVal in componentFilter[3].split(",")] # split by comma and cast as float so that 'between' filter is possible
+            if len(filterValue) == 1:
+                filterValue = filterValue[0]
             #print (filterColumn, filterType, filterInclusive, filterValue)
             
             if filterType == "Below":
@@ -345,6 +346,11 @@ class Dataset:
 
                 mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
                 mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
+                
+            elif filterType == "Between":
+                if len(filterValue) != 2:
+                    raise Exception("Filter mode is between, but a comma seperated list has not been provided as FilterValue")
+                mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
                 
             else:
             
@@ -365,6 +371,14 @@ class Dataset:
             return mask | (dataFrame[filterColumn] >= filterValue)
         else:
             return mask | (dataFrame[filterColumn] > filterValue)
+
+    def addFilterBetween(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
+
+        if filterInclusive:
+            return mask | ( (dataFrame[filterColumn] >= min(filterValue)) & (dataFrame[filterColumn] <= max(filterValue)) )
+        else:
+            return mask | ( (dataFrame[filterColumn] >  min(filterValue)) & (dataFrame[filterColumn] <  max(filterValue)) )
+
         
     def defineREWS(self, dataFrame, config, rotorGeometry):
         

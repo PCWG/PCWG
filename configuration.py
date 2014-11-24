@@ -5,6 +5,7 @@ import os
 class XmlBase:
 
     def readDoc(self, path):
+        print path
         return xml.dom.minidom.parse(path)
 
     def getPath(self, node):    
@@ -526,7 +527,7 @@ class DatasetConfiguration(XmlBase):
                 column = self.getNodeValue(node, 'DataColumn')
                 filterType = self.getNodeValue(node, 'FilterType')
                 inclusive = self.getNodeBool(node, 'Inclusive')
-                value = self.getNodeFloat(node, 'FilterValue') 
+                value = self.getNodeValue(node, 'FilterValue')
                 filters.append((column, filterType, inclusive, value))
 
         return filters
