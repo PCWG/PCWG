@@ -330,7 +330,7 @@ class report:
                 sh.write(row, labelColumn, value.column)
                 sh.write(row, dataColumn, value.filterType)
                 sh.write(row, dataColumn + 1, value.inclusive)
-                sh.write(row, dataColumn + 2, value.filterValue)
+                sh.write(row, dataColumn + 2, str(value.filterValue))
                 sh.write(row, dataColumn + 3, value.value)
 
                 row += 1
