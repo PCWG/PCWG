@@ -1,8 +1,8 @@
-<h1>Power Curve Working Group collaborative</h1>
+# Power Curve Working Group collaborative</h1>
+[PCWG Website](http://www.pcwg.org)
 
 
-
-<h3>Filtering:</h3>
+### Filtering:
 To apply filters to your data a simple filter node can be added to the configuration xml.
 
 To filter timestamps when the shear exponent is above 0.2:
