@@ -281,13 +281,14 @@ class Dataset:
 
         dataFrame["Dummy"] = 1
         mask = dataFrame["Dummy"] == 1
-
-        for exclusion in config.exclusions:
+        print "Data set length prior to exlusions: {0}".format(len(mask[mask]))   
+        for exclusion in config.exclusions:            
             startDate = exclusion[0]
             endDate = exclusion[1]
             subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
             mask = mask & ~subMask
-
+            print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask])) 
+            
         return dataFrame[mask]
         
     def extractColumns(self, dataFrame):
@@ -316,46 +317,90 @@ class Dataset:
             requiredCols.append(self.profileHubToRotorDeviation)
 
         return dataFrame[requiredCols]
+
+    def createDerivedColumn(self,df,cols):
+        d = df.copy()
+        d['Derived'] = 1
+        for col in cols:
+            d['Derived'] *= ((df[col[0]]*float(col[1]))+float(col[2]))**float(col[3])
+        return d['Derived']
+
+
+    def applySimpleFilter(self,mask,componentFilter,dataFrame,printMsg=True):
+        filterColumn = componentFilter.column
+        filterType = componentFilter.filterType
+        filterInclusive = componentFilter.inclusive
+
+        if not componentFilter.derived:
+            filterValue = [float(filVal) for filVal in componentFilter.value.split(",")] # split by comma and cast as float so that 'between' filter is possible
+            if len(filterValue) == 1:
+                filterValue = filterValue[0]
+        else:
+            filterValue = self.createDerivedColumn(dataFrame,componentFilter.value)
+        #print (filterColumn, filterType, filterInclusive, filterValue)
         
+        if filterType == "Below":
+             mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
+
+        elif filterType == "Above":
+            mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
+
+        elif filterType == "AboveOrBelow":
+            mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
+            mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
+            
+        elif filterType == "Between":
+            if len(filterValue) != 2:
+                raise Exception("Filter mode is between, but a comma seperated list has not been provided as FilterValue")
+            mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
+            
+        else:        
+            raise Exception("Filter type not recognised: %s" % filterType)
+        if printMsg:
+            print "Applied Filter:{col}-{typ}-{val}\n\tData set length:{leng}".format(
+                                col=filterColumn,typ=filterType,val= filterValue,leng=len(mask[~mask]))  
+        return mask.copy()
+     
+    def applyRelationshipFilter(self,mask,componentFilter,dataFrame):
+        for relationship in componentFilter.relationships:
+            filterConjunction = relationship.conjunction
+            
+            if filterConjunction not in ("AND","OR"):
+                raise NotImplementedError("Filter conjuction not implemented, please use AND or OR...")
+            
+            filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
+            
+            masks = []
+            newMask = pd.Series([False]*len(mask),index=mask.index)
+            
+            if len(relationship.clauses) < 2:
+                raise Exception("Number of clauses in a realtionship must be > 1")
+                
+            for componentFilter in relationship.clauses:                
+                filterMask = self.applySimpleFilter(newMask,componentFilter,dataFrame,printMsg=False)
+                masks.append(filterMask)
+            
+            baseMask = masks[0]
+            for filterMask in masks[1:]:
+                baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)                
+        
+            mask = np.logical_or(mask,baseMask)
+        print "Applied Relationship (AND/OR) Filter:\n\tData set length:{leng}".format(leng=len(mask[~mask]))  
+        return mask.copy()    
+     
+     
     def filterDataFrame(self, dataFrame, filters):
 
         if len(filters) < 1: return dataFrame
 
         dataFrame["Dummy"] = 1
         mask = dataFrame["Dummy"] == 0
-        
+        print "Data set length prior to filtering: {0}".format(len(mask[~mask]))
         for componentFilter in filters:
-            
-            filterColumn = componentFilter[0]
-            filterType = componentFilter[1]
-            filterInclusive = componentFilter[2]
-            filterValue = [float(filVal) for filVal in componentFilter[3].split(",")] # split by comma and cast as float so that 'between' filter is possible
-            if len(filterValue) == 1:
-                filterValue = filterValue[0]
-            #print (filterColumn, filterType, filterInclusive, filterValue)
-            
-            if filterType == "Below":
-
-                mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
-
-            elif filterType == "Above":
-
-                mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
-
-            elif filterType == "AboveOrBelow":
-
-                mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
-                mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
-                
-            elif filterType == "Between":
-                if len(filterValue) != 2:
-                    raise Exception("Filter mode is between, but a comma seperated list has not been provided as FilterValue")
-                mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
-                
+            if not hasattr(componentFilter,"relationships"):
+                mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
             else:
-            
-                raise Exception("Filter type not recognised: %s" % filterType)
-
+                mask = self.applyRelationshipFilter(mask,componentFilter,dataFrame)        
         return dataFrame[~mask]
 
     def addFilterBelow(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
