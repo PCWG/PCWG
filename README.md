@@ -21,7 +21,7 @@ The derivation is calculated in the form (A*COLUMN +B)^C
 A, B and C are optional and default to 1,0 and 1 respectively.
 
 For example, to apply the filter [Turbulence] > “WS_stddev/(0.75*WSmean+5.6)”:
-```python
+```xml
 <ns1:Filter>
 	<!-- IEC Turbulence Intensity Filter -->
 	<ns1:FilterType>Above</ns1:FilterType>
