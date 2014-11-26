@@ -52,11 +52,11 @@ For example, to apply the filter [Turbulence] > â€œWS_stddev/(0.75*WSmean+5.6)â€
 	<ns1:FilterValue>
 		<ns1:ColumnFactor>
 			<ns1:ColumnName>Mast1_60m_StdDeviation</ns1:ColumnName>
-			<ns1:A>1</ns1:A><ns1:C>-1</ns1:C>
+			<ns1:A>1</ns1:A><ns1:C>1</ns1:C>
 		</ns1:ColumnFactor>	
 		<ns1:ColumnFactor>
 			<ns1:ColumnName>Mast1_60m_WindSpeed</ns1:ColumnName>
-			<ns1:A>0.75</ns1:A><ns1:B>5.6</ns1:B>
+			<ns1:A>0.75</ns1:A><ns1:B>5.6</ns1:B><ns1:C>-1</ns1:C>
 		</ns1:ColumnFactor>	
 	</ns1:FilterValue>	
 </ns1:Filter>
