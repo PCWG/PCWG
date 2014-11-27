@@ -325,13 +325,13 @@ class report:
             sh.write(row, dataColumn + 3, "Active", self.bold_style)
             row += 1
 
-            for value in datasetConfig.filters:
+            for filter in datasetConfig.filters:
 
-                sh.write(row, labelColumn, value.column)
-                sh.write(row, dataColumn, value.filterType)
-                sh.write(row, dataColumn + 1, value.inclusive)
-                sh.write(row, dataColumn + 2, str(value.filterValue))
-                sh.write(row, dataColumn + 3, value.value)
+                sh.write(row, labelColumn, filter.column)
+                sh.write(row, dataColumn, filter.filterType)
+                sh.write(row, dataColumn + 1, filter.inclusive)
+                sh.write(row, dataColumn + 2, str(filter))
+                sh.write(row, dataColumn + 3, "True") # always true if in list...
 
                 row += 1
 

@@ -362,6 +362,12 @@ class Filter(XmlBase):
         self.filterType = filterType
         self.inclusive = inclusive
         self.value = value
+
+    def __str__(self):
+        if not self.derived:
+            return str(self.value)
+        else:
+            return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])
         
 class RelationshipFilter(XmlBase):
     class FilterRelationship(XmlBase):
@@ -370,17 +376,22 @@ class RelationshipFilter(XmlBase):
             self.clauses = []
             for node in clauseNodes:
                 self.clauses.append(self.readSimpleFilter(node))  
-    
+    def __str__(self):
+        return " - ".join([" {0} ".format(r.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in r.clauses])  for r in self.relationships])
+
     def __init__(self,node):
         self.relationships = []
         self.sortRelationships(self.getNode(node,'Relationship'))        
     def sortRelationships(self,node):
-        if self.nodeExists(node,'Relationship'):
-            for node in self.getNodes(node,'Relationship'):
-                self.relationships.append(RelationshipFilter(self.getNode(node,'Relationship')))   # recursive  - TO TEST       
-        else:            
-            self.relationships.append(self.FilterRelationship(self.getNodeValue(node,'Conjunction'),
+
+        self.relationships.append(self.FilterRelationship(self.getNodeValue(node,'Conjunction'),
                                                          self.getNodes(node,'Clause')))
+        # for excel reporting
+        self.column  = ", ".join([", ".join(str(f.column) for f in r.clauses) for r in self.relationships])
+        self.filterType  = ", ".join([", ".join(str(f.filterType) for f in r.clauses) for r in self.relationships])
+        self.inclusive  = ", ".join([", ".join(str(f.inclusive) for f in r.clauses) for r in self.relationships])
+        self.value  = ", ".join([", ".join(str(f.value) for f in r.clauses) for r in self.relationships])
+
 
 class DatasetConfiguration(XmlBase):
 
