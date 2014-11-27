@@ -173,8 +173,8 @@ class Dataset:
         
         if config.calculateHubWindSpeed:
 
-            calibrationCalculator = self.createCalibration(dataFrame, config)        
-            dataFrame[self.hubWindSpeed] = dataFrame.apply(calibrationCalculator.turbineWindSpeed, axis=1)
+            self.calibrationCalculator = self.createCalibration(dataFrame, config)
+            dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineWindSpeed, axis=1)
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeed]
 
             dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
@@ -218,6 +218,7 @@ class Dataset:
         if self.rewsDefined:
             dataFrame = self.defineREWS(dataFrame, config, rotorGeometry)
 
+        self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
     def createCalibration(self, dataFrame, config):
