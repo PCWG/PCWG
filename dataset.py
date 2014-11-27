@@ -248,7 +248,8 @@ class Dataset:
        
         dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
         dataFrame = dataFrame[calibration.requiredColumns + [referenceDirectionBin, config.referenceWindDirection]].dropna()
-        
+        if len(dataFrame) < 1:
+            raise Exception("No data are available to carry out calibration.")
         #path = "D:\\Power Curves\\Working Group\\112 - Tool\\RES-DATA\\" + config.name + ".dat"
         #dataFrame.to_csv(path, sep = '\t')
         
@@ -358,7 +359,7 @@ class Dataset:
             raise Exception("Filter type not recognised: %s" % filterType)
         if printMsg:
             print "Applied Filter:{col}-{typ}-{val}\n\tData set length:{leng}".format(
-                                col=filterColumn,typ=filterType,val= filterValue,leng=len(mask[~mask]))  
+                                col=filterColumn,typ=filterType,val="Derived Column" if type(filterValue) == pd.Series else filterValue,leng=len(mask[~mask]))
         return mask.copy()
      
     def applyRelationshipFilter(self,mask,componentFilter,dataFrame):
