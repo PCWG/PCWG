@@ -941,7 +941,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive)
                 self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive)
-                self.rewsCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.rewsActive)                        
+                self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive)                        
 
         def EditPowerCurve(self):
 
