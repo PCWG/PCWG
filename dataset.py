@@ -290,7 +290,7 @@ class Dataset:
             subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
             mask = mask & ~subMask
             print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask])) 
-            
+        print "Data set length after exlusions: {0}".format(len(mask[mask]))
         return dataFrame[mask]
         
     def extractColumns(self, dataFrame):
@@ -436,7 +436,7 @@ class Dataset:
         elif config.rotorMode == "ProfileLevels":
             self.rotor = rews.ProfileLevelsRotor(rotorGeometry, profileLevels)
         else:
-            raise Exception("Unkown rotor mode: % s" % config.rotorMode)
+            raise Exception("Unknown rotor mode: % s" % config.rotorMode)
                         
         rotorEquivalentWindSpeedCalculator = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor)        
 
@@ -445,7 +445,7 @@ class Dataset:
         elif config.hubMode == "PiecewiseExponent":
             profileHubWindSpeedCalculator = rews.PiecewiseExponentHubWindSpeed(profileLevels, rotorGeometry)
         else:
-            raise Exception("Unkown hub mode: % s" % config.hubMode)
+            raise Exception("Unknown hub mode: % s" % config.hubMode)
 
         dataFrame[self.profileHubWindSpeed] = dataFrame.apply(profileHubWindSpeedCalculator.hubWindSpeed, axis=1)
         dataFrame[self.profileRotorWindSpeed] = dataFrame.apply(rotorEquivalentWindSpeedCalculator.rotorWindSpeed, axis=1)
