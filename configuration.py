@@ -5,6 +5,7 @@ import os
 class XmlBase:
 
     def readDoc(self, path):
+        print path
         return xml.dom.minidom.parse(path)
 
     def getPath(self, node):    
@@ -95,6 +96,26 @@ class XmlBase:
                 return valueNotExist
         else:
                 return valueNotExist
+                
+    def readSimpleFilter(self,node):
+        column = self.getNodeValue(node, 'DataColumn')        
+        inclusive = self.getNodeBool(node, 'Inclusive')
+        filterType = self.getNodeValue(node, 'FilterType')
+        if not len(self.getNode(node, 'FilterValue').childNodes) >1:
+            value = self.getNodeValue(node, 'FilterValue')
+            return Filter(column, filterType, inclusive, value)    
+        else:
+            valueNode = self.getNode(node, 'FilterValue')
+            columnFactors = []
+            for columnFactor in self.getNodes(valueNode,'ColumnFactor'):
+                columnFactors.append((
+                    self.getNodeValueIfExists(columnFactor, 'ColumnName', 'Actual Power'),
+                    self.getNodeValueIfExists(columnFactor, 'A', 1),
+                    self.getNodeValueIfExists(columnFactor, 'B', 0),
+                    self.getNodeValueIfExists(columnFactor, 'C', 1)
+                    ))
+            return Filter(column, filterType, inclusive, columnFactors,derived=True)
+
 
 class RelativePath:
 
@@ -333,6 +354,44 @@ class PowerCurveConfiguration(XmlBase):
             self.addFloatNode(doc, levelNode, "RotorMode", self.powerCurveLevels[speed])
         
         self.saveDocument(doc, self.path)
+        
+class Filter(XmlBase):
+    def __init__(self,column,filterType,inclusive,value,derived=False):
+        self.derived = derived
+        self.column = column
+        self.filterType = filterType
+        self.inclusive = inclusive
+        self.value = value
+
+    def __str__(self):
+        if not self.derived:
+            return str(self.value)
+        else:
+            return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])
+        
+class RelationshipFilter(XmlBase):
+    class FilterRelationship(XmlBase):
+        def __init__(self,conjunction,clauseNodes):
+            self.conjunction = conjunction
+            self.clauses = []
+            for node in clauseNodes:
+                self.clauses.append(self.readSimpleFilter(node))  
+    def __str__(self):
+        return " - ".join([" {0} ".format(r.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in r.clauses])  for r in self.relationships])
+
+    def __init__(self,node):
+        self.relationships = []
+        self.sortRelationships(self.getNode(node,'Relationship'))        
+    def sortRelationships(self,node):
+
+        self.relationships.append(self.FilterRelationship(self.getNodeValue(node,'Conjunction'),
+                                                         self.getNodes(node,'Clause')))
+        # for excel reporting
+        self.column  = ", ".join([", ".join(str(f.column) for f in r.clauses) for r in self.relationships])
+        self.filterType  = ", ".join([", ".join(str(f.filterType) for f in r.clauses) for r in self.relationships])
+        self.inclusive  = ", ".join([", ".join(str(f.inclusive) for f in r.clauses) for r in self.relationships])
+        self.value  = ", ".join([", ".join(str(f.value) for f in r.clauses) for r in self.relationships])
+
 
 class DatasetConfiguration(XmlBase):
 
@@ -523,12 +582,11 @@ class DatasetConfiguration(XmlBase):
             active = self.getNodeBool(node, 'Active')
             
             if active:
-                column = self.getNodeValue(node, 'DataColumn')
-                filterType = self.getNodeValue(node, 'FilterType')
-                inclusive = self.getNodeBool(node, 'Inclusive')
-                value = self.getNodeFloat(node, 'FilterValue') 
-                filters.append((column, filterType, inclusive, value))
-
+                if not self.nodeExists(node,'Relationship'):
+                    filters.append(self.readSimpleFilter(node))                
+                else:
+                    filters.append(RelationshipFilter(node))
+                    
         return filters
     
     def readExclusions(self, configurationNode):

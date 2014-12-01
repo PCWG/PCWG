@@ -58,7 +58,30 @@ class report:
                 self.reportPowerDeviationsDifference(book, "Hub-Comb-DevDiff", analysis.hubPowerDeviations, analysis.combPowerDeviations, gradient)
                 #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
 
+            calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
+            self.reportCalibrations(calSheet,analysis)
+
         book.save(path)
+
+    def reportCalibrations(self,sh,analysis):
+        previousBins = 0
+        startRow = 2
+        col = 1
+        for conf,calib in analysis.calibrations:
+            col+=1
+            row=startRow
+            sh.write(row,col,conf.name, self.bold_style)
+            sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
+            row += 1
+            sh.write(row,col,"Bin", self.bold_style)
+            sh.write(row,col+1,"Slope", self.bold_style)
+            sh.write(row,col+2,"Offset", self.bold_style)
+            row+=1
+            for key in sorted(calib.slopes):
+                sh.write(row,col,key, self.bold_style)
+                sh.write(row,col+1,calib.slopes[key], self.four_dp_style)
+                sh.write(row,col+2,calib.offsets[key], self.four_dp_style)
+                row += 1
 
     def reportSettings(self, sh, analysis):
 
@@ -325,13 +348,13 @@ class report:
             sh.write(row, dataColumn + 3, "Active", self.bold_style)
             row += 1
 
-            for value in datasetConfig.filters:
+            for filter in datasetConfig.filters:
 
-                sh.write(row, labelColumn, value.column)
-                sh.write(row, dataColumn, value.filterType)
-                sh.write(row, dataColumn + 1, value.inclusive)
-                sh.write(row, dataColumn + 2, value.filterValue)
-                sh.write(row, dataColumn + 3, value.value)
+                sh.write(row, labelColumn, filter.column)
+                sh.write(row, dataColumn, filter.filterType)
+                sh.write(row, dataColumn + 1, filter.inclusive)
+                sh.write(row, dataColumn + 2, str(filter))
+                sh.write(row, dataColumn + 3, "True") # always true if in list...
 
                 row += 1
 
