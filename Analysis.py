@@ -61,6 +61,8 @@ class Analysis:
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
 
+        self.calibrations = []
+
         self.status.addMessage("Calculating (please wait)...")
             
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
@@ -206,7 +208,8 @@ class Analysis:
             self.datasetConfigs.append(datasetConfig)
 
             data = dataset.Dataset(datasetConfig, rotorGeometry)
-
+            self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )
+            self.fullDataFrame = data.fullDataFrame
             if i == 0:
 
                 #copy column names from dataset
@@ -243,7 +246,7 @@ class Analysis:
 
             #if data.residualWindSpeedMatrix != None:
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
-        
+
     def selectPowerCurve(self, powerCurveMode):
 
         if powerCurveMode == "Specified":
@@ -495,5 +498,6 @@ class Analysis:
 
     def export(self, path):        
         self.dataFrame.to_csv(path, sep = '\t')
+        #self.fullDataFrame.ix[self.dataFrame.index].to_csv(path.replace(".dat","_.dat"), sep = '\t')
 
 

@@ -100,10 +100,11 @@ class LeastSquares(CalibrationBase):
     
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, windSpeedColumn):
+    def __init__(self, slopes, offsets, counts, directionBinColumn, windSpeedColumn):
 
         self.slopes = slopes
         self.offsets = offsets
+        self.counts=counts
         self.windSpeedColumn = windSpeedColumn
         self.directionBinColumn = directionBinColumn
 
@@ -222,7 +223,6 @@ class Dataset:
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
     def createCalibration(self, dataFrame, config):
-
         referenceDirectionBin = "Reference Direction Bin"
         
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
@@ -246,7 +246,7 @@ class Dataset:
 
         if config.calibrationStartDate != None and config.calibrationEndDate != None:
             dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
-       
+
         dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
         dataFrame = dataFrame[calibration.requiredColumns + [referenceDirectionBin, config.referenceWindDirection]].dropna()
         if len(dataFrame) < 1:
@@ -258,6 +258,7 @@ class Dataset:
 
         slopes = {}
         intercepts = {}
+        counts = {}
 
         print config.name
         
@@ -269,11 +270,11 @@ class Dataset:
             
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
-            count = sectorDataFrame[config.referenceWindSpeed].count()
+            counts[directionBinCenter] = sectorDataFrame[config.referenceWindSpeed].count()
             
-            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], count)
+            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, referenceDirectionBin, config.referenceWindSpeed)
+        return SiteCalibrationCalculator(slopes, intercepts, counts, referenceDirectionBin, config.referenceWindSpeed)
         
     def isValidText(self, text):
         if text == None: return False
@@ -290,7 +291,7 @@ class Dataset:
             subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
             mask = mask & ~subMask
             print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask])) 
-            
+        print "Data set length after exlusions: {0}".format(len(mask[mask]))
         return dataFrame[mask]
         
     def extractColumns(self, dataFrame):
@@ -436,7 +437,7 @@ class Dataset:
         elif config.rotorMode == "ProfileLevels":
             self.rotor = rews.ProfileLevelsRotor(rotorGeometry, profileLevels)
         else:
-            raise Exception("Unkown rotor mode: % s" % config.rotorMode)
+            raise Exception("Unknown rotor mode: % s" % config.rotorMode)
                         
         rotorEquivalentWindSpeedCalculator = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor)        
 
@@ -445,7 +446,7 @@ class Dataset:
         elif config.hubMode == "PiecewiseExponent":
             profileHubWindSpeedCalculator = rews.PiecewiseExponentHubWindSpeed(profileLevels, rotorGeometry)
         else:
-            raise Exception("Unkown hub mode: % s" % config.hubMode)
+            raise Exception("Unknown hub mode: % s" % config.hubMode)
 
         dataFrame[self.profileHubWindSpeed] = dataFrame.apply(profileHubWindSpeedCalculator.hubWindSpeed, axis=1)
         dataFrame[self.profileRotorWindSpeed] = dataFrame.apply(rotorEquivalentWindSpeedCalculator.rotorWindSpeed, axis=1)
