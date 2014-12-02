@@ -100,10 +100,11 @@ class LeastSquares(CalibrationBase):
     
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, windSpeedColumn):
+    def __init__(self, slopes, offsets, counts, directionBinColumn, windSpeedColumn):
 
         self.slopes = slopes
         self.offsets = offsets
+        self.counts=counts
         self.windSpeedColumn = windSpeedColumn
         self.directionBinColumn = directionBinColumn
 
@@ -222,7 +223,6 @@ class Dataset:
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
     def createCalibration(self, dataFrame, config):
-
         referenceDirectionBin = "Reference Direction Bin"
         
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
@@ -246,7 +246,7 @@ class Dataset:
 
         if config.calibrationStartDate != None and config.calibrationEndDate != None:
             dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
-       
+
         dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
         dataFrame = dataFrame[calibration.requiredColumns + [referenceDirectionBin, config.referenceWindDirection]].dropna()
         if len(dataFrame) < 1:
@@ -258,6 +258,7 @@ class Dataset:
 
         slopes = {}
         intercepts = {}
+        counts = {}
 
         print config.name
         
@@ -269,11 +270,11 @@ class Dataset:
             
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
-            count = sectorDataFrame[config.referenceWindSpeed].count()
+            counts[directionBinCenter] = sectorDataFrame[config.referenceWindSpeed].count()
             
-            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], count)
+            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, referenceDirectionBin, config.referenceWindSpeed)
+        return SiteCalibrationCalculator(slopes, intercepts, counts, referenceDirectionBin, config.referenceWindSpeed)
         
     def isValidText(self, text):
         if text == None: return False
