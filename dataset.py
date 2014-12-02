@@ -122,16 +122,36 @@ class SiteCalibrationCalculator:
         
 class ShearExponentCalculator:
 
-    def __init__(self, lowerColumn, upperColumn, lowerHeight, upperHeight):
+    def __init__(self, shearMeasurements):
+        self.shearMeasurements = shearMeasurements
 
-        self.lowerColumn = lowerColumn
-        self.upperColumn = upperColumn
+        if len(self.shearMeasurements.values()) == 2:
+            lowerHeight = min(self.shearMeasurements.keys())
+            upperHeight = max(self.shearMeasurements.keys())
+            self.lowerColumn = self.shearMeasurements[lowerHeight]
+            self.upperColumn = self.shearMeasurements[upperHeight]
+            self.overOneLogHeightRatio = 1.0 / math.log(upperHeight / lowerHeight)
 
-        self.overOneLogHeightRatio = 1.0 / math.log(upperHeight / lowerHeight)
-        
+    def calculateMultiPointShear(self, row):
+
+        # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
+        windspeeds  = np.array((row[col] for col in self.shearMeasurements.values()))
+        heights     = np.array((height   for height in self.shearMeasurements.keys()))
+        deg = 1 # linear
+
+        polyfitResult = np.polyfit(windspeeds, heights, deg, rcond=None, full=False)
+        shearThreePT = 1/ polyfitResult[0]
+        return shearThreePT
+
+    def calculateTwoPointShear(self,row):
+        return math.log(row[self.upperColumn] / row[self.lowerColumn]) * self.overOneLogHeightRatio
+
     def shearExponent(self, row):
 
-        return math.log(row[self.upperColumn] / row[self.lowerColumn]) * self.overOneLogHeightRatio
+        if len(self.shearMeasurements.values()) == 2:
+            return self.calculateTwoPointShear(row)
+        else:
+            return self.calculateMultiPointShear(row)
 
 class Dataset:
 
