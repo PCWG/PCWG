@@ -5,7 +5,6 @@ import os
 class XmlBase:
 
     def readDoc(self, path):
-        print path
         return xml.dom.minidom.parse(path)
 
     def getPath(self, node):    

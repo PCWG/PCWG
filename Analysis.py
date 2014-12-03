@@ -499,6 +499,3 @@ class Analysis:
 
     def export(self, path):        
         self.dataFrame.to_csv(path, sep = '\t')
-        #self.fullDataFrame.ix[self.dataFrame.index].to_csv(path.replace(".dat","_.dat"), sep = '\t')
-
-
