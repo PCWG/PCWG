@@ -246,6 +246,7 @@ class Dataset:
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
     def createCalibration(self, dataFrame, config):
+        df = dataFrame.copy()
         referenceDirectionBin = "Reference Direction Bin"
         
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
@@ -297,6 +298,7 @@ class Dataset:
             
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
+        dataFrame = df
         return SiteCalibrationCalculator(slopes, intercepts, counts, referenceDirectionBin, config.referenceWindSpeed)
         
     def isValidText(self, text):
