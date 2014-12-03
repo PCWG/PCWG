@@ -161,7 +161,9 @@ class Dataset:
         self.hubWindSpeed = "Hub Wind Speed"
         self.hubTurbulence = "Hub Turbulence"
         self.hubDensity = "Hub Density"
-        self.shearExponent = "Shear Exponent"        
+        self.shearExponent = "Shear Exponent"
+        self.referenceShearExponent = "Reference Shear Exponent"
+        self.turbineShearExponent = "Turbine Shear Exponent"
 
         self.profileRotorWindSpeed = "Profile Rotor Wind Speed"
         self.profileHubWindSpeed = "Profile Hub Wind Speed"        
@@ -170,6 +172,7 @@ class Dataset:
         self.residualWindSpeed = "Residual Wind Speed"
         
         self.hasShear = len(config.shearMeasurements) > 1
+        self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
         self.rewsDefined = config.rewsDefined
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
@@ -182,7 +185,12 @@ class Dataset:
         dataFrame[self.timeStamp] = dataFrame.index
         
         if self.hasShear:
-            dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements).shearExponent, axis=1)
+            if not self.shearCalibration:
+                dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements).shearExponent, axis=1)
+            else:
+                dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["TurbineLocation"]).shearExponent, axis=1)
+                dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["ReferenceLocation"]).shearExponent, axis=1)
+                dataFrame[self.shearExponent] = dataFrame[self.referenceShearExponent]
 
         dataFrame[self.residualWindSpeed] = 0.0
         
@@ -235,6 +243,14 @@ class Dataset:
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
+
+    def createShearCalibration(self, dataFrame, config):
+        if hasattr(self,"filteredCalibrationDataframe"):
+            dataFrame = self.filteredCalibrationDataframe
+        else:
+            dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
+
+        bins =
 
     def createCalibration(self, dataFrame, config):
         df = dataFrame.copy()
@@ -289,6 +305,7 @@ class Dataset:
             
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
+        self.filteredCalibrationDataframe = dataFrame.copy()
         dataFrame = df
         return SiteCalibrationCalculator(slopes, intercepts, counts, referenceDirectionBin, config.referenceWindSpeed)
         

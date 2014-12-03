@@ -464,10 +464,11 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
+        # to do - chaneg for ref and turbine shears.
         shearMeasurementsNode = self.addNode(doc, measurementsNode, "ShearMeasurements")
         for shearMeas in self.shearMeasurements.iteritems():
-            self.addFloatNode(doc, measurementsNode, "Height", shearMeas[0])
-            self.addTextNode(doc, measurementsNode, "WindSpeed", shearMeas[1])
+            self.addFloatNode(doc, shearMeasurementsNode, "Height", shearMeas[0])
+            self.addTextNode(doc, shearMeasurementsNode, "WindSpeed", shearMeas[1])
 
         try:
             # backwards compat
@@ -510,7 +511,15 @@ class DatasetConfiguration(XmlBase):
             self.rotorMode = ""
             self.hubMode = ""
             self.numberOfRotorLevels = 0
-       
+
+    def readShearMeasurements(self, node):
+        measurements = {}
+        for shearMeasureNode in self.getNodes(node,"ShearMeasurement"):
+               shearColName = self.getNodeValue(shearMeasureNode,"WindSpeed")
+               shearHeight = self.getNodeFloat(shearMeasureNode,"Height")
+               measurements[shearHeight] = shearColName
+        return measurements
+
     def readMeasurements(self, configurationNode):
 
         measurementsNode = self.getNode(configurationNode, 'Measurements')
@@ -562,12 +571,22 @@ class DatasetConfiguration(XmlBase):
                 self.upperWindSpeedHeight = 0.0
             self.shearMeasurements[self.upperWindSpeedHeight] = self.upperWindSpeed
         else:
-           for shearMeasureNode in self.getNodes(measurementsNode,"ShearMeasurement"):
-               shearColName = self.getNodeValue(shearMeasureNode,"WindSpeed")
-               shearHeight = self.getNodeFloat(shearMeasureNode,"Height")
-               self.shearMeasurements[shearHeight] = shearColName
+            allShearMeasurementsNode = self.getNode(measurementsNode,"ShearMeasurements")
+            try:
+                self.shearCalibrationMethod = self.getNodeValue(measurementsNode, "ShearCalibrationMethod")
+                if self.shearCalibrationMethod.lower() == 'none':
+                    self.shearCalibrationMethod = 'Reference'
+            except:
+                self.shearCalibrationMethod = 'Reference'
 
-        
+            if self.nodeExists(allShearMeasurementsNode,"TurbineShearMeasurements") and self.nodeExists(allShearMeasurementsNode,"ReferenceShearMeasurements"):
+                turbineShearMeasurementsNode = self.getNode(allShearMeasurementsNode, "TurbineShearMeasurements")
+                self.shearMeasurements['TurbineLocation'] = self.readShearMeasurements(turbineShearMeasurementsNode)
+                referenceShearMeasurementsNode = self.getNode(allShearMeasurementsNode, "ReferenceShearMeasurements")
+                self.shearMeasurements['ReferenceLocation'] = self.readShearMeasurements(referenceShearMeasurementsNode)
+            else:
+                self.shearMeasurements = self.readShearMeasurements(measurementsNode)
+
         if self.nodeExists(measurementsNode, 'Power'):
             self.power = self.getNodeValue(measurementsNode, 'Power')
         else:
