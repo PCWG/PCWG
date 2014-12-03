@@ -126,18 +126,12 @@ class ShearExponentCalculator:
         self.shearMeasurements = shearMeasurements
         import warnings
         warnings.simplefilter('ignore', np.RankWarning)
-        if len(self.shearMeasurements.values()) == 2:
-            lowerHeight = min(self.shearMeasurements.keys())
-            upperHeight = max(self.shearMeasurements.keys())
-            self.lowerColumn = self.shearMeasurements[lowerHeight]
-            self.upperColumn = self.shearMeasurements[upperHeight]
-            self.overOneLogHeightRatio = 1.0 / math.log(upperHeight / lowerHeight)
 
     def calculateMultiPointShear(self, row):
 
         # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
-        windspeeds  = [np.log(row[col]) for col     in self.shearMeasurements.values()]
-        heights     = [np.log(height)  for height  in self.shearMeasurements.keys()]
+        windspeeds  = [np.log(row[col]) for col in self.shearMeasurements.values()]
+        heights     = [np.log(height) for height in self.shearMeasurements.keys()]
         deg = 1 # linear
         if len([ws for ws in windspeeds if not np.isnan(ws)]) < 1:
             return np.nan
@@ -146,14 +140,11 @@ class ShearExponentCalculator:
         return shearThreePT
 
     def calculateTwoPointShear(self,row):
+        # superseded by self.calculateMultiPointShear
         return math.log(row[self.upperColumn] / row[self.lowerColumn]) * self.overOneLogHeightRatio
 
     def shearExponent(self, row):
-
-        if len(self.shearMeasurements.values()) == 2:
-            return self.calculateTwoPointShear(row)
-        else:
-            return self.calculateMultiPointShear(row)
+        return self.calculateMultiPointShear(row)
 
 
 class Dataset:
