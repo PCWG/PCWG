@@ -15,6 +15,7 @@
 		<BadDataValue>-99.990000</BadDataValue>
 		<DateFormat>%d/%m/%Y %H:%M</DateFormat>
 		<HeaderRows>0</HeaderRows>
+		<TimeStepInSeconds>600</TimeStepInSeconds>
 		<TimeStamp>TimeStamp</TimeStamp>
 		<ReferenceWindSpeed></ReferenceWindSpeed>
 		<ReferenceWindSpeedStdDev></ReferenceWindSpeedStdDev>
