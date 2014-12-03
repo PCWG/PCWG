@@ -124,7 +124,8 @@ class ShearExponentCalculator:
 
     def __init__(self, shearMeasurements):
         self.shearMeasurements = shearMeasurements
-
+        import warnings
+        warnings.simplefilter('ignore', np.RankWarning)
         if len(self.shearMeasurements.values()) == 2:
             lowerHeight = min(self.shearMeasurements.keys())
             upperHeight = max(self.shearMeasurements.keys())
@@ -135,10 +136,11 @@ class ShearExponentCalculator:
     def calculateMultiPointShear(self, row):
 
         # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
-        windspeeds  = np.array((row[col] for col in self.shearMeasurements.values()))
-        heights     = np.array((height   for height in self.shearMeasurements.keys()))
+        windspeeds  = [np.log(row[col]) for col     in self.shearMeasurements.values()]
+        heights     = [np.log(height)  for height  in self.shearMeasurements.keys()]
         deg = 1 # linear
-
+        if len([ws for ws in windspeeds if not np.isnan(ws)]) < 1:
+            return np.nan
         polyfitResult = np.polyfit(windspeeds, heights, deg, rcond=None, full=False)
         shearThreePT = 1/ polyfitResult[0]
         return shearThreePT
@@ -152,6 +154,7 @@ class ShearExponentCalculator:
             return self.calculateTwoPointShear(row)
         else:
             return self.calculateMultiPointShear(row)
+
 
 class Dataset:
 
@@ -175,7 +178,7 @@ class Dataset:
         self.profileHubToRotorDeviation = "Hub to Rotor Deviation"
         self.residualWindSpeed = "Residual Wind Speed"
         
-        self.hasShear = self.isValidText(config.lowerWindSpeed) and self.isValidText(config.upperWindSpeed)        
+        self.hasShear = len(config.shearMeasurements) > 1
         self.rewsDefined = config.rewsDefined
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
@@ -188,7 +191,7 @@ class Dataset:
         dataFrame[self.timeStamp] = dataFrame.index
         
         if self.hasShear:
-            dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.lowerWindSpeed, config.upperWindSpeed, config.lowerWindSpeedHeight, config.upperWindSpeedHeight).shearExponent, axis=1)
+            dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements).shearExponent, axis=1)
 
         dataFrame[self.residualWindSpeed] = 0.0
         
