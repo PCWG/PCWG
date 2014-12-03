@@ -39,8 +39,8 @@ class York(CalibrationBase):
         self.xDiffSq = "xDiffSq"
         self.yDiffSq = "yDiffSq"
         
-        df[self.xRolling] = pd.rolling_mean(df[x], window = movingAverageWindow, min_periods = movingAverageWindow)
-        df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = movingAverageWindow)
+        df[self.xRolling] = pd.rolling_mean(df[x], window = movingAverageWindow, min_periods = 1)
+        df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = 1)
 
         df[self.xDiffSq] = ((df[x] - df[self.xRolling])** 2.0)
         df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0)
@@ -78,8 +78,8 @@ class York(CalibrationBase):
         
     def calculateAlpha(self, df):
 
-        xYorkVariance = df[self.xDiffSq].sum()
-        yYorkVariance = df[self.yDiffSq].sum()
+        xYorkVariance = df[self.xDiffSq].dropna().sum()
+        yYorkVariance = df[self.yDiffSq].dropna().sum()
         
         covarianceXY = self.covariance(df, self.x, self.y)
         varianceX = self.variance(df, self.x)
