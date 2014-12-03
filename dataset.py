@@ -39,8 +39,8 @@ class York(CalibrationBase):
         self.xDiffSq = "xDiffSq"
         self.yDiffSq = "yDiffSq"
         
-        df[self.xRolling] = pd.rolling_mean(df[x], window = movingAverageWindow, min_periods = movingAverageWindow)
-        df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = movingAverageWindow)
+        df[self.xRolling] = pd.rolling_mean(df[x], window = movingAverageWindow, min_periods = 1)
+        df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = 1)
 
         df[self.xDiffSq] = ((df[x] - df[self.xRolling])** 2.0)
         df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0)
@@ -78,8 +78,8 @@ class York(CalibrationBase):
         
     def calculateAlpha(self, df):
 
-        xYorkVariance = df[self.xDiffSq].sum()
-        yYorkVariance = df[self.yDiffSq].sum()
+        xYorkVariance = df[self.xDiffSq].dropna().sum()
+        yYorkVariance = df[self.yDiffSq].dropna().sum()
         
         covarianceXY = self.covariance(df, self.x, self.y)
         varianceX = self.variance(df, self.x)
@@ -100,10 +100,11 @@ class LeastSquares(CalibrationBase):
     
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, windSpeedColumn):
+    def __init__(self, slopes, offsets, counts, directionBinColumn, windSpeedColumn):
 
         self.slopes = slopes
         self.offsets = offsets
+        self.counts=counts
         self.windSpeedColumn = windSpeedColumn
         self.directionBinColumn = directionBinColumn
 
@@ -121,16 +122,30 @@ class SiteCalibrationCalculator:
         
 class ShearExponentCalculator:
 
-    def __init__(self, lowerColumn, upperColumn, lowerHeight, upperHeight):
+    def __init__(self, shearMeasurements):
+        self.shearMeasurements = shearMeasurements
+        import warnings
+        warnings.simplefilter('ignore', np.RankWarning)
 
-        self.lowerColumn = lowerColumn
-        self.upperColumn = upperColumn
+    def calculateMultiPointShear(self, row):
 
-        self.overOneLogHeightRatio = 1.0 / math.log(upperHeight / lowerHeight)
-        
-    def shearExponent(self, row):
+        # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
+        windspeeds  = [np.log(row[col]) for col in self.shearMeasurements.values()]
+        heights     = [np.log(height) for height in self.shearMeasurements.keys()]
+        deg = 1 # linear
+        if len([ws for ws in windspeeds if not np.isnan(ws)]) < 1:
+            return np.nan
+        polyfitResult = np.polyfit(windspeeds, heights, deg, rcond=None, full=False)
+        shearThreePT = 1/ polyfitResult[0]
+        return shearThreePT
 
+    def calculateTwoPointShear(self,row):
+        # superseded by self.calculateMultiPointShear
         return math.log(row[self.upperColumn] / row[self.lowerColumn]) * self.overOneLogHeightRatio
+
+    def shearExponent(self, row):
+        return self.calculateMultiPointShear(row)
+
 
 class Dataset:
 
@@ -154,7 +169,7 @@ class Dataset:
         self.profileHubToRotorDeviation = "Hub to Rotor Deviation"
         self.residualWindSpeed = "Residual Wind Speed"
         
-        self.hasShear = self.isValidText(config.lowerWindSpeed) and self.isValidText(config.upperWindSpeed)        
+        self.hasShear = len(config.shearMeasurements) > 1
         self.rewsDefined = config.rewsDefined
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
@@ -167,7 +182,7 @@ class Dataset:
         dataFrame[self.timeStamp] = dataFrame.index
         
         if self.hasShear:
-            dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.lowerWindSpeed, config.upperWindSpeed, config.lowerWindSpeedHeight, config.upperWindSpeedHeight).shearExponent, axis=1)
+            dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements).shearExponent, axis=1)
 
         dataFrame[self.residualWindSpeed] = 0.0
         
@@ -222,7 +237,7 @@ class Dataset:
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
     def createCalibration(self, dataFrame, config):
-
+        df = dataFrame.copy()
         referenceDirectionBin = "Reference Direction Bin"
         
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
@@ -246,7 +261,7 @@ class Dataset:
 
         if config.calibrationStartDate != None and config.calibrationEndDate != None:
             dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
-       
+
         dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
         dataFrame = dataFrame[calibration.requiredColumns + [referenceDirectionBin, config.referenceWindDirection]].dropna()
         if len(dataFrame) < 1:
@@ -258,6 +273,7 @@ class Dataset:
 
         slopes = {}
         intercepts = {}
+        counts = {}
 
         print config.name
         
@@ -269,11 +285,12 @@ class Dataset:
             
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
-            count = sectorDataFrame[config.referenceWindSpeed].count()
+            counts[directionBinCenter] = sectorDataFrame[config.referenceWindSpeed].count()
             
-            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], count)
+            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, referenceDirectionBin, config.referenceWindSpeed)
+        dataFrame = df
+        return SiteCalibrationCalculator(slopes, intercepts, counts, referenceDirectionBin, config.referenceWindSpeed)
         
     def isValidText(self, text):
         if text == None: return False

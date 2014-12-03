@@ -64,11 +64,11 @@ class report:
         book.save(path)
 
     def reportCalibrations(self,sh,analysis):
-        previousBins = 0
+        maxRow = 0
         startRow = 2
-        col = 1
+        col = -3
         for conf,calib in analysis.calibrations:
-            col+=1
+            col+=5
             row=startRow
             sh.write(row,col,conf.name, self.bold_style)
             sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
@@ -76,12 +76,35 @@ class report:
             sh.write(row,col,"Bin", self.bold_style)
             sh.write(row,col+1,"Slope", self.bold_style)
             sh.write(row,col+2,"Offset", self.bold_style)
+            sh.write(row,col+2,"Count", self.bold_style)
             row+=1
             for key in sorted(calib.slopes):
                 sh.write(row,col,key, self.bold_style)
                 sh.write(row,col+1,calib.slopes[key], self.four_dp_style)
                 sh.write(row,col+2,calib.offsets[key], self.four_dp_style)
+                sh.write(row,col+3,calib.counts[key], self.no_dp_style)
                 row += 1
+
+            if len(conf.calibrationFilters) > 0:
+                row += 2
+                sh.write(row, col, "Calibration Filters", self.bold_style)
+                row += 1
+                sh.write(row, col, "Data Column", self.bold_style)
+                sh.write(row, col+1, "Filter Type", self.bold_style)
+                sh.write(row, col+2, "Inclusive", self.bold_style)
+                sh.write(row, col+3, "Filter Value", self.bold_style)
+                sh.write(row, col+4, "Active", self.bold_style)
+                row += 1
+
+                for filt in conf.calibrationFilters:
+
+                    sh.write(row, col, filt.column)
+                    sh.write(row, col+1, filt.filterType)
+                    sh.write(row, col+2, filt.inclusive)
+                    sh.write(row, col+3, str(filt))
+                    sh.write(row, col+4, "True") # always true if in list...
+                    row += 1
+
 
     def reportSettings(self, sh, analysis):
 

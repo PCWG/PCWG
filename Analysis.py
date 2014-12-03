@@ -208,7 +208,8 @@ class Analysis:
             self.datasetConfigs.append(datasetConfig)
 
             data = dataset.Dataset(datasetConfig, rotorGeometry)
-            self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )
+            if hasattr(data,"calibrationCalculator"):
+                self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )
             self.fullDataFrame = data.fullDataFrame
             if i == 0:
 

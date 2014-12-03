@@ -465,11 +465,21 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
-        self.addTextNode(doc, measurementsNode, "LowerWindSpeed", self.lowerWindSpeed)
-        self.addFloatNode(doc, measurementsNode, "LowerWindSpeedHeight", self.lowerWindSpeedHeight)
+        shearMeasurementsNode = self.addNode(doc, measurementsNode, "ShearMeasurements")
+        for shearMeas in self.shearMeasurements.iteritems():
+            self.addFloatNode(doc, measurementsNode, "Height", shearMeas[0])
+            self.addTextNode(doc, measurementsNode, "WindSpeed", shearMeas[1])
 
-        self.addTextNode(doc, measurementsNode, "UpperWindSpeed", self.upperWindSpeed)
-        self.addFloatNode(doc, measurementsNode, "UpperWindSpeedHeight", self.upperWindSpeedHeight)
+        try:
+            # backwards compat
+            self.addTextNode(doc, measurementsNode, "LowerWindSpeed", self.lowerWindSpeed)
+            self.addFloatNode(doc, measurementsNode, "LowerWindSpeedHeight", self.lowerWindSpeedHeight)
+            self.addTextNode(doc, measurementsNode, "UpperWindSpeed", self.upperWindSpeed)
+            self.addFloatNode(doc, measurementsNode, "UpperWindSpeedHeight", self.upperWindSpeedHeight)
+            #print "Old Upper/Lower style shear mode was used"
+        except:
+            #print "New <ns1:ShearMeasurements> shear xml style was used"
+            pass
 
         levelsNode = self.addNode(doc, measurementsNode, "ProfileLevels")
 
@@ -534,20 +544,30 @@ class DatasetConfiguration(XmlBase):
                 self.density = self.getNodeValue(measurementsNode, 'Density')
             else:
                 self.density = None
-		
-        if self.nodeExists(measurementsNode, 'LowerWindSpeed'):
-            self.lowerWindSpeed = self.getNodeValue(measurementsNode, 'LowerWindSpeed')
-            self.lowerWindSpeedHeight = self.getNodeFloat(measurementsNode, 'LowerWindSpeedHeight')
-        else:
-            self.lowerWindSpeed = ""
-            self.lowerWindSpeedHeight = 0.0
 
-        if self.nodeExists(measurementsNode, 'UpperWindSpeed'):
-            self.upperWindSpeed = self.getNodeValue(measurementsNode, 'UpperWindSpeed')
-            self.upperWindSpeedHeight = self.getNodeFloat(measurementsNode, 'UpperWindSpeedHeight')
+        self.shearMeasurements = {}
+        if not self.nodeExists(measurementsNode,"ShearMeasurements"):
+            # backwards compatability
+            if self.nodeExists(measurementsNode, 'LowerWindSpeed'):
+                self.lowerWindSpeed = self.getNodeValue(measurementsNode, 'LowerWindSpeed')
+                self.lowerWindSpeedHeight = self.getNodeFloat(measurementsNode, 'LowerWindSpeedHeight')
+            else:
+                self.lowerWindSpeed = ""
+                self.lowerWindSpeedHeight = 0.0
+            self.shearMeasurements[self.lowerWindSpeedHeight] = self.lowerWindSpeed
+            if self.nodeExists(measurementsNode, 'UpperWindSpeed'):
+                self.upperWindSpeed = self.getNodeValue(measurementsNode, 'UpperWindSpeed')
+                self.upperWindSpeedHeight = self.getNodeFloat(measurementsNode, 'UpperWindSpeedHeight')
+            else:
+                self.upperWindSpeed = ""
+                self.upperWindSpeedHeight = 0.0
+            self.shearMeasurements[self.upperWindSpeedHeight] = self.upperWindSpeed
         else:
-            self.upperWindSpeed = ""
-            self.upperWindSpeedHeight = 0.0
+           for shearMeasureNode in self.getNodes(measurementsNode,"ShearMeasurement"):
+               shearColName = self.getNodeValue(shearMeasureNode,"WindSpeed")
+               shearHeight = self.getNodeFloat(shearMeasureNode,"Height")
+               self.shearMeasurements[shearHeight] = shearColName
+
         
         if self.nodeExists(measurementsNode, 'Power'):
             self.power = self.getNodeValue(measurementsNode, 'Power')
