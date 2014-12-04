@@ -323,21 +323,13 @@ class report:
             sh.write(row, dataColumn, datasetConfig.pressure)
             row += 1
 
-            sh.write(row, labelColumn, "Lower Wind Speed", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.lowerWindSpeed)
-            row += 1
-
-            sh.write(row, labelColumn, "Lower Wind Speed Height", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.lowerWindSpeedHeight)
-            row += 1
-
-            sh.write(row, labelColumn, "Upper Wind Speed", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.upperWindSpeed)
-            row += 1
-
-            sh.write(row, labelColumn, "Upper Wind Speed Height", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.upperWindSpeedHeight)
-            row += 1
+            for i, meas in enumerate(datasetConfig.shearMeasurements.keys()):
+                sh.write(row, labelColumn, "Shear Measurement " + str(i+1), self.bold_style)
+                sh.write(row, dataColumn, datasetConfig.shearMeasurements[meas])
+                row += 1
+                sh.write(row, labelColumn, "Shear Measurement {0} Height ".format(i+1), self.bold_style)
+                sh.write(row, dataColumn, str(meas))
+                row += 1
 
             sh.write(row, labelColumn, "Power", self.bold_style)
             sh.write(row, dataColumn, datasetConfig.power)
