@@ -600,6 +600,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
         def addFormElements(self, master):
 
+                self.shearWindSpeedHeights = []
+                self.shearWindSpeeds = []
+
                 self.name = self.addEntry(master, "Name:", None, self.config.name)
 
                 self.startDate = self.addEntry(master, "Start Date:", None, self.config.startDate)
@@ -628,10 +631,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.turbineLocationWindSpeed = self.addEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed)
                 self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", ValidateNotBlank(master), self.config.hubWindSpeed, width = 60)
                 self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", ValidateNotBlank(master), self.config.hubTurbulence, width = 60)
-                self.lowerWindSpeed = self.addEntry(master, "Lower Wind Speed:", ValidateNotBlank(master), self.config.lowerWindSpeed, width = 60)
-                self.lowerWindSpeedHeight = self.addEntry(master, "Lower Wind Speed Height:", ValidateNonNegativeFloat(master), self.config.lowerWindSpeedHeight)
-                self.upperWindSpeed = self.addEntry(master, "Upper Wind Speed:", ValidateNotBlank(master), self.config.upperWindSpeed, width = 60)
-                self.upperWindSpeedHeight = self.addEntry(master, "Upper Wind Speed Height:", ValidateNonNegativeFloat(master), self.config.upperWindSpeedHeight)
+
+                for i, key in enumerate(self.config.shearMeasurements.keys()):
+                        self.shearWindSpeeds.append( self.addEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60) )
+                        self.shearWindSpeedHeights.append(self.addEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key) )
 
                 Label(master, text="REWS Profile Levels:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 self.row += 1
