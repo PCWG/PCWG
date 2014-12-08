@@ -76,7 +76,7 @@ class report:
             sh.write(row,col,"Bin", self.bold_style)
             sh.write(row,col+1,"Slope", self.bold_style)
             sh.write(row,col+2,"Offset", self.bold_style)
-            sh.write(row,col+2,"Count", self.bold_style)
+            sh.write(row,col+3,"Count", self.bold_style)
             row+=1
             for key in sorted(calib.slopes):
                 sh.write(row,col,key, self.bold_style)
