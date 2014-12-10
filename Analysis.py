@@ -435,7 +435,7 @@ class Analysis:
         mask = mask & self.getFilter(filterMode)
         
         filteredDataFrame = self.dataFrame[mask]
-        
+        filteredDataFrame.is_copy = False
         filteredDataFrame[self.powerDeviation] = (filteredDataFrame[self.actualPower] - filteredDataFrame[power]) / filteredDataFrame[power]
         
         return filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average)
