@@ -76,7 +76,7 @@ class report:
             sh.write(row,col,"Bin", self.bold_style)
             sh.write(row,col+1,"Slope", self.bold_style)
             sh.write(row,col+2,"Offset", self.bold_style)
-            sh.write(row,col+2,"Count", self.bold_style)
+            sh.write(row,col+3,"Count", self.bold_style)
             row+=1
             for key in sorted(calib.slopes):
                 sh.write(row,col,key, self.bold_style)
@@ -323,21 +323,13 @@ class report:
             sh.write(row, dataColumn, datasetConfig.pressure)
             row += 1
 
-            sh.write(row, labelColumn, "Lower Wind Speed", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.lowerWindSpeed)
-            row += 1
-
-            sh.write(row, labelColumn, "Lower Wind Speed Height", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.lowerWindSpeedHeight)
-            row += 1
-
-            sh.write(row, labelColumn, "Upper Wind Speed", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.upperWindSpeed)
-            row += 1
-
-            sh.write(row, labelColumn, "Upper Wind Speed Height", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.upperWindSpeedHeight)
-            row += 1
+            for i, meas in enumerate(datasetConfig.shearMeasurements.keys()):
+                sh.write(row, labelColumn, "Shear Measurement " + str(i+1), self.bold_style)
+                sh.write(row, dataColumn, datasetConfig.shearMeasurements[meas])
+                row += 1
+                sh.write(row, labelColumn, "Shear Measurement {0} Height ".format(i+1), self.bold_style)
+                sh.write(row, dataColumn, str(meas))
+                row += 1
 
             sh.write(row, labelColumn, "Power", self.bold_style)
             sh.write(row, dataColumn, datasetConfig.power)
