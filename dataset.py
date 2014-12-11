@@ -276,15 +276,15 @@ class Dataset:
 
 
     def createCalibration(self, dataFrame, config):
-        df = dataFrame.copy()
+
         self.referenceDirectionBin = "Reference Direction Bin"
-        
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
         siteCalibrationBinWidth = 360.0 / config.siteCalibrationNumberOfSectors
 
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
+        df = dataFrame.copy()
 
         if config.calibrationMethod == "Specified":
             return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed)
@@ -341,7 +341,7 @@ class Dataset:
 
     def excludeData(self, dataFrame, config):
 
-        dataFrame["Dummy"] = 1
+        dataFrame.loc[:, "Dummy"] = 1
         mask = dataFrame["Dummy"] == 1
         print "Data set length prior to exlusions: {0}".format(len(mask[mask]))   
         for exclusion in config.exclusions:            

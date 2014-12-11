@@ -323,13 +323,11 @@ class report:
             sh.write(row, dataColumn, datasetConfig.pressure)
             row += 1
 
-            for i, meas in enumerate(datasetConfig.shearMeasurements.keys()):
-                sh.write(row, labelColumn, "Shear Measurement " + str(i+1), self.bold_style)
-                sh.write(row, dataColumn, datasetConfig.shearMeasurements[meas])
-                row += 1
-                sh.write(row, labelColumn, "Shear Measurement {0} Height ".format(i+1), self.bold_style)
-                sh.write(row, dataColumn, str(meas))
-                row += 1
+            if 'ReferenceLocation' in datasetConfig.shearMeasurements.keys() and 'TurbineLocation' in datasetConfig.shearMeasurements.keys():
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements['ReferenceLocation'],'Reference Location ')
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements['TurbineLocation'],'Turbine Location ')
+            else:
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements)
 
             sh.write(row, labelColumn, "Power", self.bold_style)
             sh.write(row, dataColumn, datasetConfig.power)
@@ -372,6 +370,16 @@ class report:
                 sh.write(row, dataColumn + 3, "True") # always true if in list...
 
                 row += 1
+
+    def writeShear(self,sh,labelColumn,dataColumn,row,shearDict,prefix=""):
+        for i, meas in enumerate(shearDict.keys()):
+                sh.write(row, labelColumn, prefix+"Shear Measurement " + str(i+1), self.bold_style)
+                sh.write(row, dataColumn, shearDict[meas])
+                row += 1
+                sh.write(row, labelColumn, prefix+"Shear Measurement {0} Height ".format(i+1), self.bold_style)
+                sh.write(row, dataColumn, str(meas))
+                row += 1
+        return row
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 
