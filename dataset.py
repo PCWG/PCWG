@@ -343,14 +343,14 @@ class Dataset:
 
         dataFrame.loc[:, "Dummy"] = 1
         mask = dataFrame["Dummy"] == 1
-        print "Data set length prior to exlusions: {0}".format(len(mask[mask]))   
+        print "Data set length prior to exclusions: {0}".format(len(mask[mask]))
         for exclusion in config.exclusions:            
             startDate = exclusion[0]
             endDate = exclusion[1]
             subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
             mask = mask & ~subMask
             print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask])) 
-        print "Data set length after exlusions: {0}".format(len(mask[mask]))
+        print "Data set length after exclusions: {0}".format(len(mask[mask]))
         return dataFrame[mask]
         
     def extractColumns(self, dataFrame):
@@ -413,7 +413,7 @@ class Dataset:
             
         elif filterType == "Between":
             if len(filterValue) != 2:
-                raise Exception("Filter mode is between, but a comma seperated list has not been provided as FilterValue")
+                raise Exception("Filter mode is between, but a comma separated list has not been provided as FilterValue")
             mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
             
         else:        
@@ -428,7 +428,7 @@ class Dataset:
             filterConjunction = relationship.conjunction
             
             if filterConjunction not in ("AND","OR"):
-                raise NotImplementedError("Filter conjuction not implemented, please use AND or OR...")
+                raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
             
             filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
             
