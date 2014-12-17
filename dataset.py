@@ -97,7 +97,7 @@ class LeastSquares(CalibrationBase):
         varianceX = self.variance(df, self.x)
         covarianceXY = self.covariance(df, self.x, self.y)
         return covarianceXY ** 2.0 / varianceX ** 2.0
-    
+
 class SiteCalibrationCalculator:
 
     def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn):
@@ -341,8 +341,7 @@ class Dataset:
 
     def excludeData(self, dataFrame, config):
 
-        dataFrame.loc[:, "Dummy"] = 1
-        mask = dataFrame["Dummy"] == 1
+        mask = pd.Series([True]*len(dataFrame),index=dataFrame.index)
         print "Data set length prior to exclusions: {0}".format(len(mask[mask]))
         for exclusion in config.exclusions:            
             startDate = exclusion[0]
@@ -455,14 +454,13 @@ class Dataset:
 
         if len(filters) < 1: return dataFrame
 
-        dataFrame["Dummy"] = 1
-        mask = dataFrame["Dummy"] == 0
+        mask = pd.Series([False]*len(dataFrame),index=dataFrame.index)
         print "Data set length prior to filtering: {0}".format(len(mask[~mask]))
         for componentFilter in filters:
-            if not hasattr(componentFilter,"relationships"):
+            if not hasattr(componentFilter, "relationships"):
                 mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
             else:
-                mask = self.applyRelationshipFilter(mask,componentFilter,dataFrame)        
+                mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
         return dataFrame[~mask]
 
     def addFilterBelow(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
