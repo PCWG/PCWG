@@ -93,10 +93,15 @@ class RatioOfMeans(CalibrationBase):
     
 class LeastSquares(CalibrationBase):
 
-    def slope(self, df):
+    def _slope(self, df):
         varianceX = self.variance(df, self.x)
         covarianceXY = self.covariance(df, self.x, self.y)
         return covarianceXY ** 2.0 / varianceX ** 2.0
+
+    def slope(self, df):
+        A =np.vstack([df[self.x].as_matrix(), np.ones(len(df))]).T
+        slope, residual, rank, s = np.linalg.lstsq(A, df[self.y])
+        return slope[0]
 
 class SiteCalibrationCalculator:
 
