@@ -361,6 +361,7 @@ class Filter(XmlBase):
         self.filterType = filterType
         self.inclusive = inclusive
         self.value = value
+        self.applied = False
 
     def __str__(self):
         if not self.derived:
@@ -378,7 +379,8 @@ class RelationshipFilter(XmlBase):
     def __str__(self):
         return " - ".join([" {0} ".format(r.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in r.clauses])  for r in self.relationships])
 
-    def __init__(self,node):
+    def __init__(self, node):
+        self.applied = False
         self.relationships = []
         self.sortRelationships(self.getNode(node,'Relationship'))        
     def sortRelationships(self,node):
@@ -410,9 +412,14 @@ class DatasetConfiguration(XmlBase):
 
             self.hubWindSpeedMode = self.getNodeValue(configurationNode, 'HubWindSpeedMode')
             self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
-            
+
             self.densityMode = self.getNodeValue(configurationNode, 'DensityMode')
             self.calculateDensity = self.getCalculateMode(self.densityMode)
+
+            try:
+                self.turbulenceWSsource = self.getNodeValue(configurationNode, 'TurbulenceWindSpeedSource')
+            except:
+                self.turbulenceWSsource = 'Reference'
 
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)

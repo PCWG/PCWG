@@ -178,6 +178,8 @@ class Dataset:
         
         self.hasShear = len(config.shearMeasurements) > 1
         self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
+        self.hubWindSpeedForTubulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
+
         self.rewsDefined = config.rewsDefined
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
@@ -203,7 +205,7 @@ class Dataset:
 
             self.calibrationCalculator = self.createCalibration(dataFrame, config)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
-            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeed]
+            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTubulence]
 
             dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
 
@@ -247,7 +249,7 @@ class Dataset:
 
         dataFrame = self.filterDataFrame(dataFrame, config.filters)
         dataFrame = self.excludeData(dataFrame, config)
-        
+
         if self.rewsDefined:
             dataFrame = self.defineREWS(dataFrame, config, rotorGeometry)
 
@@ -427,7 +429,7 @@ class Dataset:
                                 col=filterColumn,typ=filterType,val="Derived Column" if type(filterValue) == pd.Series else filterValue,leng=len(mask[~mask]))
         return mask.copy()
      
-    def applyRelationshipFilter(self,mask,componentFilter,dataFrame):
+    def applyRelationshipFilter(self, mask, componentFilter, dataFrame):
         for relationship in componentFilter.relationships:
             filterConjunction = relationship.conjunction
             
@@ -462,10 +464,15 @@ class Dataset:
         mask = pd.Series([False]*len(dataFrame),index=dataFrame.index)
         print "Data set length prior to filtering: {0}".format(len(mask[~mask]))
         for componentFilter in filters:
-            if not hasattr(componentFilter, "relationships"):
-                mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
-            else:
-                mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
+            if not componentFilter.applied:
+                try:
+                    if not hasattr(componentFilter, "relationships"):
+                        mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
+                    else:
+                        mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
+                    componentFilter.applied = True
+                except:
+                    componentFilter.applied = False
         return dataFrame[~mask]
 
     def addFilterBelow(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
