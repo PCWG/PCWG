@@ -121,7 +121,9 @@ class Analysis:
             
         self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)
         self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
-            
+
+        self.applyRemainingFilters()
+
         if self.hasActualPower:
 
             self.status.addMessage("Calculating actual power curves...")
@@ -186,6 +188,15 @@ class Analysis:
 
         self.status.addMessage("Complete")
 
+    def applyRemainingFilters(self):
+        for dataSetConf in self.datasetConfigs:
+            d = dataSetConf.data.filterDataFrame(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]],dataSetConf.filters)
+            self.dataFrame = self.dataFrame.drop(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]].index)
+            self.dataFrame = self.dataFrame.append(d)
+            if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
+                print [filter for filter in dataSetConf.filters if not filter.applied]
+                raise Exception("Filters have not been able to be applied!")
+
     def defineInnerRange(self, config):
 
         self.innerRangeLowerTurbulence = config.innerRangeLowerTurbulence
@@ -205,12 +216,15 @@ class Analysis:
         for i in range(len(config.datasets)):
 
             datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
-            self.datasetConfigs.append(datasetConfig)
-
             data = dataset.Dataset(datasetConfig, rotorGeometry)
+
             if hasattr(data,"calibrationCalculator"):
                 self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )
-            self.fullDataFrame = data.fullDataFrame
+
+            datasetConfig.timeStamps = data.dataFrame.index
+            datasetConfig.data = data
+            self.datasetConfigs.append(datasetConfig)
+
             if i == 0:
 
                 #copy column names from dataset
