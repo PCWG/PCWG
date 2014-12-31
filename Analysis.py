@@ -424,7 +424,11 @@ class Analysis:
                     powerLevels[windSpeed] =  power
                     turbulenceLevels[windSpeed] =  turbulence
 
-        #padding (todo - revise this)
+        #padding (todo - IMPLEMENT DIFFERENT METHODS HERE:
+        # To deal with data missing between cutOut and last measured point:
+        # Specified : Use specified rated power
+        # Last : Use last observed power
+        # Linear : linearly interpolate from last observed power at last observed ws to specified power at specified ws.
         stepIn = 0.0
         maxTurb = max(turbulenceLevels.values())
         minTurb = min(turbulenceLevels.values())
