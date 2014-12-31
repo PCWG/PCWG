@@ -200,6 +200,8 @@ class AnalysisConfiguration(XmlBase):
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
             self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
+            self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', 'none')
+
 
             self.readDatasets(configurationNode)
             self.readInnerRange(configurationNode)
@@ -416,10 +418,8 @@ class DatasetConfiguration(XmlBase):
             self.densityMode = self.getNodeValue(configurationNode, 'DensityMode')
             self.calculateDensity = self.getCalculateMode(self.densityMode)
 
-            try:
-                self.turbulenceWSsource = self.getNodeValue(configurationNode, 'TurbulenceWindSpeedSource')
-            except:
-                self.turbulenceWSsource = 'Reference'
+            self.turbulenceWSsource = self.getNodeValueIfExists(configurationNode, 'TurbulenceWindSpeedSource', 'Reference')
+
 
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)
