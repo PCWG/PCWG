@@ -521,6 +521,8 @@ class PadderFactory:
             return SpecifiedPadder()
         elif strPadder  == 'observed':
             return LastObservedPadder()
+        elif strPadder  == 'max':
+            return MaxPadder()
         else:
             print "Power curve padding option not detected/recognised - linear padding will occur at unobserved wind speeds"
             return LinearPadder()
@@ -574,3 +576,9 @@ class LastObservedPadder(Padder):
         turbulenceLevels[cutOutWindSpeed] = minTurb
         turbulenceLevels = self.turbulenceOutside(turbulenceLevels,cutInWindSpeed,cutOutWindSpeed,minTurb,maxTurb)
         return turbulenceLevels
+
+class MaxPadder(LastObservedPadder):
+    def pad(self,powerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower):
+        powerLevels[cutOutWindSpeed] = max(powerLevels.values())
+        powerLevels = self.outsideCutIns(powerLevels,cutInWindSpeed,cutOutWindSpeed)
+        return powerLevels

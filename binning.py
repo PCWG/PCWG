@@ -7,11 +7,13 @@ class Bins:
         self.centerOfFirstBin = centerOfFirstBin
         self.binWidth = binWidth
         self.centerOfLastBin = centerOfLastBin
-        self.numberOfBins = (self.centerOfLastBin - self.centerOfFirstBin)/self.binWidth
 
+        self.numberOfBins = (self.centerOfLastBin - self.centerOfFirstBin)/self.binWidth
         if not float(self.numberOfBins).is_integer():
             raise Exception("An integer number of bins must exist. The inputs have led to: {0}".format(self.numberOfBins))
-        
+
+        self.numberOfBins = int(self.numberOfBins)
+
     def binCenterForFirstCenterAndWidth(self, x, centerOfFirstBin, binWidth):
         if np.isnan(x): return np.nan
         return round((x - centerOfFirstBin)/binWidth,0) * binWidth + centerOfFirstBin
