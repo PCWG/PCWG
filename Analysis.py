@@ -103,8 +103,8 @@ class Analysis:
         self.turbulenceBin = "Turbulence Bin"
         self.powerDeviation = "Power Deviation"
 
-        self.windSpeedBins = binning.Bins(1.0, 1.0, 30)
-        self.turbulenceBins = binning.Bins(0.01, 0.02, 30)        
+        self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
+        self.turbulenceBins = binning.Bins(0.01, 0.01/self.windSpeedBins.numberOfBins, 0.02)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
         self.powerCurvePadder = PadderFactory().generate(config.powerCurvePaddingMode)
@@ -218,7 +218,7 @@ class Analysis:
         for i in range(len(config.datasets)):
 
             datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
-            data = dataset.Dataset(datasetConfig, rotorGeometry)
+            data = dataset.Dataset(datasetConfig, rotorGeometry, config)
 
             if hasattr(data,"calibrationCalculator"):
                 self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )

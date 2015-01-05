@@ -2,11 +2,15 @@ import numpy as np
 
 class Bins:
 
-    def __init__(self, centerOfFirstBin, binWidth, numberOfBins):
+    def __init__(self, centerOfFirstBin, binWidth, centerOfLastBin  ):
 
         self.centerOfFirstBin = centerOfFirstBin
         self.binWidth = binWidth
-        self.numberOfBins = numberOfBins
+        self.centerOfLastBin = centerOfLastBin
+        self.numberOfBins = (self.centerOfLastBin - self.centerOfFirstBin)/self.binWidth
+
+        if not float(self.numberOfBins).is_integer():
+            raise Exception("An integer number of bins must exist. The inputs have led to: {0}".format(self.numberOfBins))
         
     def binCenterForFirstCenterAndWidth(self, x, centerOfFirstBin, binWidth):
         if np.isnan(x): return np.nan

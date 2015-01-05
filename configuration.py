@@ -202,6 +202,15 @@ class AnalysisConfiguration(XmlBase):
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', 'none')
 
+            try:
+                powerCurveBinsNode = self.getNode(configurationNode, 'PowerCurveBins')
+                self.powerCurveFirstBin = self.getNodeFloat(powerCurveBinsNode, 'FirstBinCentre')
+                self.powerCurveLastBin = self.getNodeFloat(powerCurveBinsNode, 'LastBinCentre')
+                self.powerCurveBinSize = self.getNodeFloat(powerCurveBinsNode, 'BinSize')
+            except: # defaults
+                self.powerCurveFirstBin = 1.0
+                self.powerCurveLastBin = 30.0
+                self.powerCurveBinSize = 1.0
 
             self.readDatasets(configurationNode)
             self.readInnerRange(configurationNode)
