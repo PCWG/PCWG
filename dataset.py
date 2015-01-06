@@ -154,7 +154,7 @@ class ShearExponentCalculator:
 
 class Dataset:
 
-    def __init__(self, config, rotorGeometry):
+    def __init__(self, config, rotorGeometry, analysisConfig):
 
         self.relativePath = configuration.RelativePath(config.path)
         
@@ -178,7 +178,7 @@ class Dataset:
         
         self.hasShear = len(config.shearMeasurements) > 1
         self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
-        self.hubWindSpeedForTubulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
+        self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
 
         self.rewsDefined = config.rewsDefined
         
@@ -205,16 +205,16 @@ class Dataset:
 
             self.calibrationCalculator = self.createCalibration(dataFrame, config)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
-            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTubulence]
+            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
             dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
 
             windSpeedBin = "Wind Speed Bin"
             turbulenceBin = "Turbulence Bin"
-        
-            windSpeedBins = binning.Bins(1.0, 1.0, 30)
-            turbulenceBins = binning.Bins(0.01, 0.02, 30)        
-            aggregations = binning.Aggregations(10)
+
+            windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
+            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
+            aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
 
             dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
             dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
