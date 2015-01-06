@@ -39,8 +39,8 @@ class York(CalibrationBase):
         self.xDiffSq = "xDiffSq"
         self.yDiffSq = "yDiffSq"
         
-        df[self.xRolling] = pd.rolling_mean(df[x], window = movingAverageWindow, min_periods = movingAverageWindow)
-        df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = movingAverageWindow)
+        df[self.xRolling] = pd.rolling_mean(df[x], window = movingAverageWindow, min_periods = 1)
+        df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = 1)
 
         df[self.xDiffSq] = ((df[x] - df[self.xRolling])** 2.0)
         df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0)
@@ -78,8 +78,8 @@ class York(CalibrationBase):
         
     def calculateAlpha(self, df):
 
-        xYorkVariance = df[self.xDiffSq].sum()
-        yYorkVariance = df[self.yDiffSq].sum()
+        xYorkVariance = df[self.xDiffSq].dropna().sum()
+        yYorkVariance = df[self.yDiffSq].dropna().sum()
         
         covarianceXY = self.covariance(df, self.x, self.y)
         varianceX = self.variance(df, self.x)
@@ -93,48 +93,68 @@ class RatioOfMeans(CalibrationBase):
     
 class LeastSquares(CalibrationBase):
 
-    def slope(self, df):
+    def _slope(self, df):
         varianceX = self.variance(df, self.x)
         covarianceXY = self.covariance(df, self.x, self.y)
         return covarianceXY ** 2.0 / varianceX ** 2.0
-    
+
+    def slope(self, df):
+        A =np.vstack([df[self.x].as_matrix(), np.ones(len(df))]).T
+        slope, residual, rank, s = np.linalg.lstsq(A, df[self.y])
+        return slope[0]
+
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, windSpeedColumn):
+    def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn):
 
         self.slopes = slopes
         self.offsets = offsets
-        self.windSpeedColumn = windSpeedColumn
+        self.counts=counts
+        self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
 
-    def turbineWindSpeed(self, row):
+    def turbineValue(self, row):
 
         directionBin = row[self.directionBinColumn]
         
         if directionBin in self.slopes:
-            return self.calibrate(directionBin, row[self.windSpeedColumn])
+            return self.calibrate(directionBin, row[self.valueColumn])
         else:
             return np.nan
 
-    def calibrate(self, directionBin, windSpeed):
-        return self.offsets[directionBin] + self.slopes[directionBin] * windSpeed
+    def calibrate(self, directionBin, value):
+        return self.offsets[directionBin] + self.slopes[directionBin] * value
         
 class ShearExponentCalculator:
 
-    def __init__(self, lowerColumn, upperColumn, lowerHeight, upperHeight):
+    def __init__(self, shearMeasurements):
+        self.shearMeasurements = shearMeasurements
+        import warnings
+        warnings.simplefilter('ignore', np.RankWarning)
 
-        self.lowerColumn = lowerColumn
-        self.upperColumn = upperColumn
+    def calculateMultiPointShear(self, row):
 
-        self.overOneLogHeightRatio = 1.0 / math.log(upperHeight / lowerHeight)
-        
-    def shearExponent(self, row):
+        # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
+        windspeeds  = [np.log(row[col]) for col in self.shearMeasurements.values()]
+        heights     = [np.log(height) for height in self.shearMeasurements.keys()]
+        deg = 1 # linear
+        if len([ws for ws in windspeeds if not np.isnan(ws)]) < 1:
+            return np.nan
+        polyfitResult = np.polyfit(windspeeds, heights, deg, rcond=None, full=False)
+        shearThreePT = 1/ polyfitResult[0]
+        return shearThreePT
 
+    def calculateTwoPointShear(self,row):
+        # superseded by self.calculateMultiPointShear
         return math.log(row[self.upperColumn] / row[self.lowerColumn]) * self.overOneLogHeightRatio
+
+    def shearExponent(self, row):
+        return self.calculateMultiPointShear(row)
+
 
 class Dataset:
 
-    def __init__(self, config, rotorGeometry):
+    def __init__(self, config, rotorGeometry, analysisConfig):
 
         self.relativePath = configuration.RelativePath(config.path)
         
@@ -146,7 +166,9 @@ class Dataset:
         self.hubWindSpeed = "Hub Wind Speed"
         self.hubTurbulence = "Hub Turbulence"
         self.hubDensity = "Hub Density"
-        self.shearExponent = "Shear Exponent"        
+        self.shearExponent = "Shear Exponent"
+        self.referenceShearExponent = "Reference Shear Exponent"
+        self.turbineShearExponent = "Turbine Shear Exponent"
 
         self.profileRotorWindSpeed = "Profile Rotor Wind Speed"
         self.profileHubWindSpeed = "Profile Hub Wind Speed"        
@@ -154,7 +176,10 @@ class Dataset:
         self.profileHubToRotorDeviation = "Hub to Rotor Deviation"
         self.residualWindSpeed = "Residual Wind Speed"
         
-        self.hasShear = self.isValidText(config.lowerWindSpeed) and self.isValidText(config.upperWindSpeed)        
+        self.hasShear = len(config.shearMeasurements) > 1
+        self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
+        self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
+
         self.rewsDefined = config.rewsDefined
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
@@ -167,24 +192,29 @@ class Dataset:
         dataFrame[self.timeStamp] = dataFrame.index
         
         if self.hasShear:
-            dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.lowerWindSpeed, config.upperWindSpeed, config.lowerWindSpeedHeight, config.upperWindSpeedHeight).shearExponent, axis=1)
+            if not self.shearCalibration:
+                dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements).shearExponent, axis=1)
+            else:
+                dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["TurbineLocation"]).shearExponent, axis=1)
+                dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["ReferenceLocation"]).shearExponent, axis=1)
+                dataFrame[self.shearExponent] = dataFrame[self.referenceShearExponent]
 
         dataFrame[self.residualWindSpeed] = 0.0
         
         if config.calculateHubWindSpeed:
 
             self.calibrationCalculator = self.createCalibration(dataFrame, config)
-            dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineWindSpeed, axis=1)
-            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeed]
+            dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
+            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
             dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
 
             windSpeedBin = "Wind Speed Bin"
             turbulenceBin = "Turbulence Bin"
-        
-            windSpeedBins = binning.Bins(1.0, 1.0, 30)
-            turbulenceBins = binning.Bins(0.01, 0.02, 30)        
-            aggregations = binning.Aggregations(10)
+
+            windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
+            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
+            aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
 
             dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
             dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
@@ -195,7 +225,12 @@ class Dataset:
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             self.residualWindSpeedMatrix = None
-            
+
+        if self.shearCalibration and config.shearCalibrationMethod != "Reference":
+            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config)
+            dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
+
+
         if config.calculateDensity:
             dataFrame[self.hubDensity] = 100.0 * dataFrame[config.pressure] / (273.15 + dataFrame[config.temperature]) / 287.058
             self.hasDensity = True
@@ -214,66 +249,98 @@ class Dataset:
 
         dataFrame = self.filterDataFrame(dataFrame, config.filters)
         dataFrame = self.excludeData(dataFrame, config)
-        
+
         if self.rewsDefined:
             dataFrame = self.defineREWS(dataFrame, config, rotorGeometry)
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
+    def createShearCalibration(self, dataFrame, config):
+        df = dataFrame.copy()
+
+        if config.shearCalibrationMethod == "Specified":
+            raise NotImplementedError
+        else:
+            calibration = self.getCalibrationMethod(config.shearCalibrationMethod, self.referenceShearExponent, self.turbineShearExponent, config.timeStepInSeconds, dataFrame)
+
+            if hasattr(self,"filteredCalibrationDataframe"):
+                dataFrame = self.filteredCalibrationDataframe
+            else:
+                dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
+                self.filteredCalibrationDataframe = dataFrame.copy()
+
+            if config.calibrationStartDate != None and config.calibrationEndDate != None:
+                dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
+
+            dataFrame = dataFrame[calibration.requiredColumns + [self.referenceDirectionBin, config.referenceWindDirection]].dropna()
+            if len(dataFrame) < 1:
+                raise Exception("No data are available to carry out calibration.")
+
+            siteCalibCalc = self.createSiteCalibrationCalculator(dataFrame, self.referenceShearExponent, calibration)
+            dataFrame = df
+            return siteCalibCalc
+
+
     def createCalibration(self, dataFrame, config):
 
-        referenceDirectionBin = "Reference Direction Bin"
-        
+        self.referenceDirectionBin = "Reference Direction Bin"
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
         siteCalibrationBinWidth = 360.0 / config.siteCalibrationNumberOfSectors
 
-        dataFrame[referenceDirectionBin] = (dataFrame[config.referenceWindDirection]  - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
-        dataFrame[referenceDirectionBin] = np.round(dataFrame[referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
-        dataFrame[referenceDirectionBin] = (dataFrame[referenceDirectionBin] + 360) % 360
-        
+        dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
+        dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
+        dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
+        df = dataFrame.copy()
+
         if config.calibrationMethod == "Specified":
-            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, referenceDirectionBin, config.referenceWindSpeed)
-
-        if config.calibrationMethod == "RatioOfMeans":
-            calibration = RatioOfMeans(config.referenceWindSpeed, config.turbineLocationWindSpeed)
-        elif config.calibrationMethod == "LeastSquares":
-            calibration = LeastSquares(config.referenceWindSpeed, config.turbineLocationWindSpeed)
-        elif config.calibrationMethod == "York":
-            calibration = York(config.referenceWindSpeed, config.turbineLocationWindSpeed, config.timeStepInSeconds, dataFrame)            
+            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed)
         else:
-            raise Exception("Calibration method not recognised: %s" % config.calibrationMethod)
+            calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, config.timeStepInSeconds, dataFrame)
 
-        if config.calibrationStartDate != None and config.calibrationEndDate != None:
-            dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
-       
-        dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
-        dataFrame = dataFrame[calibration.requiredColumns + [referenceDirectionBin, config.referenceWindDirection]].dropna()
-        if len(dataFrame) < 1:
-            raise Exception("No data are available to carry out calibration.")
-        #path = "D:\\Power Curves\\Working Group\\112 - Tool\\RES-DATA\\" + config.name + ".dat"
-        #dataFrame.to_csv(path, sep = '\t')
-        
-        groups = dataFrame[calibration.requiredColumns].groupby(dataFrame[referenceDirectionBin])
+            if config.calibrationStartDate != None and config.calibrationEndDate != None:
+                dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
+
+            dataFrame = self.filterDataFrame(dataFrame, config.calibrationFilters)
+            self.filteredCalibrationDataframe = dataFrame.copy()
+
+            dataFrame = dataFrame[calibration.requiredColumns + [self.referenceDirectionBin, config.referenceWindDirection]].dropna()
+            if len(dataFrame) < 1:
+                raise Exception("No data are available to carry out calibration.")
+
+            siteCalibCalc = self.createSiteCalibrationCalculator(dataFrame,config.referenceWindSpeed, calibration)
+            dataFrame = df
+            return siteCalibCalc
+
+    def getCalibrationMethod(self,calibrationMethod,referenceColumn, turbineLocationColumn, timeStepInSeconds, dataFrame):
+        if calibrationMethod == "RatioOfMeans":
+            calibration = RatioOfMeans(referenceColumn, turbineLocationColumn)
+        elif calibrationMethod == "LeastSquares":
+            calibration = LeastSquares(referenceColumn, turbineLocationColumn)
+        elif calibrationMethod == "York":
+            calibration = York(referenceColumn, turbineLocationColumn, timeStepInSeconds, dataFrame)
+        else:
+            raise Exception("Calibration method not recognised: %s" % calibrationMethod)
+        return calibration
+
+    def createSiteCalibrationCalculator(self,dataFrame, valueColumn, calibration ):
+        groups = dataFrame[calibration.requiredColumns].groupby(dataFrame[self.referenceDirectionBin])
 
         slopes = {}
         intercepts = {}
-
-        print config.name
+        counts = {}
         
         for group in groups:
 
             directionBinCenter = group[0]
-
             sectorDataFrame = group[1].dropna()
             
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
-            count = sectorDataFrame[config.referenceWindSpeed].count()
-            
-            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], count)
+            counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, referenceDirectionBin, config.referenceWindSpeed)
+        return SiteCalibrationCalculator(slopes, intercepts, counts, self.referenceDirectionBin, valueColumn)
         
     def isValidText(self, text):
         if text == None: return False
@@ -281,16 +348,15 @@ class Dataset:
 
     def excludeData(self, dataFrame, config):
 
-        dataFrame["Dummy"] = 1
-        mask = dataFrame["Dummy"] == 1
-        print "Data set length prior to exlusions: {0}".format(len(mask[mask]))   
+        mask = pd.Series([True]*len(dataFrame),index=dataFrame.index)
+        print "Data set length prior to exclusions: {0}".format(len(mask[mask]))
         for exclusion in config.exclusions:            
             startDate = exclusion[0]
             endDate = exclusion[1]
             subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
             mask = mask & ~subMask
             print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask])) 
-            
+        print "Data set length after exclusions: {0}".format(len(mask[mask]))
         return dataFrame[mask]
         
     def extractColumns(self, dataFrame):
@@ -353,7 +419,7 @@ class Dataset:
             
         elif filterType == "Between":
             if len(filterValue) != 2:
-                raise Exception("Filter mode is between, but a comma seperated list has not been provided as FilterValue")
+                raise Exception("Filter mode is between, but a comma separated list has not been provided as FilterValue")
             mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
             
         else:        
@@ -363,12 +429,12 @@ class Dataset:
                                 col=filterColumn,typ=filterType,val="Derived Column" if type(filterValue) == pd.Series else filterValue,leng=len(mask[~mask]))
         return mask.copy()
      
-    def applyRelationshipFilter(self,mask,componentFilter,dataFrame):
+    def applyRelationshipFilter(self, mask, componentFilter, dataFrame):
         for relationship in componentFilter.relationships:
             filterConjunction = relationship.conjunction
             
             if filterConjunction not in ("AND","OR"):
-                raise NotImplementedError("Filter conjuction not implemented, please use AND or OR...")
+                raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
             
             filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
             
@@ -395,14 +461,18 @@ class Dataset:
 
         if len(filters) < 1: return dataFrame
 
-        dataFrame["Dummy"] = 1
-        mask = dataFrame["Dummy"] == 0
+        mask = pd.Series([False]*len(dataFrame),index=dataFrame.index)
         print "Data set length prior to filtering: {0}".format(len(mask[~mask]))
         for componentFilter in filters:
-            if not hasattr(componentFilter,"relationships"):
-                mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
-            else:
-                mask = self.applyRelationshipFilter(mask,componentFilter,dataFrame)        
+            if not componentFilter.applied:
+                try:
+                    if not hasattr(componentFilter, "relationships"):
+                        mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
+                    else:
+                        mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
+                    componentFilter.applied = True
+                except:
+                    componentFilter.applied = False
         return dataFrame[~mask]
 
     def addFilterBelow(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
@@ -436,7 +506,7 @@ class Dataset:
         elif config.rotorMode == "ProfileLevels":
             self.rotor = rews.ProfileLevelsRotor(rotorGeometry, profileLevels)
         else:
-            raise Exception("Unkown rotor mode: % s" % config.rotorMode)
+            raise Exception("Unknown rotor mode: % s" % config.rotorMode)
                         
         rotorEquivalentWindSpeedCalculator = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor)        
 
@@ -445,7 +515,7 @@ class Dataset:
         elif config.hubMode == "PiecewiseExponent":
             profileHubWindSpeedCalculator = rews.PiecewiseExponentHubWindSpeed(profileLevels, rotorGeometry)
         else:
-            raise Exception("Unkown hub mode: % s" % config.hubMode)
+            raise Exception("Unknown hub mode: % s" % config.hubMode)
 
         dataFrame[self.profileHubWindSpeed] = dataFrame.apply(profileHubWindSpeedCalculator.hubWindSpeed, axis=1)
         dataFrame[self.profileRotorWindSpeed] = dataFrame.apply(rotorEquivalentWindSpeedCalculator.rotorWindSpeed, axis=1)
