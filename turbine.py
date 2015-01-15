@@ -75,7 +75,7 @@ class PowerCurve:
         for i in range(len(x)):
             y.append(levels[x[i]])
 
-        return interpolators.DictPowerCurveInterpolator(x, y)
+        return interpolators.LinearPowerCurveInterpolator(x, y)
                 
     def power(self, windSpeed, turbulence = None, extraTurbCorrection = False):
 

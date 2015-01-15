@@ -508,7 +508,7 @@ class Analysis:
         self.combinedDelta = self.combinedYield / self.baseYield - 1.0
         self.status.addMessage("Comb Delta: %f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))        
 
-    def export(self, path):        
+    def export(self, path):
         self.dataFrame.to_csv(path, sep = '\t')
 
 class PadderFactory:
