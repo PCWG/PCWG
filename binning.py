@@ -7,9 +7,11 @@ class Bins:
         self.centerOfFirstBin = centerOfFirstBin
         self.binWidth = binWidth
         self.centerOfLastBin = centerOfLastBin
-
-        self.numberOfBins = (self.centerOfLastBin - self.centerOfFirstBin)/self.binWidth
-        if not float(self.numberOfBins).is_integer():
+        start_of_first_bin = self.centerOfFirstBin - self.binWidth
+        end_of_last_bin = self.centerOfLastBin + self.binWidth
+        self.numberOfBins = (end_of_last_bin - start_of_first_bin)/self.binWidth
+        #if not float(self.numberOfBins).is_integer():
+        if not abs(float(self.numberOfBins)) % int(1) < 1e-12: #tolerance on int check
             raise Exception("An integer number of bins must exist. The inputs have led to: {0}".format(self.numberOfBins))
         self.numberOfBins = int(self.numberOfBins)
 
