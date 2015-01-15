@@ -104,7 +104,10 @@ class Analysis:
         self.powerDeviation = "Power Deviation"
 
         self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
-        self.turbulenceBins = binning.Bins(0.01, 0.01/self.windSpeedBins.numberOfBins, 0.02)
+        first_turb_bin = 0.01 #bin centre for first turbulence bin
+        last_turb_bin = 0.41 #bin centre for last turbulence bin
+        turb_bin_width = (last_turb_bin - first_turb_bin) / (self.windSpeedBins.numberOfBins - 2.) #calculating the bin width required to give the same no. turb and ws bins
+        self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
         self.powerCurvePadder = PadderFactory().generate(config.powerCurvePaddingMode)
