@@ -1,34 +1,35 @@
-<?xml version="1.0" ?>
-<Configuration xmlns="http://www.pcwg.org">
-	<TimeStepInSeconds>600</TimeStepInSeconds>
-	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
-	<FilterMode>All</FilterMode>
-	<BaseLineMode>Hub</BaseLineMode>
-	<PowerCurveMode>Specified</PowerCurveMode>
-	<Datasets>
-		<Dataset>Dataset 1 config.xml</Dataset>
-	</Datasets>
-	<InnerRange>
-		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
-		<InnerRangeUpperTurbulence>0.140000</InnerRangeUpperTurbulence>
-		<InnerRangeLowerShear>0.150000</InnerRangeLowerShear>
-		<InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
-	</InnerRange>
-	<Turbine>
-		<CutInWindSpeed>3.000000</CutInWindSpeed>
-		<CutOutWindSpeed>25.000000</CutOutWindSpeed>
-		<RatedPower>2000.000000</RatedPower>
-		<HubHeight>96.000000</HubHeight>
-		<Diameter>90.000000</Diameter>
-		<SpecifiedPowerCurve>PowerCurve.xml</SpecifiedPowerCurve>
-	</Turbine>
-	<DensityCorrection>
-		<Active>0</Active>
-	</DensityCorrection>
-	<TurbulenceRenormalisation>
-		<Active>1</Active>
-	</TurbulenceRenormalisation>
-	<RotorEquivalentWindSpeed>
-		<Active>1</Active>
-	</RotorEquivalentWindSpeed>
-</Configuration>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		
+	<ns1:TimeStepInSeconds>600</ns1:TimeStepInSeconds>
+	<ns1:PowerCurveMinimumCount>10</ns1:PowerCurveMinimumCount>
+	<ns1:FilterMode>All</ns1:FilterMode>
+	<ns1:BaseLineMode>Hub</ns1:BaseLineMode>
+	<ns1:PowerCurveMode>Specified</ns1:PowerCurveMode>
+	<ns1:Datasets>
+		<ns1:Dataset>Dataset 1 config.xml</ns1:Dataset>
+	</ns1:Datasets>
+	<ns1:InnerRange>
+		<ns1:InnerRangeLowerTurbulence>0.100000</ns1:InnerRangeLowerTurbulence>
+		<ns1:InnerRangeUpperTurbulence>0.140000</ns1:InnerRangeUpperTurbulence>
+		<ns1:InnerRangeLowerShear>0.150000</ns1:InnerRangeLowerShear>
+		<ns1:InnerRangeUpperShear>0.250000</ns1:InnerRangeUpperShear>
+	</ns1:InnerRange>
+	<ns1:Turbine>
+		<ns1:CutInWindSpeed>3.000000</ns1:CutInWindSpeed>
+		<ns1:CutOutWindSpeed>25.000000</ns1:CutOutWindSpeed>
+		<ns1:RatedPower>2000.000000</ns1:RatedPower>
+		<ns1:HubHeight>96.000000</ns1:HubHeight>
+		<ns1:Diameter>90.000000</ns1:Diameter>
+		<ns1:SpecifiedPowerCurve>PowerCurve.xml</ns1:SpecifiedPowerCurve>
+	</ns1:Turbine>
+	<ns1:DensityCorrection>
+		<ns1:Active>0</ns1:Active>
+	</ns1:DensityCorrection>
+	<ns1:TurbulenceRenormalisation>
+		<ns1:Active>1</ns1:Active>
+	</ns1:TurbulenceRenormalisation>
+	<ns1:RotorEquivalentWindSpeed>
+		<ns1:Active>1</ns1:Active>
+	</ns1:RotorEquivalentWindSpeed>
+</ns1:Configuration>
