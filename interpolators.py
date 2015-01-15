@@ -11,7 +11,7 @@ class LinearPowerCurveInterpolator:
 
     def __init__(self, x, y):
 
-        self.interpolator = interpolate.interp1d(x, y, kind='linear')
+        self.interpolator = interpolate.interp1d(x, y, kind='linear',fill_value=0.0,bounds_error=False)
 
     def __call__(self, x):
         return self.interpolator(x)
