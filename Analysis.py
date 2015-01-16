@@ -438,7 +438,6 @@ class Analysis:
         # Specified : Use specified rated power
         # Last : Use last observed power
         # Linear : linearly interpolate from last observed power at last observed ws to specified power at specified ws.
-        stepIn = 0.0
         maxTurb = max(turbulenceLevels.values())
         minTurb = min(turbulenceLevels.values())
 
@@ -584,8 +583,14 @@ class LastObservedPadder(Padder):
         turbulenceLevels = self.turbulenceOutside(turbulenceLevels,cutInWindSpeed,cutOutWindSpeed,minTurb,maxTurb)
         return turbulenceLevels
 
-class MaxPadder(LastObservedPadder):
+class MaxPadder(Padder):
     def pad(self,powerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower):
+        powerLevels[max(powerLevels.keys())+ self.stepIn] = max(powerLevels.values())
         powerLevels[cutOutWindSpeed] = max(powerLevels.values())
         powerLevels = self.outsideCutIns(powerLevels,cutInWindSpeed,cutOutWindSpeed)
         return powerLevels
+    def padTurbulence(self,turbulenceLevels,cutInWindSpeed,cutOutWindSpeed,minTurb,maxTurb):
+        turbulenceLevels[max(turbulenceLevels.keys())+ self.stepIn] = minTurb
+        turbulenceLevels[cutOutWindSpeed] = minTurb
+        turbulenceLevels = self.turbulenceOutside(turbulenceLevels,cutInWindSpeed,cutOutWindSpeed,minTurb,maxTurb)
+        return turbulenceLevels
