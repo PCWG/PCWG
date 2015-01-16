@@ -38,7 +38,6 @@ class AEPCalculator:
                 freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-0.5)
                 ideal_energy_distribution.loc[bin, ['upper','lower','freq','power','energy']] = [float(upper),lower,freq,power,freq*power]
                 energySum += freq*power
-        print ideal_energy_distribution
         return energySum
 
 class AEPCalculatorLCB(AEPCalculator):
