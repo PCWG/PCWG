@@ -8,11 +8,13 @@ import sys
 
 class PowerCurve:
 
-    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, turbulenceLevels = None, fixedTurbulence = None, ratedPower = None):
+    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, turbulenceLevels = None, fixedTurbulence = None, ratedPower = None, dataCountLevels = None):
 
         if turbulenceLevels != None and fixedTurbulence != None:
             raise Exception("Cannot specify both turbulence levels and fixed turbulence")
-
+        
+        self.dataCountLevels = dataCountLevels
+        
         self.availablePower = AvailablePower(rotorGeometry.area, referenceDensity)
         
         self.powerCurveLevels = powerCurveLevels
