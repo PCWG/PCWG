@@ -29,13 +29,19 @@ class AEPCalculator:
         # todo: update this
         # this is a quick implementation - look up numpy/pandas rebinning solns.
         energySum = 0
+        ideal_energy_distribution = pd.DataFrame(index = self.distribution.keys, columns = ['upper','lower','freq','power','energy'])
         for bin in self.distribution.keys:
             upper = curve.powerFunction(bin)
             lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.keys()) else curve.powerFunction(bin-0.5)
             power=(upper+lower)/2.0
             freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-0.5)
-            print upper,lower,freq,power
+            ideal_energy_distribution.loc[bin, 'upper'] = upper
+            ideal_energy_distribution.loc[bin, 'lower'] = lower
+            ideal_energy_distribution.loc[bin, 'freq'] = freq
+            ideal_energy_distribution.loc[bin, 'power'] = power
+            ideal_energy_distribution.loc[bin, 'energy'] = freq*power
             energySum += freq*power
+        print ideal_energy_distribution
         return energySum
 
 class AEPCalculatorLCB(AEPCalculator):
@@ -43,15 +49,21 @@ class AEPCalculatorLCB(AEPCalculator):
         # todo: update this
         # this is a quick implementation - look up numpy/pandas rebinning solns.
         energySum = 0
+        ideal_energy_distribution = pd.DataFrame(index = self.distribution.keys, columns = ['upper','lower','freq','power','energy'])
         for bin in self.distribution.keys:
             # todo: generalise this:
-            if bin < 19:
+            if bin <= 19:
                 upper = curve.powerFunction(bin)
                 lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.keys()) else curve.powerFunction(bin-0.5)
                 power=(upper+lower)/2.0
                 freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-0.5)
-                print upper,lower,freq,power
+                ideal_energy_distribution.loc[bin, 'upper'] = upper
+                ideal_energy_distribution.loc[bin, 'lower'] = lower
+                ideal_energy_distribution.loc[bin, 'freq'] = freq
+                ideal_energy_distribution.loc[bin, 'power'] = power
+                ideal_energy_distribution.loc[bin, 'energy'] = freq*power
                 energySum += freq*power
+        print ideal_energy_distribution
         return energySum
 
 class WindSpeedDistribution(XmlBase):

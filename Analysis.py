@@ -411,9 +411,11 @@ class Analysis:
         measuredPowerCurve = filteredDataFrame[self.actualPower].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         measuredWindSpeed = filteredDataFrame[self.inputHubWindSpeed].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         measuredTurbulence = filteredDataFrame[self.hubTurbulence].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
-
+        measuredDataCount = filteredDataFrame[self.actualPower].groupby(filteredDataFrame[self.windSpeedBin]).count()
+        
         powerLevels = {}
         turbulenceLevels = {}
+        dataCountLevels = {}
 
         for i in range(self.windSpeedBins.numberOfBins):
 
@@ -424,10 +426,12 @@ class Analysis:
                 windSpeed = round(measuredWindSpeed[windSpeedBin], 4)
                 power = round(measuredPowerCurve[windSpeedBin], 4)
                 turbulence = round(measuredTurbulence[windSpeedBin], 4)
+                dataCount = measuredDataCount[windSpeedBin]
                 
                 if not math.isnan(windSpeed) and not math.isnan(power) and not math.isnan(turbulence):
                     powerLevels[windSpeed] =  power
                     turbulenceLevels[windSpeed] =  turbulence
+                    dataCountLevels[windSpeed] = dataCount
 
         #padding
         # To deal with data missing between cutOut and last measured point:
@@ -441,7 +445,7 @@ class Analysis:
         powerLevels = self.powerCurvePadder.pad(powerLevels, cutInWindSpeed, cutOutWindSpeed,ratedPower)
         turbulenceLevels = self.powerCurvePadder.padTurbulence(turbulenceLevels, cutInWindSpeed, cutOutWindSpeed, minTurb, maxTurb)
         
-        return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, turbulenceLevels = turbulenceLevels)
+        return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, turbulenceLevels = turbulenceLevels, dataCountLevels = dataCountLevels)
 
     def calculatePowerDeviationMatrix(self, power, filterMode):
 
