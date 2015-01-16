@@ -31,40 +31,20 @@ class AEPCalculator:
         energySum = 0
         ideal_energy_distribution = pd.DataFrame(index = self.distribution.keys, columns = ['upper','lower','freq','power','energy'])
         for bin in self.distribution.keys:
-            upper = curve.powerFunction(bin)
-            lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.keys()) else curve.powerFunction(bin-0.5)
-            power=(upper+lower)/2.0
-            freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-0.5)
-            ideal_energy_distribution.loc[bin, 'upper'] = upper
-            ideal_energy_distribution.loc[bin, 'lower'] = lower
-            ideal_energy_distribution.loc[bin, 'freq'] = freq
-            ideal_energy_distribution.loc[bin, 'power'] = power
-            ideal_energy_distribution.loc[bin, 'energy'] = freq*power
-            energySum += freq*power
-        print ideal_energy_distribution
-        return energySum
-
-class AEPCalculatorLCB(AEPCalculator):
-    def calculate_ideal_yield(self, curve):
-        # todo: update this
-        # this is a quick implementation - look up numpy/pandas rebinning solns.
-        energySum = 0
-        ideal_energy_distribution = pd.DataFrame(index = self.distribution.keys, columns = ['upper','lower','freq','power','energy'])
-        for bin in self.distribution.keys:
-            # todo: generalise this:
-            if bin <= 19:
+            if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
                 upper = curve.powerFunction(bin)
                 lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.keys()) else curve.powerFunction(bin-0.5)
                 power=(upper+lower)/2.0
                 freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-0.5)
-                ideal_energy_distribution.loc[bin, 'upper'] = upper
-                ideal_energy_distribution.loc[bin, 'lower'] = lower
-                ideal_energy_distribution.loc[bin, 'freq'] = freq
-                ideal_energy_distribution.loc[bin, 'power'] = power
-                ideal_energy_distribution.loc[bin, 'energy'] = freq*power
+                ideal_energy_distribution.loc[bin, ['upper','lower','freq','power','energy']] = [float(upper),lower,freq,power,freq*power]
                 energySum += freq*power
         print ideal_energy_distribution
         return energySum
+
+class AEPCalculatorLCB(AEPCalculator):
+    def __init__(self,referenceCurve, measuredCurve, distribution = None, distributionPath = None):
+        AEPCalculator.__init__(self, referenceCurve, measuredCurve, distribution, distributionPath)
+        self.lcb = max(self.measuredCurve.dataCountLevels.keys())
 
 class WindSpeedDistribution(XmlBase):
     def __init__(self,path):
@@ -80,6 +60,8 @@ class WindSpeedDistribution(XmlBase):
 
         for node in self.getNodes(distNode, 'Bin'):
             BinCentre = self.getNodeFloat(node, 'BinCentre')
+            if BinCentre in self.keys:
+                raise Exception("Bin {0} has been defined more than once!".format(BinCentre))
             self.keys.append(BinCentre)
             distribution[BinCentre] = self.getNodeFloat(node, 'BinValue')
 
