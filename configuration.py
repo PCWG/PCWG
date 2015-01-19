@@ -1,6 +1,7 @@
 import xml.dom.minidom
 import dateutil
 import os
+import pandas as pd
 
 class XmlBase:
 
@@ -335,18 +336,20 @@ class PowerCurveConfiguration(XmlBase):
             self.powerCurveDensity = self.getNodeFloat(powerCurveNode, 'PowerCurveDensity')
             self.powerCurveTurbulence = self.getNodeFloat(powerCurveNode, 'PowerCurveTurbulence')
 
-            self.powerCurveLevels = {}
+            speed, power = [], []
             
             for node in self.getNodes(powerCurveNode, 'PowerCurveLevel'):
-                speed = self.getNodeFloat(node, 'PowerCurveLevelWindSpeed')
-                self.powerCurveLevels[speed] = self.getNodeFloat(node, 'PowerCurveLevelPower')    
-
+                speed.append(self.getNodeFloat(node, 'PowerCurveLevelWindSpeed'))
+                power.append(self.getNodeFloat(node, 'PowerCurveLevelPower'))   
+            self.powerCurveLevels = pd.DataFrame(power, index = speed, columns = ['Specified Power'])
+            self.powerCurveLevels['Specified Turbulence'] = self.powerCurveTurbulence
+            
         else:
 
             self.name = ""
             self.powerCurveDensity = 0.0
             self.powerCurveTurbulence = 0.0
-            self.powerCurveLevels = {}
+            self.powerCurveLevels = pd.Series()
             
     def save(self):
 
