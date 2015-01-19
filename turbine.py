@@ -15,17 +15,13 @@ class PowerCurve:
         self.inputHubWindSpeed = wsCol
         self.hubTurbulence = turbCol
         self.dataCount = countCol
-        
-        
+
         if (self.hubTurbulence is not None) and fixedTurbulence != None:
             raise Exception("Cannot specify both turbulence levels and fixed turbulence")
-        
-        #self.dataCountLevels = dataCountLevels
-        
+
         self.availablePower = AvailablePower(rotorGeometry.area, referenceDensity)
         
         self.powerCurveLevels = powerCurveLevels
-        #self.windSpeedLevels = windSpeedLevels
         
         self.referenceDensity = referenceDensity
         self.rotorGeometry = rotorGeometry
@@ -45,7 +41,6 @@ class PowerCurve:
         
         self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower])
 
-        #self.turbulenceLevels = self.getTurbulenceLevels(powerCurveLevels[self.actualPower], powerCurveLevels[self.hubTurbulence], fixedTurbulence)
         self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data)
 
         keys = sorted(powerCurveLevels[self.actualPower].keys())
@@ -56,7 +51,6 @@ class PowerCurve:
     def getRatedPower(self, ratedPower, powerCurveLevels):
 
         if ratedPower == None:
-            #return max(powerCurveLevels.values())
             return powerCurveLevels.max()
         else:
             return ratedPower
@@ -93,7 +87,6 @@ class PowerCurve:
         
         for i in y_data.index:
             if i in x_data.index:
-            #if False:
                 x.append(x_data[i])
             else:
                 x.append(i)
@@ -102,11 +95,6 @@ class PowerCurve:
         return interpolators.LinearPowerCurveInterpolator(x, y)
                 
     def power(self, windSpeed, turbulence = None, extraTurbCorrection = False):
-
-#        if windSpeed < self.firstWindSpeed or windSpeed > self.cutOutWindSpeed:
-#            referencePower = 0.0
-#        else:
-#            referencePower = self.powerFunction(windSpeed)
         referencePower = self.powerFunction(windSpeed)
             
         if turbulence == None:
@@ -118,7 +106,6 @@ class PowerCurve:
 
         power = max([0.0, power])
         power = min([self.ratedPower, power])
-
         return power
 
     def calculateExtraTurbulenceCorrection(self, windSpeed, turbulence, referenceTurbulence):

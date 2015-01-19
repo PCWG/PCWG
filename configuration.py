@@ -336,7 +336,6 @@ class PowerCurveConfiguration(XmlBase):
             self.powerCurveDensity = self.getNodeFloat(powerCurveNode, 'PowerCurveDensity')
             self.powerCurveTurbulence = self.getNodeFloat(powerCurveNode, 'PowerCurveTurbulence')
 
-            #self.powerCurveLevels = {}
             speed, power = [], []
             
             for node in self.getNodes(powerCurveNode, 'PowerCurveLevel'):

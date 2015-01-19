@@ -410,16 +410,6 @@ class Analysis:
             
         filteredDataFrame = self.dataFrame[mask]    
 
-#        measuredPowerCurve = filteredDataFrame[self.actualPower].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
-#        measuredWindSpeed = filteredDataFrame[self.inputHubWindSpeed].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
-#        measuredTurbulence = filteredDataFrame[self.hubTurbulence].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
-#        measuredDataCount = filteredDataFrame[self.actualPower].groupby(filteredDataFrame[self.windSpeedBin]).count()
-#        
-#        powerLevels = {}
-#        turbulenceLevels = {}
-#        dataCountLevels = {}
-        
-        ###############################################################
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[self.actualPower, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         dfDataCount = filteredDataFrame[self.actualPower].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.dataCount:'count'})
@@ -427,23 +417,6 @@ class Analysis:
             raise Exception("Index of aggregated data count and mean quantities for measured power curve do not match.")
         dfPowerLevels = dfPowerLevels.join(dfDataCount, how = 'inner')
         dfPowerLevels.dropna(inplace = True)
-        ###############################################################
-        
-#        for i in range(self.windSpeedBins.numberOfBins):
-#
-#            windSpeedBin = self.windSpeedBins.binCenterByIndex(i)
-#            
-#            if windSpeedBin in measuredPowerCurve:
-#
-#                windSpeed = round(measuredWindSpeed[windSpeedBin], 4)
-#                power = round(measuredPowerCurve[windSpeedBin], 4)
-#                turbulence = round(measuredTurbulence[windSpeedBin], 4)
-#                dataCount = measuredDataCount[windSpeedBin]
-#                
-#                if not math.isnan(windSpeed) and not math.isnan(power) and not math.isnan(turbulence):
-#                    powerLevels[windSpeed] =  power
-#                    turbulenceLevels[windSpeed] =  turbulence
-#                    dataCountLevels[windSpeed] = dataCount
 
         #padding
         # To deal with data missing between cutOut and last measured point:
@@ -455,11 +428,6 @@ class Analysis:
 
         powerLevels = self.powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed, self.actualPower, self.inputHubWindSpeed, self.hubTurbulence, self.dataCount)
 
-#        powerLevels = self.powerCurvePadder.pad(dfPowerLevels[self.actualPower], cutInWindSpeed, cutOutWindSpeed,ratedPower)
-#        turbulenceLevels = self.powerCurvePadder.padTurbulence(dfPowerLevels[self.hubTurbulence], cutInWindSpeed, cutOutWindSpeed, minTurb, maxTurb)
-#        dataCountLevels = dfPowerLevels[self.dataCount]
-#        windSpeedLevels = dfPowerLevels[self.inputHubWindSpeed]
-        
         return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, self.actualPower, self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount)
 
     def calculatePowerDeviationMatrix(self, power, filterMode):
@@ -599,17 +567,7 @@ class PadderFactory:
 #        turbulenceLevels = self.turbulenceOutside(turbulenceLevels,cutInWindSpeed,cutOutWindSpeed,minTurb,maxTurb)
 #        return turbulenceLevels
 #
-#class MaxPadder(Padder):
-#    def pad(self,powerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower):
-#        powerLevels[max(powerLevels.keys())+ self.stepIn] = powerLevels.max()
-#        powerLevels[cutOutWindSpeed] = powerLevels.max()
-#        powerLevels = self.outsideCutIns(powerLevels,cutInWindSpeed,cutOutWindSpeed)
-#        return powerLevels
-#    def padTurbulence(self,turbulenceLevels,cutInWindSpeed,cutOutWindSpeed,minTurb,maxTurb):
-#        turbulenceLevels[max(turbulenceLevels.keys())+ self.stepIn] = minTurb
-#        turbulenceLevels[cutOutWindSpeed] = minTurb
-#        turbulenceLevels = self.turbulenceOutside(turbulenceLevels,cutInWindSpeed,cutOutWindSpeed,minTurb,maxTurb)
-#        return turbulenceLevels
+
 
 class Padder:
     stepIn = 0.0001
