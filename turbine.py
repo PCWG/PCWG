@@ -26,9 +26,6 @@ class PowerCurve:
         self.referenceDensity = referenceDensity
         self.rotorGeometry = rotorGeometry
 
-        print "printing PC df:"
-        print self.powerCurveLevels
-        
         self.firstWindSpeed = min(self.powerCurveLevels.index)
         self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels)
         self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels)
