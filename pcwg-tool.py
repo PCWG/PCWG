@@ -1284,8 +1284,8 @@ class UserInterface:
                         return
 
 
-                self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
-                return
+#                self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
+#                return
         
                 try:
             
