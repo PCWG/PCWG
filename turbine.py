@@ -5,16 +5,20 @@ import numpy as np
 import scipy as sp
 from scipy import stats
 import sys
+import pandas as pd
 
 class PowerCurve:
 
-    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, turbulenceLevels = None, fixedTurbulence = None, ratedPower = None, dataCountLevels = None):
+    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, powerCol, turbCol, wsCol = None, countCol = None, fixedTurbulence = None, ratedPower = None):
+        
+        self.actualPower = powerCol #strings defining column names
+        self.inputHubWindSpeed = wsCol
+        self.hubTurbulence = turbCol
+        self.dataCount = countCol
 
-        if turbulenceLevels != None and fixedTurbulence != None:
+        if (self.hubTurbulence is not None) and fixedTurbulence != None:
             raise Exception("Cannot specify both turbulence levels and fixed turbulence")
-        
-        self.dataCountLevels = dataCountLevels
-        
+
         self.availablePower = AvailablePower(rotorGeometry.area, referenceDensity)
         
         self.powerCurveLevels = powerCurveLevels
@@ -22,26 +26,32 @@ class PowerCurve:
         self.referenceDensity = referenceDensity
         self.rotorGeometry = rotorGeometry
 
-        self.firstWindSpeed = min(self.powerCurveLevels.keys())
+        print "printing PC df:"
+        print self.powerCurveLevels
+        
+        self.firstWindSpeed = min(self.powerCurveLevels.index)
         self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels)
         self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels)
-
-        self.powerFunction = self.createFunction(powerCurveLevels)
         
-        self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels)
+        if self.inputHubWindSpeed is None:
+            ws_data = None
+        else:
+            ws_data = powerCurveLevels[self.inputHubWindSpeed]
+        self.powerFunction = self.createFunction(powerCurveLevels[self.actualPower], ws_data)
+        
+        self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower])
 
-        self.turbulenceLevels = self.getTurbulenceLevels(powerCurveLevels, turbulenceLevels, fixedTurbulence)
-        self.turbulenceFunction = self.createFunction(self.turbulenceLevels)
+        self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data)
 
-        keys = sorted(self.powerCurveLevels.keys())
+        keys = sorted(powerCurveLevels[self.actualPower].keys())
         integrationRange = IntegrationRange(0.0, 100.0, 0.1)
-        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(self.powerCurveLevels, keys), self.getArray(self.turbulenceLevels, keys), integrationRange, self.availablePower)
+        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(powerCurveLevels[self.actualPower], keys), self.getArray(powerCurveLevels[self.hubTurbulence], keys), integrationRange, self.availablePower)
         self.simulatedPower = SimulatedPower(self.zeroTurbulencePowerCurve, integrationRange)
 
     def getRatedPower(self, ratedPower, powerCurveLevels):
 
         if ratedPower == None:
-            return max(powerCurveLevels.values())
+            return powerCurveLevels.max()
         else:
             return ratedPower
             
@@ -49,9 +59,9 @@ class PowerCurve:
 
         if fixedTurbulence != None:
 
-            turbulenceLevels = {}
+            turbulenceLevels = pd.Series(index = powerCurveLevels.index)
             
-            for level in powerCurveLevels:
+            for level in powerCurveLevels.index:
                 turbulenceLevels[level] = fixedTurbulence                
             
         else:
@@ -69,22 +79,23 @@ class PowerCurve:
 
         return array
                 
-    def createFunction(self, levels):
-
-        x = sorted(levels.keys())
-        y = []
+    def createFunction(self, y_data, x_data):
         
-        for i in range(len(x)):
-            y.append(levels[x[i]])
+        if x_data is None:
+            x_data = pd.Series(y_data.index, index = y_data.index)
+        x, y = [], []
+        
+        for i in y_data.index:
+            if i in x_data.index:
+                x.append(x_data[i])
+            else:
+                x.append(i)
+            y.append(y_data[i])
 
         return interpolators.LinearPowerCurveInterpolator(x, y)
                 
     def power(self, windSpeed, turbulence = None, extraTurbCorrection = False):
-
-        if windSpeed < self.firstWindSpeed or windSpeed > self.cutOutWindSpeed:
-            referencePower = 0.0
-        else:
-            referencePower = self.powerFunction(windSpeed)
+        referencePower = self.powerFunction(windSpeed)
             
         if turbulence == None:
             power = referencePower
@@ -95,7 +106,6 @@ class PowerCurve:
 
         power = max([0.0, power])
         power = min([self.ratedPower, power])
-
         return power
 
     def calculateExtraTurbulenceCorrection(self, windSpeed, turbulence, referenceTurbulence):
@@ -132,8 +142,8 @@ class PowerCurve:
 
         levels = []
 
-        for windSpeed in self.powerCurveLevels:
-            if self.powerCurveLevels[windSpeed] > 0.0:
+        for windSpeed in self.powerCurveLevels.index:
+            if self.powerCurveLevels[self.actualPower][windSpeed] > 0.0:
                 levels.append(windSpeed)
 
         return levels
