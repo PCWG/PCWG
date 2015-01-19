@@ -32,8 +32,8 @@ class AEPCalculator:
         ideal_energy_distribution = pd.DataFrame(index = self.distribution.keys, columns = ['upper','lower','freq','power','energy'])
         for bin in self.distribution.keys:
             if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
-                upper = curve.powerFunction(bin)
-                lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.keys()) else curve.powerFunction(bin-0.5)
+                upper = curve.power(bin)
+                lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.index) else curve.power(bin-0.5)
                 power=(upper+lower)/2.0
                 freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-0.5)
                 ideal_energy_distribution.loc[bin, ['upper','lower','freq','power','energy']] = [float(upper),lower,freq,power,freq*power]
@@ -43,7 +43,10 @@ class AEPCalculator:
 class AEPCalculatorLCB(AEPCalculator):
     def __init__(self,referenceCurve, measuredCurve, distribution = None, distributionPath = None):
         AEPCalculator.__init__(self, referenceCurve, measuredCurve, distribution, distributionPath)
-        self.lcb = max(self.measuredCurve.dataCountLevels.keys())
+        print "LCB IS:"
+        print max(self.measuredCurve.powerCurveLevels[self.measuredCurve.powerCurveLevels['Data Count'] > 0].index)
+        self.measuredCurve.powerCurveLevels[self.measuredCurve.powerCurveLevels['Data Count'] > 0]
+        self.lcb = max(self.measuredCurve.powerCurveLevels[self.measuredCurve.powerCurveLevels['Data Count'] > 0].index)
 
 class WindSpeedDistribution(XmlBase):
     def __init__(self,path):
