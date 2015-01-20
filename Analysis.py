@@ -406,7 +406,7 @@ class Analysis:
         
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower):
         
-        mask = (self.dataFrame[self.actualPower] > -200.) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
+        mask = (self.dataFrame[self.actualPower] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
             
         filteredDataFrame = self.dataFrame[mask]    
 
