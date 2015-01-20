@@ -27,17 +27,27 @@ class report:
 
         self.reportSettings(settingsSheet, analysis)
 
-        self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve)
+        rowsAfterCurves = []
+        rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve) )
 
         if analysis.hasActualPower:
 
             for name in analysis.residualWindSpeedMatrices:
                 self.reportPowerDeviations(book, "ResidualWindSpeed-%s" % name, analysis.residualWindSpeedMatrices[name], gradient)
 
-            if analysis.hasShear: self.reportPowerCurve(sh, 1, 4, 'Inner', analysis.innerMeasuredPowerCurve)
-            self.reportPowerCurve(sh, 1, 8, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve)
-            if analysis.hasShear: self.reportPowerCurve(sh, 1, 12, 'Outer', analysis.outerMeasuredPowerCurve)
-            self.reportPowerCurve(sh, 1, 16, 'All', analysis.allMeasuredPowerCurve)
+            if analysis.hasShear: rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 4, 'Inner', analysis.innerMeasuredPowerCurve) )
+            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 8, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve) )
+            if analysis.hasShear: rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 12, 'Outer', analysis.outerMeasuredPowerCurve) )
+            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 16, 'All', analysis.allMeasuredPowerCurve) )
+
+            rowAfterCurves = max(rowsAfterCurves) + 5
+            sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
+            specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.keys()
+            if analysis.hasShear: self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 4, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
+            self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 8, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, specifiedLevels)
+            if analysis.hasShear: self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 12, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
+            self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 16, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
+
 
             self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
             #self.reportPowerDeviations(book, "HubPowerDeviationsInnerShear", analysis.hubPowerDeviationsInnerShear, gradient)
@@ -58,7 +68,53 @@ class report:
                 self.reportPowerDeviationsDifference(book, "Hub-Comb-DevDiff", analysis.hubPowerDeviations, analysis.combPowerDeviations, gradient)
                 #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
 
+            calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
+            self.reportCalibrations(calSheet,analysis)
+
         book.save(path)
+
+    def reportCalibrations(self,sh,analysis):
+        maxRow = 0
+        startRow = 2
+        col = -3
+        for conf,calib in analysis.calibrations:
+            col+=5
+            row=startRow
+            sh.write(row,col,conf.name, self.bold_style)
+            sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
+            row += 1
+            sh.write(row,col,"Bin", self.bold_style)
+            sh.write(row,col+1,"Slope", self.bold_style)
+            sh.write(row,col+2,"Offset", self.bold_style)
+            sh.write(row,col+3,"Count", self.bold_style)
+            row+=1
+            for key in sorted(calib.slopes):
+                sh.write(row,col,key, self.bold_style)
+                sh.write(row,col+1,calib.slopes[key], self.four_dp_style)
+                sh.write(row,col+2,calib.offsets[key], self.four_dp_style)
+                sh.write(row,col+3,calib.counts[key], self.no_dp_style)
+                row += 1
+
+            if len(conf.calibrationFilters) > 0:
+                row += 2
+                sh.write(row, col, "Calibration Filters", self.bold_style)
+                row += 1
+                sh.write(row, col, "Data Column", self.bold_style)
+                sh.write(row, col+1, "Filter Type", self.bold_style)
+                sh.write(row, col+2, "Inclusive", self.bold_style)
+                sh.write(row, col+3, "Filter Value", self.bold_style)
+                sh.write(row, col+4, "Active", self.bold_style)
+                row += 1
+
+                for filt in conf.calibrationFilters:
+
+                    sh.write(row, col, filt.column)
+                    sh.write(row, col+1, filt.filterType)
+                    sh.write(row, col+2, filt.inclusive)
+                    sh.write(row, col+3, str(filt))
+                    sh.write(row, col+4, "True") # always true if in list...
+                    row += 1
+
 
     def reportSettings(self, sh, analysis):
 
@@ -277,21 +333,11 @@ class report:
             sh.write(row, dataColumn, datasetConfig.pressure)
             row += 1
 
-            sh.write(row, labelColumn, "Lower Wind Speed", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.lowerWindSpeed)
-            row += 1
-
-            sh.write(row, labelColumn, "Lower Wind Speed Height", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.lowerWindSpeedHeight)
-            row += 1
-
-            sh.write(row, labelColumn, "Upper Wind Speed", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.upperWindSpeed)
-            row += 1
-
-            sh.write(row, labelColumn, "Upper Wind Speed Height", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.upperWindSpeedHeight)
-            row += 1
+            if 'ReferenceLocation' in datasetConfig.shearMeasurements.keys() and 'TurbineLocation' in datasetConfig.shearMeasurements.keys():
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements['ReferenceLocation'],'Reference Location ')
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements['TurbineLocation'],'Turbine Location ')
+            else:
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements)
 
             sh.write(row, labelColumn, "Power", self.bold_style)
             sh.write(row, dataColumn, datasetConfig.power)
@@ -325,15 +371,25 @@ class report:
             sh.write(row, dataColumn + 3, "Active", self.bold_style)
             row += 1
 
-            for value in datasetConfig.filters:
+            for filter in datasetConfig.filters:
 
-                sh.write(row, labelColumn, value.column)
-                sh.write(row, dataColumn, value.filterType)
-                sh.write(row, dataColumn + 1, value.inclusive)
-                sh.write(row, dataColumn + 2, value.filterValue)
-                sh.write(row, dataColumn + 3, value.value)
+                sh.write(row, labelColumn, filter.column)
+                sh.write(row, dataColumn, filter.filterType)
+                sh.write(row, dataColumn + 1, filter.inclusive)
+                sh.write(row, dataColumn + 2, str(filter))
+                sh.write(row, dataColumn + 3, "True") # always true if in list...
 
                 row += 1
+
+    def writeShear(self,sh,labelColumn,dataColumn,row,shearDict,prefix=""):
+        for i, meas in enumerate(shearDict.keys()):
+                sh.write(row, labelColumn, prefix+"Shear Measurement " + str(i+1), self.bold_style)
+                sh.write(row, dataColumn, shearDict[meas])
+                row += 1
+                sh.write(row, labelColumn, prefix+"Shear Measurement {0} Height ".format(i+1), self.bold_style)
+                sh.write(row, dataColumn, str(meas))
+                row += 1
+        return row
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 
@@ -357,7 +413,23 @@ class report:
             sh.write(rowOffset + count + 1, columnOffset + 3, powerCurve.turbulenceLevels[windSpeed], self.percent_no_dp_style)
 
             count += 1
-            
+        return count
+
+    def reportInterpolatedPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve, levels):
+
+        sh.write(rowOffset, columnOffset + 2, name, self.bold_style)
+        sh.write(rowOffset + 1, columnOffset + 1, "Wind Speed", self.bold_style)
+        sh.write(rowOffset + 1, columnOffset + 2, "Power", self.bold_style)
+        sh.write(rowOffset + 1, columnOffset + 3, "Turbulence", self.bold_style)
+
+        count = 1
+        for windSpeed in sorted(levels):
+            sh.write(rowOffset + count + 1, columnOffset + 1, windSpeed, self.two_dp_style)
+            sh.write(rowOffset + count + 1, columnOffset + 2, float(powerCurve.powerFunction(windSpeed)), self.no_dp_style)
+            sh.write(rowOffset + count + 1, columnOffset + 3, float(powerCurve.turbulenceFunction(windSpeed)), self.percent_no_dp_style)
+            count += 1
+
+
     def reportPowerDeviations(self, book, sheetName, powerDeviations, gradient):
         
         sh = book.add_sheet(sheetName, cell_overwrite_ok=True)
