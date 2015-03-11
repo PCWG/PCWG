@@ -82,6 +82,8 @@ class WindSpeedDistribution(XmlBase):
             distribution[BinCentre] = self.getNodeFloat(node, 'BinValue')
 
         self.df = pd.Series(distribution)
+        if len(self.df) < 1:
+            raise Exception("Error reading distribution file - no 'Bin' nodes detected...")
         self.cumulative  = self.df.cumsum()
         self.cumulativeFunction = interp1d(self.cumulative.index, self.cumulative,bounds_error=False, fill_value=0.0)#,kind = 'cubic')
         self.binSize = self.df.index[2]-self.df.index[1]
