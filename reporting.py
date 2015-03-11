@@ -396,6 +396,11 @@ class report:
         powerCurveLevels = powerCurve.powerCurveLevels.copy()
         if powerCurve.inputHubWindSpeed is None:
             powerCurveLevels['Specified Wind Speed'] = powerCurveLevels.index
+            windSpeedCol = 'Specified Wind Speed'
+        else:
+            windSpeedCol = 'Input Hub Wind Speed'
+
+        powerCurveLevels = powerCurveLevels.sort(windSpeedCol)
 
         sh.write(rowOffset, columnOffset + 2, name, self.bold_style)
 
