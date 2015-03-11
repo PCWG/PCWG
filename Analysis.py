@@ -115,7 +115,7 @@ class Analysis:
         self.powerCurvePadder = PadderFactory().generate(config.powerCurvePaddingMode,self.actualPower, self.inputHubWindSpeed, self.hubTurbulence, self.dataCount)
 
         powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
-        self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence")               
+        self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence", turbulenceRenormalisation = self.turbRenormActive)
 
         if self.densityCorrectionActive:
             if self.hasDensity:
@@ -428,7 +428,8 @@ class Analysis:
 
         powerLevels = self.powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower)
 
-        return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, self.actualPower, self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount)
+        return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, self.actualPower,
+                                  self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount, turbulenceRenormalisation=self.turbRenormActive)
 
     def calculatePowerDeviationMatrix(self, power, filterMode):
 
