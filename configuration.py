@@ -64,7 +64,7 @@ class XmlBase:
             self.addTextNode(doc, parentNode, nodeName, "0")
         
     def addFloatNode(self, doc, parentNode, nodeName, value):
-        self.addTextNode(doc, parentNode, nodeName, "%f" % value)
+        self.addTextNode(doc, parentNode, nodeName, "%f" % float(value))
         
     def createDocument(self):
         return xml.dom.minidom.Document()
@@ -232,7 +232,14 @@ class AnalysisConfiguration(XmlBase):
         self.addTextNode(doc, root, "FilterMode", self.filterMode)
         self.addTextNode(doc, root, "BaseLineMode", self.baseLineMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
+        self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
+        
+        powerCurveBinsNode = self.addNode(doc, root, "PowerCurveBins")
 
+        self.addFloatNode(doc, powerCurveBinsNode, "FirstBinCentre", self.powerCurveFirstBin)
+        self.addFloatNode(doc, powerCurveBinsNode, "LastBinCentre", self.powerCurveLastBin)
+        self.addFloatNode(doc, powerCurveBinsNode, "BinSize", self.powerCurveBinSize)
+        
         datasetsNode = self.addNode(doc, root, "Datasets")
 
         for dataset in self.datasets:
