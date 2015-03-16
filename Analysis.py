@@ -201,7 +201,7 @@ class Analysis:
             self.dataFrame = self.dataFrame.drop(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]].index)
             self.dataFrame = self.dataFrame.append(d)
             if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
-                print [filter for filter in dataSetConf.filters if not filter.applied]
+                print [str(filter) for filter in dataSetConf.filters if not filter.applied]
                 raise Exception("Filters have not been able to be applied!")
 
     def defineInnerRange(self, config):

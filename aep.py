@@ -49,7 +49,7 @@ class AEPCalculator:
         energySum = 0
         energyColumns = ["{0}_{1}".format(curveType, col) for col in ['Upper','Lower','Freq','Power','Energy']]
         for bin in self.distribution.keys:
-            if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= 19.0):
+            if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
                 upper = curve.power(bin)
                 lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.index) else curve.power(bin-0.5)
                 power=(upper+lower)/2.0
@@ -85,11 +85,18 @@ class WindSpeedDistribution(XmlBase):
         self.df = pd.Series(distribution)
         if len(self.df) < 1:
             raise Exception("Error reading distribution file - no 'Bin' nodes detected...")
-        self.cumulative  = self.df.cumsum()
-        self.cumulativeFunction = interp1d(self.cumulative.index, self.cumulative,bounds_error=False, fill_value=0.0)#,kind = 'cubic')
-        self.binSize = self.df.index[2]-self.df.index[1]
-        self.rebinned = {}
 
+        self.binSize = self.df.index[2]-self.df.index[1]
+        self.df_rebinned = self.rebin()
+        self.cumulative  = self.df_rebinned.cumsum()
+        self.cumulativeFunction = interp1d(self.cumulative.index, self.cumulative,bounds_error=False, fill_value=0.0)#,kind = 'cubic')
+
+    def rebin(self):
+        rebin_values = np.arange(self.df.index.min()-0.25, self.df.index.max()+0.25, 0.5)
+        rebin_centres = np.arange(self.df.index.min(), self.df.index.max(), 0.5)
+        x_bin_bounds = np.append(np.array(self.df.index) - (self.binSize / 2.0),self.df.index.max()+(self.binSize/2.0))
+        rebinned_values = rebin.rebin(x_bin_bounds , np.array(self.df), rebin_values)#, 'piecewise_constant')
+        return pd.Series(rebinned_values, index=rebin_centres)
 
     def __getitem__(self, item): # define so can be used like a dict
         return self.distribution[item]
