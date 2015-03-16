@@ -4,6 +4,7 @@ import numpy as np
 from configuration import XmlBase
 import pandas as pd
 from scipy.interpolate import interp1d
+import rebin
 
 class AEPCalculator:
     def __init__(self, referenceCurve, measuredCurve, distribution = None, distributionPath = None):
