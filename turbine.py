@@ -9,7 +9,8 @@ import pandas as pd
 
 class PowerCurve:
 
-    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, powerCol, turbCol, wsCol = None, countCol = None, fixedTurbulence = None, ratedPower = None):
+    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, powerCol, turbCol, wsCol = None,
+                 countCol = None, fixedTurbulence = None, ratedPower = None,turbulenceRenormalisation=True):
         
         self.actualPower = powerCol #strings defining column names
         self.inputHubWindSpeed = wsCol
@@ -40,10 +41,11 @@ class PowerCurve:
 
         self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data)
 
-        keys = sorted(powerCurveLevels[self.actualPower].keys())
-        integrationRange = IntegrationRange(0.0, 100.0, 0.1)
-        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(powerCurveLevels[self.actualPower], keys), self.getArray(powerCurveLevels[self.hubTurbulence], keys), integrationRange, self.availablePower)
-        self.simulatedPower = SimulatedPower(self.zeroTurbulencePowerCurve, integrationRange)
+        if turbulenceRenormalisation:
+            keys = sorted(powerCurveLevels[self.actualPower].keys())
+            integrationRange = IntegrationRange(0.0, 100.0, 0.1)
+            self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(powerCurveLevels[self.actualPower], keys), self.getArray(powerCurveLevels[self.hubTurbulence], keys), integrationRange, self.availablePower)
+            self.simulatedPower = SimulatedPower(self.zeroTurbulencePowerCurve, integrationRange)
 
     def getRatedPower(self, ratedPower, powerCurveLevels):
 
