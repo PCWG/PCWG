@@ -76,9 +76,14 @@ class report:
     def reportCalibrations(self,sh,analysis):
         maxRow = 0
         startRow = 2
-        col = -3
+        col = -5
         for conf,calib in analysis.calibrations:
-            col+=5
+            if calib.belowAbove != {}:
+                belowAbove = True
+            else:
+                belowAbove = False
+
+            col+=7
             row=startRow
             sh.write(row,col,conf.name, self.bold_style)
             sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
@@ -87,12 +92,19 @@ class report:
             sh.write(row,col+1,"Slope", self.bold_style)
             sh.write(row,col+2,"Offset", self.bold_style)
             sh.write(row,col+3,"Count", self.bold_style)
+            if belowAbove:
+                sh.write(row,col+4,"Count <= 8m/s", self.bold_style)
+                sh.write(row,col+5,"Count >  8m/s", self.bold_style)
+
             row+=1
             for key in sorted(calib.slopes):
                 sh.write(row,col,key, self.bold_style)
                 sh.write(row,col+1,calib.slopes[key], self.four_dp_style)
                 sh.write(row,col+2,calib.offsets[key], self.four_dp_style)
                 sh.write(row,col+3,calib.counts[key], self.no_dp_style)
+                if belowAbove:
+                    sh.write(row,col+4,calib.belowAbove[key][0], self.no_dp_style)
+                    sh.write(row,col+5,calib.belowAbove[key][1], self.no_dp_style)
                 row += 1
 
             if len(conf.calibrationFilters) > 0:
