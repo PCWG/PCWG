@@ -1308,11 +1308,11 @@ class UserInterface:
                         import aep
                         aepCalc = aep.AEPCalculator(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
                         ans = aepCalc.calculate_AEP()
-                        self.addMessage( "RefYield: {ref} MWh \nMeasuredYield: {mes} MWh \nAEP: {aep1:0.08} % \n".format(
-                            ref=aepCalc.refYield,mes=aepCalc.measuredYield , aep1 =aepCalc.AEP*100) )
+                        self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
+                        self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
+                        self.addMessage( "AEP: {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
 
                     except Exception as e:
-                        raise
                         self.addMessage("ERROR Calculating AEP: %s" % e)
 
 
