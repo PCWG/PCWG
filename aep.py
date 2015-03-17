@@ -42,18 +42,15 @@ class AEPCalculator:
             raise Exception("Unknown curve type")
 
     def calculate_ideal_yield(self, curveType):
-        # todo: update this
-        # this is a quick implementation - look up numpy/pandas rebinning solns.
-        # ASSUMES a 0/5 NWSD width!
         curve = self.getCurve(curveType)
         energySum = 0
         energyColumns = ["{0}_{1}".format(curveType, col) for col in ['Upper','Lower','Freq','Power','Energy']]
         for bin in self.distribution.keys:
             if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
                 upper = curve.power(bin)
-                lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.index) else curve.power(bin-0.5)
+                lower = 0.0 if bin-self.distribution.rebin_width < min(curve.powerCurveLevels.index) else curve.power(bin-self.distribution.rebin_width)
                 power=(upper+lower)/2.0
-                freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-0.5)
+                freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-self.distribution.rebin_width)
                 self.energy_distribution.loc[bin, energyColumns] = [float(upper),lower,freq,power,freq*power]
                 energySum += freq*power
         return energySum
@@ -64,6 +61,7 @@ class AEPCalculatorLCB(AEPCalculator):
         self.lcb = max(self.measuredCurve.powerCurveLevels[self.measuredCurve.powerCurveLevels['Data Count'] > 0].index)
 
 class WindSpeedDistribution(XmlBase):
+    rebin_width = 0.5
     def __init__(self,path):
         self.parse(path)
 
@@ -92,8 +90,8 @@ class WindSpeedDistribution(XmlBase):
         self.cumulativeFunction = interp1d(self.cumulative.index, self.cumulative,bounds_error=False, fill_value=0.0)#,kind = 'cubic')
 
     def rebin(self):
-        rebin_values = np.arange(self.df.index.min()-0.25, self.df.index.max()+0.25, 0.5)
-        rebin_centres = np.arange(self.df.index.min(), self.df.index.max(), 0.5)
+        rebin_values = np.arange(self.df.index.min()-(self.rebin_width/2.0), self.df.index.max()+(self.rebin_width/2.0), self.rebin_width)
+        rebin_centres = np.arange(self.df.index.min(), self.df.index.max(), self.rebin_width)
         x_bin_bounds = np.append(np.array(self.df.index) - (self.binSize / 2.0),self.df.index.max()+(self.binSize/2.0))
         rebinned_values = rebin.rebin(x_bin_bounds , np.array(self.df), rebin_values)#, 'piecewise_constant')
         return pd.Series(rebinned_values, index=rebin_centres)
