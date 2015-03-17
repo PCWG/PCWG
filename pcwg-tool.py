@@ -629,8 +629,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.referenceWindDirection = self.addEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60)
                 self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset)
                 self.turbineLocationWindSpeed = self.addEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed)
-                self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", ValidateNotBlank(master), self.config.hubWindSpeed, width = 60)
-                self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", ValidateNotBlank(master), self.config.hubTurbulence, width = 60)
+                self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60)
+                self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60)
 
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
                         self.shearWindSpeeds.append( self.addEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60) )
@@ -652,9 +652,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.rewsProfileLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.rewsProfileLevelsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
                 self.rewsProfileLevelsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
-                self.validatedREWSProfileLevels = ValidateREWSProfileLevels(master, self.rewsProfileLevelsListBox)
-                self.validations.append(self.validatedREWSProfileLevels)
-                self.validatedREWSProfileLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
+                #self.validatedREWSProfileLevels = ValidateREWSProfileLevels(master, self.rewsProfileLevelsListBox)
+                #self.validations.append(self.validatedREWSProfileLevels)
+                #self.validatedREWSProfileLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
 
                 self.addREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=5, height=1)
                 self.addREWSProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
@@ -886,7 +886,13 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode)
                 self.powerCurveMode = self.addOption(master, "Power Curve Mode:", ["Specified", "AllMeasured", "InnerMeasured", "InnerTurbulenceMeasured", "OuterMeasured", "OuterTurbulenceMeasured"], self.config.powerCurveMode)
-
+                self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["Linear", "Observed", "Specified", "Max"], self.config.powerCurvePaddingMode)
+                
+                self.addTitleRow(master, "Power Curve Bins:")
+                self.powerCurveFirstBin = self.addEntry(master, "First Bin Centre:", ValidateNonNegativeFloat(master), self.config.powerCurveFirstBin)
+                self.powerCurveLastBin = self.addEntry(master, "Last Bin Centre:", ValidateNonNegativeFloat(master), self.config.powerCurveLastBin)
+                self.powerCurveBinSize = self.addEntry(master, "Bin Size:", ValidatePositiveFloat(master), self.config.powerCurveBinSize)
+                
                 Label(master, text="Datasets:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 self.row += 1
 
@@ -1031,6 +1037,10 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.filterMode = self.filterMode.get()
                 self.config.baseLineMode = self.baseLineMode.get()
                 self.config.powerCurveMode = self.powerCurveMode.get()
+                self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
+                self.config.powerCurveFirstBin = self.powerCurveFirstBin.get()
+                self.config.powerCurveLastBin = self.powerCurveLastBin.get()
+                self.config.powerCurveBinSize = self.powerCurveBinSize.get()
                 self.config.innerRangeLowerTurbulence = float(self.innerRangeLowerTurbulence.get())
                 self.config.innerRangeUpperTurbulence = float(self.innerRangeUpperTurbulence.get())
                 self.config.innerRangeLowerShear = float(self.innerRangeLowerShear.get())
