@@ -455,6 +455,23 @@ class Analysis:
 
         report = reporting.report(self.windSpeedBins, self.turbulenceBins)
         report.report(path, self)
+
+    def anonym_report(self, path):
+        #calculate wind speed bins normalised to rated wind speed
+        targetPowerCurve =  self.allMeasuredPowerCurve
+
+        if not hasattr(targetPowerCurve,"zeroTurbulencePowerCurve"):
+            try:
+                targetPowerCurve.calcZeroTurbulencePowerCurve()
+            except:
+                print "Couldn't calculate zeroTurbulencePowerCurve - convergence error"
+                raise Exception("Couldn't calculate zeroTurbulencePowerCurve - convergence error")
+                # think about defining rated wind speed in a different way?
+        self.observedRatedPower = targetPowerCurve.zeroTurbulencePowerCurve.maxPower
+        self.observedRatedWindSpeed = targetPowerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(targetPowerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
+
+        report = reporting.AnonReport(targetPowerCurve = targetPowerCurve)
+        report.report(path, self)
                        
     def calculateBase(self):
 

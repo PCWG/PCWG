@@ -8,7 +8,7 @@ import datetime
 import os
 import os.path
 
-version = "0.5.0"
+version = "0.5.1"
 
 class WindowStatus:
 
@@ -1073,7 +1073,7 @@ class UserInterface:
                 self.analysisConfiguration = None
                 
                 self.root = Tk()
-                self.root.geometry("600x400")
+                self.root.geometry("700x400")
                 self.root.title("PCWG")
 
                 labelsFrame = Frame(self.root)
@@ -1088,6 +1088,7 @@ class UserInterface:
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
                 AEP_button = Button(commandframe,text="AEP",command = self.CalculateAEP)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
+                anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
                 benchmark_button = Button(commandframe, text="Benchmark", command = self.Benchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
@@ -1109,6 +1110,7 @@ class UserInterface:
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
                 AEP_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
+                anonym_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
                 benchmark_button.pack(side=LEFT, padx=5, pady=5)
                 clear_console_button.pack(side=LEFT, padx=5, pady=5)
@@ -1275,7 +1277,21 @@ class UserInterface:
                         self.addMessage("Report written to %s" % fileName)
                 except Exception as e:
                         self.addMessage("ERROR Exporting Report: %s" % e)            
-        
+
+        def ExportAnonymousReport(self):
+
+                if self.analysis == None:
+                        self.addMessage("ERROR: Analysis not yet calculated")
+                        return
+
+
+                try:
+                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report")
+                        self.analysis.anonym_report(fileName)
+                        self.addMessage("Anonymous report written to %s" % fileName)
+                except Exception as e:
+                        self.addMessage("ERROR Exporting Anonymous Report: %s" % e)
+
         def ExportTimeSeries(self):
 
                 if self.analysis == None:
@@ -1332,7 +1348,7 @@ class UserInterface:
                 self.root.update()
 
         def About(self):
-                tkMessageBox.showinfo("PCWG-Tool About", "Version: %s" % version)
+                tkMessageBox.showinfo("PCWG-Tool About", "Version: %s \nVisit http://www.pcwg.org for more info" % version)
 
         def addMessage(self, message):
                 self.listbox.insert(END, message)            

@@ -3,15 +3,14 @@ import colour
 import numpy as np
 
 class report:
-    
-    def __init__(self, windSpeedBins, turbulenceBins):
+    bold_style = xlwt.easyxf('font: bold 1')
+    no_dp_style = xlwt.easyxf(num_format_str='0')
+    two_dp_style = xlwt.easyxf(num_format_str='0.00')
+    four_dp_style = xlwt.easyxf(num_format_str='0.0000')
+    percent_style = xlwt.easyxf(num_format_str='0.00%')
+    percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
 
-        self.bold_style = xlwt.easyxf('font: bold 1')
-        self.no_dp_style = xlwt.easyxf(num_format_str='0')
-        self.two_dp_style = xlwt.easyxf(num_format_str='0.00')
-        self.four_dp_style = xlwt.easyxf(num_format_str='0.0000')
-        self.percent_style = xlwt.easyxf(num_format_str='0.00%')
-        self.percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
+    def __init__(self, windSpeedBins, turbulenceBins):
 
         self.windSpeedBins = windSpeedBins
         self.turbulenceBins = turbulenceBins
@@ -576,3 +575,66 @@ class report:
             text += "%f\t" % self.windSpeedBins.binCenterByIndex(i)
 
         print text            
+
+class AnonReport(report):
+    def __init__(self,targetPowerCurve):
+        self.targetPowerCurve = targetPowerCurve
+
+    def report(self, path, analysis):
+        self.analysis = analysis
+        book = xlwt.Workbook()
+        gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
+
+        sh = book.add_sheet("Anonymous Report", cell_overwrite_ok=True)
+
+        pcStart = 2
+        pcEnd   = 60
+        deviationMatrixStart = pcEnd + 5
+        deviationMatrixEnd = 100
+
+        self.reportPowerCurve(sh, pcStart, 0, 'Power Curve', self.targetPowerCurve)
+        self.reportPowerDeviations(sh,deviationMatrixStart, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
+
+        book.save(path)
+
+    def reportPowerDeviations(self,sh, startRow, powerDeviations, gradient):
+
+        for j in range(self.turbulenceBins.numberOfBins):
+
+            turbulence = self.turbulenceBins.binCenterByIndex(j)
+            row = startRow + self.turbulenceBins.numberOfBins - j - 1
+
+            sh.write(row, 0, turbulence, self.percent_no_dp_style)
+
+            for i in range(self.windSpeedBins.numberOfBins):
+
+                windSpeed = self.windSpeedBins.binCenterByIndex(i)
+                col = i + 1
+
+                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)
+
+                if windSpeed in powerDeviations:
+                    if turbulence  in powerDeviations[windSpeed]:
+                        deviation = powerDeviations[windSpeed][turbulence]
+                        if not np.isnan(deviation):
+                            sh.write(row, col, deviation, gradient.getStyle(deviation))
+
+    def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
+
+        sh.write(rowOffset, columnOffset + 2, name, self.bold_style)
+        rowOrders = { 'Data Count':4, 'Normalised Wind Speed':1,'Normalised Power':2, 'Turbulence':3}
+
+        for colname in rowOrders.keys():
+            sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
+            countRow = 1
+            for normalisedLevel in np.arange(0, 3, 0.1):
+                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], normalisedLevel, self.two_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname],
+                         float(powerCurve.powerFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.two_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname],
+                         float(powerCurve.turbulenceFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.percent_no_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname],
+                         self.analysis.data, self.no_dp_style)
+                countRow += 1
+
+        return countRow
