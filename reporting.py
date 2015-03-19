@@ -577,8 +577,10 @@ class report:
         print text            
 
 class AnonReport(report):
-    def __init__(self,targetPowerCurve):
+    def __init__(self,targetPowerCurve,wind_bins, turbulence_bins):
         self.targetPowerCurve = targetPowerCurve
+        self.turbulenceBins = turbulence_bins
+        self.normalisedBins = wind_bins
 
     def report(self, path, analysis):
         self.analysis = analysis
@@ -593,7 +595,7 @@ class AnonReport(report):
         deviationMatrixEnd = 100
 
         self.reportPowerCurve(sh, pcStart, 0, 'Power Curve', self.targetPowerCurve)
-        self.reportPowerDeviations(sh,deviationMatrixStart, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
+        self.reportPowerDeviations(sh,deviationMatrixStart, analysis.normalisedHubPowerDeviations, gradient)
 
         book.save(path)
 
@@ -603,18 +605,16 @@ class AnonReport(report):
 
             turbulence = self.turbulenceBins.binCenterByIndex(j)
             row = startRow + self.turbulenceBins.numberOfBins - j - 1
-
             sh.write(row, 0, turbulence, self.percent_no_dp_style)
 
-            for i in range(self.windSpeedBins.numberOfBins):
-
-                windSpeed = self.windSpeedBins.binCenterByIndex(i)
+            for i in range(self.normalisedBins.numberOfBins):
+                windSpeed = self.normalisedBins.binCenterByIndex(i)
                 col = i + 1
-
-                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)
+                if j == 0:
+                    sh.write(self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
 
                 if windSpeed in powerDeviations:
-                    if turbulence  in powerDeviations[windSpeed]:
+                    if turbulence in powerDeviations[windSpeed]:
                         deviation = powerDeviations[windSpeed][turbulence]
                         if not np.isnan(deviation):
                             sh.write(row, col, deviation, gradient.getStyle(deviation))
@@ -627,14 +627,18 @@ class AnonReport(report):
         for colname in rowOrders.keys():
             sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
             countRow = 1
-            for normalisedLevel in np.arange(0, 3, 0.1):
-                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], normalisedLevel, self.two_dp_style)
-                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname],
-                         float(powerCurve.powerFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.two_dp_style)
-                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname],
+
+        for normalisedLevel in np.arange(0, 3, 0.1):
+            dataCount = self.analysis.dataFrame[self.analysis.dataFrame['Density Corrected Hub Wind Speed'] <= normalisedLevel*self.analysis.observedRatedWindSpeed]['Density Corrected Hub Wind Speed'].count()
+            if dataCount > 0 and dataCount > dataCountOld:
+                sh.write(rowOffset + countRow + 1, columnOffset + 1, normalisedLevel, self.two_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + 2,
+                         float(powerCurve.powerFunction(normalisedLevel*self.analysis.observedRatedWindSpeed))/self.analysis.observedRatedPower, self.two_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + 3,
                          float(powerCurve.turbulenceFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.percent_no_dp_style)
-                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname],
-                         self.analysis.data, self.no_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + 4,
+                         dataCount-dataCountOld, self.no_dp_style)
                 countRow += 1
+            dataCountOld = dataCount
 
         return countRow
