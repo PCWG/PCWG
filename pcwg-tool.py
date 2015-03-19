@@ -1289,6 +1289,8 @@ class UserInterface:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report")
                         self.analysis.anonym_report(fileName)
                         self.addMessage("Anonymous report written to %s" % fileName)
+                        self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
+                        self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
                 except Exception as e:
                         self.addMessage("ERROR Exporting Anonymous Report: %s" % e)
 

@@ -461,8 +461,12 @@ class Analysis:
         report.report(path, self)
 
     def anonym_report(self, path):
-        #calculate wind speed bins normalised to rated wind speed
-        targetPowerCurve =  self.allMeasuredPowerCurve
+        # What do we want to report at this stage? Should this be an option?
+        targetPowerCurve = self.allMeasuredPowerCurve #self.innerTurbulenceMeasuredPowerCurve # self.allMeasuredPowerCurve
+        powerColumn = self.hubPower #self.turbulencePower # self.hubPower
+        innerShearFilterMode = 3
+        allFilterMode = 0
+        filterMode = allFilterMode # innerShearFilterMode
 
         if not hasattr(targetPowerCurve,"zeroTurbulencePowerCurve"):
             try:
@@ -474,23 +478,27 @@ class Analysis:
         self.observedRatedPower = targetPowerCurve.zeroTurbulencePowerCurve.maxPower
         self.observedRatedWindSpeed = targetPowerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(targetPowerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
 
-        self.normalisedBins = binning.Bins(0,0.1,3)
-        self.dataFrame['Normalised WS Bin'] = (self.dataFrame[self.inputHubWindSpeed]/self.observedRatedWindSpeed).map(self.normalisedBins.binCenter)
-
         first_turb_bin = 0.01 #bin centre for first turbulence bin
         last_turb_bin = 0.41 #bin centre for last turbulence bin
+        firstNormWSbin = 0
+        lastNormWSbin = 3
+        normWSstep = 0.05
+
+        normRange =  np.arange(firstNormWSbin, lastNormWSbin, normWSstep)
+        self.normalisedBins = binning.Bins(firstNormWSbin,normWSstep,lastNormWSbin)
+        self.dataFrame['Normalised WS Bin'] = (self.dataFrame[self.inputHubWindSpeed]/self.observedRatedWindSpeed).map(self.normalisedBins.binCenter)
         turb_bin_width = (last_turb_bin - first_turb_bin) / (self.normalisedBins.numberOfBins - 2.) #calculating the bin width required to give the same no. turb and ws bins
         normTurbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.dataFrame['Normalised Turb Bin'] = (self.dataFrame[self.turbulenceBin]).map(normTurbulenceBins.binCenter)
 
-        allFilterMode = 3 # consistent with other deviation matrix calcs.
-        powerColumn =  self.hubPower
-        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(powerColumn, allFilterMode
+        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(powerColumn, filterMode
                                                                                ,windBin = 'Normalised WS Bin'
                                                                                ,turbBin = 'Normalised Turb Bin')
+
         report = reporting.AnonReport(targetPowerCurve = targetPowerCurve,
                                       wind_bins = self.normalisedBins,
-                                      turbulence_bins = normTurbulenceBins)
+                                      turbulence_bins = normTurbulenceBins,
+                                      normRange = normRange)
         report.report(path, self)
                        
     def calculateBase(self):

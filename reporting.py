@@ -577,10 +577,11 @@ class report:
         print text            
 
 class AnonReport(report):
-    def __init__(self,targetPowerCurve,wind_bins, turbulence_bins):
+    def __init__(self,targetPowerCurve,wind_bins, turbulence_bins, normRange):
         self.targetPowerCurve = targetPowerCurve
         self.turbulenceBins = turbulence_bins
         self.normalisedBins = wind_bins
+        self.normalisedRange = normRange
 
     def report(self, path, analysis):
         self.analysis = analysis
@@ -628,7 +629,7 @@ class AnonReport(report):
             sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
             countRow = 1
 
-        for normalisedLevel in np.arange(0, 3, 0.1):
+        for normalisedLevel in self.normalisedRange:
             dataCount = self.analysis.dataFrame[self.analysis.dataFrame['Density Corrected Hub Wind Speed'] <= normalisedLevel*self.analysis.observedRatedWindSpeed]['Density Corrected Hub Wind Speed'].count()
             if dataCount > 0 and dataCount > dataCountOld:
                 sh.write(rowOffset + countRow + 1, columnOffset + 1, normalisedLevel, self.two_dp_style)
@@ -638,7 +639,7 @@ class AnonReport(report):
                          float(powerCurve.turbulenceFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.percent_no_dp_style)
                 sh.write(rowOffset + countRow + 1, columnOffset + 4,
                          dataCount-dataCountOld, self.no_dp_style)
-                countRow += 1
+            countRow += 1
             dataCountOld = dataCount
 
         return countRow
