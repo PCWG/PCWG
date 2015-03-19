@@ -431,7 +431,11 @@ class Analysis:
         return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, self.actualPower,
                                   self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount, turbulenceRenormalisation=self.turbRenormActive)
 
-    def calculatePowerDeviationMatrix(self, power, filterMode):
+    def calculatePowerDeviationMatrix(self, power, filterMode, windBin = None, turbBin = None):
+        if windBin is None:
+            windBin = self.windSpeedBin
+        if turbBin is None:
+            turbBin = self.turbulenceBin
 
         mask = (self.dataFrame[self.actualPower] > 0) & (self.dataFrame[power] > 0)
         mask = mask & self.getFilter(filterMode)
@@ -440,7 +444,7 @@ class Analysis:
         filteredDataFrame.is_copy = False
         filteredDataFrame[self.powerDeviation] = (filteredDataFrame[self.actualPower] - filteredDataFrame[power]) / filteredDataFrame[power]
         
-        return filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average)
+        return filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).aggregate(self.aggregations.average)
 
     def calculateREWSMatrix(self, filterMode):
 
@@ -454,6 +458,47 @@ class Analysis:
     def report(self, path):
 
         report = reporting.report(self.windSpeedBins, self.turbulenceBins)
+        report.report(path, self)
+
+    def anonym_report(self, path):
+        # What do we want to report at this stage? Should this be an option?
+        targetPowerCurve = self.allMeasuredPowerCurve #self.innerTurbulenceMeasuredPowerCurve # self.allMeasuredPowerCurve
+        powerColumn = self.hubPower #self.turbulencePower # self.hubPower
+        innerShearFilterMode = 3
+        allFilterMode = 0
+        filterMode = allFilterMode # innerShearFilterMode
+
+        if not hasattr(targetPowerCurve,"zeroTurbulencePowerCurve"):
+            try:
+                targetPowerCurve.calcZeroTurbulencePowerCurve()
+            except:
+                print "Couldn't calculate zeroTurbulencePowerCurve - convergence error"
+                raise Exception("Couldn't calculate zeroTurbulencePowerCurve - convergence error")
+                # think about defining rated wind speed in a different way?
+        self.observedRatedPower = targetPowerCurve.zeroTurbulencePowerCurve.maxPower
+        self.observedRatedWindSpeed = targetPowerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(targetPowerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
+
+        first_turb_bin = 0.01 #bin centre for first turbulence bin
+        last_turb_bin = 0.41 #bin centre for last turbulence bin
+        firstNormWSbin = 0
+        lastNormWSbin = 3
+        normWSstep = 0.05
+
+        normRange =  np.arange(firstNormWSbin, lastNormWSbin, normWSstep)
+        self.normalisedBins = binning.Bins(firstNormWSbin,normWSstep,lastNormWSbin)
+        self.dataFrame['Normalised WS Bin'] = (self.dataFrame[self.inputHubWindSpeed]/self.observedRatedWindSpeed).map(self.normalisedBins.binCenter)
+        turb_bin_width = (last_turb_bin - first_turb_bin) / (self.normalisedBins.numberOfBins - 2.) #calculating the bin width required to give the same no. turb and ws bins
+        normTurbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
+        self.dataFrame['Normalised Turb Bin'] = (self.dataFrame[self.turbulenceBin]).map(normTurbulenceBins.binCenter)
+
+        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(powerColumn, filterMode
+                                                                               ,windBin = 'Normalised WS Bin'
+                                                                               ,turbBin = 'Normalised Turb Bin')
+
+        report = reporting.AnonReport(targetPowerCurve = targetPowerCurve,
+                                      wind_bins = self.normalisedBins,
+                                      turbulence_bins = normTurbulenceBins,
+                                      normRange = normRange)
         report.report(path, self)
                        
     def calculateBase(self):
