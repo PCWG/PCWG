@@ -105,11 +105,12 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn):
+    def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn, belowAbove = {}):
 
         self.slopes = slopes
         self.offsets = offsets
         self.counts=counts
+        self.belowAbove = belowAbove
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
 
@@ -329,6 +330,7 @@ class Dataset:
         slopes = {}
         intercepts = {}
         counts = {}
+        belowAbove = {}
         
         for group in groups:
 
@@ -338,9 +340,12 @@ class Dataset:
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+            if valueColumn == self.hubWindSpeedForTurbulence:
+                belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
+
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, counts, self.referenceDirectionBin, valueColumn)
+        return SiteCalibrationCalculator(slopes, intercepts, counts, self.referenceDirectionBin, valueColumn, belowAbove=belowAbove)
         
     def isValidText(self, text):
         if text == None: return False

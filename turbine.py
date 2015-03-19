@@ -42,10 +42,14 @@ class PowerCurve:
         self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data)
 
         if turbulenceRenormalisation:
-            keys = sorted(powerCurveLevels[self.actualPower].keys())
-            integrationRange = IntegrationRange(0.0, 100.0, 0.1)
-            self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(powerCurveLevels[self.actualPower], keys), self.getArray(powerCurveLevels[self.hubTurbulence], keys), integrationRange, self.availablePower)
-            self.simulatedPower = SimulatedPower(self.zeroTurbulencePowerCurve, integrationRange)
+            self.calcZeroTurbulencePowerCurve()
+
+    def calcZeroTurbulencePowerCurve(self):
+        keys = sorted(self.powerCurveLevels[self.actualPower].keys())
+        integrationRange = IntegrationRange(0.0, 100.0, 0.1)
+        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(self.powerCurveLevels[self.actualPower], keys), self.getArray(self.powerCurveLevels[self.hubTurbulence], keys), integrationRange, self.availablePower)
+        self.simulatedPower = SimulatedPower(self.zeroTurbulencePowerCurve, integrationRange)
+
 
     def getRatedPower(self, ratedPower, powerCurveLevels):
 

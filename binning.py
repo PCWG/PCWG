@@ -12,7 +12,8 @@ class Bins:
         self.numberOfBins = (end_of_last_bin - start_of_first_bin)/self.binWidth
         #if not float(self.numberOfBins).is_integer():
         if not abs(float(self.numberOfBins)) % int(1) < 1e-12: #tolerance on int check
-            raise Exception("An integer number of bins must exist. The inputs have led to: {0}".format(self.numberOfBins))
+            if not abs(1 - (float(self.numberOfBins) % int(1))) < 1e-12: #tolerance on int check
+                raise Exception("An integer number of bins must exist. The inputs have led to: {0}".format(self.numberOfBins))
         self.numberOfBins = int(self.numberOfBins)
 
     def binCenterForFirstCenterAndWidth(self, x, centerOfFirstBin, binWidth):
