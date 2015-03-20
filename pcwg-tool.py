@@ -1273,7 +1273,7 @@ class UserInterface:
 
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report")
-                        self.analysis.report(fileName)
+                        self.analysis.report(fileName, version)
                         self.addMessage("Report written to %s" % fileName)
                 except Exception as e:
                         self.addMessage("ERROR Exporting Report: %s" % e)            
@@ -1284,10 +1284,9 @@ class UserInterface:
                         self.addMessage("ERROR: Analysis not yet calculated")
                         return
 
-
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report")
-                        self.analysis.anonym_report(fileName)
+                        self.analysis.anonym_report(fileName, version)
                         self.addMessage("Anonymous report written to %s" % fileName)
                         self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
                         self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))

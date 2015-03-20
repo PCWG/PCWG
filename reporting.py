@@ -10,8 +10,8 @@ class report:
     percent_style = xlwt.easyxf(num_format_str='0.00%')
     percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
 
-    def __init__(self, windSpeedBins, turbulenceBins):
-
+    def __init__(self, windSpeedBins, turbulenceBins, version="unknown"):
+        self.version = version
         self.windSpeedBins = windSpeedBins
         self.turbulenceBins = turbulenceBins
 
@@ -130,8 +130,11 @@ class report:
     def reportSettings(self, sh, analysis):
 
         config = analysis.config
+        sh.write(0, 1, "PCWG Tool Version Number:")
+        sh.write(0, 2, self.version)
+        sh.write(0, 3, xlwt.Formula('HYPERLINK("http://www.pcwg.org";"PCWG Website")'))
 
-        row = 1
+        row = 3
 
         labelColumn = 1
         dataColumn = 2
@@ -480,9 +483,9 @@ class report:
                 
                 if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)    
                 
-                if windSpeed in powerDeviations:
-                    if turbulence  in powerDeviations[windSpeed]:
-                        deviation = powerDeviations[windSpeed][turbulence] 
+                if windSpeed in powerDeviations.matrix:
+                    if turbulence  in powerDeviations.matrix[windSpeed]:
+                        deviation = powerDeviations.matrix[windSpeed][turbulence]
                         if not np.isnan(deviation):
                             sh.write(row, col, deviation, gradient.getStyle(deviation))
 
@@ -507,10 +510,10 @@ class report:
                 
                 if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)    
                 
-                if windSpeed in deviationsA:
-                    if turbulence  in deviationsA[windSpeed]:
-                        deviationA = deviationsA[windSpeed][turbulence] 
-                        deviationB = deviationsB[windSpeed][turbulence] 
+                if windSpeed in deviationsA.matrix:
+                    if turbulence  in deviationsA.matrix[windSpeed]:
+                        deviationA = deviationsA.matrix[windSpeed][turbulence]
+                        deviationB = deviationsB.matrix[windSpeed][turbulence]
                         if not np.isnan(deviationA) and not np.isnan(deviationB):
                             diff = abs(deviationA) - abs(deviationB)
                             sh.write(row, col, diff, gradient.getStyle(diff))
@@ -577,7 +580,8 @@ class report:
         print text            
 
 class AnonReport(report):
-    def __init__(self,targetPowerCurve,wind_bins, turbulence_bins, normRange):
+    def __init__(self,targetPowerCurve,wind_bins, turbulence_bins, normRange, version="unknown"):
+        self.version = version
         self.targetPowerCurve = targetPowerCurve
         self.turbulenceBins = turbulence_bins
         self.normalisedBins = wind_bins
@@ -589,6 +593,9 @@ class AnonReport(report):
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
 
         sh = book.add_sheet("Anonymous Report", cell_overwrite_ok=True)
+        sh.write(0, 0, "PCWG Tool Version Number:")
+        sh.write(0, 1, self.version)
+        sh.write(0, 2, xlwt.Formula('HYPERLINK("http://www.pcwg.org";"PCWG Website")'))
 
         pcStart = 2
         pcEnd   = 60
@@ -614,11 +621,13 @@ class AnonReport(report):
                 if j == 0:
                     sh.write(self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
 
-                if windSpeed in powerDeviations:
-                    if turbulence in powerDeviations[windSpeed]:
-                        deviation = powerDeviations[windSpeed][turbulence]
+                if windSpeed in powerDeviations.matrix:
+                    if turbulence in powerDeviations.matrix[windSpeed]:
+                        deviation = powerDeviations.matrix[windSpeed][turbulence]
+                        count = powerDeviations.count[windSpeed][turbulence]
                         if not np.isnan(deviation):
                             sh.write(row, col, deviation, gradient.getStyle(deviation))
+                            sh.write(int(row+self.turbulenceBins.numberOfBins+1), col, int(count), self.no_dp_style)
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 
@@ -630,16 +639,15 @@ class AnonReport(report):
             countRow = 1
 
         for normalisedLevel in self.normalisedRange:
-            dataCount = self.analysis.dataFrame[self.analysis.dataFrame['Density Corrected Hub Wind Speed'] <= normalisedLevel*self.analysis.observedRatedWindSpeed]['Density Corrected Hub Wind Speed'].count()
-            if dataCount > 0 and dataCount > dataCountOld:
+            dataCount = self.analysis.dataFrame[self.analysis.dataFrame['Normalised WS Bin'] == normalisedLevel]['Time Stamp'].count()
+            if dataCount > 0:
                 sh.write(rowOffset + countRow + 1, columnOffset + 1, normalisedLevel, self.two_dp_style)
                 sh.write(rowOffset + countRow + 1, columnOffset + 2,
                          float(powerCurve.powerFunction(normalisedLevel*self.analysis.observedRatedWindSpeed))/self.analysis.observedRatedPower, self.two_dp_style)
                 sh.write(rowOffset + countRow + 1, columnOffset + 3,
                          float(powerCurve.turbulenceFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.percent_no_dp_style)
                 sh.write(rowOffset + countRow + 1, columnOffset + 4,
-                         dataCount-dataCountOld, self.no_dp_style)
+                         dataCount, self.no_dp_style)
             countRow += 1
-            dataCountOld = dataCount
 
         return countRow

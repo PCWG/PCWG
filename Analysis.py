@@ -7,6 +7,7 @@ import datetime
 import math
 import configuration
 import dataset
+from dataset import  DeviationMatrix
 import binning
 import turbine
 import rews
@@ -443,8 +444,11 @@ class Analysis:
         filteredDataFrame = self.dataFrame[mask]
         filteredDataFrame.is_copy = False
         filteredDataFrame[self.powerDeviation] = (filteredDataFrame[self.actualPower] - filteredDataFrame[power]) / filteredDataFrame[power]
-        
-        return filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).aggregate(self.aggregations.average)
+
+        devMatrix = DeviationMatrix(filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).aggregate(self.aggregations.average),
+                                    filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).count())
+
+        return devMatrix
 
     def calculateREWSMatrix(self, filterMode):
 
@@ -452,15 +456,18 @@ class Analysis:
         mask = mask & self.getFilter(filterMode)
         
         filteredDataFrame = self.dataFrame[mask]
-        
-        return filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average)
-            
-    def report(self, path):
 
-        report = reporting.report(self.windSpeedBins, self.turbulenceBins)
+        rewsMatrix = DeviationMatrix(filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average),
+                                    filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).count())
+
+        return rewsMatrix
+            
+    def report(self, path,version="unknown"):
+
+        report = reporting.report(self.windSpeedBins, self.turbulenceBins,version)
         report.report(path, self)
 
-    def anonym_report(self, path):
+    def anonym_report(self, path,version="unknown"):
         # What do we want to report at this stage? Should this be an option?
         targetPowerCurve = self.allMeasuredPowerCurve #self.innerTurbulenceMeasuredPowerCurve # self.allMeasuredPowerCurve
         powerColumn = self.hubPower #self.turbulencePower # self.hubPower
@@ -498,7 +505,8 @@ class Analysis:
         report = reporting.AnonReport(targetPowerCurve = targetPowerCurve,
                                       wind_bins = self.normalisedBins,
                                       turbulence_bins = normTurbulenceBins,
-                                      normRange = normRange)
+                                      normRange = normRange,
+                                      version= version)
         report.report(path, self)
                        
     def calculateBase(self):
