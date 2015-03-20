@@ -377,7 +377,6 @@ class Dataset:
         requiredCols = []
 
         requiredCols.append(self.name)
-        requiredCols.append(self.timeStamp)
 
         requiredCols.append(self.hubWindSpeed)
         requiredCols.append(self.hubTurbulence)
@@ -387,15 +386,15 @@ class Dataset:
 
         if self.hasShear:        
             requiredCols.append(self.shearExponent)
-
-        if self.hasActualPower:        
-            requiredCols.append(self.actualPower)
             
         if self.rewsDefined:        
             requiredCols.append(self.profileRotorWindSpeed)
             requiredCols.append(self.profileHubWindSpeed)
             requiredCols.append(self.profileHubToRotorRatio)
             requiredCols.append(self.profileHubToRotorDeviation)
+
+        if self.hasActualPower:
+            requiredCols.append(self.actualPower)
 
         return dataFrame[requiredCols]
 
