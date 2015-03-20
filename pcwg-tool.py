@@ -8,7 +8,7 @@ import datetime
 import os
 import os.path
 
-version = "0.5.0"
+version = "0.5.1"
 
 class WindowStatus:
 
@@ -1073,7 +1073,7 @@ class UserInterface:
                 self.analysisConfiguration = None
                 
                 self.root = Tk()
-                self.root.geometry("600x400")
+                self.root.geometry("700x400")
                 self.root.title("PCWG")
 
                 labelsFrame = Frame(self.root)
@@ -1086,7 +1086,9 @@ class UserInterface:
                 new_button = Button(settingsFrame, text="New", command = self.NewAnalysis)
 
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
+                AEP_button = Button(commandframe,text="AEP",command = self.CalculateAEP)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
+                anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
                 benchmark_button = Button(commandframe, text="Benchmark", command = self.Benchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
@@ -1106,7 +1108,9 @@ class UserInterface:
                 load_button.pack(side=RIGHT, padx=5, pady=5)
                 
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
+                AEP_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
+                anonym_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
                 benchmark_button.pack(side=LEFT, padx=5, pady=5)
                 clear_console_button.pack(side=LEFT, padx=5, pady=5)
@@ -1273,7 +1277,23 @@ class UserInterface:
                         self.addMessage("Report written to %s" % fileName)
                 except Exception as e:
                         self.addMessage("ERROR Exporting Report: %s" % e)            
-        
+
+        def ExportAnonymousReport(self):
+
+                if self.analysis == None:
+                        self.addMessage("ERROR: Analysis not yet calculated")
+                        return
+
+
+                try:
+                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report")
+                        self.analysis.anonym_report(fileName)
+                        self.addMessage("Anonymous report written to %s" % fileName)
+                        self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
+                        self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
+                except Exception as e:
+                        self.addMessage("ERROR Exporting Anonymous Report: %s" % e)
+
         def ExportTimeSeries(self):
 
                 if self.analysis == None:
@@ -1286,7 +1306,7 @@ class UserInterface:
                         self.addMessage("Time series written to %s" % fileName)
                 except Exception as e:
                         self.addMessage("ERROR Exporting Time Series: %s" % e)
-        
+
         def Calculate(self):
 
                 if self.analysisConfiguration == None:
@@ -1305,13 +1325,32 @@ class UserInterface:
                         
                         self.addMessage("ERROR Calculating Analysis: %s" % e)                    
 
+        def CalculateAEP(self):
+            if self.analysis == None:
+                        self.addMessage("ERROR: Analysis not yet calculated")
+                        return
+            else:
+                    try:
+                        fileName = askopenfilename(parent=self.root,defaultextension=".xml",title="Please select a Nominal Wind Speed Distribution XML")
+                        self.addMessage("Attempting AEP Calculation...")
+                        import aep
+                        aepCalc = aep.AEPCalculator(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
+                        ans = aepCalc.calculate_AEP()
+                        self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
+                        self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
+                        self.addMessage( "AEP: {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
+
+                    except Exception as e:
+                        self.addMessage("ERROR Calculating AEP: %s" % e)
+
+
                         
         def ClearConsole(self):
                 self.listbox.delete(0, END)
                 self.root.update()
 
         def About(self):
-                tkMessageBox.showinfo("PCWG-Tool About", "Version: %s" % version)
+                tkMessageBox.showinfo("PCWG-Tool About", "Version: %s \nVisit http://www.pcwg.org for more info" % version)
 
         def addMessage(self, message):
                 self.listbox.insert(END, message)            
