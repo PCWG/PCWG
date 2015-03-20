@@ -1,12 +1,14 @@
 # Power Curve Working Group collaborative</h1>
 [PCWG Website](http://www.pcwg.org)
 
+## Current Version
+v0.5.1
+
 ## Release Versions
 A full history of release versions can be found on [SourceForge](http://sourceforge.net/projects/pcwg/files/ "SourceForge")
 
-v0.5.0 - 02/10/2014 - First release - [.exe(SourceForge)](http://sourceforge.net/projects/pcwg/files/pcwg-tool-0.5.0.zip/download "v0.5.0") - GitHub :211b061fe04b5a81acec3d2a217e11324b5bb1ba
-
-v0.5.1 - 20/03/2015 - Release prior to Hamburg meeting - [.exe(SourceForge)](http://sourceforge.net/projects/pcwg/files/pcwg-tool-0.5.1.zip/download "v0.5.1") GitHub : 9202c673bbcac7a49d788b13b95526d61ed32db7
+v0.5.0 - 02/10/2014 - First release - [.exe(SourceForge)](http://sourceforge.net/projects/pcwg/files/pcwg-tool-0.5.0.zip/download "v0.5.0") 
+v0.5.1 - 20/03/2015 - Release prior to Hamburg meeting - [.exe(SourceForge)](http://sourceforge.net/projects/pcwg/files/pcwg-tool-0.5.1.zip/download "v0.5.1") 
 
 
 ### Filtering:
