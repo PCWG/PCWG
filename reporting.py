@@ -613,13 +613,23 @@ class AnonReport(report):
 
             turbulence = self.turbulenceBins.binCenterByIndex(j)
             row = startRow + self.turbulenceBins.numberOfBins - j - 1
-            sh.write(row, 0, turbulence, self.percent_no_dp_style)
+            if j < self.turbulenceBins.numberOfBins-5:
+                sh.write(row, 0, turbulence, self.percent_no_dp_style)
+                sh.write(int(row+self.turbulenceBins.numberOfBins), 0, turbulence, self.percent_no_dp_style)
+                sh.write(int(row+(2*self.turbulenceBins.numberOfBins)), 0, turbulence, self.percent_no_dp_style)
+            elif j == self.turbulenceBins.numberOfBins-5:
+                sh.write(row, 0, "Deviations Matrix", self.bold_style)
+                sh.write(int(row+self.turbulenceBins.numberOfBins), 0, "Data Count Matrix", self.bold_style)
+                sh.write(int(row+(2*self.turbulenceBins.numberOfBins)), 0, "Count*Deviations Matrix", self.bold_style)
+
 
             for i in range(self.normalisedBins.numberOfBins):
                 windSpeed = self.normalisedBins.binCenterByIndex(i)
                 col = i + 1
                 if j == 0:
                     sh.write(self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
+                    sh.write(2*self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
+                    sh.write(3*self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
 
                 if windSpeed in powerDeviations.matrix:
                     if turbulence in powerDeviations.matrix[windSpeed]:
@@ -627,7 +637,8 @@ class AnonReport(report):
                         count = powerDeviations.count[windSpeed][turbulence]
                         if not np.isnan(deviation):
                             sh.write(row, col, deviation, gradient.getStyle(deviation))
-                            sh.write(int(row+self.turbulenceBins.numberOfBins+1), col, int(count), self.no_dp_style)
+                            sh.write(int(row+self.turbulenceBins.numberOfBins), col, int(count), self.no_dp_style)
+                            sh.write(int(row+(2*self.turbulenceBins.numberOfBins)), col, deviation*int(count), self.no_dp_style)
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 

@@ -108,8 +108,8 @@ class Analysis:
 
         self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
         first_turb_bin = 0.01 #bin centre for first turbulence bin
-        last_turb_bin = 0.41 #bin centre for last turbulence bin
-        turb_bin_width = (last_turb_bin - first_turb_bin) / (self.windSpeedBins.numberOfBins - 2.) #calculating the bin width required to give the same no. turb and ws bins
+        turb_bin_width = 0.01
+        last_turb_bin = first_turb_bin + turb_bin_width*self.windSpeedBins.numberOfBins #bin centre for last turbulence bin
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
@@ -486,15 +486,16 @@ class Analysis:
         self.observedRatedWindSpeed = targetPowerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(targetPowerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
 
         first_turb_bin = 0.01 #bin centre for first turbulence bin
-        last_turb_bin = 0.41 #bin centre for last turbulence bin
+        turb_bin_width = 0.01
         firstNormWSbin = 0
         lastNormWSbin = 3
         normWSstep = 0.05
 
         normRange =  np.arange(firstNormWSbin, lastNormWSbin, normWSstep)
         self.normalisedBins = binning.Bins(firstNormWSbin,normWSstep,lastNormWSbin)
+        last_turb_bin = first_turb_bin + turb_bin_width*self.normalisedBins.numberOfBins
+
         self.dataFrame['Normalised WS Bin'] = (self.dataFrame[self.inputHubWindSpeed]/self.observedRatedWindSpeed).map(self.normalisedBins.binCenter)
-        turb_bin_width = (last_turb_bin - first_turb_bin) / (self.normalisedBins.numberOfBins - 2.) #calculating the bin width required to give the same no. turb and ws bins
         normTurbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.dataFrame['Normalised Turb Bin'] = (self.dataFrame[self.turbulenceBin]).map(normTurbulenceBins.binCenter)
 
