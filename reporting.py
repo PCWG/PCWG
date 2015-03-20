@@ -648,8 +648,8 @@ class AnonReport(report):
                          float(powerCurve.turbulenceFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.percent_no_dp_style)
                 sh.write(rowOffset + countRow + 1, columnOffset + 4,
                          dataCount, self.no_dp_style)
-                sh.write(rowOffset + countRow + 1, columnOffset + 4,
-                         xlwt.Formula("=OFFSET(INDEX($1:$65536,ROW(),COLUMN()),0,-1)*OFFSET(INDEX($1:$65536,ROW(),COLUMN()),0,-3)"), self.two_dp_style)
+                #sh.write(rowOffset + countRow + 1, columnOffset + 4,
+                #         xlwt.Formula("OFFSET(INDEX($1:$65536,ROW(),COLUMN()),0,-1)*OFFSET(INDEX($1:$65536,ROW(),COLUMN()),0,-3)"), self.two_dp_style)
             countRow += 1
 
         return countRow
