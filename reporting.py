@@ -3,16 +3,15 @@ import colour
 import numpy as np
 
 class report:
-    
-    def __init__(self, windSpeedBins, turbulenceBins):
+    bold_style = xlwt.easyxf('font: bold 1')
+    no_dp_style = xlwt.easyxf(num_format_str='0')
+    two_dp_style = xlwt.easyxf(num_format_str='0.00')
+    four_dp_style = xlwt.easyxf(num_format_str='0.0000')
+    percent_style = xlwt.easyxf(num_format_str='0.00%')
+    percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
 
-        self.bold_style = xlwt.easyxf('font: bold 1')
-        self.no_dp_style = xlwt.easyxf(num_format_str='0')
-        self.two_dp_style = xlwt.easyxf(num_format_str='0.00')
-        self.four_dp_style = xlwt.easyxf(num_format_str='0.0000')
-        self.percent_style = xlwt.easyxf(num_format_str='0.00%')
-        self.percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
-
+    def __init__(self, windSpeedBins, turbulenceBins, version="unknown"):
+        self.version = version
         self.windSpeedBins = windSpeedBins
         self.turbulenceBins = turbulenceBins
 
@@ -76,9 +75,14 @@ class report:
     def reportCalibrations(self,sh,analysis):
         maxRow = 0
         startRow = 2
-        col = -3
+        col = -5
         for conf,calib in analysis.calibrations:
-            col+=5
+            if calib.belowAbove != {}:
+                belowAbove = True
+            else:
+                belowAbove = False
+
+            col+=7
             row=startRow
             sh.write(row,col,conf.name, self.bold_style)
             sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
@@ -87,12 +91,19 @@ class report:
             sh.write(row,col+1,"Slope", self.bold_style)
             sh.write(row,col+2,"Offset", self.bold_style)
             sh.write(row,col+3,"Count", self.bold_style)
+            if belowAbove:
+                sh.write(row,col+4,"Count <= 8m/s", self.bold_style)
+                sh.write(row,col+5,"Count >  8m/s", self.bold_style)
+
             row+=1
             for key in sorted(calib.slopes):
                 sh.write(row,col,key, self.bold_style)
                 sh.write(row,col+1,calib.slopes[key], self.four_dp_style)
                 sh.write(row,col+2,calib.offsets[key], self.four_dp_style)
                 sh.write(row,col+3,calib.counts[key], self.no_dp_style)
+                if belowAbove:
+                    sh.write(row,col+4,calib.belowAbove[key][0], self.no_dp_style)
+                    sh.write(row,col+5,calib.belowAbove[key][1], self.no_dp_style)
                 row += 1
 
             if len(conf.calibrationFilters) > 0:
@@ -119,8 +130,11 @@ class report:
     def reportSettings(self, sh, analysis):
 
         config = analysis.config
+        sh.write(0, 1, "PCWG Tool Version Number:")
+        sh.write(0, 2, self.version)
+        sh.write(0, 3, xlwt.Formula('HYPERLINK("http://www.pcwg.org";"PCWG Website")'))
 
-        row = 1
+        row = 3
 
         labelColumn = 1
         dataColumn = 2
@@ -469,9 +483,9 @@ class report:
                 
                 if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)    
                 
-                if windSpeed in powerDeviations:
-                    if turbulence  in powerDeviations[windSpeed]:
-                        deviation = powerDeviations[windSpeed][turbulence] 
+                if windSpeed in powerDeviations.matrix:
+                    if turbulence  in powerDeviations.matrix[windSpeed]:
+                        deviation = powerDeviations.matrix[windSpeed][turbulence]
                         if not np.isnan(deviation):
                             sh.write(row, col, deviation, gradient.getStyle(deviation))
 
@@ -496,10 +510,10 @@ class report:
                 
                 if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)    
                 
-                if windSpeed in deviationsA:
-                    if turbulence  in deviationsA[windSpeed]:
-                        deviationA = deviationsA[windSpeed][turbulence] 
-                        deviationB = deviationsB[windSpeed][turbulence] 
+                if windSpeed in deviationsA.matrix:
+                    if turbulence  in deviationsA.matrix[windSpeed]:
+                        deviationA = deviationsA.matrix[windSpeed][turbulence]
+                        deviationB = deviationsB.matrix[windSpeed][turbulence]
                         if not np.isnan(deviationA) and not np.isnan(deviationB):
                             diff = abs(deviationA) - abs(deviationB)
                             sh.write(row, col, diff, gradient.getStyle(diff))
@@ -564,3 +578,89 @@ class report:
             text += "%f\t" % self.windSpeedBins.binCenterByIndex(i)
 
         print text            
+
+class AnonReport(report):
+    def __init__(self,targetPowerCurve,wind_bins, turbulence_bins, normRange, version="unknown"):
+        self.version = version
+        self.targetPowerCurve = targetPowerCurve
+        self.turbulenceBins = turbulence_bins
+        self.normalisedBins = wind_bins
+        self.normalisedRange = normRange
+
+    def report(self, path, analysis):
+        self.analysis = analysis
+        book = xlwt.Workbook()
+        gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
+
+        sh = book.add_sheet("Anonymous Report", cell_overwrite_ok=True)
+        sh.write(0, 0, "PCWG Tool Version Number:")
+        sh.write(0, 1, self.version)
+        sh.write(0, 2, xlwt.Formula('HYPERLINK("http://www.pcwg.org";"PCWG Website")'))
+
+        pcStart = 2
+        pcEnd   = 60
+        deviationMatrixStart = pcEnd + 5
+        deviationMatrixEnd = 100
+
+        self.reportPowerCurve(sh, pcStart, 0, 'Power Curve', self.targetPowerCurve)
+        self.reportPowerDeviations(sh,deviationMatrixStart, analysis.normalisedHubPowerDeviations, gradient)
+
+        book.save(path)
+
+    def reportPowerDeviations(self,sh, startRow, powerDeviations, gradient):
+
+        for j in range(self.turbulenceBins.numberOfBins):
+
+            turbulence = self.turbulenceBins.binCenterByIndex(j)
+            row = startRow + self.turbulenceBins.numberOfBins - j - 1
+            if j < self.turbulenceBins.numberOfBins-5:
+                sh.write(row, 0, turbulence, self.percent_no_dp_style)
+                sh.write(int(row+self.turbulenceBins.numberOfBins), 0, turbulence, self.percent_no_dp_style)
+                sh.write(int(row+(2*self.turbulenceBins.numberOfBins)), 0, turbulence, self.percent_no_dp_style)
+            elif j == self.turbulenceBins.numberOfBins-5:
+                sh.write(row, 0, "Deviations Matrix", self.bold_style)
+                sh.write(int(row+self.turbulenceBins.numberOfBins), 0, "Data Count Matrix", self.bold_style)
+                sh.write(int(row+(2*self.turbulenceBins.numberOfBins)), 0, "Count*Deviations Matrix", self.bold_style)
+
+
+            for i in range(self.normalisedBins.numberOfBins):
+                windSpeed = self.normalisedBins.binCenterByIndex(i)
+                col = i + 1
+                if j == 0:
+                    sh.write(self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
+                    sh.write(2*self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
+                    sh.write(3*self.turbulenceBins.numberOfBins+startRow, col, windSpeed, self.two_dp_style)
+
+                if windSpeed in powerDeviations.matrix:
+                    if turbulence in powerDeviations.matrix[windSpeed]:
+                        deviation = powerDeviations.matrix[windSpeed][turbulence]
+                        count = powerDeviations.count[windSpeed][turbulence]
+                        if not np.isnan(deviation):
+                            sh.write(row, col, deviation, gradient.getStyle(deviation))
+                            sh.write(int(row+self.turbulenceBins.numberOfBins), col, int(count), self.no_dp_style)
+                            sh.write(int(row+(2*self.turbulenceBins.numberOfBins)), col, deviation*int(count), self.no_dp_style)
+
+    def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
+
+        sh.write(rowOffset, columnOffset + 2, name, self.bold_style)
+        rowOrders = { 'Data Count':4, 'Normalised Wind Speed':1,'Normalised Power':2, 'Turbulence':3,'Power*Count':5}
+
+        for colname in rowOrders.keys():
+            sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
+            countRow = 1
+
+        for normalisedLevel in self.normalisedRange:
+            dataCount = self.analysis.dataFrame[self.analysis.dataFrame['Normalised WS Bin'] == normalisedLevel]['Time Stamp'].count()
+            if dataCount > 0:
+                sh.write(rowOffset + countRow + 1, columnOffset + 1, normalisedLevel, self.two_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + 2,
+                         float(powerCurve.powerFunction(normalisedLevel*self.analysis.observedRatedWindSpeed))/self.analysis.observedRatedPower, self.two_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + 3,
+                         float(powerCurve.turbulenceFunction(normalisedLevel*self.analysis.observedRatedWindSpeed)), self.percent_no_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + 4,
+                         dataCount, self.no_dp_style)
+                sh.write(rowOffset + countRow + 1, columnOffset + 5,
+                         xlwt.Formula("E{row}*C{row}".format(row=rowOffset + countRow + 2)), self.two_dp_style)
+            countRow += 1
+
+        return countRow

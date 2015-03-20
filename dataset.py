@@ -6,6 +6,13 @@ import configuration
 import rews
 import binning
 
+
+
+class DeviationMatrix(object):
+    def __init__(self,deviationMatrix,countMatrix):
+        self.matrix = deviationMatrix
+        self.count  = countMatrix
+
 class CalibrationBase:
 
     def __init__(self, x, y):
@@ -105,11 +112,12 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn):
+    def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn, belowAbove = {}):
 
         self.slopes = slopes
         self.offsets = offsets
         self.counts=counts
+        self.belowAbove = belowAbove
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
 
@@ -219,8 +227,9 @@ class Dataset:
             dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
             dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
 
-            self.residualWindSpeedMatrix = dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average)
-            
+            self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                                                            dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+
         else:
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
@@ -329,6 +338,7 @@ class Dataset:
         slopes = {}
         intercepts = {}
         counts = {}
+        belowAbove = {}
         
         for group in groups:
 
@@ -338,9 +348,12 @@ class Dataset:
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+            if valueColumn == self.hubWindSpeedForTurbulence:
+                belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
+
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, counts, self.referenceDirectionBin, valueColumn)
+        return SiteCalibrationCalculator(slopes, intercepts, counts, self.referenceDirectionBin, valueColumn, belowAbove=belowAbove)
         
     def isValidText(self, text):
         if text == None: return False
