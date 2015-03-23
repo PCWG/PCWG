@@ -59,6 +59,19 @@ class Analysis:
 
         self.config = config
 
+        self.inputHubWindSpeed = "Input Hub Wind Speed"
+        self.densityCorrectedHubWindSpeed = "Density Corrected Hub Wind Speed"
+        self.rotorEquivalentWindSpeed = "Rotor Equivalent Wind Speed"
+        self.basePower = "Base Power"
+        self.hubPower = "Hub Power"
+        self.rewsPower = "REWS Power"
+        self.turbulencePower = "Turbulence Power"
+        self.combinedPower = "Combined Power"
+        self.windSpeedBin = "Wind Speed Bin"
+        self.turbulenceBin = "Turbulence Bin"
+        self.powerDeviation = "Power Deviation"
+        self.dataCount = "Data Count"
+        
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
 
@@ -90,26 +103,12 @@ class Analysis:
         self.status.addMessage("Filter Mode: %s" % self.filterMode)
         self.status.addMessage("Power Curve Mode: %s" % self.powerCurveMode)
 
-        self.inputHubWindSpeed = "Input Hub Wind Speed"
-        self.densityCorrectedHubWindSpeed = "Density Corrected Hub Wind Speed"
-        self.rotorEquivalentWindSpeed = "Rotor Equivalent Wind Speed"
-                
-        self.basePower = "Base Power"
-        self.hubPower = "Hub Power"
-        self.rewsPower = "REWS Power"
-        self.turbulencePower = "Turbulence Power"
-        self.combinedPower = "Combined Power"
-
-        self.windSpeedBin = "Wind Speed Bin"
-        self.turbulenceBin = "Turbulence Bin"
-        self.powerDeviation = "Power Deviation"
-        
-        self.dataCount = "Data Count"
-
         self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
-        first_turb_bin = 0.01 #bin centre for first turbulence bin
-        turb_bin_width = 0.01
-        last_turb_bin = first_turb_bin + turb_bin_width*self.windSpeedBins.numberOfBins #bin centre for last turbulence bin
+        
+        first_turb_bin = 0.01
+        turb_bin_width = 0.02
+        last_turb_bin = 0.25
+        
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
@@ -197,13 +196,55 @@ class Analysis:
         self.status.addMessage("Complete")
 
     def applyRemainingFilters(self):
+
+        print "Apply derived filters (filters which depend on calculated columns)"
+
         for dataSetConf in self.datasetConfigs:
-            d = dataSetConf.data.filterDataFrame(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]],dataSetConf.filters)
-            self.dataFrame = self.dataFrame.drop(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]].index)
-            self.dataFrame = self.dataFrame.append(d)
-            if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
-                print [str(filter) for filter in dataSetConf.filters if not filter.applied]
-                raise Exception("Filters have not been able to be applied!")
+
+            print dataSetConf.name
+
+            if self.anyFiltersRemaining(dataSetConf):
+
+                print "Applying Remaining Filters"
+
+                print "Extracting dataset data"
+
+                print "KNOWN BUG FOR CONCURRENT DATASETS"
+                
+                datasetStart = dataSetConf.timeStamps[0]
+                datasetEnd = dataSetConf.timeStamps[-1]
+
+                print "Start: %s" % datasetStart
+                print "End: %s" % datasetEnd
+            
+                mask = self.dataFrame[self.timeStamp] > datasetStart
+                mask = mask & (self.dataFrame[self.timeStamp] < datasetEnd)
+                
+                dateRangeDataFrame = self.dataFrame[datasetStart:datasetEnd]
+
+                self.dataFrame = self.dataFrame.drop(dateRangeDataFrame.index)
+                
+                print "Filtering Extracted Data"
+                d = dataSetConf.data.filterDataFrame(dateRangeDataFrame, dataSetConf.filters)
+
+                print "(Re)inserting filtered data "
+                self.dataFrame = self.dataFrame.append(d)
+                
+                if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
+                    print [str(filter) for filter in dataSetConf.filters if not filter.applied]
+                    raise Exception("Filters have not been able to be applied!")
+
+            else:
+
+                print "No filters left to apply"
+                
+    def anyFiltersRemaining(self, dataSetConf):
+
+        for datasetFilter in dataSetConf.filters:
+            if not datasetFilter.applied:
+                return True
+
+        return False
 
     def defineInnerRange(self, config):
 
@@ -267,7 +308,6 @@ class Analysis:
                 self.hasDensity = self.hasDensity & data.hasDensity
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
 
-            #if data.residualWindSpeedMatrix != None:
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
 
     def selectPowerCurve(self, powerCurveMode):
@@ -468,46 +508,40 @@ class Analysis:
         report.report(path, self)
 
     def anonym_report(self, path,version="unknown"):
-        # What do we want to report at this stage? Should this be an option?
-        targetPowerCurve = self.allMeasuredPowerCurve #self.innerTurbulenceMeasuredPowerCurve # self.allMeasuredPowerCurve
-        powerColumn = self.hubPower #self.turbulencePower # self.hubPower
-        innerShearFilterMode = 3
+
+        if not self.hasActualPower:
+            raise Exception("Anonymous report can only be generated if analysis has actual power data")
+        
+        self.observedRatedPower = self.powerCurve.zeroTurbulencePowerCurve.maxPower
+        self.observedRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(self.powerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
+
         allFilterMode = 0
-        filterMode = allFilterMode # innerShearFilterMode
 
-        if not hasattr(targetPowerCurve,"zeroTurbulencePowerCurve"):
-            try:
-                targetPowerCurve.calcZeroTurbulencePowerCurve()
-            except:
-                print "Couldn't calculate zeroTurbulencePowerCurve - convergence error"
-                raise Exception("Couldn't calculate zeroTurbulencePowerCurve - convergence error")
-                # think about defining rated wind speed in a different way?
-        self.observedRatedPower = targetPowerCurve.zeroTurbulencePowerCurve.maxPower
-        self.observedRatedWindSpeed = targetPowerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(targetPowerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
-
-        first_turb_bin = 0.01 #bin centre for first turbulence bin
-        turb_bin_width = 0.01
-        firstNormWSbin = 0
-        lastNormWSbin = 3
+        normalisedWSBin = 'Normalised WS Bin'
+        firstNormWSbin = 0.30
+        lastNormWSbin = 3.0
         normWSstep = 0.05
 
-        normRange =  np.arange(firstNormWSbin, lastNormWSbin, normWSstep)
-        self.normalisedBins = binning.Bins(firstNormWSbin,normWSstep,lastNormWSbin)
-        last_turb_bin = first_turb_bin + turb_bin_width*self.normalisedBins.numberOfBins
+        self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
 
-        self.dataFrame['Normalised WS Bin'] = (self.dataFrame[self.inputHubWindSpeed]/self.observedRatedWindSpeed).map(self.normalisedBins.binCenter)
-        normTurbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
-        self.dataFrame['Normalised Turb Bin'] = (self.dataFrame[self.turbulenceBin]).map(normTurbulenceBins.binCenter)
+        self.dataFrame[normalisedWSBin] = (self.dataFrame[self.inputHubWindSpeed] / self.observedRatedWindSpeed).map(self.normalisedWindSpeedBins.binCenter)
 
-        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(powerColumn, filterMode
-                                                                               ,windBin = 'Normalised WS Bin'
-                                                                               ,turbBin = 'Normalised Turb Bin')
+        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
+                                                                               ,windBin = normalisedWSBin
+                                                                               ,turbBin = self.turbulenceBin)
 
-        report = reporting.AnonReport(targetPowerCurve = targetPowerCurve,
-                                      wind_bins = self.normalisedBins,
-                                      turbulence_bins = normTurbulenceBins,
-                                      normRange = normRange,
+        if self.config.turbRenormActive:
+            self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, allFilterMode
+                                                                                   ,windBin = normalisedWSBin
+                                                                                   ,turbBin = self.turbulenceBin)
+        else:
+            self.normalisedTurbPowerDeviations = None
+            
+        report = reporting.AnonReport(targetPowerCurve = self.powerCurve,
+                                      wind_bins = self.normalisedWindSpeedBins,
+                                      turbulence_bins = self.turbulenceBins,
                                       version= version)
+
         report.report(path, self)
                        
     def calculateBase(self):

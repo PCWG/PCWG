@@ -11,6 +11,19 @@ class XmlBase:
     def getPath(self, node):    
         return self.getValue(node).replace("\\", os.sep).replace("/", os.sep)
 
+    def nodeValueExists(self, node, query):
+
+        if self.nodeExists(node, query):
+            subNode = self.getNode(node, query)
+            if subNode.firstChild == None:
+                return False
+            elif subNode.firstChild.data == None:
+                return False
+            else:
+                return True
+        else:
+            return False
+        
     def getValue(self, node):    
         return node.firstChild.data
 
@@ -342,15 +355,23 @@ class PowerCurveConfiguration(XmlBase):
             self.name = self.getNodeValue(powerCurveNode, 'Name')
             self.powerCurveDensity = self.getNodeFloat(powerCurveNode, 'PowerCurveDensity')
             self.powerCurveTurbulence = self.getNodeFloat(powerCurveNode, 'PowerCurveTurbulence')
-
-            speed, power = [], []
+            
+            speeds, powers = [], []
+            self.powerCurveDict = {}
             
             for node in self.getNodes(powerCurveNode, 'PowerCurveLevel'):
-                speed.append(self.getNodeFloat(node, 'PowerCurveLevelWindSpeed'))
-                power.append(self.getNodeFloat(node, 'PowerCurveLevelPower'))   
-            self.powerCurveLevels = pd.DataFrame(power, index = speed, columns = ['Specified Power'])
-            self.powerCurveLevels['Specified Turbulence'] = self.powerCurveTurbulence
+
+                speed = self.getNodeFloat(node, 'PowerCurveLevelWindSpeed')
+                power = self.getNodeFloat(node, 'PowerCurveLevelPower')
+
+                speeds.append(speed)
+                powers.append(power)
+                
+                self.powerCurveDict[speed] = power
             
+            self.powerCurveLevels = pd.DataFrame(powers, index = speeds, columns = ['Specified Power'])
+            self.powerCurveLevels['Specified Turbulence'] = self.powerCurveTurbulence
+                      
         else:
 
             self.name = ""
@@ -359,19 +380,19 @@ class PowerCurveConfiguration(XmlBase):
             self.powerCurveLevels = pd.Series()
             
     def save(self):
-
+        print"saving power curve"
         doc = self.createDocument()             
-        root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
+        root = self.addRootNode(doc, "PowerCurve", "http://www.pcwg.org")      
 
         self.addTextNode(doc, root, "Name", self.name)
         
         self.addFloatNode(doc, root, "PowerCurveDensity", self.powerCurveDensity)
         self.addFloatNode(doc, root, "PowerCurveTurbulence", self.powerCurveTurbulence)
 
-        for speed in self.powerCurveLevels:
+        for speed in sorted(self.powerCurveDict):
             levelNode = self.addNode(doc, root, "PowerCurveLevel")
-            self.addFloatNode(doc, levelNode, "NumberOfRotorLevels", speed)
-            self.addFloatNode(doc, levelNode, "RotorMode", self.powerCurveLevels[speed])
+            self.addFloatNode(doc, levelNode, "PowerCurveLevelWindSpeed", speed)
+            self.addFloatNode(doc, levelNode, "PowerCurveLevelPower", self.powerCurveDict[speed])
         
         self.saveDocument(doc, self.path)
         
@@ -383,6 +404,15 @@ class Filter(XmlBase):
         self.inclusive = inclusive
         self.value = value
         self.applied = False
+
+    def printSummary(self):
+
+        print "%s\t%s\t%s\t%s\t%s" % (self.derived, self.column, self.filterType, self.inclusive, self.__str__())
+         
+        if not self.derived:
+            return str(self.value)
+        else:
+            return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])        
 
     def __str__(self):
         if not self.derived:
@@ -439,13 +469,14 @@ class DatasetConfiguration(XmlBase):
 
             self.turbulenceWSsource = self.getNodeValueIfExists(configurationNode, 'TurbulenceWindSpeedSource', 'Reference')
 
-
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)
             self.filters = self.readFilters(self.getNodes(configurationNode, 'Filter'))
+            self.hasFilters = (len(self.filters) > 0)
+            
             self.readExclusions(configurationNode)
 
-            if self.nodeExists(configurationNode, 'CalibrationMethod'):
+            if self.nodeValueExists(configurationNode, 'CalibrationMethod'):
                 self.calibrationMethod = self.getNodeValue(configurationNode, 'CalibrationMethod')
             else:
                 self.calibrationMethod = ""
@@ -478,8 +509,8 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "DateFormat", self.dateFormat)
         self.addIntNode(doc, measurementsNode, "HeaderRows", self.headerRows)
         self.addTextNode(doc, measurementsNode, "TimeStamp", self.timeStamp)
-        self.addTextNode(doc, measurementsNode, "TimeStepInSeconds", self.timeStepInSeconds)
-        
+
+        self.addTextNode(doc, measurementsNode, "Power", self.power)
         self.addTextNode(doc, measurementsNode, "ReferenceWindSpeed", self.referenceWindSpeed)
         self.addTextNode(doc, measurementsNode, "ReferenceWindSpeedStdDev", self.referenceWindSpeedStdDev)
         self.addTextNode(doc, measurementsNode, "ReferenceWindDirection", self.referenceWindDirection)
@@ -492,20 +523,10 @@ class DatasetConfiguration(XmlBase):
 
         # to do - chaneg for ref and turbine shears.
         shearMeasurementsNode = self.addNode(doc, measurementsNode, "ShearMeasurements")
+        
         for shearMeas in self.shearMeasurements.iteritems():
             self.addFloatNode(doc, shearMeasurementsNode, "Height", shearMeas[0])
             self.addTextNode(doc, shearMeasurementsNode, "WindSpeed", shearMeas[1])
-
-        try:
-            # backwards compat
-            self.addTextNode(doc, measurementsNode, "LowerWindSpeed", self.lowerWindSpeed)
-            self.addFloatNode(doc, measurementsNode, "LowerWindSpeedHeight", self.lowerWindSpeedHeight)
-            self.addTextNode(doc, measurementsNode, "UpperWindSpeed", self.upperWindSpeed)
-            self.addFloatNode(doc, measurementsNode, "UpperWindSpeedHeight", self.upperWindSpeedHeight)
-            #print "Old Upper/Lower style shear mode was used"
-        except:
-            #print "New <ns1:ShearMeasurements> shear xml style was used"
-            pass
 
         levelsNode = self.addNode(doc, measurementsNode, "ProfileLevels")
 
@@ -515,8 +536,12 @@ class DatasetConfiguration(XmlBase):
             self.addTextNode(doc, levelNode, "ProfileWindSpeed", self.windSpeedLevels[height])
             self.addTextNode(doc, levelNode, "ProfileWindDirection", self.windDirectionLevels[height])
 
-        levelsNode = self.addNode(doc, root, "Filters")
-        levelsNode = self.addNode(doc, root, "Exclusions")
+        filtersNode = self.addNode(doc, root, "Filters")
+        exclusionsNode = self.addNode(doc, root, "Exclusions")
+
+        for filterItem in self.filters:
+            filterNode = self.addNode(doc, root, "Filter")
+            filtersNode.append()   
 
         self.saveDocument(doc, self.path)
 
@@ -539,11 +564,32 @@ class DatasetConfiguration(XmlBase):
             self.numberOfRotorLevels = 0
 
     def readShearMeasurements(self, node):
+
         measurements = {}
+        
         for shearMeasureNode in self.getNodes(node,"ShearMeasurement"):
                shearColName = self.getNodeValue(shearMeasureNode,"WindSpeed")
                shearHeight = self.getNodeFloat(shearMeasureNode,"Height")
                measurements[shearHeight] = shearColName
+
+        #backwards compatibility
+        if self.nodeValueExists(node, "LowerWindSpeedHeight"):
+            
+            shearColName = self.getNodeValue(node,"LowerWindSpeed")
+            shearHeight = self.getNodeFloat(node,"LowerWindSpeedHeight")
+
+            if not shearHeight in measurements:
+                measurements[shearHeight] = shearColName
+
+        #backwards compatibility 
+        if self.nodeValueExists(node, "UpperWindSpeedHeight"):
+            
+            shearColName = self.getNodeValue(node,"UpperWindSpeed")
+            shearHeight = self.getNodeFloat(node,"UpperWindSpeedHeight")
+
+            if not shearHeight in measurements:
+                measurements[shearHeight] = shearColName
+                
         return measurements
 
     def readMeasurements(self, configurationNode):
@@ -552,7 +598,6 @@ class DatasetConfiguration(XmlBase):
 
         self.inputTimeSeriesPath = self.getNodePath(measurementsNode, 'InputTimeSeriesPath')
         self.dateFormat = self.getNodeValue(measurementsNode, 'DateFormat')
-        self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
 
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
         self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
@@ -650,7 +695,7 @@ class DatasetConfiguration(XmlBase):
                     filters.append(self.readSimpleFilter(node))                
                 else:
                     filters.append(RelationshipFilter(node))
-                    
+        
         return filters
     
     def readExclusions(self, configurationNode):
@@ -667,10 +712,16 @@ class DatasetConfiguration(XmlBase):
                 startDate = self.getNodeDate(node, 'ExclusionStartDate')
                 endDate = self.getNodeDate(node, 'ExclusionEndDate')
                 self.exclusions.append((startDate, endDate))
-                
+
+        self.hasExclusions = (len(self.exclusions) > 0)
+        
     def readCalibration(self, configurationNode):
         
-        if not self.nodeExists(configurationNode, 'Calibration'): return
+        if not self.nodeExists(configurationNode, 'Calibration'):
+            self.hasCalibration = False
+            return
+        else:
+            self.hasCalibration = True
 
         calibrationNode = self.getNode(configurationNode, 'Calibration')
 
