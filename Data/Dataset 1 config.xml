@@ -4,7 +4,6 @@
 	<StartDate>2011-10-07 12:50:00</StartDate>
 	<EndDate>2012-07-23 15:30:00</EndDate>
 	<HubWindSpeedMode>Specified</HubWindSpeedMode>
-	<CalibrationMethod></CalibrationMethod>
 	<DensityMode>Specified</DensityMode>
 	<RotorEquivalentWindSpeed>
 		<NumberOfRotorLevels>9</NumberOfRotorLevels>
@@ -16,20 +15,18 @@
 		<BadDataValue>-99.990000</BadDataValue>
 		<DateFormat>%d/%m/%Y %H:%M</DateFormat>
 		<HeaderRows>0</HeaderRows>
+		<TimeStepInSeconds>600</TimeStepInSeconds>
 		<TimeStamp>TimeStamp</TimeStamp>
-		<Power>Turbine Power</Power>
 		<ReferenceWindSpeed></ReferenceWindSpeed>
 		<ReferenceWindSpeedStdDev></ReferenceWindSpeedStdDev>
 		<ReferenceWindDirection></ReferenceWindDirection>
 		<ReferenceWindDirectionOffset>0.000000</ReferenceWindDirectionOffset>
-		<TurbineLocationWindSpeed>Mast - 96.0m Wind Speed Mean</TurbineLocationWindSpeed>
 		<HubWindSpeed>Mast - 96.0m Wind Speed Mean</HubWindSpeed>
 		<HubTurbulence>Mast - 96.0m Turbulence Intensity</HubTurbulence>
 		<LowerWindSpeed>Mast - 40.0m Wind Speed Mean</LowerWindSpeed>
 		<LowerWindSpeedHeight>40.000000</LowerWindSpeedHeight>
 		<UpperWindSpeed>Mast - 89.1m Wind Speed Mean</UpperWindSpeed>
 		<UpperWindSpeedHeight>89.100000</UpperWindSpeedHeight>
-		<ShearMeasurements/>
 		<ProfileLevels>
 			<ProfileLevel>
 				<Height>52.500000</Height>
