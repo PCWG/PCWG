@@ -9,7 +9,9 @@ import os
 import os.path
 
 version = "0.5.3"
-
+ExceptionType = Exception
+#ExceptionType = None #comment this line before release
+ 
 class WindowStatus:
 
         def __init__(self, gui):
@@ -28,7 +30,9 @@ class ValidationResult:
 class ValidateBase:
 
         def __init__(self, master, createMessageLabel = True):
-                                
+
+                self.title = ''
+                
                 self.CMD = (master.register(self.validationHandler),
                         '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
 
@@ -257,7 +261,7 @@ class ValidateREWSProfileLevels:
                         message = "Duplicate level specified"
                 
                 self.messageLabel['text'] = message
-                
+
 class ValidateDatasets:
 
         def __init__(self, master, listbox):
@@ -429,16 +433,14 @@ class BaseDialog(tkSimpleDialog.Dialog):
 
         def addEntry(self, master, title, validation, value, width = None, showHideCommand = None):
 
-                if self.isNew:
-                        variable = StringVar(master, "")
-                else:
-                        variable = StringVar(master, value)
+                variable = StringVar(master, value)
 
                 label = Label(master, text=title)
                 label.grid(row = self.row, sticky=W, column=self.labelColumn)
 
                 if validation != None:
                         validation.messageLabel.grid(row = self.row, sticky=W, column=self.messageColumn)
+                        validation.title = title
                         self.validations.append(validation)
                         validationCommand = validation.CMD
                 else:
@@ -484,15 +486,27 @@ class BaseDialog(tkSimpleDialog.Dialog):
 
         def validate(self):
 
+                valid = True
+                message = ""
+
                 for validation in self.validations:
+                        
                         if not validation.valid:
-                                tkMessageBox.showwarning(
+                                message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                                valid = False
+
+                if not valid:
+
+                        tkMessageBox.showwarning(
                                 "Validation errors",
-                                "Illegal values, please review error messages and try again"
+                                "Illegal values, please review error messages and try again:\r %s" % message
                                 )
-                                return 0                
+                                
+                        return 0
+
+                else:
         
-                return 1
+                        return 1
 
 class PowerCurveLevelDialog(BaseDialog):
 
@@ -595,46 +609,47 @@ class REWSProfileLevelDialog(BaseDialog):
                 
 class BaseConfigurationDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, config = None, index = None):
+        def __init__(self, master, status, callback, config, index = None):
 
                 self.index = index
                 self.callback = callback
                 
                 self.isSaved = False
-                self.isNew = (config == None)
+                self.isNew = config.isNew
 
+                self.config = config
+                        
                 if not self.isNew:
-                        self.config = config
                         self.originalPath = config.path
                 else:
-                        if self.__class__ == DatasetConfigurationDialog:
-                                self.config = configuration.DatasetConfiguration()
-                        elif self.__class__ == AnalysisConfigurationDialog:
-                                self.config = configuration.AnalysisConfiguration()
-                        else:
-                             raise Exception("As yet unknown config class")
                         self.originalPath = None
-
+   
                 BaseDialog.__init__(self, master, status)
                 
         def body(self, master):
 
-                self.prepareColumns( master)
+                self.prepareColumns(master)
 
-                self.generalShowHide = ShowHideCommand(master)  
-                self.addTitleRow(master, "General Settings:", self.generalShowHide)                
-
-                if hasattr(self.config,"path"):
-                        self.filePath = self.addFileSaveAsEntry(master, "File Path:", ValidateDatasetFilePath(master), self.config.path, showHideCommand = self.generalShowHide)
-                else:
-                        newFile = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="DatasetConfig.xml", title="Save New Data Set Config")
-                        self.filePath = newFile
+                self.generalShowHide = ShowHideCommand(master)
 
                 #dummy label to indent controls
-                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
+                Label(master, text=" " * 5).grid(row = self.row, sticky=W, column=self.titleColumn)
                 
+                self.addTitleRow(master, "General Settings:", self.generalShowHide)                
+
+                if self.config.isNew:
+                        path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save New Config")
+                else:
+                        path = self.config.path
+                        
+                self.filePath = self.addFileSaveAsEntry(master, "File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
+
                 self.addFormElements(master)
 
+        def getInitialFileName(self):
+
+                return "Config"
+        
         def validate(self):
 
                 if BaseDialog.validate(self) == 0: return
@@ -668,13 +683,17 @@ class BaseConfigurationDialog(BaseDialog):
                         self.callback(self.config.path, self.index)
 
 class DatasetConfigurationDialog(BaseConfigurationDialog):
+
+        def getInitialFileName(self):
+
+                return "Dataset"
                 
         def addFormElements(self, master):
 
                 self.shearWindSpeedHeights = []
                 self.shearWindSpeeds = []
 
-                self.name = self.addEntry(master, "Name:", None, self.config.name, showHideCommand = self.generalShowHide)
+                self.name = self.addEntry(master, "Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
 
                 self.startDate = self.addEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
                 self.endDate = self.addEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
@@ -693,8 +712,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 measurementShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Measurement Settings:", showHideCommand = measurementShowHide)
                 self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = measurementShowHide)
+                self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds, showHideCommand = measurementShowHide)
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
-                self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, showHideCommand = measurementShowHide)
+                self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = measurementShowHide)
                 self.timeStamp = self.addEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide)
 
@@ -703,9 +723,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.referenceWindSpeedStdDev = self.addEntry(master, "Reference Wind Speed: Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60, showHideCommand = measurementShowHide)
                 self.referenceWindDirection = self.addEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60, showHideCommand = measurementShowHide)
                 self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset, showHideCommand = measurementShowHide)
-                self.turbineLocationWindSpeed = self.addEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, showHideCommand = measurementShowHide)
+                self.turbineLocationWindSpeed = self.addEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60, showHideCommand = measurementShowHide)
                 self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60, showHideCommand = measurementShowHide)
                 self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60, showHideCommand = measurementShowHide)
+
+                self.temperature = self.addEntry(master, "Temperature:", None, self.config.temperature, width = 60, showHideCommand = measurementShowHide)
+                self.pressure = self.addEntry(master, "Pressure:", None, self.config.pressure, width = 60, showHideCommand = measurementShowHide)
+                self.density = self.addEntry(master, "Density:", None, self.config.density, width = 60, showHideCommand = measurementShowHide)
 
                 Label(master, text="Shear Measurements:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 self.row += 1
@@ -764,7 +788,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         
                         try:                                
                                 dialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
-                        except Exception as e:
+                        except ExceptionType as e:
                                self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewREWSProfileLevel(self):
@@ -826,11 +850,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.densityMode = self.densityMode.get()
 
                 self.config.rewsDefined = bool(self.rewsDefined.get())
-                self.config.numberOfRotorLevels = self.numberOfRotorLevels.get()
+                self.config.numberOfRotorLevels = int(self.numberOfRotorLevels.get())
                 self.config.rotorMode = self.rotorMode.get()
                 self.config.hubMode = self.hubMode.get()
 
                 self.config.inputTimeSeriesPath = relativePath.convertToRelativePath(self.inputTimeSeriesPath.get())
+                self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
                 self.config.badData = float(self.badData.get())
                 self.config.dateFormat = self.dateFormat.get()
                 self.config.headerRows = int(self.headerRows.get())
@@ -841,6 +866,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.referenceWindSpeedStdDev = self.referenceWindSpeedStdDev.get()
                 self.config.referenceWindDirection = self.referenceWindDirection.get()
                 self.config.referenceWindDirectionOffset = float(self.referenceWindDirectionOffset.get())
+
+                self.config.temperature = self.temperature.get()
+                self.config.pressure = self.pressure.get()
+                self.config.density = self.density.get()
                 
                 self.config.hubWindSpeed = self.hubWindSpeed.get()
                 self.config.hubTurbulence = self.hubTurbulence.get()
@@ -853,7 +882,20 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.config.windSpeedLevels[items[0]] = items[1]
                         self.config.windDirectionLevels[items[0]] = items[2]
 
+                self.config.shearMeasurements = {}
+
+                for i in range(len(self.shearWindSpeedHeights)):
+                        shearHeight = self.shearWindSpeedHeights[i].get()
+                        shearColumn = self.shearWindSpeeds[i].get()
+                        self.config.shearMeasurements[shearHeight] = shearColumn
+                        
+                        
+
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
+
+        def getInitialFileName(self):
+
+                return "PowerCurve"
                 
         def addFormElements(self, master):
 
@@ -901,7 +943,7 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                         
                         try:                                
                                 dialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText, text, idx)
-                        except Exception as e:
+                        except ExceptionType as e:
                                self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewPowerCurveLevel(self):
@@ -966,7 +1008,11 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                         self.config.powerCurveLevels['Specified Power'][values[0]] = values[1]
                         
 class AnalysisConfigurationDialog(BaseConfigurationDialog):
-                
+
+        def getInitialFileName(self):
+
+                return "Analysis"
+        
         def addFormElements(self, master):                
 
                 self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", ValidatePositiveInteger(master), self.config.powerCurveMinimumCount, showHideCommand = self.generalShowHide)
@@ -976,7 +1022,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode, showHideCommand = self.generalShowHide)
                 self.powerCurveMode = self.addOption(master, "Power Curve Mode:", ["Specified", "AllMeasured", "InnerMeasured", "InnerTurbulenceMeasured", "OuterMeasured", "OuterTurbulenceMeasured"], self.config.powerCurveMode, showHideCommand = self.generalShowHide)
-                self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["Linear", "Observed", "Specified", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
+                self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Linear", "Observed", "Specified", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
 
                 powerCurveShowHide = ShowHideCommand(master)  
                 self.addTitleRow(master, "Power Curve Bins:", powerCurveShowHide)
@@ -1057,8 +1103,6 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
 
         def EditPowerCurve(self):
-
-                exceptionType = Exception
                 
                 specifiedPowerCurve = self.specifiedPowerCurve.get()
                 analysisPath = self.filePath.get()
@@ -1071,7 +1115,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                         try:
                                 config = configuration.PowerCurveConfiguration(path)
                                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
-                        except exceptionType as e:
+                        except ExceptionType as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (specifiedPowerCurve, e))
                                         
         def NewPowerCurve(self):
@@ -1079,9 +1123,6 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath)
 
         def EditDataset(self):
-
-                ExceptionType = Exception
-                #ExceptionType = None
 
                 items = self.datasetsListBox.curselection()
 
@@ -1112,9 +1153,15 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
                                         
         def NewDataset(self):
-                
-                configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath)
 
+                try:
+                        config = configuration.DatasetConfiguration()
+                        configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
+
+                except ExceptionType as e:
+                        
+                        self.status.addMessage("ERROR creating dataset config: %s" % e)
+                        
         def setAnalysisFilePath(self):
                 fileName = asksaveasfilename(parent=self.master,defaultextension=".xml")
                 if len(fileName) > 0: self.analysisFilePath.set(fileName)
@@ -1303,7 +1350,7 @@ class UserInterface:
    
                         analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
 
-                except Exception as e:
+                except ExceptionType as e:
 
                         analysis = None
                         self.addMessage(str(e))
@@ -1357,10 +1404,9 @@ class UserInterface:
                 
         def NewAnalysis(self):
 
-                fileName = asksaveasfile(parent=self.root,defaultextension=".xml", initialfile="Analysis.xml", title="Create New Analysis File")
-                conf = configuration.AnalysisConfigurationFactory().new(fileName)
+                conf = configuration.AnalysisConfiguration()
                 configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
-                
+                          
         def LoadAnalysis(self):
 
                 fileName = askopenfilename(parent=self.root)
@@ -1369,9 +1415,6 @@ class UserInterface:
                 self.LoadAnalysisFromPath(fileName)
 
         def LoadAnalysisFromPath(self, fileName):
-
-                ExceptionType = Exception
-                #ExceptionType = None
 
                 try:
                         self.preferences.analysisLastOpened = fileName
@@ -1391,16 +1434,13 @@ class UserInterface:
                         
                         try:
                             self.analysisConfiguration = configuration.AnalysisConfiguration(fileName)
-                        except Exception as e:
+                        except ExceptionType as e:
                             self.addMessage("ERROR loading config: %s" % e)                
 
                         self.addMessage("Analysis config loaded: %s" % fileName)                
 
         def ExportReport(self):
 
-                ExceptionType = Exception
-                #ExceptionType = None
-                
                 if self.analysis == None:            
                         self.addMessage("ERROR: Analysis not yet calculated")
                         return
@@ -1414,15 +1454,16 @@ class UserInterface:
 
         def ExportAnonymousReport(self):
 
-                ExceptionType = Exception
-                #ExceptionType = None
-
                 if self.analysis == None:
                         self.addMessage("ERROR: Analysis not yet calculated")
                         return
                 
                 if not self.analysis.hasActualPower:
                         self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power")
+                        return
+
+                if not self.analysis.config.turbRenormActive:
+                        self.addMessage("ERROR: Anonymous report can only be generated if turb renorm is active")
                         return
                 
                 try:
@@ -1444,22 +1485,15 @@ class UserInterface:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series")
                         self.analysis.export(fileName)
                         self.addMessage("Time series written to %s" % fileName)
-                except Exception as e:
+                except ExceptionType as e:
                         self.addMessage("ERROR Exporting Time Series: %s" % e)
 
         def Calculate(self):
 
-                ExceptionType = Exception
-                #ExceptionType = None
-                
                 if self.analysisConfiguration == None:
                         self.addMessage("ERROR: Analysis Config file not specified")
                         return
 
-
-#                self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
-#                return
-        
                 try:
             
                         self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
@@ -1483,7 +1517,7 @@ class UserInterface:
                         self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
                         self.addMessage( "AEP: {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
 
-                    except Exception as e:
+                    except ExceptionType as e:
                         self.addMessage("ERROR Calculating AEP: %s" % e)
 
 

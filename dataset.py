@@ -168,7 +168,7 @@ class Dataset:
 
         self.name = config.name
         
-        self.timeStepInSeconds = analysisConfig.timeStepInSeconds
+        self.timeStepInSeconds = config.timeStepInSeconds
 
         self.timeStamp = config.timeStamp
         self.actualPower = "Actual Power"
@@ -196,8 +196,13 @@ class Dataset:
         
         dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = '\t', skiprows = config.headerRows).replace(config.badData, np.nan)
 
-        dataFrame = dataFrame[config.startDate : config.endDate]
-
+        if config.startDate != None and confid.endDate != None:
+            dataFrame = dataFrame[config.startDate : config.endDate]
+        elif config.startDate != None:
+            dataFrame = dataFrame[config.startDate : ]
+        elif config.endDate != None:
+            dataFrame = dataFrame[ : config.endDate]
+            
         dataFrame[self.name] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
         
@@ -213,7 +218,7 @@ class Dataset:
         
         if config.calculateHubWindSpeed:
 
-            self.calibrationCalculator = self.createCalibration(dataFrame, config, analysisConfig.timeStepInSeconds)
+            self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
@@ -238,7 +243,7 @@ class Dataset:
             self.residualWindSpeedMatrix = None
 
         if self.shearCalibration and config.shearCalibrationMethod != "Reference":
-            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, analysisConfig.timeStepInSeconds)
+            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, config.timeStepInSeconds)
             dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
 
 
