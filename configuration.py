@@ -570,7 +570,8 @@ class DatasetConfiguration(XmlBase):
         self.addFloatNode(doc, measurementsNode, "ReferenceWindDirectionOffset", self.referenceWindDirectionOffset)
 
         self.addTextNode(doc, measurementsNode, "TurbineLocationWindSpeed", self.hubWindSpeed)
-
+        if self.power is not None:
+            self.addTextNode(doc, measurementsNode, "Power", self.power)
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
