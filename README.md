@@ -1,6 +1,16 @@
 # Power Curve Working Group collaborative</h1>
 [PCWG Website](http://www.pcwg.org)
 
+## Current Version
+v0.5.1
+
+## Release Versions
+A full history of release versions can be found on [SourceForge](http://sourceforge.net/projects/pcwg/files/ "SourceForge")
+
+v0.5.0 - 02/10/2014 - First release - [.exe(SourceForge)](http://sourceforge.net/projects/pcwg/files/pcwg-tool-0.5.0.zip/download "v0.5.0")
+
+v0.5.1 - 20/03/2015 - Release prior to Hamburg meeting - [.exe(SourceForge)](http://sourceforge.net/projects/pcwg/files/pcwg-tool-0.5.1.zip/download "v0.5.1") 
+
 
 ### Filtering:
 To apply filters to your data a simple filter node can be added to the configuration xml.

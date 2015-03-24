@@ -6,6 +6,13 @@ import configuration
 import rews
 import binning
 
+
+
+class DeviationMatrix(object):
+    def __init__(self,deviationMatrix,countMatrix):
+        self.matrix = deviationMatrix
+        self.count  = countMatrix
+
 class CalibrationBase:
 
     def __init__(self, x, y):
@@ -158,10 +165,12 @@ class Dataset:
     def __init__(self, config, rotorGeometry, analysisConfig):
 
         self.relativePath = configuration.RelativePath(config.path)
-        
+
         self.name = config.name
-        self.timeStamp = "Time Stamp"
         
+        self.timeStepInSeconds = analysisConfig.timeStepInSeconds
+
+        self.timeStamp = config.timeStamp
         self.actualPower = "Actual Power"
 
         self.hubWindSpeed = "Hub Wind Speed"
@@ -204,7 +213,7 @@ class Dataset:
         
         if config.calculateHubWindSpeed:
 
-            self.calibrationCalculator = self.createCalibration(dataFrame, config)
+            self.calibrationCalculator = self.createCalibration(dataFrame, config, analysisConfig.timeStepInSeconds)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
@@ -220,15 +229,16 @@ class Dataset:
             dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
             dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
 
-            self.residualWindSpeedMatrix = dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average)
-            
+            self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                                                            dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+
         else:
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             self.residualWindSpeedMatrix = None
 
         if self.shearCalibration and config.shearCalibrationMethod != "Reference":
-            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config)
+            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, analysisConfig.timeStepInSeconds)
             dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
 
 
@@ -257,13 +267,13 @@ class Dataset:
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
 
-    def createShearCalibration(self, dataFrame, config):
+    def createShearCalibration(self, dataFrame, config, timeStepInSeconds):
         df = dataFrame.copy()
 
         if config.shearCalibrationMethod == "Specified":
             raise NotImplementedError
         else:
-            calibration = self.getCalibrationMethod(config.shearCalibrationMethod, self.referenceShearExponent, self.turbineShearExponent, config.timeStepInSeconds, dataFrame)
+            calibration = self.getCalibrationMethod(config.shearCalibrationMethod, self.referenceShearExponent, self.turbineShearExponent, timeStepInSeconds, dataFrame)
 
             if hasattr(self,"filteredCalibrationDataframe"):
                 dataFrame = self.filteredCalibrationDataframe
@@ -283,7 +293,7 @@ class Dataset:
             return siteCalibCalc
 
 
-    def createCalibration(self, dataFrame, config):
+    def createCalibration(self, dataFrame, config, timeStepInSeconds):
 
         self.referenceDirectionBin = "Reference Direction Bin"
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
@@ -295,9 +305,10 @@ class Dataset:
         df = dataFrame.copy()
 
         if config.calibrationMethod == "Specified":
-            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed)
+            dummyCounts = {}
+            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, dummyCounts, self.referenceDirectionBin, config.referenceWindSpeed)
         else:
-            calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, config.timeStepInSeconds, dataFrame)
+            calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, timeStepInSeconds, dataFrame)
 
             if config.calibrationStartDate != None and config.calibrationEndDate != None:
                 dataFrame = dataFrame[config.calibrationStartDate : config.calibrationEndDate]
@@ -466,9 +477,22 @@ class Dataset:
 
         if len(filters) < 1: return dataFrame
 
-        mask = pd.Series([False]*len(dataFrame),index=dataFrame.index)
-        print "Data set length prior to filtering: {0}".format(len(mask[~mask]))
+        print ""
+        print "Filter Details"
+        print "Derived\tColumn\tFilterType\tInclusive\tValue"
+
         for componentFilter in filters:
+            componentFilter.printSummary()
+
+        print ""
+         
+        mask = pd.Series([False]*len(dataFrame),index=dataFrame.index)
+
+        print "Data set length prior to filtering: {0}".format(len(mask[~mask]))
+        print ""
+        
+        for componentFilter in filters:
+
             if not componentFilter.applied:
                 try:
                     if not hasattr(componentFilter, "relationships"):
@@ -478,6 +502,9 @@ class Dataset:
                     componentFilter.applied = True
                 except:
                     componentFilter.applied = False
+
+        print ""
+           
         return dataFrame[~mask]
 
     def addFilterBelow(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
