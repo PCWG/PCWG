@@ -83,8 +83,9 @@ class Analysis:
 
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
-        
-        self.timeStampHours = config.timeStepInSeconds / 3600.0
+
+        # assuming same time base for every time step.
+        self.timeStampHours = (self.dataFrame[self.timeStamp] - self.dataFrame[self.timeStamp].shift(periods=1)).min().total_seconds()/3600.0
 
         self.densityCorrectionActive = config.densityCorrectionActive        
         self.rewsActive = config.rewsActive

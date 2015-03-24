@@ -8,7 +8,7 @@ import datetime
 import os
 import os.path
 
-version = "0.5.2"
+version = "0.5.3"
 
 class WindowStatus:
 
@@ -379,7 +379,6 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 master.columnconfigure(self.buttonColumn, pad=10, weight = 0)
                 master.columnconfigure(self.secondButtonColumn, pad=10, weight = 0)
                 master.columnconfigure(self.messageColumn, pad=10, weight = 0)
-                master.columnconfigure(self.showHideColumn, pad=10, weight = 0)
 
         def addOption(self, master, title, options, value, showHideCommand = None):
 
@@ -387,100 +386,100 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 label.grid(row=self.row, sticky=W, column=self.labelColumn)
 
                 variable = StringVar(master, value)
-                
+
                 option = apply(OptionMenu, (master, variable) + tuple(options))
                 option.grid(row=self.row, column=self.inputColumn, sticky=W)
 
                 if showHideCommand != None:
                         showHideCommand.addControl(label)
                         showHideCommand.addControl(option)
-                        
+
                 self.row += 1
 
                 return variable
-                
+
         def addCheckBox(self, master, title, value, showHideCommand = None):
 
                 label = Label(master, text=title)
-                label.grid(row=self.row, sticky=W, column=self.labelColumn) 
+                label.grid(row=self.row, sticky=W, column=self.labelColumn)
                 variable = IntVar(master, value)
-                
+
                 checkButton = Checkbutton(master, variable=variable)
                 checkButton.grid(row=self.row, column=self.inputColumn, sticky=W)
 
                 if showHideCommand != None:
                         showHideCommand.addControl(label)
                         showHideCommand.addControl(checkButton)
-                        
+
                 self.row += 1
-                
+
                 return variable
-                
+
         def addTitleRow(self, master, title, showHideCommand = None):
-                
+
                 Label(master, text=title).grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-                
+
                 #add dummy label to stop form shrinking when validation messages hidden
                 Label(master, text = " " * 70).grid(row=self.row, sticky=W, column=self.messageColumn)
 
                 if showHideCommand != None:
                         showHideCommand.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
-                
+
                 self.row += 1
-                
+
         def addEntry(self, master, title, validation, value, width = None, showHideCommand = None):
 
                 if self.isNew:
                         variable = StringVar(master, "")
                 else:
-                        variable = StringVar(master, value)                        
+                        variable = StringVar(master, value)
 
                 label = Label(master, text=title)
                 label.grid(row = self.row, sticky=W, column=self.labelColumn)
 
-                if validation != None:                        
-                        validation.messageLabel.grid(row = self.row, sticky=W, column=self.messageColumn)                        
+                if validation != None:
+                        validation.messageLabel.grid(row = self.row, sticky=W, column=self.messageColumn)
                         self.validations.append(validation)
                         validationCommand = validation.CMD
                 else:
                         validationCommand = None
-                
+
                 entry = Entry(master, textvariable=variable, validate = 'key', validatecommand = validationCommand, width = width)
-                
-                entry.grid(row=self.row, column=self.inputColumn, sticky=W)          
+
+                entry.grid(row=self.row, column=self.inputColumn, sticky=W)
 
                 if showHideCommand != None:
                         showHideCommand.addControl(label)
                         showHideCommand.addControl(entry)
-                        if validation != None:                        
-                                showHideCommand.addControl(validation.messageLabel)                       
+                        if validation != None:
+                                showHideCommand.addControl(validation.messageLabel)
 
                 self.row += 1
-                
+
                 return variable
 
         def addFileSaveAsEntry(self, master, title, validation, value, width = 60, showHideCommand = None):
 
                 variable = self.addEntry(master, title, validation, value, width, showHideCommand)
-                
+
                 button = Button(master, text="...", command = SetFileSaveAsCommand(master, variable), height=1)
                 button.grid(row=(self.row - 1), sticky=E+W, column=self.buttonColumn)
 
                 if showHideCommand != None:
                         showHideCommand.addControl(button)
-                        
+
                 return variable
-        
+
         def addFileOpenEntry(self, master, title, validation, value, basePathVariable = None, width = 60, showHideCommand = None):
 
                 variable = self.addEntry(master, title, validation, value, width, showHideCommand)
-                
+
                 button = Button(master, text="...", command = SetFileOpenCommand(master, variable, basePathVariable), height=1)
                 button.grid(row=(self.row - 1), sticky=E+W, column=self.buttonColumn)
 
                 if showHideCommand != None:
                         showHideCommand.addControl(button)
-                        
+
                 return variable
 
         def validate(self):
@@ -608,8 +607,13 @@ class BaseConfigurationDialog(BaseDialog):
                         self.config = config
                         self.originalPath = config.path
                 else:
-                        self.config = self.NewConfiguration()
-                        self.originalPath = ""                                   
+                        if self.__class__ == DatasetConfigurationDialog:
+                                self.config = configuration.DatasetConfiguration()
+                        elif self.__class__ == AnalysisConfigurationDialog:
+                                self.config = configuration.AnalysisConfiguration()
+                        else:
+                             raise Exception("As yet unknown config class")
+                        self.originalPath = None
 
                 BaseDialog.__init__(self, master, status)
                 
@@ -618,9 +622,13 @@ class BaseConfigurationDialog(BaseDialog):
                 self.prepareColumns( master)
 
                 self.generalShowHide = ShowHideCommand(master)  
-                self.addTitleRow(master, "General Settings:", self.generalShowHide)
-                
-                self.filePath = self.addFileSaveAsEntry(master, "File Path:", ValidateDatasetFilePath(master), self.config.path, showHideCommand = self.generalShowHide)
+                self.addTitleRow(master, "General Settings:", self.generalShowHide)                
+
+                if hasattr(self.config,"path"):
+                        self.filePath = self.addFileSaveAsEntry(master, "File Path:", ValidateDatasetFilePath(master), self.config.path, showHideCommand = self.generalShowHide)
+                else:
+                        newFile = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="DatasetConfig.xml", title="Save New Data Set Config")
+                        self.filePath = newFile
 
                 #dummy label to indent controls
                 Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
@@ -699,6 +707,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60, showHideCommand = measurementShowHide)
                 self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60, showHideCommand = measurementShowHide)
 
+                Label(master, text="Shear Measurements:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                self.row += 1
+                
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
                         self.shearWindSpeeds.append( self.addEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = measurementShowHide) )
                         self.shearWindSpeedHeights.append(self.addEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = measurementShowHide) )
@@ -858,9 +869,9 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 self.powerCurveLevelsListBox = Listbox(master, yscrollcommand=self.powerCurveLevelsScrollBar.set, selectmode=EXTENDED, height=10)
                 
                 if not self.isNew:
-                        for windSpeed in sorted(self.config.powerCurveDict):
-                                power = self.config.powerCurveDict[windSpeed]
-                                text = self.formatLevel(windSpeed, power)
+                        for windSpeed in self.config.powerCurveLevels.index:
+                                power = self.config.powerCurveLevels['Specified Power'][windSpeed]
+                                text = "{0},{1}".format(windSpeed, power)
                                 self.powerCurveLevelsListBox.insert(END, text)
                                 
                 self.powerCurveLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
@@ -950,18 +961,14 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 self.config.powerCurveDensity = float(self.referenceDensity.get())
                 self.config.powerCurveTurbulence = float(self.referenceTurbulence.get())
 
-                self.config.powerCurveDict = {}
-
                 for i in range(self.powerCurveLevelsListBox.size()):
-                        text = self.powerCurveLevelsListBox.get(i)
-                        windSpeed, power = self.getValues(text)
-                        self.config.powerCurveDict[windSpeed] = power
+                        values = self.getValues(self.powerCurveLevelsListBox.get(i))
+                        self.config.powerCurveLevels['Specified Power'][values[0]] = values[1]
                         
 class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 
         def addFormElements(self, master):                
 
-                self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds, showHideCommand = self.generalShowHide)
                 self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", ValidatePositiveInteger(master), self.config.powerCurveMinimumCount, showHideCommand = self.generalShowHide)
 
                 filterModeOptions = ["All", "Inner", "InnerTurb", "InnerShear", "Outer", "OuterTurb", "OuterShear", "LowShearLowTurbulence", "LowShearHighTurbulence", "HighShearHighTurbulence", "HighShearLowTurbulence"]
@@ -1047,6 +1054,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive, showHideCommand = correctionSettingsShowHide)
                 self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive, showHideCommand = correctionSettingsShowHide)
                 self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive, showHideCommand = correctionSettingsShowHide)                        
+
 
         def EditPowerCurve(self):
 
@@ -1151,7 +1159,6 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 relativePath = configuration.RelativePath(self.config.path)
 
-                self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
                 self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
                 self.config.filterMode = self.filterMode.get()
                 self.config.baseLineMode = self.baseLineMode.get()
@@ -1349,8 +1356,10 @@ class UserInterface:
                 configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
                 
         def NewAnalysis(self):
-                
-                configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath)
+
+                fileName = asksaveasfile(parent=self.root,defaultextension=".xml", initialfile="Analysis.xml", title="Create New Analysis File")
+                conf = configuration.AnalysisConfigurationFactory().new(fileName)
+                configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
                 
         def LoadAnalysis(self):
 
@@ -1446,6 +1455,10 @@ class UserInterface:
                 if self.analysisConfiguration == None:
                         self.addMessage("ERROR: Analysis Config file not specified")
                         return
+
+
+#                self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
+#                return
         
                 try:
             
