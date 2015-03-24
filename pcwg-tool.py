@@ -8,7 +8,7 @@ import datetime
 import os
 import os.path
 
-version = "0.5.1"
+version = "0.5.3"
 
 class WindowStatus:
 
@@ -546,8 +546,13 @@ class BaseConfigurationDialog(BaseDialog):
                         self.config = config
                         self.originalPath = config.path
                 else:
-                        self.config = self.NewConfiguration()
-                        self.originalPath = ""                                   
+                        if self.__class__ == DatasetConfigurationDialog:
+                                self.config = configuration.DatasetConfiguration()
+                        elif self.__class__ == AnalysisConfigurationDialog:
+                                self.config = configuration.AnalysisConfiguration()
+                        else:
+                             raise Exception("As yet unknown config class")
+                        self.originalPath = None
 
                 BaseDialog.__init__(self, master, status)
                 
@@ -556,9 +561,12 @@ class BaseConfigurationDialog(BaseDialog):
                 self.prepareColumns( master)
                 
                 self.addTitleRow(master, "General Settings:")
-                
-                self.filePath = self.addFileSaveAsEntry(master, "File Path:", ValidateDatasetFilePath(master), self.config.path)
 
+                if hasattr(self.config,"path"):
+                        self.filePath = self.addFileSaveAsEntry(master, "File Path:", ValidateDatasetFilePath(master), self.config.path)
+                else:
+                        newFile = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="DatasetConfig.xml", title="Save New Data Set Config")
+                        self.filePath = newFile
                 #dummy label to indent controls
                 Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
                 
@@ -623,6 +631,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData)
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat)
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows)
+
+                Label(master, text="Data Column Headers:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                self.row += 1
                 self.timeStamp = self.addEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60)
                 self.referenceWindSpeed = self.addEntry(master, "Reference Wind Speed:", None, self.config.referenceWindSpeed, width = 60)
                 self.referenceWindSpeedStdDev = self.addEntry(master, "Reference Wind Speed: Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60)
@@ -631,6 +642,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.turbineLocationWindSpeed = self.addEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed)
                 self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60)
                 self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60)
+                self.turbinePower = self.addEntry(master, "Turbine Power:", None, self.config.power, width = 60)
+
+                Label(master, text="Shear Measurements:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                self.row += 1
 
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
                         self.shearWindSpeeds.append( self.addEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60) )
@@ -755,6 +770,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 self.config.hubWindSpeed = self.hubWindSpeed.get()
                 self.config.hubTurbulence = self.hubTurbulence.get()
+                self.config.power = self.turbinePower.get()
 
                 self.config.windDirectionLevels = {}
                 self.config.windSpeedLevels = {}
@@ -780,9 +796,9 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 self.powerCurveLevelsListBox = Listbox(master, yscrollcommand=self.powerCurveLevelsScrollBar.set, selectmode=EXTENDED, height=10)
                 
                 if not self.isNew:
-                        for windSpeed in sorted(self.config.powerCurveLevels):
-                                power = self.config.powerCurveLevels[windSpeed]
-                                text = "%f,%f" % (windSpeed, power)
+                        for windSpeed in self.config.powerCurveLevels.index:
+                                power = self.config.powerCurveLevels['Specified Power'][windSpeed]
+                                text = "{0},{1}".format(windSpeed, power)
                                 self.powerCurveLevelsListBox.insert(END, text)
                                 
                 self.powerCurveLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
@@ -844,7 +860,7 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
         def sortLevels(self):
 
-                levels = []
+                levels = {}
 
                 for i in range(self.powerCurveLevelsListBox.size()):
                         text = self.powerCurveLevelsListBox.get(i)
@@ -853,7 +869,7 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 self.powerCurveLevelsListBox.delete(0, END)
 
                 for windSpeed in sorted(levels):
-                        self.powerCurveLevelsListBox.insert(END, items[windSpeed])
+                        self.powerCurveLevelsListBox.insert(END, levels[windSpeed])
 
         def getValues(self, text):
                 items = text.split(",")
@@ -872,13 +888,12 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
                 for i in range(self.powerCurveLevelsListBox.size()):
                         values = self.getValues(self.powerCurveLevelsListBox.get(i))
-                        self.config.powerCurveLevels[values[0]] = values[1]
+                        self.config.powerCurveLevels['Specified Power'][values[0]] = values[1]
                         
 class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 
         def addFormElements(self, master):                
 
-                self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds)
                 self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", ValidatePositiveInteger(master), self.config.powerCurveMinimumCount)
 
                 filterModeOptions = ["All", "Inner", "InnerTurb", "InnerShear", "Outer", "OuterTurb", "OuterShear", "LowShearLowTurbulence", "LowShearHighTurbulence", "HighShearHighTurbulence", "HighShearLowTurbulence"]
@@ -938,7 +953,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.ratedPower = self.addEntry(master, "Rated Power:", ValidatePositiveFloat(master), self.config.ratedPower)
                 self.hubHeight = self.addEntry(master, "Hub Height:", ValidatePositiveFloat(master), self.config.hubHeight)
                 self.diameter = self.addEntry(master, "Diameter:", ValidatePositiveFloat(master), self.config.diameter)
-                self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", ValidateSpecifiedPowerCurve(master), self.config.specifiedPowerCurve, self.filePath)
+                self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", ValidateSpecifiedPowerCurve(master), configuration.RelativePath(self.filePath.get()).convertToAbsolutePath(self.config.specifiedPowerCurve) , self.filePath)
 
                 self.addPowerCurveButton = Button(master, text="New", command = self.NewPowerCurve, width=5, height=1)
                 self.addPowerCurveButton.grid(row=(self.row-1), sticky=E+N, column=self.secondButtonColumn)
@@ -959,7 +974,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 if len(specifiedPowerCurve) > 0:
 
                         try:
-                                config = configuration.PowerCurveConfiguration(specifiedPowerCurve)
+                                config = configuration.PowerCurveConfiguration(configuration.RelativePath(self.filePath.get()).convertToAbsolutePath(specifiedPowerCurve))
                                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
                         except Exception as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (specifiedPowerCurve, e))
@@ -1032,7 +1047,6 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 relativePath = configuration.RelativePath(self.config.path)
 
-                self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
                 self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
                 self.config.filterMode = self.filterMode.get()
                 self.config.baseLineMode = self.baseLineMode.get()
@@ -1230,8 +1244,10 @@ class UserInterface:
                 configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
                 
         def NewAnalysis(self):
-                
-                configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath)
+
+                fileName = asksaveasfile(parent=self.root,defaultextension=".xml", initialfile="Analysis.xml", title="Create New Analysis File")
+                conf = configuration.AnalysisConfigurationFactory().new(fileName)
+                configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
                 
         def LoadAnalysis(self):
 

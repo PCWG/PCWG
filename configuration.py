@@ -196,7 +196,6 @@ class AnalysisConfiguration(XmlBase):
             configurationNode = self.getNode(doc, 'Configuration')
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
-            self.timeStepInSeconds = self.getNodeInt(configurationNode, 'TimeStepInSeconds')
             
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
             self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
@@ -226,7 +225,6 @@ class AnalysisConfiguration(XmlBase):
         doc = self.createDocument()             
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
 
-        self.addIntNode(doc, root, "TimeStepInSeconds", self.timeStepInSeconds)
         self.addIntNode(doc, root, "PowerCurveMinimumCount", self.powerCurveMinimumCount)
 
         self.addTextNode(doc, root, "FilterMode", self.filterMode)
@@ -301,7 +299,7 @@ class AnalysisConfiguration(XmlBase):
         self.cutOutWindSpeed = self.getNodeFloat(turbineNode, 'CutOutWindSpeed')
         self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
 
-        self.specifiedPowerCurve = self.getNodeValue(turbineNode, 'SpecifiedPowerCurve')
+        self.specifiedPowerCurve = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve','')
         
     def readREWS(self, configurationNode):
 
@@ -326,6 +324,59 @@ class AnalysisConfiguration(XmlBase):
             self.densityCorrectionActive = self.getNodeBool(densityNode, 'Active')
         else:
             self.densityCorrectionActive = False
+
+class AnalysisConfigurationFactory(object):
+    defaults = """<?xml version="1.0" ?>
+    <Configuration xmlns="http://www.pcwg.org">
+        <PowerCurveMinimumCount>20</PowerCurveMinimumCount>
+        <FilterMode>All</FilterMode>
+        <BaseLineMode>Measured</BaseLineMode>
+        <PowerCurveMode>InnerTurbulenceMeasured</PowerCurveMode>
+        <PowerCurvePaddingMode>none</PowerCurvePaddingMode>
+        <PowerCurveBins>
+            <FirstBinCentre>1.000000</FirstBinCentre>
+            <LastBinCentre>30.000000</LastBinCentre>
+            <BinSize>1.000000</BinSize>
+        </PowerCurveBins>
+        <Datasets>
+        </Datasets>
+        <InnerRange>
+            <InnerRangeLowerTurbulence>0.080000</InnerRangeLowerTurbulence>
+            <InnerRangeUpperTurbulence>0.120000</InnerRangeUpperTurbulence>
+            <InnerRangeLowerShear>0.150000</InnerRangeLowerShear>
+            <InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
+        </InnerRange>
+        <Turbine>
+            <CutInWindSpeed>3.000000</CutInWindSpeed>
+            <CutOutWindSpeed>25.000000</CutOutWindSpeed>
+            <RatedPower>1000.000000</RatedPower>
+            <HubHeight>80.000000</HubHeight>
+            <Diameter>80.00</Diameter>
+            <SpecifiedPowerCurve></SpecifiedPowerCurve>
+        </Turbine>
+        <DensityCorrection>
+            <Active>0</Active>
+        </DensityCorrection>
+        <TurbulenceRenormalisation>
+            <Active>0</Active>
+        </TurbulenceRenormalisation>
+        <RotorEquivalentWindSpeed>
+            <Active>0</Active>
+        </RotorEquivalentWindSpeed>
+    </Configuration>
+    """
+    def new(self,path):
+        if type(path) == file:
+            path.write(self.defaults)
+            path.close()
+            strPath = path.name
+        elif type(path) == str:
+            with open(path, "w") as text_file:
+                text_file.write(self.defaults)
+            strPath = path
+        else:
+            raise Exception("Unknown input to new analysis config factory. Inputs are path string or open file instance.")
+        return AnalysisConfiguration(strPath)
 
 class PowerCurveConfiguration(XmlBase):
 
@@ -361,17 +412,17 @@ class PowerCurveConfiguration(XmlBase):
     def save(self):
 
         doc = self.createDocument()             
-        root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
+        root = self.addRootNode(doc, "PowerCurve", "http://www.pcwg.org")
 
         self.addTextNode(doc, root, "Name", self.name)
         
         self.addFloatNode(doc, root, "PowerCurveDensity", self.powerCurveDensity)
         self.addFloatNode(doc, root, "PowerCurveTurbulence", self.powerCurveTurbulence)
 
-        for speed in self.powerCurveLevels:
+        for speed in self.powerCurveLevels.index:
             levelNode = self.addNode(doc, root, "PowerCurveLevel")
-            self.addFloatNode(doc, levelNode, "NumberOfRotorLevels", speed)
-            self.addFloatNode(doc, levelNode, "RotorMode", self.powerCurveLevels[speed])
+            self.addFloatNode(doc, levelNode, "PowerCurveLevelWindSpeed", speed)
+            self.addFloatNode(doc, levelNode, "PowerCurveLevelPower", self.powerCurveLevels['Specified Power'][speed])
         
         self.saveDocument(doc, self.path)
         
@@ -446,11 +497,44 @@ class DatasetConfiguration(XmlBase):
             self.readExclusions(configurationNode)
 
             if self.nodeExists(configurationNode, 'CalibrationMethod'):
-                self.calibrationMethod = self.getNodeValue(configurationNode, 'CalibrationMethod')
+                try:
+                    self.calibrationMethod = self.getNodeValue(configurationNode, 'CalibrationMethod')
+                except:
+                    self.calibrationMethod = ""
             else:
                 self.calibrationMethod = ""
                 
-            self.readCalibration(configurationNode)    
+            self.readCalibration(configurationNode)
+
+        else:
+
+            self.name = None
+            self.startDate = '2000-01-01 00:00:00'
+            self.endDate = '2020-01-01 00:00:00'
+            self.hubWindSpeedMode = 'None'
+            self.calculateHubWindSpeed = False
+            self.densityMode = 'None'
+            self.calculateDensity = False
+            self.turbulenceWSsource = 'Reference'
+            self.calibrationMethod = 'None'
+            self.rewsDefined = False
+            self.numberOfRotorLevels = 0
+            self.rotorMode = ''
+            self.hubMode = ''
+            self.inputTimeSeriesPath = ''
+            self.badData = ''
+            self.dateFormat = '%Y-%m-%d %H:%M:%S'
+            self.headerRows = ''
+            self.timeStamp = ''
+            self.referenceWindSpeed = ''
+            self.referenceWindSpeedStdDev = ''
+            self.referenceWindDirection = ''
+            self.referenceWindDirectionOffset = ''
+            self.turbineLocationWindSpeed = ''
+            self.hubWindSpeed= ''
+            self.hubTurbulence = ''
+
+            self.shearMeasurements = {'':0,' ':0}
 
     def save(self):
 
@@ -491,10 +575,14 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
         # to do - chaneg for ref and turbine shears.
-        shearMeasurementsNode = self.addNode(doc, measurementsNode, "ShearMeasurements")
-        for shearMeas in self.shearMeasurements.iteritems():
-            self.addFloatNode(doc, shearMeasurementsNode, "Height", shearMeas[0])
-            self.addTextNode(doc, shearMeasurementsNode, "WindSpeed", shearMeas[1])
+        if 'ReferenceLocation' in self.shearMeasurements.keys() and 'TurbineLocation' in self.shearMeasurements.keys():
+            raise NotImplementedError
+        else:
+            shearMeasurementsNode = self.addNode(doc, measurementsNode, "ShearMeasurements")
+            for shearMeas in self.shearMeasurements.iteritems():
+                measNode = self.addNode(doc, shearMeasurementsNode, "ShearMeasurement")
+                self.addFloatNode(doc, measNode, "Height", shearMeas[0])
+                self.addTextNode(doc, measNode, "WindSpeed", shearMeas[1])
 
         try:
             # backwards compat
@@ -552,7 +640,7 @@ class DatasetConfiguration(XmlBase):
 
         self.inputTimeSeriesPath = self.getNodePath(measurementsNode, 'InputTimeSeriesPath')
         self.dateFormat = self.getNodeValue(measurementsNode, 'DateFormat')
-        self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
+        self.timeStepInSeconds = self.getNodeValueIfExists(measurementsNode, 'TimeStepInSeconds','')
 
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
         self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
@@ -610,11 +698,15 @@ class DatasetConfiguration(XmlBase):
                 self.shearMeasurements['TurbineLocation'] = self.readShearMeasurements(turbineShearMeasurementsNode)
                 referenceShearMeasurementsNode = self.getNode(allShearMeasurementsNode, "ReferenceShearMeasurements")
                 self.shearMeasurements['ReferenceLocation'] = self.readShearMeasurements(referenceShearMeasurementsNode)
+                self.shearMeasurements['ReferenceLocation'] = self.readShearMeasurements(referenceShearMeasurementsNode)
             else:
                 self.shearMeasurements = self.readShearMeasurements(measurementsNode)
 
         if self.nodeExists(measurementsNode, 'Power'):
-            self.power = self.getNodeValue(measurementsNode, 'Power')
+            try:
+                self.power = self.getNodeValue(measurementsNode, 'Power')
+            except:
+                self.power = None
         else:
             self.power = None
             
