@@ -406,16 +406,17 @@ class PowerCurveConfiguration(XmlBase):
             self.name = self.getNodeValue(powerCurveNode, 'Name')
             self.powerCurveDensity = self.getNodeFloat(powerCurveNode, 'PowerCurveDensity')
             self.powerCurveTurbulence = self.getNodeFloat(powerCurveNode, 'PowerCurveTurbulence')
-
+            
             speeds, powers = [], []
             
             for node in self.getNodes(powerCurveNode, 'PowerCurveLevel'):
 
                 speed = self.getNodeFloat(node, 'PowerCurveLevelWindSpeed')
                 power = self.getNodeFloat(node, 'PowerCurveLevelPower')
+
                 speeds.append(speed)
-                powers.append(power)                
-            
+                powers.append(power)
+                            
             self.powerCurveLevels = pd.DataFrame(powers, index = speeds, columns = ['Specified Power'])
             self.powerCurveLevels['Specified Turbulence'] = self.powerCurveTurbulence
                       
@@ -429,6 +430,7 @@ class PowerCurveConfiguration(XmlBase):
     def save(self):
         print"saving power curve"
         doc = self.createDocument()             
+
         root = self.addRootNode(doc, "PowerCurve", "http://www.pcwg.org")
 
         self.addTextNode(doc, root, "Name", self.name)
@@ -516,7 +518,6 @@ class DatasetConfiguration(XmlBase):
 
             self.turbulenceWSsource = self.getNodeValueIfExists(configurationNode, 'TurbulenceWindSpeedSource', 'Reference')
 
-
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)
             self.filters = self.readFilters(self.getNodes(configurationNode, 'Filter'))
@@ -524,8 +525,11 @@ class DatasetConfiguration(XmlBase):
             
             self.readExclusions(configurationNode)
 
-            if self.nodeValueExists(configurationNode, 'CalibrationMethod'):
-                self.calibrationMethod = self.getNodeValue(configurationNode, 'CalibrationMethod')
+            if self.nodeExists(configurationNode, 'CalibrationMethod'):
+                try:
+                    self.calibrationMethod = self.getNodeValue(configurationNode, 'CalibrationMethod')
+                except:
+                    self.calibrationMethod = ""
             else:
                 self.calibrationMethod = ""
                 
@@ -556,7 +560,6 @@ class DatasetConfiguration(XmlBase):
             self.referenceWindDirection = ''
             self.referenceWindDirectionOffset = ''
             self.turbineLocationWindSpeed = ''
-            self.power = ''
             self.hubWindSpeed= ''
             self.hubTurbulence = ''
 
@@ -647,7 +650,9 @@ class DatasetConfiguration(XmlBase):
             self.numberOfRotorLevels = 0
 
     def readShearMeasurements(self, node):
+
         measurements = {}
+        
         for shearMeasureNode in self.getNodes(node,"ShearMeasurement"):
                shearColName = self.getNodeValue(shearMeasureNode,"WindSpeed")
                shearHeight = self.getNodeFloat(shearMeasureNode,"Height")
@@ -777,7 +782,7 @@ class DatasetConfiguration(XmlBase):
                     filters.append(self.readSimpleFilter(node))                
                 else:
                     filters.append(RelationshipFilter(node))
-                    
+        
         return filters
     
     def readExclusions(self, configurationNode):
