@@ -606,7 +606,7 @@ class DatasetConfiguration(XmlBase):
 
         if self.rewsDefined:
             rewsNode = self.addNode(doc, root, "RotorEquivalentWindSpeed")
-            self.addTextNode(doc, rewsNode, "NumberOfRotorLevels", self.numberOfRotorLevels)
+            self.addIntNode(doc, rewsNode, "NumberOfRotorLevels", self.numberOfRotorLevels)
             self.addTextNode(doc, rewsNode, "RotorMode", self.rotorMode)
             self.addTextNode(doc, rewsNode, "HubMode", self.hubMode)
         
