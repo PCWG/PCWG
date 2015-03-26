@@ -56,8 +56,22 @@ class XmlBase:
         return node.getElementsByTagNameNS("http://www.pcwg.org", query)  
 
     def nodeExists(self, node, query):
-        return (len(self.getNodes(node, query)) > 0)   
 
+        return(len(self.getNodes(node, query)) > 0)
+        
+        if exists:
+            return len(self.getNodeValue(node, query)) > 0
+        else:
+            return False
+
+    def nodeValueExists(self, node, query):
+
+        if self.nodeExists(node, query):
+            subNode = self.getNode(node, query)
+            return (subNode.firstChild != None)
+        else:
+            return False
+        
     def addNode(self, doc, parentNode, nodeName):
         node = doc.createElement(nodeName)
         parentNode.appendChild(node)
@@ -201,29 +215,29 @@ class AnalysisConfiguration(XmlBase):
 
     def __init__(self, path = None):
 
+        defaultPaddingMode = 'None'
+
         if path != None:
-            
+
+            self.isNew = False
             self.path = path
             
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
-            
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
             self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
-            self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', 'none')
+            self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
 
-            try:
+            if self.nodeExists(configurationNode, 'PowerCurveBins'):
                 powerCurveBinsNode = self.getNode(configurationNode, 'PowerCurveBins')
                 self.powerCurveFirstBin = self.getNodeFloat(powerCurveBinsNode, 'FirstBinCentre')
                 self.powerCurveLastBin = self.getNodeFloat(powerCurveBinsNode, 'LastBinCentre')
                 self.powerCurveBinSize = self.getNodeFloat(powerCurveBinsNode, 'BinSize')
-            except: # defaults
-                self.powerCurveFirstBin = 1.0
-                self.powerCurveLastBin = 30.0
-                self.powerCurveBinSize = 1.0
+            else:
+                self.setDefaultPowerCurveBins()
 
             self.readDatasets(configurationNode)
             self.readInnerRange(configurationNode)
@@ -233,8 +247,50 @@ class AnalysisConfiguration(XmlBase):
             self.readREWS(configurationNode)
             self.readTurbRenorm(configurationNode)
 
-    def save(self):
+        else:
+
+            self.isNew = True
+
+            self.powerCurveMinimumCount = 10
+            self.baseLineMode = 'Hub'
+            self.filterMode = 'All'
+            self.powerCurveMode = 'Specified'
+            self.powerCurvePaddingMode = defaultPaddingMode
+
+            self.setDefaultPowerCurveBins()
+
+            self.setDefaultInnerRangeTurbulence()
+            self.setDefaultInnerRangeShear()
+
+            self.hubHeight = 80.0
+            self.diameter = 90.0
+
+            self.cutInWindSpeed = 3.0
+            self.cutOutWindSpeed = 25.0
+            self.ratedPower = 1000.0
+
+            self.specifiedPowerCurve = ''
+
+            self.rewsActive = False        
+            self.turbRenormActive = False
+            self.densityCorrectionActive = False
+
+    def setDefaultInnerRangeTurbulence(self):
+        self.innerRangeLowerTurbulence = 0.08
+        self.innerRangeUpperTurbulence = 0.12
         
+    def setDefaultInnerRangeShear(self):
+        self.innerRangeLowerShear = 0.05
+        self.innerRangeUpperShear = 0.20
+
+    def setDefaultPowerCurveBins(self):
+            self.powerCurveFirstBin = 1.0
+            self.powerCurveLastBin = 30.0
+            self.powerCurveBinSize = 1.0
+            
+    def save(self):
+
+        self.isNew = False
         doc = self.createDocument()             
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
 
@@ -298,6 +354,9 @@ class AnalysisConfiguration(XmlBase):
 
         self.innerRangeLowerTurbulence = self.getNodeFloat(innerRangeNode, 'InnerRangeLowerTurbulence')
         self.innerRangeUpperTurbulence = self.getNodeFloat(innerRangeNode, 'InnerRangeUpperTurbulence')
+
+        self.setDefaultInnerRangeShear()
+        
         if self.nodeExists(innerRangeNode, 'InnerRangeLowerShear'): self.innerRangeLowerShear = self.getNodeFloat(innerRangeNode, 'InnerRangeLowerShear')
         if self.nodeExists(innerRangeNode, 'InnerRangeUpperShear'): self.innerRangeUpperShear = self.getNodeFloat(innerRangeNode, 'InnerRangeUpperShear')
              
@@ -337,59 +396,6 @@ class AnalysisConfiguration(XmlBase):
             self.densityCorrectionActive = self.getNodeBool(densityNode, 'Active')
         else:
             self.densityCorrectionActive = False
-
-class AnalysisConfigurationFactory(object):
-    defaults = """<?xml version="1.0" ?>
-    <Configuration xmlns="http://www.pcwg.org">
-        <PowerCurveMinimumCount>20</PowerCurveMinimumCount>
-        <FilterMode>All</FilterMode>
-        <BaseLineMode>Measured</BaseLineMode>
-        <PowerCurveMode>InnerTurbulenceMeasured</PowerCurveMode>
-        <PowerCurvePaddingMode>none</PowerCurvePaddingMode>
-        <PowerCurveBins>
-            <FirstBinCentre>1.000000</FirstBinCentre>
-            <LastBinCentre>30.000000</LastBinCentre>
-            <BinSize>1.000000</BinSize>
-        </PowerCurveBins>
-        <Datasets>
-        </Datasets>
-        <InnerRange>
-            <InnerRangeLowerTurbulence>0.080000</InnerRangeLowerTurbulence>
-            <InnerRangeUpperTurbulence>0.120000</InnerRangeUpperTurbulence>
-            <InnerRangeLowerShear>0.150000</InnerRangeLowerShear>
-            <InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
-        </InnerRange>
-        <Turbine>
-            <CutInWindSpeed>3.000000</CutInWindSpeed>
-            <CutOutWindSpeed>25.000000</CutOutWindSpeed>
-            <RatedPower>1000.000000</RatedPower>
-            <HubHeight>80.000000</HubHeight>
-            <Diameter>80.00</Diameter>
-            <SpecifiedPowerCurve></SpecifiedPowerCurve>
-        </Turbine>
-        <DensityCorrection>
-            <Active>0</Active>
-        </DensityCorrection>
-        <TurbulenceRenormalisation>
-            <Active>0</Active>
-        </TurbulenceRenormalisation>
-        <RotorEquivalentWindSpeed>
-            <Active>0</Active>
-        </RotorEquivalentWindSpeed>
-    </Configuration>
-    """
-    def new(self,path):
-        if type(path) == file:
-            path.write(self.defaults)
-            path.close()
-            strPath = path.name
-        elif type(path) == str:
-            with open(path, "w") as text_file:
-                text_file.write(self.defaults)
-            strPath = path
-        else:
-            raise Exception("Unknown input to new analysis config factory. Inputs are path string or open file instance.")
-        return AnalysisConfiguration(strPath)
 
 class PowerCurveConfiguration(XmlBase):
 
@@ -500,6 +506,7 @@ class DatasetConfiguration(XmlBase):
 
         if path != None:
 
+            self.isNew = False
             self.path = path
             
             doc = self.readDoc(path)
@@ -507,9 +514,16 @@ class DatasetConfiguration(XmlBase):
 
             self.name = self.getNodeValue(configurationNode, 'Name')
 
-            self.startDate = self.getNodeDate(configurationNode, 'StartDate')
-            self.endDate = self.getNodeDate(configurationNode, 'EndDate')
+            if self.nodeValueExists(configurationNode, 'StartDate'):
+                self.startDate = self.getNodeDate(configurationNode, 'StartDate')
+            else:
+                self.startDate = None
 
+            if self.nodeValueExists(configurationNode, 'EndDate'):                
+                self.endDate = self.getNodeDate(configurationNode, 'EndDate')
+            else:
+                self.endDate = None
+                
             self.hubWindSpeedMode = self.getNodeValue(configurationNode, 'HubWindSpeedMode')
             self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
 
@@ -537,9 +551,10 @@ class DatasetConfiguration(XmlBase):
 
         else:
 
+            self.isNew = True
             self.name = None
-            self.startDate = '2000-01-01 00:00:00'
-            self.endDate = '2020-01-01 00:00:00'
+            self.startDate = ''
+            self.endDate = ''
             self.hubWindSpeedMode = 'None'
             self.calculateHubWindSpeed = False
             self.densityMode = 'None'
@@ -551,22 +566,33 @@ class DatasetConfiguration(XmlBase):
             self.rotorMode = ''
             self.hubMode = ''
             self.inputTimeSeriesPath = ''
-            self.badData = ''
+            self.badData = -99.99
+            self.timeStepInSeconds = 600
             self.dateFormat = '%Y-%m-%d %H:%M:%S'
-            self.headerRows = ''
+            self.headerRows = 0
             self.timeStamp = ''
             self.referenceWindSpeed = ''
             self.referenceWindSpeedStdDev = ''
             self.referenceWindDirection = ''
-            self.referenceWindDirectionOffset = ''
+            self.referenceWindDirectionOffset = 0
             self.turbineLocationWindSpeed = ''
             self.hubWindSpeed= ''
             self.hubTurbulence = ''
+            self.temperature = ''
+            self.pressure = ''
+            self.power = ''
+            self.density = ''
+            
+            self.shearMeasurements = {}
+            self.shearMeasurements[50.0] = ''
+            self.shearMeasurements[60.0] = ''
 
-            self.shearMeasurements = {'':0,' ':0}
+            self.filters = {}
 
     def save(self):
 
+        self.isNew = False
+        
         doc = self.createDocument()             
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")      
 
@@ -580,7 +606,7 @@ class DatasetConfiguration(XmlBase):
 
         if self.rewsDefined:
             rewsNode = self.addNode(doc, root, "RotorEquivalentWindSpeed")
-            self.addTextNode(doc, rewsNode, "NumberOfRotorLevels", self.numberOfRotorLevels)
+            self.addIntNode(doc, rewsNode, "NumberOfRotorLevels", self.numberOfRotorLevels)
             self.addTextNode(doc, rewsNode, "RotorMode", self.rotorMode)
             self.addTextNode(doc, rewsNode, "HubMode", self.hubMode)
         
@@ -591,16 +617,22 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "DateFormat", self.dateFormat)
         self.addIntNode(doc, measurementsNode, "HeaderRows", self.headerRows)
         self.addTextNode(doc, measurementsNode, "TimeStamp", self.timeStamp)
-        self.addTextNode(doc, measurementsNode, "TimeStepInSeconds", self.timeStepInSeconds)
+        self.addIntNode(doc, measurementsNode, "TimeStepInSeconds", self.timeStepInSeconds)
         
         self.addTextNode(doc, measurementsNode, "ReferenceWindSpeed", self.referenceWindSpeed)
         self.addTextNode(doc, measurementsNode, "ReferenceWindSpeedStdDev", self.referenceWindSpeedStdDev)
         self.addTextNode(doc, measurementsNode, "ReferenceWindDirection", self.referenceWindDirection)
         self.addFloatNode(doc, measurementsNode, "ReferenceWindDirectionOffset", self.referenceWindDirectionOffset)
 
+        self.addTextNode(doc, measurementsNode, "Temperature", self.temperature)
+        self.addTextNode(doc, measurementsNode, "Pressure", self.pressure)
+        self.addTextNode(doc, measurementsNode, "Density", self.density)
+
         self.addTextNode(doc, measurementsNode, "TurbineLocationWindSpeed", self.hubWindSpeed)
+        
         if self.power is not None:
             self.addTextNode(doc, measurementsNode, "Power", self.power)
+            
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
@@ -684,7 +716,7 @@ class DatasetConfiguration(XmlBase):
 
         self.inputTimeSeriesPath = self.getNodePath(measurementsNode, 'InputTimeSeriesPath')
         self.dateFormat = self.getNodeValue(measurementsNode, 'DateFormat')
-        self.timeStepInSeconds = self.getNodeValueIfExists(measurementsNode, 'TimeStepInSeconds','')
+        self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
 
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
         self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
@@ -706,7 +738,7 @@ class DatasetConfiguration(XmlBase):
         if self.calculateDensity:
             self.density = "Density"
         else:
-            if self.nodeExists(measurementsNode, 'Density'):
+            if self.nodeValueExists(measurementsNode, 'Density'):
                 self.density = self.getNodeValue(measurementsNode, 'Density')
             else:
                 self.density = None
@@ -745,7 +777,7 @@ class DatasetConfiguration(XmlBase):
             else:
                 self.shearMeasurements = self.readShearMeasurements(measurementsNode)
 
-        if self.nodeExists(measurementsNode, 'Power'):
+        if self.nodeValueExists(measurementsNode, 'Power'):
             self.power = self.getNodeValue(measurementsNode, 'Power')
         else:
             self.power = None

@@ -168,7 +168,7 @@ class Dataset:
 
         self.name = config.name
         
-        self.timeStepInSeconds = analysisConfig.timeStepInSeconds
+        self.timeStepInSeconds = config.timeStepInSeconds
 
         self.timeStamp = config.timeStamp
         self.actualPower = "Actual Power"
@@ -196,8 +196,13 @@ class Dataset:
         
         dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = '\t', skiprows = config.headerRows).replace(config.badData, np.nan)
 
-        dataFrame = dataFrame[config.startDate : config.endDate]
-
+        if config.startDate != None and config.endDate != None:
+            dataFrame = dataFrame[config.startDate : config.endDate]
+        elif config.startDate != None:
+            dataFrame = dataFrame[config.startDate : ]
+        elif config.endDate != None:
+            dataFrame = dataFrame[ : config.endDate]
+            
         dataFrame[self.name] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
         
@@ -213,32 +218,38 @@ class Dataset:
         
         if config.calculateHubWindSpeed:
 
-            self.calibrationCalculator = self.createCalibration(dataFrame, config, analysisConfig.timeStepInSeconds)
+            self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
-            dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
+            if config.calibrationMethod != "Specified":
+                
+                dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
 
-            windSpeedBin = "Wind Speed Bin"
-            turbulenceBin = "Turbulence Bin"
+                windSpeedBin = "Wind Speed Bin"
+                turbulenceBin = "Turbulence Bin"
 
-            windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
-            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
-            aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
+                windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
+                turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
+                aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
 
-            dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
-            dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
+                dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
+                dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
 
-            self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
-                                                            dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+                self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                                                                dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+            else:
 
+                self.residualWindSpeedMatrix = None
+                
         else:
+            
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             self.residualWindSpeedMatrix = None
 
         if self.shearCalibration and config.shearCalibrationMethod != "Reference":
-            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, analysisConfig.timeStepInSeconds)
+            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, config.timeStepInSeconds)
             dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
 
 

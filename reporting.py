@@ -162,7 +162,7 @@ class report:
         row += 1
 
         sh.write(row, labelColumn, "Time Step In Seconds", self.bold_style)
-        sh.write(row, dataColumn, config.timeStepInSeconds)
+        sh.write(row, dataColumn, analysis.timeStepInSeconds)
         row += 1
 
         sh.write(row, labelColumn, "Power Curve Minimum Count", self.bold_style)
@@ -294,7 +294,7 @@ class report:
             row += 1
 
             sh.write(row, labelColumn, "Time Step In Seconds", self.bold_style)
-            sh.write(row, dataColumn, config.timeStepInSeconds)
+            sh.write(row, dataColumn, datasetConfig.timeStepInSeconds)
             row += 1
             
             sh.write(row, labelColumn, "Time Stamp", self.bold_style)

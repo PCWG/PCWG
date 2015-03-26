@@ -84,9 +84,6 @@ class Analysis:
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
 
-        # assuming same time base for every time step.
-        self.timeStampHours = (self.dataFrame[self.timeStamp] - self.dataFrame[self.timeStamp].shift(periods=1)).min().total_seconds()/3600.0
-
         self.densityCorrectionActive = config.densityCorrectionActive        
         self.rewsActive = config.rewsActive
         self.turbRenormActive = config.turbRenormActive        
@@ -277,9 +274,11 @@ class Analysis:
 
             if i == 0:
 
+                #analysis 'inherits' timestep from first data set. Subsequent datasets will be checked for consistency
+                self.timeStepInSeconds = datasetConfig.timeStepInSeconds
+                
                 #copy column names from dataset
                 self.timeStamp = data.timeStamp
-                
                 self.hubWindSpeed = data.hubWindSpeed
                 self.hubTurbulence = data.hubTurbulence
                 self.hubDensity = data.hubDensity
@@ -301,7 +300,10 @@ class Analysis:
                 self.rewsDefined = data.rewsDefined
                 
             else:
-                        
+
+                if datasetConfig.timeStepInSeconds <> self.timeStepInSeconds:
+                    raise Exception ("Dataset time step (%d) does not match analysis (%d) time step" % (datasetConfig.timeStepInSeconds, self.timeStepInSeconds))
+                
                 self.dataFrame = self.dataFrame.append(data.dataFrame, ignore_index = True)
 
                 self.hasActualPower = self.hasActualPower & data.hasActualPower
@@ -310,6 +312,8 @@ class Analysis:
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
+
+        self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
 
     def selectPowerCurve(self, powerCurveMode):
 
