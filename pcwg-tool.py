@@ -7,10 +7,11 @@ import configuration
 import datetime
 import os
 import os.path
+import pandas as pd
 
-version = "0.5.3"
+version = "0.5.4"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
  
 class WindowStatus:
 
@@ -54,8 +55,11 @@ class ValidateBase:
 
         def executeValidation(self, text, value_if_allowed, prior_value):
 
-                permitInput = self.mask(text, value_if_allowed)
-
+                if len(value_if_allowed) > 0:
+                        permitInput = self.mask(text, value_if_allowed)
+                else:
+                        permitInput = True
+                        
                 if permitInput:
                         result = self.validate(value_if_allowed)
                 else:
@@ -70,7 +74,7 @@ class ValidateBase:
                                 self.setMessage(result.message)
                 except Exception as ex:
                         print "Error reporting validation message: %s" % ex.message
-                         
+
                 return permitInput       
 
         def mask(self, text, value):
@@ -306,7 +310,8 @@ class ShowHideCommand:
                 self.setButtonText()
                     
         def addControl(self, control):
-                self.controls.append(control)
+                if control != None:
+                        self.controls.append(control)
                 
         def setButtonText(self):
 
@@ -606,7 +611,7 @@ class REWSProfileLevelDialog(BaseDialog):
                         self.callback(self.text)
                 else:
                         self.callback(self.text, self.index)
-                
+     
 class BaseConfigurationDialog(BaseDialog):
 
         def __init__(self, master, status, callback, config, index = None):
@@ -682,6 +687,113 @@ class BaseConfigurationDialog(BaseDialog):
                 else:
                         self.callback(self.config.path, self.index)
 
+class ColumnPickerDialog(BaseDialog):
+
+        def __init__(self, master, status, callback, availableColumns, column):
+
+                self.callback = callback
+                self.availableColumns = availableColumns
+                self.column = column
+                
+                BaseDialog.__init__(self, master, status)
+                        
+        def body(self, master):
+
+                self.prepareColumns(master)     
+
+                if len(self.availableColumns) > 0:
+                        self.column = self.addOption(master, "Select Column:", self.availableColumns, self.column)
+                        
+        def apply(self):
+                        
+                self.callback(self.column.get())
+      
+class ColumnPicker:
+
+        def __init__(self, parentDialog, entry):
+
+                self.parentDialog = parentDialog
+                self.entry = entry
+
+        def __call__(self):
+
+                if len(self.parentDialog.inputTimeSeriesPath.get()) < 1:
+
+                        tkMessageBox.showwarning(
+                                "InputTimeSeriesPath Not Set",
+                                "You must set the InputTimeSeriesPath before using the ColumnPicker"
+                                )
+
+                        return
+
+                inputTimeSeriesPath = self.parentDialog.getInputTimeSeriesAbsolutePath()
+                headerRows = self.parentDialog.getHeaderRows()
+                                
+                if self.parentDialog.availableColumnsFile != inputTimeSeriesPath:
+
+                        self.parentDialog.availableColumns = []
+                        self.parentDialog.availableColumnsFile = inputTimeSeriesPath
+
+                        try:
+                                
+                                dataFrame = pd.read_csv(inputTimeSeriesPath, sep = '\t', skiprows = headerRows)
+        
+                                for col in dataFrame:
+                                        self.parentDialog.availableColumns.append(col)
+
+                        except ExceptionType as e:
+                                self.status.addMessage("ERROR reading columns from %s: %s" % (inputTimeSeriesPath, e))
+                        
+                try:                                
+                        dialog = ColumnPickerDialog(self.parentDialog, self.parentDialog.status, self.pick, self.parentDialog.availableColumns, self.entry.get())
+                except ExceptionType as e:
+                        self.status.addMessage("ERROR picking column: %s" % e)
+
+        def pick(self, column):
+                
+                if len(column) > 0:
+                        self.entry.set(column)
+
+class DateFormatPickerDialog(BaseDialog):
+
+        def __init__(self, master, status, callback, availableFormats, selectedFormat):
+
+                self.callback = callback
+                self.availableFormats = availableFormats
+                self.selectedFormat = selectedFormat
+                
+                BaseDialog.__init__(self, master, status)
+                        
+        def body(self, master):
+
+                self.prepareColumns(master)     
+                        
+                self.dateFormat = self.addOption(master, "Select Date Format:", self.availableFormats, self.selectedFormat)
+
+        def apply(self):
+                        
+                self.callback(self.dateFormat.get())
+                
+class DateFormatPicker:
+
+        def __init__(self, parentDialog, entry, availableFormats):
+
+                self.parentDialog = parentDialog
+                self.entry = entry
+                self.availableFormats = availableFormats
+
+        def __call__(self):
+                        
+                try:                                
+                        dialog = DateFormatPickerDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableFormats, self.entry.get())
+                except ExceptionType as e:
+                        self.status.addMessage("ERROR picking dateFormat: %s" % e)
+
+        def pick(self, column):
+                
+                if len(column) > 0:
+                        self.entry.set(column)
+
 class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
@@ -690,6 +802,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
         def addFormElements(self, master):
 
+                self.availableColumnsFile = None
+                self.availableColumns = []
+        
                 self.shearWindSpeedHeights = []
                 self.shearWindSpeeds = []
 
@@ -714,29 +829,36 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = measurementShowHide)
                 self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds, showHideCommand = measurementShowHide)
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
+
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
+                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%d/%m/%Y %H:%M']), width=5, height=1)
+                pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
+                measurementShowHide.addControl(pickDateFormatButton)
+
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = measurementShowHide)
-                self.timeStamp = self.addEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide)
 
-                self.power = self.addEntry(master, "Power:", None, self.config.power, width = 60, showHideCommand = measurementShowHide)
-                self.referenceWindSpeed = self.addEntry(master, "Reference Wind Speed:", None, self.config.referenceWindSpeed, width = 60, showHideCommand = measurementShowHide)
-                self.referenceWindSpeedStdDev = self.addEntry(master, "Reference Wind Speed: Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60, showHideCommand = measurementShowHide)
-                self.referenceWindDirection = self.addEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60, showHideCommand = measurementShowHide)
+                self.timeStamp = self.addPickerEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide)
+                self.power = self.addPickerEntry(master, "Power:", None, self.config.power, width = 60, showHideCommand = measurementShowHide)
+                self.referenceWindSpeed = self.addPickerEntry(master, "Reference Wind Speed:", None, self.config.referenceWindSpeed, width = 60, showHideCommand = measurementShowHide)
+                self.referenceWindSpeedStdDev = self.addPickerEntry(master, "Reference Wind Speed: Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60, showHideCommand = measurementShowHide)
+                self.referenceWindDirection = self.addPickerEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60, showHideCommand = measurementShowHide)
                 self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset, showHideCommand = measurementShowHide)
-                self.turbineLocationWindSpeed = self.addEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60, showHideCommand = measurementShowHide)
-                self.hubWindSpeed = self.addEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60, showHideCommand = measurementShowHide)
-                self.hubTurbulence = self.addEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60, showHideCommand = measurementShowHide)
+                self.turbineLocationWindSpeed = self.addPickerEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60, showHideCommand = measurementShowHide)
+                self.hubWindSpeed = self.addPickerEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60, showHideCommand = measurementShowHide)
+                self.hubTurbulence = self.addPickerEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60, showHideCommand = measurementShowHide)
+                self.temperature = self.addPickerEntry(master, "Temperature:", None, self.config.temperature, width = 60, showHideCommand = measurementShowHide)
+                self.pressure = self.addPickerEntry(master, "Pressure:", None, self.config.pressure, width = 60, showHideCommand = measurementShowHide)
+                self.density = self.addPickerEntry(master, "Density:", None, self.config.density, width = 60, showHideCommand = measurementShowHide)
 
-                self.temperature = self.addEntry(master, "Temperature:", None, self.config.temperature, width = 60, showHideCommand = measurementShowHide)
-                self.pressure = self.addEntry(master, "Pressure:", None, self.config.pressure, width = 60, showHideCommand = measurementShowHide)
-                self.density = self.addEntry(master, "Density:", None, self.config.density, width = 60, showHideCommand = measurementShowHide)
-
-                Label(master, text="Shear Measurements:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                shearShowHide = ShowHideCommand(master)
+                label = Label(master, text="Shear Measurements:")
+                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                shearShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
                 self.row += 1
                 
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
-                        self.shearWindSpeeds.append( self.addEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = measurementShowHide) )
-                        self.shearWindSpeedHeights.append(self.addEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = measurementShowHide) )
+                        self.shearWindSpeeds.append( self.addPickerEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
+                        self.shearWindSpeedHeights.append(self.addPickerEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
 
                 rewsProfileShowHide = ShowHideCommand(master)
                 label = Label(master, text="REWS Profile Levels:")
@@ -777,6 +899,14 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 rewsProfileShowHide.addControl(self.deleteREWSProfileLevelButton)
                 self.row +=1
 
+        def addPickerEntry(self, master, title, validation, value, width = None, showHideCommand = None):
+
+                entry = self.addEntry(master, title, validation, value, width = width, showHideCommand = showHideCommand)
+                pickButton = Button(master, text=".", command = ColumnPicker(self, entry), width=5, height=1)
+                pickButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
+                showHideCommand.addControl(pickButton)
+                return entry
+        
         def EditREWSProfileLevel(self):
 
                 items = self.rewsProfileLevelsListBox.curselection()
@@ -837,10 +967,27 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 windSpeed = items[1].strip()
                 direction = items[2].strip()
                 return (height, windSpeed, direction)
-        
-        def setConfigValues(self):
 
-                relativePath = configuration.RelativePath(self.config.path)
+        def getInputTimeSeriesRelativePath(self):
+
+                relativePath = configuration.RelativePath(self.filePath.get())
+                return relativePath.convertToRelativePath(self.inputTimeSeriesPath.get())
+
+        def getInputTimeSeriesAbsolutePath(self):
+
+                relativePath = configuration.RelativePath(self.filePath.get())
+                return relativePath.convertToAbsolutePath(self.inputTimeSeriesPath.get())
+        
+        def getHeaderRows(self):
+
+                headerRowsText = self.headerRows.get()
+                
+                if len(headerRowsText) > 0:
+                        return int(headerRowsText)
+                else:
+                        return 0
+
+        def setConfigValues(self):
 
                 self.config.name = self.name.get()
                 self.config.startDate = self.startDate.get()
@@ -854,11 +1001,11 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.rotorMode = self.rotorMode.get()
                 self.config.hubMode = self.hubMode.get()
 
-                self.config.inputTimeSeriesPath = relativePath.convertToRelativePath(self.inputTimeSeriesPath.get())
+                self.config.inputTimeSeriesPath = self.getInputTimeSeriesRelativePath()
                 self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
                 self.config.badData = float(self.badData.get())
                 self.config.dateFormat = self.dateFormat.get()
-                self.config.headerRows = int(self.headerRows.get())
+                self.config.headerRows = self.getHeaderRows()
                 self.config.timeStamp = self.timeStamp.get()
 
                 self.config.power = self.power.get()
@@ -866,7 +1013,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.referenceWindSpeedStdDev = self.referenceWindSpeedStdDev.get()
                 self.config.referenceWindDirection = self.referenceWindDirection.get()
                 self.config.referenceWindDirectionOffset = float(self.referenceWindDirectionOffset.get())
-
+                self.config.turbineLocationWindSpeed = self.turbineLocationWindSpeed.get()
+                
                 self.config.temperature = self.temperature.get()
                 self.config.pressure = self.pressure.get()
                 self.config.density = self.density.get()
@@ -910,11 +1058,10 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 self.powerCurveLevelsScrollBar = Scrollbar(master, orient=VERTICAL)
                 self.powerCurveLevelsListBox = Listbox(master, yscrollcommand=self.powerCurveLevelsScrollBar.set, selectmode=EXTENDED, height=10)
                 
-                if not self.isNew:
-                        for windSpeed in self.config.powerCurveLevels.index:
-                                power = self.config.powerCurveLevels['Specified Power'][windSpeed]
-                                text = "{0},{1}".format(windSpeed, power)
-                                self.powerCurveLevelsListBox.insert(END, text)
+                for windSpeed in self.config.powerCurveDictionary:
+                        power = self.config.powerCurveDictionary[windSpeed]
+                        text = "{0},{1}".format(windSpeed, power)
+                        self.powerCurveLevelsListBox.insert(END, text)
                                 
                 self.powerCurveLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.powerCurveLevelsScrollBar.configure(command=self.powerCurveLevelsListBox.yview)
@@ -1003,9 +1150,15 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 self.config.powerCurveDensity = float(self.referenceDensity.get())
                 self.config.powerCurveTurbulence = float(self.referenceTurbulence.get())
 
+                powerCurveDictionary = {}
+
                 for i in range(self.powerCurveLevelsListBox.size()):
                         values = self.getValues(self.powerCurveLevelsListBox.get(i))
-                        self.config.powerCurveLevels['Specified Power'][values[0]] = values[1]
+                        windSpeed = values[0]
+                        power = values[1]
+                        powerCurveDictionary[windSpeed] = power
+                                
+                self.config.setPowerCurve(powerCurveDictionary)
                         
 class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
@@ -1119,8 +1272,9 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 self.status.addMessage("ERROR loading config (%s): %s" % (specifiedPowerCurve, e))
                                         
         def NewPowerCurve(self):
-                
-                configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath)
+
+                config = PowerCurveConfiguration()
+                configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
 
         def EditDataset(self):
 
