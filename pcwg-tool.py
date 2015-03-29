@@ -560,7 +560,58 @@ class PowerCurveLevelDialog(BaseDialog):
                         self.callback(self.text)
                 else:
                         self.callback(self.text, self.index)
+
+class CalibrationDirectionDialog(BaseDialog):
+
+        def __init__(self, master, status, callback, text = None, index = None):
+
+                self.callback = callback
+                self.text = text
+                self.index = index
+                
+                self.callback = callback
+
+                self.isNew = (text == None)
+                
+                BaseDialog.__init__(self, master, status)
                         
+        def body(self, master):
+
+                self.prepareColumns(master)     
+
+                if not self.isNew:
+                        items = self.text.split(",")
+                        direction = float(items[0])
+                        slope = items[1].strip()
+                        offset = items[2].strip()
+                else:
+                        direction = 0.0
+                        slope = 0.0
+                        offset = 0.0
+                        
+                self.addTitleRow(master, "Calibration Direction Settings:")
+                
+                self.direction = self.addEntry(master, "Direction:", ValidateFloat(master), direction)
+                self.slope = self.addEntry(master, "Slope:", ValidateFloat(master), slope)
+                self.offset = self.addEntry(master, "Offset:", ValidateFloat(master), offset)
+
+                #dummy label to indent controls
+                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
+
+        def apply(self):
+                        
+                self.text = "%f,%s,%s" % (float(self.direction.get()), self.slope.get().strip(), self.offset.get().strip())
+
+                if self.isNew:
+                        self.status.addMessage("Calibration direction created")
+                else:
+                        self.status.addMessage("Calibration direction updated")
+
+                if self.index== None:
+                        self.callback(self.text)
+                else:
+                        self.callback(self.text, self.index)
+
 class REWSProfileLevelDialog(BaseDialog):
 
         def __init__(self, master, status, callback, text = None, index = None):
@@ -898,6 +949,62 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.deleteREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 rewsProfileShowHide.addControl(self.deleteREWSProfileLevelButton)
                 self.row +=1
+
+                calibrationShowHide = ShowHideCommand(master)
+                self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationShowHide)
+                self.calibrationStartDate = self.addEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)
+                self.calibrationStartDate = self.addEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
+                self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationShowHide)
+                self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationShowHide)
+    
+                self.calibrationDirectionsScrollBar = Scrollbar(master, orient=VERTICAL)
+                calibrationShowHide.addControl(self.calibrationDirectionsScrollBar)
+                
+                self.calibrationDirectionsListBox = Listbox(master, yscrollcommand=self.calibrationDirectionsScrollBar.set, selectmode=EXTENDED, height=3)
+                calibrationShowHide.addControl(self.calibrationDirectionsListBox)
+                
+                if not self.isNew:
+                        for direction in sorted(self.config.calibrationSlopes):
+                                slope = self.config.calibrationSlopes[direction]
+                                offset = self.config.calibrationOffsets[direction]
+                                active = True #todo
+                                text = "%f,%f,%f,%s" % (direction, slope, offset, active)
+                                self.calibrationDirectionsListBox.insert(END, text)
+                                
+                self.calibrationDirectionsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
+                self.calibrationDirectionsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
+                self.calibrationDirectionsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
+
+                self.newCalibrationDirectionButton = Button(master, text="New", command = self.NewCalibrationDirection, width=5, height=1)
+                self.newCalibrationDirectionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
+                calibrationShowHide.addControl(self.newCalibrationDirectionButton)
+                
+                self.editCalibrationDirectionButton = Button(master, text="Edit", command = self.EditCalibrationDirection, width=5, height=1)
+                self.editCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
+                calibrationShowHide.addControl(self.editCalibrationDirectionButton)
+                
+                self.deleteCalibrationDirectionButton = Button(master, text="Delete", command = self.RemoveCalibrationDirection, width=5, height=1)
+                self.deleteCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+                calibrationShowHide.addControl(self.deleteCalibrationDirectionButton)
+                self.row +=1
+
+        def NewCalibrationDirection(self):
+
+            configDialog = CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText)
+
+        def EditCalibrationDirection(self):
+            pass
+
+        def RemoveCalibrationDirection(self):
+            pass
+            
+        def addCalbirationDirectionFromText(self, text, index = None):
+
+                if index != None:
+                        self.calibrationDirectionsListBox.delete(index, index)
+                        self.calibrationDirectionsListBox.insert(index, text)
+                else:
+                        self.calibrationDirectionsListBox.insert(END, text)     
 
         def addPickerEntry(self, master, title, validation, value, width = None, showHideCommand = None):
 

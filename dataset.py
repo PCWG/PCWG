@@ -112,14 +112,31 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn, belowAbove = {}):
+    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None, belowAbove = {}):
 
-        self.slopes = slopes
-        self.offsets = offsets
-        self.counts=counts
         self.belowAbove = belowAbove
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
+
+        if actives := None:
+
+            self.slopes = {}
+            self.offsets = {}
+            self.counts = {}
+
+            for direction in actives:
+                
+                self.slopes = slopes[direction]
+                self.offsets = offsets[direction]
+
+                if direction in counts:
+                    self.counts = counts[direction]
+
+        else:
+
+            self.slopes = slopes
+            self.offsets = offsets
+            self.counts = counts
 
     def turbineValue(self, row):
 
@@ -316,8 +333,7 @@ class Dataset:
         df = dataFrame.copy()
 
         if config.calibrationMethod == "Specified":
-            dummyCounts = {}
-            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, dummyCounts, self.referenceDirectionBin, config.referenceWindSpeed)
+            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
         else:
             calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, timeStepInSeconds, dataFrame)
 
@@ -367,7 +383,7 @@ class Dataset:
 
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, counts, self.referenceDirectionBin, valueColumn, belowAbove=belowAbove)
+        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove)
         
     def isValidText(self, text):
         if text == None: return False
