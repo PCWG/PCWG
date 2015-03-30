@@ -580,14 +580,27 @@ class CalibrationDirectionDialog(BaseDialog):
                 self.prepareColumns(master)     
 
                 if not self.isNew:
-                        items = self.text.split(",")
+                        
+                        items = self.text.split("\t")
+                        
                         direction = float(items[0])
-                        slope = items[1].strip()
-                        offset = items[2].strip()
+                        slope = float(items[1].strip())
+                        offset = float(items[2].strip())
+
+                        activeText = items[3].strip() 
+
+                        if activeText == "True":
+                            active = True
+                        elif activeText == "False":
+                            active = False
+                        else:
+                            raise Exception("Unknown active status: %s" % activeText)
+
                 else:
                         direction = 0.0
                         slope = 0.0
                         offset = 0.0
+                        active = False
                         
                 self.addTitleRow(master, "Calibration Direction Settings:")
                 
@@ -595,12 +608,22 @@ class CalibrationDirectionDialog(BaseDialog):
                 self.slope = self.addEntry(master, "Slope:", ValidateFloat(master), slope)
                 self.offset = self.addEntry(master, "Offset:", ValidateFloat(master), offset)
 
+                if active:
+                    self.active = self.addCheckBox(master, "Active:", 1)
+                else:
+                    self.active = self.addCheckBox(master, "Active:", 0)
+
                 #dummy label to indent controls
                 Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
 
         def apply(self):
+
+                if int(self.active.get()) == 1:
+                    active = True
+                else:
+                    active = False
                         
-                self.text = "%f,%s,%s" % (float(self.direction.get()), self.slope.get().strip(), self.offset.get().strip())
+                self.text = "%0.4f\t%0.4f\t%0.4f\t%s" % (float(self.direction.get()), float(self.slope.get().strip()), float(self.offset.get().strip()), active)
 
                 if self.isNew:
                         self.status.addMessage("Calibration direction created")
@@ -957,18 +980,21 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationShowHide)
                 self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationShowHide)
     
+                calibrationSectorsShowHide = ShowHideCommand(master)
+                self.addTitleRow(master, "Calibration Sectors:", showHideCommand = calibrationSectorsShowHide)
                 self.calibrationDirectionsScrollBar = Scrollbar(master, orient=VERTICAL)
-                calibrationShowHide.addControl(self.calibrationDirectionsScrollBar)
+                calibrationSectorsShowHide.addControl(self.calibrationDirectionsScrollBar)
                 
                 self.calibrationDirectionsListBox = Listbox(master, yscrollcommand=self.calibrationDirectionsScrollBar.set, selectmode=EXTENDED, height=3)
-                calibrationShowHide.addControl(self.calibrationDirectionsListBox)
-                
+                calibrationSectorsShowHide.addControl(self.calibrationDirectionsListBox)
+                self.calibrationDirectionsListBox.insert(END, "Direction\tSlope\tOffset\tActive")
+
                 if not self.isNew:
                         for direction in sorted(self.config.calibrationSlopes):
                                 slope = self.config.calibrationSlopes[direction]
                                 offset = self.config.calibrationOffsets[direction]
                                 active = True #todo
-                                text = "%f,%f,%f,%s" % (direction, slope, offset, active)
+                                text = "%0.4f\t%0.4f\t%0.4f\t%s" % (direction, slope, offset, active)
                                 self.calibrationDirectionsListBox.insert(END, text)
                                 
                 self.calibrationDirectionsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
@@ -977,26 +1003,53 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.newCalibrationDirectionButton = Button(master, text="New", command = self.NewCalibrationDirection, width=5, height=1)
                 self.newCalibrationDirectionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                calibrationShowHide.addControl(self.newCalibrationDirectionButton)
+                calibrationSectorsShowHide.addControl(self.newCalibrationDirectionButton)
                 
                 self.editCalibrationDirectionButton = Button(master, text="Edit", command = self.EditCalibrationDirection, width=5, height=1)
                 self.editCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                calibrationShowHide.addControl(self.editCalibrationDirectionButton)
+                calibrationSectorsShowHide.addControl(self.editCalibrationDirectionButton)
+                self.calibrationDirectionsListBox.bind("<Double-Button-1>", self.EditCalibrationDirection)
                 
                 self.deleteCalibrationDirectionButton = Button(master, text="Delete", command = self.RemoveCalibrationDirection, width=5, height=1)
                 self.deleteCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                calibrationShowHide.addControl(self.deleteCalibrationDirectionButton)
+                calibrationSectorsShowHide.addControl(self.deleteCalibrationDirectionButton)
                 self.row +=1
 
         def NewCalibrationDirection(self):
 
             configDialog = CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText)
 
-        def EditCalibrationDirection(self):
-            pass
+        def EditCalibrationDirection(self, event = None):
+
+            items = self.calibrationDirectionsListBox.curselection()
+
+            if len(items) == 1:
+
+                    idx = int(items[0])
+
+                    if idx > 0:
+
+                        text = self.calibrationDirectionsListBox.get(items[0])                        
+                        
+                        try:
+                            dialog = CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText, text, idx)                                
+                        except ExceptionType as e:
+                            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+            
 
         def RemoveCalibrationDirection(self):
-            pass
+
+            items = self.calibrationDirectionsListBox.curselection()
+            pos = 0
+            
+            for i in items:
+                
+                idx = int(i) - pos
+                
+                if idx > 0:
+                    self.calibrationDirectionsListBox.delete(idx, idx)
+
+                pos += 1
             
         def addCalbirationDirectionFromText(self, text, index = None):
 
@@ -1053,7 +1106,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                     self.rewsProfileLevelsListBox.delete(idx, idx)
                     pos += 1
             
-                self.validatedREWSProfileLevels.validate()
+                #self.validatedREWSProfileLevels.validate()
 
         def sortLevels(self):
 
@@ -1318,6 +1371,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 datasetsShowHide.addControl(self.newDatasetButton)
                 
                 self.editDatasetButton = Button(master, text="Edit", command = self.EditDataset, width=5, height=1)
+                self.datasetsListBox.bind("<Double-Button-1>", self.EditDataset)
                 self.editDatasetButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 datasetsShowHide.addControl(self.editDatasetButton)
                 
@@ -1383,7 +1437,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 config = PowerCurveConfiguration()
                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
 
-        def EditDataset(self):
+        def EditDataset(self, event = None):
 
                 items = self.datasetsListBox.curselection()
 
