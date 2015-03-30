@@ -855,10 +855,19 @@ class DatasetConfiguration(XmlBase):
     def readCalibration(self, configurationNode):
         
         if not self.nodeExists(configurationNode, 'Calibration'):
+
             self.hasCalibration = False
+            self.calibrationStartDate = None
+            self.calibrationEndDate = None
+            self.siteCalibrationNumberOfSectors = None
+            self.siteCalibrationCenterOfFirstSector = None
+            self.calibrationFilters = []       
+            self.calibrationSlopes = {}
+            self.calibrationOffsets = {}
+            
             return
-        else:
-            self.hasCalibration = True
+
+        self.hasCalibration = True
 
         calibrationNode = self.getNode(configurationNode, 'Calibration')
 
@@ -883,10 +892,11 @@ class DatasetConfiguration(XmlBase):
             
         self.calibrationSlopes = {}
         self.calibrationOffsets = {}
+        self.calibrationActives = {}
 
         for node in self.getNodes(calibrationNode, 'CalibrationDirection'):
-            if self.getNodeBool(node, 'Active'):
-                direction = self.getNodeFloat(node, 'Direction')
-                self.calibrationSlopes[direction] = self.getNodeFloat(node, 'Slope')
-                self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset')            
+            direction = self.getNodeFloat(node, 'Direction')
+            self.calibrationActives[direction] = self.getNodeBool(node, 'Active')
+            self.calibrationSlopes[direction] = self.getNodeFloat(node, 'Slope')
+            self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset') 
     
