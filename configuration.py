@@ -444,7 +444,7 @@ class PowerCurveConfiguration(XmlBase):
             speeds.append(speed)
             powers.append(self.powerCurveDictionary[speed])
 
-        if len(speeds) > 0:
+        if len(speeds) == 0:
             self.powerCurveLevels = pd.Series()
         else:
             self.powerCurveLevels = pd.DataFrame(powers, index = speeds, columns = ['Specified Power'])
