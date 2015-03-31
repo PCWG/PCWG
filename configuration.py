@@ -480,7 +480,11 @@ class Filter(XmlBase):
 
     def printSummary(self):
 
-        print "%s\t%s\t%s\t%s\t%s" % (self.derived, self.column, self.filterType, self.inclusive, self.__str__())
+        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev=self.derived,
+                                                            col=   self.column,
+                                                            typ=self.filterType,
+                                                            incl=self.inclusive,
+                                                            desc=self.__str__())
          
         if not self.derived:
             return str(self.value)
@@ -502,7 +506,13 @@ class RelationshipFilter(XmlBase):
                 self.clauses.append(self.readSimpleFilter(node))  
     def __str__(self):
         return " - ".join([" {0} ".format(r.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in r.clauses])  for r in self.relationships])
-
+    def printSummary(self):
+        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev="\t",
+                                                            col=   self.column,
+                                                            typ=self.filterType,
+                                                            incl=self.inclusive,
+                                                            desc=self.__str__())
+        return self.__str__()
     def __init__(self, node):
         self.applied = False
         self.relationships = []
