@@ -407,6 +407,7 @@ class Dataset:
         requiredCols = []
 
         requiredCols.append(self.name)
+        requiredCols.append(self.timeStamp)
 
         requiredCols.append(self.hubWindSpeed)
         requiredCols.append(self.hubTurbulence)
