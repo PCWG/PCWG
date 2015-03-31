@@ -118,7 +118,7 @@ class SiteCalibrationCalculator:
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
 
-        if actives := None:
+        if actives != None:
 
             self.slopes = {}
             self.offsets = {}
