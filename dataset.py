@@ -112,14 +112,31 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, counts, directionBinColumn, valueColumn, belowAbove = {}):
+    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None, belowAbove = {}):
 
-        self.slopes = slopes
-        self.offsets = offsets
-        self.counts=counts
         self.belowAbove = belowAbove
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
+
+        if actives != None:
+
+            self.slopes = {}
+            self.offsets = {}
+            self.counts = {}
+
+            for direction in actives:
+                
+                self.slopes = slopes[direction]
+                self.offsets = offsets[direction]
+
+                if direction in counts:
+                    self.counts = counts[direction]
+
+        else:
+
+            self.slopes = slopes
+            self.offsets = offsets
+            self.counts = counts
 
     def turbineValue(self, row):
 
@@ -168,7 +185,7 @@ class Dataset:
 
         self.name = config.name
         
-        self.timeStepInSeconds = analysisConfig.timeStepInSeconds
+        self.timeStepInSeconds = config.timeStepInSeconds
 
         self.timeStamp = config.timeStamp
         self.actualPower = "Actual Power"
@@ -196,8 +213,13 @@ class Dataset:
         
         dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = '\t', skiprows = config.headerRows).replace(config.badData, np.nan)
 
-        dataFrame = dataFrame[config.startDate : config.endDate]
-
+        if config.startDate != None and config.endDate != None:
+            dataFrame = dataFrame[config.startDate : config.endDate]
+        elif config.startDate != None:
+            dataFrame = dataFrame[config.startDate : ]
+        elif config.endDate != None:
+            dataFrame = dataFrame[ : config.endDate]
+            
         dataFrame[self.name] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
         
@@ -213,32 +235,38 @@ class Dataset:
         
         if config.calculateHubWindSpeed:
 
-            self.calibrationCalculator = self.createCalibration(dataFrame, config, analysisConfig.timeStepInSeconds)
+            self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
-            dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
+            if config.calibrationMethod != "Specified":
+                
+                dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
 
-            windSpeedBin = "Wind Speed Bin"
-            turbulenceBin = "Turbulence Bin"
+                windSpeedBin = "Wind Speed Bin"
+                turbulenceBin = "Turbulence Bin"
 
-            windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
-            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
-            aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
+                windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
+                turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
+                aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
 
-            dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
-            dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
+                dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
+                dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
 
-            self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
-                                                            dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+                self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                                                                dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+            else:
 
+                self.residualWindSpeedMatrix = None
+                
         else:
+            
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             self.residualWindSpeedMatrix = None
 
         if self.shearCalibration and config.shearCalibrationMethod != "Reference":
-            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, analysisConfig.timeStepInSeconds)
+            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, config.timeStepInSeconds)
             dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
 
 
@@ -305,8 +333,7 @@ class Dataset:
         df = dataFrame.copy()
 
         if config.calibrationMethod == "Specified":
-            dummyCounts = {}
-            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, dummyCounts, self.referenceDirectionBin, config.referenceWindSpeed)
+            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
         else:
             calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, timeStepInSeconds, dataFrame)
 
@@ -356,7 +383,7 @@ class Dataset:
 
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, counts, self.referenceDirectionBin, valueColumn, belowAbove=belowAbove)
+        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove)
         
     def isValidText(self, text):
         if text == None: return False
@@ -380,7 +407,6 @@ class Dataset:
         requiredCols = []
 
         requiredCols.append(self.name)
-        requiredCols.append(self.timeStamp)
 
         requiredCols.append(self.hubWindSpeed)
         requiredCols.append(self.hubTurbulence)
@@ -390,15 +416,15 @@ class Dataset:
 
         if self.hasShear:        
             requiredCols.append(self.shearExponent)
-
-        if self.hasActualPower:        
-            requiredCols.append(self.actualPower)
             
         if self.rewsDefined:        
             requiredCols.append(self.profileRotorWindSpeed)
             requiredCols.append(self.profileHubWindSpeed)
             requiredCols.append(self.profileHubToRotorRatio)
             requiredCols.append(self.profileHubToRotorDeviation)
+
+        if self.hasActualPower:
+            requiredCols.append(self.actualPower)
 
         return dataFrame[requiredCols]
 

@@ -19,9 +19,19 @@ class report:
     
         book = xlwt.Workbook()
 
+        try: # and get teh scatter graph
+            imgPath = analysis.getPowerCurveBMP()
+        except:
+            imgPath = None
+            print "Tried to make a scatter chart. Couldn't."
+
+
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
             
         sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
+        if imgPath is not None:
+            sh.insert_bitmap(imgPath, len(analysis.specifiedPowerCurve.powerCurveLevels.index)+5, 0)
+
         settingsSheet = book.add_sheet("Settings", cell_overwrite_ok=True)
 
         self.reportSettings(settingsSheet, analysis)
@@ -162,7 +172,7 @@ class report:
         row += 1
 
         sh.write(row, labelColumn, "Time Step In Seconds", self.bold_style)
-        sh.write(row, dataColumn, config.timeStepInSeconds)
+        sh.write(row, dataColumn, analysis.timeStepInSeconds)
         row += 1
 
         sh.write(row, labelColumn, "Power Curve Minimum Count", self.bold_style)
@@ -294,7 +304,7 @@ class report:
             row += 1
 
             sh.write(row, labelColumn, "Time Step In Seconds", self.bold_style)
-            sh.write(row, dataColumn, config.timeStepInSeconds)
+            sh.write(row, dataColumn, datasetConfig.timeStepInSeconds)
             row += 1
             
             sh.write(row, labelColumn, "Time Stamp", self.bold_style)
