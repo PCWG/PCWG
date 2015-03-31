@@ -593,7 +593,41 @@ class Analysis:
         self.status.addMessage("Comb Delta: %f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))        
 
     def export(self, path):
+        try:
+            self.getPowerCurveBMP(path)
+        except:
+            print "Tried to make a scatter chart. Couldn't."
         self.dataFrame.to_csv(path, sep = '\t')
+
+    def getPowerCurveBMP(self,path):
+        from matplotlib import pyplot as plt
+        windSpeedCol = self.densityCorrectedHubWindSpeed
+        powerCol = 'Actual Power'
+        ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve",alpha=0.1,label='Filtered Data')
+        ax = self.specifiedPowerCurve.powerCurveLevels['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+        allMeasured = self.allMeasuredPowerCurve.powerCurveLevels[['Input Hub Wind Speed','Actual Power','Data Count']][self.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index('Input Hub Wind Speed')
+        ax = allMeasured['Actual Power'].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
+                              label='Mean Power Curve')
+        ax.legend(loc=4)
+        ax.set_xlabel(windSpeedCol)
+        ax.set_ylabel(powerCol)
+        op_path = os.path.dirname(path)
+        file_in = op_path + "/PowerCurve.png"
+        plt.savefig(file_in)
+
+        from PIL import Image
+        img = Image.open(file_in)
+        img.load()
+        file_out = op_path + 'PowerCurve.bmp'
+        if len(img.split()) == 4:
+            # prevent IOError: cannot write mode RGBA as BMP
+            r, g, b, a = img.split()
+            img = Image.merge("RGB", (r, g, b))
+            img.save(file_out)
+        else:
+            img.save(file_out)
+        os.remove(file_in)
+        return file_out
 
 class PadderFactory:
     @staticmethod
