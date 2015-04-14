@@ -1828,9 +1828,12 @@ class UserInterface:
                         import aep
                         aepCalc = aep.AEPCalculator(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
                         ans = aepCalc.calculate_AEP()
+                        aepCalcLCB = aep.AEPCalculatorLCB(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
+                        ansLCB = aepCalcLCB.calculate_AEP()
                         self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
                         self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
-                        self.addMessage( "AEP: {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
+                        self.addMessage( "AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
+                        self.addMessage( "AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
 
                     except ExceptionType as e:
                         self.addMessage("ERROR Calculating AEP: %s" % e)
