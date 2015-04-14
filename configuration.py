@@ -551,7 +551,8 @@ class DatasetConfiguration(XmlBase):
                 self.endDate = self.getNodeDate(configurationNode, 'EndDate')
             else:
                 self.endDate = None
-                
+
+            self.referenceWindDirection = self.getNodeValueIfExists(configurationNode, 'ReferenceWindDirection', None)
             self.hubWindSpeedMode = self.getNodeValue(configurationNode, 'HubWindSpeedMode')
             self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
 

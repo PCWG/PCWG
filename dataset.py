@@ -196,6 +196,7 @@ class Dataset:
         self.shearExponent = "Shear Exponent"
         self.referenceShearExponent = "Reference Shear Exponent"
         self.turbineShearExponent = "Turbine Shear Exponent"
+        self.windDirection = "Wind Direction"
 
         self.profileRotorWindSpeed = "Profile Rotor Wind Speed"
         self.profileHubWindSpeed = "Profile Hub Wind Speed"        
@@ -204,6 +205,7 @@ class Dataset:
         self.residualWindSpeed = "Residual Wind Speed"
         
         self.hasShear = len(config.shearMeasurements) > 1
+        self.hasDirection = config.referenceWindDirection is not None
         self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
 
@@ -222,6 +224,9 @@ class Dataset:
             
         dataFrame[self.name] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
+
+        if self.hasDirection:
+            dataFrame[self.windDirection] = dataFrame[config.referenceWindDirection]
         
         if self.hasShear:
             if not self.shearCalibration:
@@ -417,6 +422,9 @@ class Dataset:
 
         if self.hasShear:        
             requiredCols.append(self.shearExponent)
+
+        if self.hasDirection:
+            requiredCols.append(self.windDirection)
             
         if self.rewsDefined:        
             requiredCols.append(self.profileRotorWindSpeed)
