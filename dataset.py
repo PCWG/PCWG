@@ -493,7 +493,7 @@ class Dataset:
             newMask = pd.Series([False]*len(mask),index=mask.index)
             
             if len(relationship.clauses) < 2:
-                raise Exception("Number of clauses in a realtionship must be > 1")
+                raise Exception("Number of clauses in a relationship must be > 1")
                 
             for componentFilter in relationship.clauses:                
                 filterMask = self.applySimpleFilter(newMask,componentFilter,dataFrame,printMsg=False)
