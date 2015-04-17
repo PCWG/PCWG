@@ -131,11 +131,8 @@ class Analysis:
 
         self.applyRemainingFilters()
 
-        try: # calculate Cp
-            area = np.pi*(self.config.diameter/2.0)**2
-            self.dataFrame[self.powerCoeff] = self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity]*area*np.power(self.dataFrame[self.hubDensity],3))
-        except:
-            print "Couldn't calculate Cp"
+        if self.hasDensity and self.densityCorrectionActive:
+            self.dataFrame[self.powerCoeff]  = self.calculateCp()
 
         if self.hasActualPower:
 
@@ -577,6 +574,14 @@ class Analysis:
 
         self.baseYield = self.dataFrame[self.getFilter()][self.basePower].sum() * self.timeStampHours   
 
+    def calculateCp(self):
+        area = np.pi*(self.config.diameter/2.0)**2
+        a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
+        b = 1000*self.dataFrame[self.actualPower]/(0.5*self.specifiedPowerCurve.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
+        if (abs(a-b) > 0.005).any():
+            raise Exception("Density correction has not been applied consistently.")
+        return a
+
     def calculateHub(self):
         self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
         self.hubYield = self.dataFrame[self.getFilter()][self.hubPower].sum() * self.timeStampHours
@@ -616,14 +621,19 @@ class Analysis:
         self.plotBy(self.windDirection,path,self.shearExponent,self.dataFrame)
         self.plotBy(self.windDirection,path,self.hubTurbulence,self.dataFrame)
         self.plotBy(self.hubWindSpeed,path,self.hubTurbulence,self.dataFrame)
-        self.plotBy(self.hubWindSpeed,path,self.powerCoeff,self.allMeasuredPowerCurve)
+        self.plotBy(self.hubWindSpeed,path,self.powerCoeff,self.dataFrame)
+        self.plotBy('Input Hub Wind Speed',path,self.powerCoeff,self.allMeasuredPowerCurve)
         #self.plotBy(self.windDirection,path,self.inflowAngle)
 
     def plotBy(self,by,path,variable,df):
-        kind = 'scatter' if not isinstance(df,turbine.PowerCurve) else 'line'
+        if not isinstance(df,turbine.PowerCurve):
+            kind = 'scatter'
+        else:
+            kind = 'line'
+            df=df.powerCurveLevels[df.powerCurveLevels['Input Hub Wind Speed'] <= self.allMeasuredPowerCurve.cutOutWindSpeed]
         try:
             from matplotlib import pyplot as plt
-            ax = df.plot(kind=kind,x=by ,y=variable,title=variable+" By " +by,alpha=0.6)
+            ax = df.plot(kind=kind,x=by ,y=variable,title=variable+" By " +by,alpha=0.6,legend=None)
             ax.set_xlim([df[by].min()-1,df[by].max()+1])
             ax.set_xlabel(by)
             ax.set_ylabel(variable)
