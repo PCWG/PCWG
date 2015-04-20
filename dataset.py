@@ -334,7 +334,6 @@ class Dataset:
 
             directionBinCenter = group[0]
             sectorDataFrame = group[1].dropna()
-            
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])    
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()

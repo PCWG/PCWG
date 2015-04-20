@@ -201,7 +201,6 @@ class Analysis:
             self.dataFrame = self.dataFrame.drop(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]].index)
             self.dataFrame = self.dataFrame.append(d)
             if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
-                print [filter for filter in dataSetConf.filters if not filter.applied]
                 raise Exception("Filters have not been able to be applied!")
 
     def defineInnerRange(self, config):
@@ -407,9 +406,7 @@ class Analysis:
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower):
         
         mask = (self.dataFrame[self.actualPower] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
-            
         filteredDataFrame = self.dataFrame[mask]    
-
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[self.actualPower, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         dfDataCount = filteredDataFrame[self.actualPower].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.dataCount:'count'})
@@ -423,8 +420,6 @@ class Analysis:
         # Specified : Use specified rated power
         # Last : Use last observed power
         # Linear : linearly interpolate from last observed power at last observed ws to specified power at specified ws.
-        maxTurb = dfPowerLevels[self.hubTurbulence].max()
-        minTurb = dfPowerLevels[self.hubTurbulence].min()
 
         powerLevels = self.powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower)
 

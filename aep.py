@@ -48,7 +48,7 @@ class AEPCalculator:
         energySum = 0
         energyColumns = ["{0}_{1}".format(curveType, col) for col in ['Upper','Lower','Freq','Power','Energy']]
         for bin in self.distribution.keys:
-            if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= 19.0):
+            if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= lcb):#19.0
                 upper = curve.power(bin)
                 lower = 0.0 if bin-0.5 < min(curve.powerCurveLevels.index) else curve.power(bin-0.5)
                 power=(upper+lower)/2.0
