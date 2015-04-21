@@ -7,6 +7,7 @@ import datetime
 import math
 import configuration
 import dataset
+from dataset import  DeviationMatrix
 import binning
 import turbine
 import rews
@@ -58,6 +59,20 @@ class Analysis:
 
         self.config = config
 
+        self.inputHubWindSpeed = "Input Hub Wind Speed"
+        self.densityCorrectedHubWindSpeed = "Density Corrected Hub Wind Speed"
+        self.rotorEquivalentWindSpeed = "Rotor Equivalent Wind Speed"
+        self.basePower = "Base Power"
+        self.hubPower = "Hub Power"
+        self.rewsPower = "REWS Power"
+        self.turbulencePower = "Turbulence Power"
+        self.combinedPower = "Combined Power"
+        self.windSpeedBin = "Wind Speed Bin"
+        self.turbulenceBin = "Turbulence Bin"
+        self.powerDeviation = "Power Deviation"
+        self.dataCount = "Data Count"
+        self.windDirection = "Wind Direction"
+        
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
 
@@ -69,8 +84,6 @@ class Analysis:
 
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
-        
-        self.timeStampHours = config.timeStepInSeconds / 3600.0
 
         self.densityCorrectionActive = config.densityCorrectionActive        
         self.rewsActive = config.rewsActive
@@ -89,33 +102,19 @@ class Analysis:
         self.status.addMessage("Filter Mode: %s" % self.filterMode)
         self.status.addMessage("Power Curve Mode: %s" % self.powerCurveMode)
 
-        self.inputHubWindSpeed = "Input Hub Wind Speed"
-        self.densityCorrectedHubWindSpeed = "Density Corrected Hub Wind Speed"
-        self.rotorEquivalentWindSpeed = "Rotor Equivalent Wind Speed"
-                
-        self.basePower = "Base Power"
-        self.hubPower = "Hub Power"
-        self.rewsPower = "REWS Power"
-        self.turbulencePower = "Turbulence Power"
-        self.combinedPower = "Combined Power"
-
-        self.windSpeedBin = "Wind Speed Bin"
-        self.turbulenceBin = "Turbulence Bin"
-        self.powerDeviation = "Power Deviation"
-        
-        self.dataCount = "Data Count"
-
         self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
-        first_turb_bin = 0.01 #bin centre for first turbulence bin
-        last_turb_bin = 0.41 #bin centre for last turbulence bin
-        turb_bin_width = (last_turb_bin - first_turb_bin) / (self.windSpeedBins.numberOfBins - 2.) #calculating the bin width required to give the same no. turb and ws bins
+        
+        first_turb_bin = 0.01
+        turb_bin_width = 0.02
+        last_turb_bin = 0.25
+        
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
         self.powerCurvePadder = PadderFactory().generate(config.powerCurvePaddingMode,self.actualPower, self.inputHubWindSpeed, self.hubTurbulence, self.dataCount)
 
         powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
-        self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence")               
+        self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence", turbulenceRenormalisation = self.turbRenormActive)
 
         if self.densityCorrectionActive:
             if self.hasDensity:
@@ -196,13 +195,55 @@ class Analysis:
         self.status.addMessage("Complete")
 
     def applyRemainingFilters(self):
+
+        print "Apply derived filters (filters which depend on calculated columns)"
+
         for dataSetConf in self.datasetConfigs:
-            d = dataSetConf.data.filterDataFrame(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]],dataSetConf.filters)
-            self.dataFrame = self.dataFrame.drop(self.dataFrame[dataSetConf.timeStamps[0]:dataSetConf.timeStamps[-1]].index)
-            self.dataFrame = self.dataFrame.append(d)
-            if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
-                print [filter for filter in dataSetConf.filters if not filter.applied]
-                raise Exception("Filters have not been able to be applied!")
+
+            print dataSetConf.name
+
+            if self.anyFiltersRemaining(dataSetConf):
+
+                print "Applying Remaining Filters"
+
+                print "Extracting dataset data"
+
+                print "KNOWN BUG FOR CONCURRENT DATASETS"
+                
+                datasetStart = dataSetConf.timeStamps[0]
+                datasetEnd = dataSetConf.timeStamps[-1]
+
+                print "Start: %s" % datasetStart
+                print "End: %s" % datasetEnd
+            
+                mask = self.dataFrame[self.timeStamp] > datasetStart
+                mask = mask & (self.dataFrame[self.timeStamp] < datasetEnd)
+                
+                dateRangeDataFrame = self.dataFrame[datasetStart:datasetEnd]
+
+                self.dataFrame = self.dataFrame.drop(dateRangeDataFrame.index)
+                
+                print "Filtering Extracted Data"
+                d = dataSetConf.data.filterDataFrame(dateRangeDataFrame, dataSetConf.filters)
+
+                print "(Re)inserting filtered data "
+                self.dataFrame = self.dataFrame.append(d)
+                
+                if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
+                    print [str(filter) for filter in dataSetConf.filters if not filter.applied]
+                    raise Exception("Filters have not been able to be applied!")
+
+            else:
+
+                print "No filters left to apply"
+                
+    def anyFiltersRemaining(self, dataSetConf):
+
+        for datasetFilter in dataSetConf.filters:
+            if not datasetFilter.applied:
+                return True
+
+        return False
 
     def defineInnerRange(self, config):
 
@@ -234,9 +275,11 @@ class Analysis:
 
             if i == 0:
 
+                #analysis 'inherits' timestep from first data set. Subsequent datasets will be checked for consistency
+                self.timeStepInSeconds = datasetConfig.timeStepInSeconds
+                
                 #copy column names from dataset
                 self.timeStamp = data.timeStamp
-                
                 self.hubWindSpeed = data.hubWindSpeed
                 self.hubTurbulence = data.hubTurbulence
                 self.hubDensity = data.hubDensity
@@ -258,7 +301,10 @@ class Analysis:
                 self.rewsDefined = data.rewsDefined
                 
             else:
-                        
+
+                if datasetConfig.timeStepInSeconds <> self.timeStepInSeconds:
+                    raise Exception ("Dataset time step (%d) does not match analysis (%d) time step" % (datasetConfig.timeStepInSeconds, self.timeStepInSeconds))
+                
                 self.dataFrame = self.dataFrame.append(data.dataFrame, ignore_index = True)
 
                 self.hasActualPower = self.hasActualPower & data.hasActualPower
@@ -266,8 +312,9 @@ class Analysis:
                 self.hasDensity = self.hasDensity & data.hasDensity
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
 
-            #if data.residualWindSpeedMatrix != None:
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
+
+        self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
 
     def selectPowerCurve(self, powerCurveMode):
 
@@ -428,9 +475,14 @@ class Analysis:
 
         powerLevels = self.powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower)
 
-        return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, self.actualPower, self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount)
+        return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, self.actualPower,
+                                  self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount, turbulenceRenormalisation=self.turbRenormActive)
 
-    def calculatePowerDeviationMatrix(self, power, filterMode):
+    def calculatePowerDeviationMatrix(self, power, filterMode, windBin = None, turbBin = None):
+        if windBin is None:
+            windBin = self.windSpeedBin
+        if turbBin is None:
+            turbBin = self.turbulenceBin
 
         mask = (self.dataFrame[self.actualPower] > 0) & (self.dataFrame[power] > 0)
         mask = mask & self.getFilter(filterMode)
@@ -438,8 +490,11 @@ class Analysis:
         filteredDataFrame = self.dataFrame[mask]
         filteredDataFrame.is_copy = False
         filteredDataFrame[self.powerDeviation] = (filteredDataFrame[self.actualPower] - filteredDataFrame[power]) / filteredDataFrame[power]
-        
-        return filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average)
+
+        devMatrix = DeviationMatrix(filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).aggregate(self.aggregations.average),
+                                    filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).count())
+
+        return devMatrix
 
     def calculateREWSMatrix(self, filterMode):
 
@@ -447,12 +502,52 @@ class Analysis:
         mask = mask & self.getFilter(filterMode)
         
         filteredDataFrame = self.dataFrame[mask]
-        
-        return filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average)
-            
-    def report(self, path):
 
-        report = reporting.report(self.windSpeedBins, self.turbulenceBins)
+        rewsMatrix = DeviationMatrix(filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average),
+                                    filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).count())
+
+        return rewsMatrix
+            
+    def report(self, path,version="unknown"):
+
+        report = reporting.report(self.windSpeedBins, self.turbulenceBins,version)
+        report.report(path, self)
+
+    def anonym_report(self, path,version="unknown"):
+
+        if not self.hasActualPower:
+            raise Exception("Anonymous report can only be generated if analysis has actual power data")
+        
+        self.observedRatedPower = self.powerCurve.zeroTurbulencePowerCurve.maxPower
+        self.observedRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(self.powerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
+
+        allFilterMode = 0
+
+        normalisedWSBin = 'Normalised WS Bin'
+        firstNormWSbin = 0.30
+        lastNormWSbin = 3.0
+        normWSstep = 0.05
+
+        self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
+
+        self.dataFrame[normalisedWSBin] = (self.dataFrame[self.inputHubWindSpeed] / self.observedRatedWindSpeed).map(self.normalisedWindSpeedBins.binCenter)
+
+        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
+                                                                               ,windBin = normalisedWSBin
+                                                                               ,turbBin = self.turbulenceBin)
+
+        if self.config.turbRenormActive:
+            self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, allFilterMode
+                                                                                   ,windBin = normalisedWSBin
+                                                                                   ,turbBin = self.turbulenceBin)
+        else:
+            self.normalisedTurbPowerDeviations = None
+            
+        report = reporting.AnonReport(targetPowerCurve = self.powerCurve,
+                                      wind_bins = self.normalisedWindSpeedBins,
+                                      turbulence_bins = self.turbulenceBins,
+                                      version= version)
+
         report.report(path, self)
                        
     def calculateBase(self):
@@ -499,7 +594,52 @@ class Analysis:
         self.status.addMessage("Comb Delta: %f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))        
 
     def export(self, path):
+        self.png_plots(path)
+
         self.dataFrame.to_csv(path, sep = '\t')
+
+    def png_plots(self,path):
+        self.plotPowerCurve(path)
+        self.plotBy(self.windDirection,path,self.shearExponent)
+        self.plotBy(self.windDirection,path,self.hubTurbulence)
+        self.plotBy(self.hubWindSpeed,path,self.hubTurbulence)
+        #self.plotBy(self.windDirection,path,self.inflowAngle)
+        #self.plotBy(self.hubWindSpeed,path,self.powerCoeff)
+
+    def plotBy(self,by,path,variable):
+        try:
+            from matplotlib import pyplot as plt
+            ax = self.dataFrame.plot(kind='scatter',x=by ,y=variable,title=variable+" By " +by,alpha=0.6)
+            ax.set_xlim([self.dataFrame[by].min()-1,self.dataFrame[by].max()+1])
+            ax.set_xlabel(by)
+            ax.set_ylabel(variable)
+            op_path = os.path.dirname(path)
+            file_out = op_path + "/"+variable.replace(" ","_")+"_By_"+by.replace(" ","_")+".png"
+            plt.savefig(file_out)
+            return file_out
+        except:
+            print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
+
+    def plotPowerCurve(self,path):
+        try:
+            from matplotlib import pyplot as plt
+            windSpeedCol = self.densityCorrectedHubWindSpeed
+            powerCol = 'Actual Power'
+            ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve",alpha=0.1,label='Filtered Data')
+            ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+            allMeasured = self.allMeasuredPowerCurve.powerCurveLevels[['Input Hub Wind Speed','Actual Power','Data Count']][self.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index('Input Hub Wind Speed')
+            ax = allMeasured['Actual Power'].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
+                                  label='Mean Power Curve')
+            ax.legend(loc=4)
+            ax.set_xlim([self.specifiedPowerCurve.powerCurveLevels.index.min(), self.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
+            ax.set_xlabel(windSpeedCol)
+            ax.set_ylabel(powerCol)
+            op_path = os.path.dirname(path)
+            file_out = op_path + "/PowerCurve.png"
+            plt.savefig(file_out)
+            return file_out
+        except:
+            print "Tried to make a scatter chart. Couldn't."
 
 class PadderFactory:
     @staticmethod
