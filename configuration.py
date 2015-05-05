@@ -872,7 +872,7 @@ class DatasetConfiguration(XmlBase):
             self.calibrationEndDate = None
             self.siteCalibrationNumberOfSectors = None
             self.siteCalibrationCenterOfFirstSector = None
-            self.calibrationFilters = []       
+            self.calibrationFilters = []
             self.calibrationSlopes = {}
             self.calibrationOffsets = {}
             
