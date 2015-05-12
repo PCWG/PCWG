@@ -648,6 +648,7 @@ class Analysis:
         try:
             from matplotlib import pyplot as plt
             windSpeedCol = self.densityCorrectedHubWindSpeed
+            # TODO: Add to the title what the specified density actually is.
             powerCol = 'Actual Power'
             ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve",alpha=0.1,label='Filtered Data')
             ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
