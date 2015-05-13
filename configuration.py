@@ -748,7 +748,7 @@ class DatasetConfiguration(XmlBase):
         self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
 
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
-        self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
+        self.badData = self.getNodeValue(measurementsNode, 'BadDataValue')
         self.headerRows = self.getNodeInt(measurementsNode, 'HeaderRows')
 
         self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
@@ -872,7 +872,7 @@ class DatasetConfiguration(XmlBase):
             self.calibrationEndDate = None
             self.siteCalibrationNumberOfSectors = None
             self.siteCalibrationCenterOfFirstSector = None
-            self.calibrationFilters = []       
+            self.calibrationFilters = []
             self.calibrationSlopes = {}
             self.calibrationOffsets = {}
             

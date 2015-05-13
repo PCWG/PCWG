@@ -651,7 +651,7 @@ class REWSProfileLevelDialog(BaseDialog):
                         
         def body(self, master):
 
-                self.prepareColumns(master)     
+                self.prepareColumns(master)
 
                 if not self.isNew:
                         items = self.text.split(",")
@@ -662,15 +662,15 @@ class REWSProfileLevelDialog(BaseDialog):
                         height = 0.0
                         windSpeed = ""
                         windDirection = ""
-                        
+
                 self.addTitleRow(master, "REWS Level Settings:")
-                
+                # get picker entries for these as well?
                 self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), height)
                 self.windSpeed = self.addEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
                 self.windDirection = self.addEntry(master, "Wind Direction:", ValidateNotBlank(master), windDirection, width = 60)
 
                 #dummy label to indent controls
-                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
+                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
 
         def apply(self):
                         
@@ -1066,7 +1066,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 pickButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 showHideCommand.addControl(pickButton)
                 return entry
-        
+
         def EditREWSProfileLevel(self):
 
                 items = self.rewsProfileLevelsListBox.curselection()
@@ -1137,7 +1137,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 relativePath = configuration.RelativePath(self.filePath.get())
                 return relativePath.convertToAbsolutePath(self.inputTimeSeriesPath.get())
-        
+
         def getHeaderRows(self):
 
                 headerRowsText = self.headerRows.get()
@@ -1826,10 +1826,8 @@ class UserInterface:
                         fileName = askopenfilename(parent=self.root,defaultextension=".xml",title="Please select a Nominal Wind Speed Distribution XML")
                         self.addMessage("Attempting AEP Calculation...")
                         import aep
-                        aepCalc = aep.AEPCalculator(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
-                        ans = aepCalc.calculate_AEP()
-                        aepCalcLCB = aep.AEPCalculatorLCB(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
-                        ansLCB = aepCalcLCB.calculate_AEP()
+                        aepCalc,aepCalcLCB = aep.run(self.analysis,fileName)
+
                         self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
                         self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
                         self.addMessage( "AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )

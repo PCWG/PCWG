@@ -6,6 +6,13 @@ import pandas as pd
 from scipy.interpolate import interp1d
 import rebin
 
+def run(analysis,fileName):
+    aepCalc = AEPCalculator(analysis.specifiedPowerCurve,analysis.allMeasuredPowerCurve,distributionPath=fileName)
+    ans = aepCalc.calculate_AEP()
+    aepCalcLCB = AEPCalculatorLCB(analysis.specifiedPowerCurve,analysis.allMeasuredPowerCurve,distributionPath=fileName)
+    ansLCB = aepCalcLCB.calculate_AEP()
+    return aepCalc,aepCalcLCB
+
 class AEPCalculator:
     def __init__(self, referenceCurve, measuredCurve, distribution = None, distributionPath = None):
         if distribution is not None and distributionPath is not None:

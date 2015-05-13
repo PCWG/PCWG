@@ -126,11 +126,12 @@ class SiteCalibrationCalculator:
 
             for direction in actives:
                 
-                self.slopes = slopes[direction]
-                self.offsets = offsets[direction]
+                self.slopes[direction] = slopes[direction]
+                self.offsets[direction] = offsets[direction]
 
                 if direction in counts:
-                    self.counts = counts[direction]
+                    #self.counts = counts[direction]
+                    self.counts[direction] = counts[direction]
 
         else:
 
@@ -213,7 +214,14 @@ class Dataset:
         
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
         
-        dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = '\t', skiprows = config.headerRows).replace(config.badData, np.nan)
+        if config.inputTimeSeriesPath[-3:] == 'csv':
+            separator = ','
+        elif config.inputTimeSeriesPath[-3:] in ('dat',"txt"):
+            separator = '\t'
+        else:
+            raise Exception("The input time series path is to an unrecognised file type:\n%s" % config.inputTimeSeriesPath)
+            
+        dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = separator, skiprows = config.headerRows).replace(config.badData, np.nan)
 
         if config.startDate != None and config.endDate != None:
             dataFrame = dataFrame[config.startDate : config.endDate]
@@ -242,8 +250,11 @@ class Dataset:
 
             self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
-            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
-
+            if (config.hubTurbulence != ''):
+                dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            else:
+                dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
+            
             if config.calibrationMethod != "Specified":
                 
                 dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
@@ -335,6 +346,7 @@ class Dataset:
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
+        dataFrame[self.referenceDirectionBin] = dataFrame[self.referenceDirectionBin] - config.siteCalibrationCenterOfFirstSector
         df = dataFrame.copy()
 
         if config.calibrationMethod == "Specified":
@@ -493,7 +505,7 @@ class Dataset:
             newMask = pd.Series([False]*len(mask),index=mask.index)
             
             if len(relationship.clauses) < 2:
-                raise Exception("Number of clauses in a realtionship must be > 1")
+                raise Exception("Number of clauses in a relationship must be > 1")
                 
             for componentFilter in relationship.clauses:                
                 filterMask = self.applySimpleFilter(newMask,componentFilter,dataFrame,printMsg=False)

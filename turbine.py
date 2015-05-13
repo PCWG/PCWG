@@ -257,6 +257,8 @@ class IntegrationProbabilities:
         self.a = windSpeedStep / math.sqrt(2.0 * math.pi)
                 
     def probabilities(self, windSpeedMean, windSpeedStdDev):
+        if windSpeedStdDev == 0:
+            return np.nan
 
         oneOverStandardDeviation = 1.0 / windSpeedStdDev
         oneOverStandardDeviationSq = oneOverStandardDeviation * oneOverStandardDeviation

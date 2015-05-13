@@ -5,6 +5,7 @@ import numpy as np
 class report:
     bold_style = xlwt.easyxf('font: bold 1')
     no_dp_style = xlwt.easyxf(num_format_str='0')
+    one_dp_style = xlwt.easyxf(num_format_str='0.0')
     two_dp_style = xlwt.easyxf(num_format_str='0.00')
     four_dp_style = xlwt.easyxf(num_format_str='0.0000')
     percent_style = xlwt.easyxf(num_format_str='0.00%')
@@ -19,18 +20,11 @@ class report:
     
         book = xlwt.Workbook()
 
-        try: # and get teh scatter graph
-            imgPath = analysis.getPowerCurveBMP()
-        except:
-            imgPath = None
-            print "Tried to make a scatter chart. Couldn't."
-
+        analysis.png_plots(path)
 
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
             
         sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
-        if imgPath is not None:
-            sh.insert_bitmap(imgPath, len(analysis.specifiedPowerCurve.powerCurveLevels.index)+5, 0)
 
         settingsSheet = book.add_sheet("Settings", cell_overwrite_ok=True)
 
@@ -449,12 +443,14 @@ class report:
                    'Specified Wind Speed':self.two_dp_style}
 
         for colname in powerCurveLevels.columns:
-            sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
+            if colname in styles.keys():
+                sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
 
         countRow = 1
         for windSpeed in powerCurveLevels.index:
             for colname in powerCurveLevels.columns:
-                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], powerCurveLevels[colname][windSpeed], styles[colname])
+                if colname in styles.keys():
+                    sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], powerCurveLevels[colname][windSpeed], styles[colname])
             countRow += 1
 
         return countRow
@@ -520,7 +516,7 @@ class report:
                 windSpeed = self.windSpeedBins.binCenterByIndex(i)
                 col = i + 1
                 
-                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)    
+                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.one_dp_style)
                 
                 if windSpeed in deviationsA.matrix:
                     if turbulence  in deviationsA.matrix[windSpeed]:

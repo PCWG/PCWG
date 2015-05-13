@@ -72,6 +72,7 @@ class Analysis:
         self.powerDeviation = "Power Deviation"
         self.dataCount = "Data Count"
         self.windDirection = "Wind Direction"
+        self.powerCoeff = "Power Coefficient"
         
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
@@ -129,6 +130,9 @@ class Analysis:
         self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
 
         self.applyRemainingFilters()
+
+        if self.hasDensity and self.densityCorrectionActive:
+            self.dataFrame[self.powerCoeff]  = self.calculateCp()
 
         if self.hasActualPower:
 
@@ -453,7 +457,7 @@ class Analysis:
         
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower):
         
-        mask = (self.dataFrame[self.actualPower] > -200.) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
+        mask = (self.dataFrame[self.actualPower] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
             
         filteredDataFrame = self.dataFrame[mask]    
 
@@ -464,7 +468,10 @@ class Analysis:
             raise Exception("Index of aggregated data count and mean quantities for measured power curve do not match.")
         dfPowerLevels = dfPowerLevels.join(dfDataCount, how = 'inner')
         dfPowerLevels.dropna(inplace = True)
-
+        if self.powerCoeff in filteredDataFrame.columns:
+            dfPowerCoeff = filteredDataFrame[self.powerCoeff].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
+        else:
+            dfPowerCoeff = None
         #padding
         # To deal with data missing between cutOut and last measured point:
         # Specified : Use specified rated power
@@ -474,9 +481,12 @@ class Analysis:
         minTurb = dfPowerLevels[self.hubTurbulence].min()
 
         powerLevels = self.powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower)
+        if dfPowerCoeff is not None:
+            powerLevels[self.powerCoeff] = dfPowerCoeff
 
         return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, self.actualPower,
-                                  self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount, turbulenceRenormalisation=self.turbRenormActive)
+                                  self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount,
+                                        turbulenceRenormalisation=self.turbRenormActive)
 
     def calculatePowerDeviationMatrix(self, power, filterMode, windBin = None, turbBin = None):
         if windBin is None:
@@ -564,6 +574,14 @@ class Analysis:
 
         self.baseYield = self.dataFrame[self.getFilter()][self.basePower].sum() * self.timeStampHours   
 
+    def calculateCp(self):
+        area = np.pi*(self.config.diameter/2.0)**2
+        a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
+        b = 1000*self.dataFrame[self.actualPower]/(0.5*self.specifiedPowerCurve.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
+        if (abs(a-b) > 0.005).any():
+            raise Exception("Density correction has not been applied consistently.")
+        return a
+
     def calculateHub(self):
         self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
         self.hubYield = self.dataFrame[self.getFilter()][self.hubPower].sum() * self.timeStampHours
@@ -600,17 +618,23 @@ class Analysis:
 
     def png_plots(self,path):
         self.plotPowerCurve(path)
-        self.plotBy(self.windDirection,path,self.shearExponent)
-        self.plotBy(self.windDirection,path,self.hubTurbulence)
-        self.plotBy(self.hubWindSpeed,path,self.hubTurbulence)
+        self.plotBy(self.windDirection,path,self.shearExponent,self.dataFrame)
+        self.plotBy(self.windDirection,path,self.hubTurbulence,self.dataFrame)
+        self.plotBy(self.hubWindSpeed,path,self.hubTurbulence,self.dataFrame)
+        self.plotBy(self.hubWindSpeed,path,self.powerCoeff,self.dataFrame)
+        self.plotBy('Input Hub Wind Speed',path,self.powerCoeff,self.allMeasuredPowerCurve)
         #self.plotBy(self.windDirection,path,self.inflowAngle)
-        #self.plotBy(self.hubWindSpeed,path,self.powerCoeff)
 
-    def plotBy(self,by,path,variable):
+    def plotBy(self,by,path,variable,df):
+        if not isinstance(df,turbine.PowerCurve):
+            kind = 'scatter'
+        else:
+            kind = 'line'
+            df=df.powerCurveLevels[df.powerCurveLevels['Input Hub Wind Speed'] <= self.allMeasuredPowerCurve.cutOutWindSpeed]
         try:
             from matplotlib import pyplot as plt
-            ax = self.dataFrame.plot(kind='scatter',x=by ,y=variable,title=variable+" By " +by,alpha=0.6)
-            ax.set_xlim([self.dataFrame[by].min()-1,self.dataFrame[by].max()+1])
+            ax = df.plot(kind=kind,x=by ,y=variable,title=variable+" By " +by,alpha=0.6,legend=None)
+            ax.set_xlim([df[by].min()-1,df[by].max()+1])
             ax.set_xlabel(by)
             ax.set_ylabel(variable)
             op_path = os.path.dirname(path)
@@ -624,6 +648,7 @@ class Analysis:
         try:
             from matplotlib import pyplot as plt
             windSpeedCol = self.densityCorrectedHubWindSpeed
+            # TODO: Add to the title what the specified density actually is.
             powerCol = 'Actual Power'
             ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve",alpha=0.1,label='Filtered Data')
             ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
