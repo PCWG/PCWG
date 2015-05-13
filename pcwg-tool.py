@@ -1826,10 +1826,8 @@ class UserInterface:
                         fileName = askopenfilename(parent=self.root,defaultextension=".xml",title="Please select a Nominal Wind Speed Distribution XML")
                         self.addMessage("Attempting AEP Calculation...")
                         import aep
-                        aepCalc = aep.AEPCalculator(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
-                        ans = aepCalc.calculate_AEP()
-                        aepCalcLCB = aep.AEPCalculatorLCB(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
-                        ansLCB = aepCalcLCB.calculate_AEP()
+                        aepCalc,aepCalcLCB = aep.run(self.analysis,fileName)
+
                         self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
                         self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
                         self.addMessage( "AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )

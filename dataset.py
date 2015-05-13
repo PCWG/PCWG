@@ -216,7 +216,7 @@ class Dataset:
         
         if config.inputTimeSeriesPath[-3:] == 'csv':
             separator = ','
-        elif config.inputTimeSeriesPath[-3:] == 'dat':
+        elif config.inputTimeSeriesPath[-3:] in ('dat',"txt"):
             separator = '\t'
         else:
             raise Exception("The input time series path is to an unrecognised file type:\n%s" % config.inputTimeSeriesPath)
