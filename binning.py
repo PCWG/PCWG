@@ -16,6 +16,11 @@ class Bins:
                 raise Exception("An integer number of bins must exist. The inputs have led to: {0}".format(self.numberOfBins))
         self.numberOfBins = int(self.numberOfBins)
 
+        self.centers = []
+
+        for i in range(self.numberOfBins):
+            self.centers.append(self.binCenterByIndex(i))
+
     def binCenterForFirstCenterAndWidth(self, x, centerOfFirstBin, binWidth):
         if np.isnan(x): return np.nan
         return round((x - centerOfFirstBin)/binWidth,0) * binWidth + centerOfFirstBin
@@ -31,6 +36,12 @@ class Aggregations:
 
     def __init__(self, minimumCount = 0):
         self.minimumCount = minimumCount
+
+    def standardError(self, x):
+        if self.count(x) >= self.minimumCount:
+            return x.std() / x.count()
+        else:
+            return np.nan
 
     def stddev(self, x):
         if self.count(x) >= self.minimumCount:
