@@ -272,7 +272,7 @@ class AnalysisConfiguration(XmlBase):
             self.ratedPower = 1000.0
 
             self.specifiedPowerCurve = ''
-            self.nominalWindSpeedDistribution = ''
+            self.nominalWindSpeedDistribution = None
 
             self.rewsActive = False        
             self.turbRenormActive = False

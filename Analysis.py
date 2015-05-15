@@ -14,6 +14,8 @@ import rews
 import reporting
 
 class NullStatus:
+    def __nonzero__(self):
+        return False
 
     def addMessage(self, message):
         pass
@@ -195,6 +197,11 @@ class Analysis:
                 if self.hasShear: self.combPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.combinedPower, innerShearFilterMode)
 
             self.status.addMessage("Power Curve Deviation Matrices Complete.")
+
+        if self.config.nominalWindSpeedDistribution is not None:
+            self.status.addMessage("Attempting AEP Calculation...")
+            import aep
+            self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution))
 
         self.status.addMessage("Complete")
 
