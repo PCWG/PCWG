@@ -14,7 +14,8 @@ ExceptionType = Exception
 ExceptionType = None #comment this line before release
  
 class WindowStatus:
-
+        def __nonzero__(self):
+                return True
         def __init__(self, gui):
             self.gui = gui
 
@@ -1574,7 +1575,6 @@ class UserInterface:
                 new_button = Button(settingsFrame, text="New", command = self.NewAnalysis)
 
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
-                AEP_button = Button(commandframe,text="AEP",command = self.CalculateAEP)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
@@ -1596,7 +1596,7 @@ class UserInterface:
                 load_button.pack(side=RIGHT, padx=5, pady=5)
                 
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
-                AEP_button.pack(side=LEFT, padx=5, pady=5)
+                calculate_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
                 anonym_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
@@ -1616,9 +1616,12 @@ class UserInterface:
                 settingsFrame.pack(side=RIGHT,fill=BOTH, expand=1)
 
                 if len(self.preferences.analysisLastOpened) > 0:
-                        self.addMessage("Loading last analysis opened")
-                        self.LoadAnalysisFromPath(self.preferences.analysisLastOpened)
-                        
+                        try:
+                           self.addMessage("Loading last analysis opened")
+                           self.LoadAnalysisFromPath(self.preferences.analysisLastOpened)
+                        except IOError:
+                            self.addMessage("Couldn't load last analysis. File could not be found.")
+
                 self.root.mainloop()        
 
         def Benchmark(self):
@@ -1817,27 +1820,6 @@ class UserInterface:
                         
                         self.addMessage("ERROR Calculating Analysis: %s" % e)                    
 
-        def CalculateAEP(self):
-            if self.analysis == None:
-                        self.addMessage("ERROR: Analysis not yet calculated")
-                        return
-            else:
-                    try:
-                        fileName = askopenfilename(parent=self.root,defaultextension=".xml",title="Please select a Nominal Wind Speed Distribution XML")
-                        self.addMessage("Attempting AEP Calculation...")
-                        import aep
-                        aepCalc,aepCalcLCB = aep.run(self.analysis,fileName)
-
-                        self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
-                        self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
-                        self.addMessage( "AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
-                        self.addMessage( "AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
-
-                    except ExceptionType as e:
-                        self.addMessage("ERROR Calculating AEP: %s" % e)
-
-
-                        
         def ClearConsole(self):
                 self.listbox.delete(0, END)
                 self.root.update()
