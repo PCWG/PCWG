@@ -1616,9 +1616,12 @@ class UserInterface:
                 settingsFrame.pack(side=RIGHT,fill=BOTH, expand=1)
 
                 if len(self.preferences.analysisLastOpened) > 0:
-                        self.addMessage("Loading last analysis opened")
-                        self.LoadAnalysisFromPath(self.preferences.analysisLastOpened)
-                        
+                        try:
+                           self.addMessage("Loading last analysis opened")
+                           self.LoadAnalysisFromPath(self.preferences.analysisLastOpened)
+                        except IOError:
+                            self.addMessage("Couldn't load last analysis. File could not be found.")
+
                 self.root.mainloop()        
 
         def Benchmark(self):
@@ -1826,12 +1829,7 @@ class UserInterface:
                         fileName = askopenfilename(parent=self.root,defaultextension=".xml",title="Please select a Nominal Wind Speed Distribution XML")
                         self.addMessage("Attempting AEP Calculation...")
                         import aep
-                        aepCalc,aepCalcLCB = aep.run(self.analysis,fileName)
-
-                        self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
-                        self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
-                        self.addMessage( "AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
-                        self.addMessage( "AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
+                        aepCalc,aepCalcLCB = aep.run(self.analysis,fileName,WindowStatus(self))
 
                     except ExceptionType as e:
                         self.addMessage("ERROR Calculating AEP: %s" % e)

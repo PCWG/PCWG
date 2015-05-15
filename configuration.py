@@ -242,6 +242,8 @@ class AnalysisConfiguration(XmlBase):
             self.readDatasets(configurationNode)
             self.readInnerRange(configurationNode)
             self.readTurbine(configurationNode)
+
+            self.nominalWindSpeedDistribution = self.getNodeValueIfExists(configurationNode,'NominalWindSpeedDistribution',None)
             
             self.readDensityCorrection(configurationNode)
             self.readREWS(configurationNode)
@@ -270,6 +272,7 @@ class AnalysisConfiguration(XmlBase):
             self.ratedPower = 1000.0
 
             self.specifiedPowerCurve = ''
+            self.nominalWindSpeedDistribution = ''
 
             self.rewsActive = False        
             self.turbRenormActive = False
