@@ -13,6 +13,12 @@ import turbine
 import rews
 import reporting
 
+
+def chckMake(path):
+    """Make a folder if it doesn't exist"""
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 class NullStatus:
     def __nonzero__(self):
         return False
@@ -619,11 +625,13 @@ class Analysis:
         self.status.addMessage("Comb Delta: %f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))        
 
     def export(self, path):
-        self.png_plots(path)
-
+        op_path = os.path.dirname(path)
+        plotsDir = os.path.join(op_path,"PPAnalysisPlots")
+        self.png_plots(plotsDir)
         self.dataFrame.to_csv(path, sep = '\t')
 
     def png_plots(self,path):
+        chckMake(path)
         self.plotPowerCurve(path)
         self.plotBy(self.windDirection,path,self.shearExponent,self.dataFrame)
         self.plotBy(self.windDirection,path,self.hubTurbulence,self.dataFrame)
@@ -644,8 +652,7 @@ class Analysis:
             ax.set_xlim([df[by].min()-1,df[by].max()+1])
             ax.set_xlabel(by)
             ax.set_ylabel(variable)
-            op_path = os.path.dirname(path)
-            file_out = op_path + "/"+variable.replace(" ","_")+"_By_"+by.replace(" ","_")+".png"
+            file_out = path + "/"+variable.replace(" ","_")+"_By_"+by.replace(" ","_")+".png"
             plt.savefig(file_out)
             return file_out
         except:
@@ -666,8 +673,7 @@ class Analysis:
             ax.set_xlim([self.specifiedPowerCurve.powerCurveLevels.index.min(), self.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
             ax.set_xlabel(windSpeedCol)
             ax.set_ylabel(powerCol)
-            op_path = os.path.dirname(path)
-            file_out = op_path + "/PowerCurve.png"
+            file_out = path + "/PowerCurve.png"
             plt.savefig(file_out)
             return file_out
         except:

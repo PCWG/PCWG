@@ -224,10 +224,11 @@ class AnalysisConfiguration(XmlBase):
             
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
+            self.Name = self.getNodeValue(configurationNode, 'Name')
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
-            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
+            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
 
@@ -252,7 +253,7 @@ class AnalysisConfiguration(XmlBase):
         else:
 
             self.isNew = True
-
+            self.Name = ""
             self.powerCurveMinimumCount = 10
             self.baseLineMode = 'Hub'
             self.filterMode = 'All'
