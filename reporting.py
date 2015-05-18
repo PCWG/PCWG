@@ -601,13 +601,22 @@ class report:
                 sh.write(row,9, "-", self.no_dp_style)
 
         row+=2
-        sh.write(row,2, "More than 180 hours of data:", self.bold_style)
-        timeCovered = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount].count() * hrsMultiplier
-        sh.write(row,3, "TRUE" if timeCovered  > 180 else "FALSE")
-        sh.write(row,4, "({0} Hours)".format(timeCovered) , self.two_dp_style)
+        sh.write_merge(row,row,2,5, "More than 180 hours of data:", self.bold_style)
+        timeCovered = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount].sum() * hrsMultiplier
+        sh.write(row,6, "TRUE" if timeCovered  > 180 else "FALSE")
+        sh.write(row,7, "({0} Hours)".format(round(timeCovered,2)) , self.two_dp_style)
         row+=1
-        sh.write(row,2, "Largest WS > {0:0.02} [1.5(Ws@Rated]:".format(analysis.specifiedPowerCurve.getThresholdWindSpeed()), self.bold_style)
-        sh.write(row,3, "TRUE" if analysis.aepCalcLCB.lcb > analysis.windSpeedAt85pct else "FALSE", self.bold_style)
+        windSpeedAt85pct = analysis.specifiedPowerCurve.getThresholdWindSpeed()
+        sh.write_merge(row,row,2,5, "Largest WindSpeed > {0}:".format(round(windSpeedAt85pct*1.5,2)), self.bold_style)
+        sh.write(row,6, "TRUE" if analysis.aepCalcLCB.lcb > windSpeedAt85pct*1.5 else "FALSE")
+        sh.write(row,7, "Threshold is 1.5*(WindSpeed@0.85*RatedPower)")
+        row+=1
+        sh.write_merge(row,row,2,5, "AEP Extra. within 1% of AEP LCB:",self.bold_style)
+        ans = abs(1-(analysis.aepCalc.measuredYield/analysis.aepCalcLCB.measuredYield)) < 0.01
+        sh.write(row,6, "TRUE" if ans else "FALSE")
+        if not ans:
+             sh.write(row,8, analysis.aepCalc.measuredYield)
+             sh.write(row,9, analysis.aepCalcLCB.measuredYield)
 
     def printPowerCurves(self):
 
