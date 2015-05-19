@@ -810,11 +810,11 @@ class DatasetConfiguration(XmlBase):
             else:
                 self.shearMeasurements = self.readShearMeasurements(measurementsNode)
 
-        if self.nodeValueExists(measurementsNode, 'Power'):
-            self.power = self.getNodeValue(measurementsNode, 'Power')
-        else:
-            self.power = None
-            
+        self.power = self.getNodeValueIfExists(measurementsNode, 'Power',None)
+        self.powerMin = self.getNodeValueIfExists(measurementsNode, 'PowerMin',None)
+        self.powerMax = self.getNodeValueIfExists(measurementsNode, 'PowerMax',None)
+        self.powerSD  = self.getNodeValueIfExists(measurementsNode, 'PowerSD',None)
+
         self.windSpeedLevels = {}
         self.windDirectionLevels = {}
 

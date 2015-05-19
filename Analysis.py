@@ -313,6 +313,7 @@ class Analysis:
                 
                 self.dataFrame = data.dataFrame
                 self.hasActualPower = data.hasActualPower
+                self.hasAllPowers = data.hasAllPowers
                 self.hasShear = data.hasShear
                 self.hasDensity = data.hasDensity
                 self.rewsDefined = data.rewsDefined
@@ -325,6 +326,7 @@ class Analysis:
                 self.dataFrame = self.dataFrame.append(data.dataFrame, ignore_index = True)
 
                 self.hasActualPower = self.hasActualPower & data.hasActualPower
+                self.hasAllPowers = self.hasAllPowers & data.hasAllPowers
                 self.hasShear = self.hasShear & data.hasShear
                 self.hasDensity = self.hasDensity & data.hasDensity
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
@@ -633,6 +635,8 @@ class Analysis:
     def png_plots(self,path):
         chckMake(path)
         self.plotPowerCurve(path)
+        if self.hasAllPowers:
+            self.plotPowerLimits(path)
         self.plotBy(self.windDirection,path,self.shearExponent,self.dataFrame)
         self.plotBy(self.windDirection,path,self.hubTurbulence,self.dataFrame)
         self.plotBy(self.hubWindSpeed,path,self.hubTurbulence,self.dataFrame)
@@ -662,9 +666,8 @@ class Analysis:
         try:
             from matplotlib import pyplot as plt
             windSpeedCol = self.densityCorrectedHubWindSpeed
-            # TODO: Add to the title what the specified density actually is.
             powerCol = 'Actual Power'
-            ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve",alpha=0.1,label='Filtered Data')
+            ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve (corrected to {dens} kg/m^3)".format(dens=self.specifiedPowerCurve.referenceDensity),alpha=0.15,label='Filtered Data')
             ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
             allMeasured = self.allMeasuredPowerCurve.powerCurveLevels[['Input Hub Wind Speed','Actual Power','Data Count']][self.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index('Input Hub Wind Speed')
             ax = allMeasured['Actual Power'].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
@@ -678,6 +681,25 @@ class Analysis:
             return file_out
         except:
             print "Tried to make a scatter chart. Couldn't."
+
+    def plotPowerLimits(self,path):
+        try:
+            from matplotlib import pyplot as plt
+            windSpeedCol = self.densityCorrectedHubWindSpeed
+            ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=self.actualPower ,title="Power Values Corrected to {dens} kg/m^3".format(dens=self.specifiedPowerCurve.referenceDensity),alpha=0.5,label='Power Mean')
+            ax = self.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Min",alpha=0.2,label='Power Min',color = 'orange')
+            ax = self.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Max",alpha=0.2,label='Power Max',color = 'green')
+            ax = self.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power SD",alpha=0.2,label='Power SD',color = 'purple')
+            ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+            ax.set_xlim([self.specifiedPowerCurve.powerCurveLevels.index.min(), self.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
+            ax.legend(loc=4)
+            ax.set_xlabel(windSpeedCol)
+            ax.set_ylabel("Power [kW]")
+            file_out = path + "/PowerValues.png"
+            plt.savefig(file_out)
+            return file_out
+        except:
+            print "Tried to make a full power scatter chart. Couldn't."
 
 class PadderFactory:
     @staticmethod
