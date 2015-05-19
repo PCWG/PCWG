@@ -190,6 +190,9 @@ class Dataset:
 
         self.timeStamp = config.timeStamp
         self.actualPower = "Actual Power"
+        self.actualPowerMin = config.powerMin
+        self.actualPowerMax = config.powerMax
+        self.actualPowerSD  = config.powerSD
 
         self.hubWindSpeed = "Hub Wind Speed"
         self.hubTurbulence = "Hub Turbulence"
@@ -443,6 +446,13 @@ class Dataset:
             requiredCols.append(self.profileHubWindSpeed)
             requiredCols.append(self.profileHubToRotorRatio)
             requiredCols.append(self.profileHubToRotorDeviation)
+
+        if self.actualPowerMin is not None:
+            requiredCols.append(self.actualPowerMin)
+        if self.actualPowerMax is not None:
+            requiredCols.append(self.actualPowerMax)
+        if self.actualPowerSD is not None:
+            requiredCols.append(self.actualPowerSD)
 
         if self.hasActualPower:
             requiredCols.append(self.actualPower)
