@@ -9,7 +9,7 @@ import os
 import os.path
 import pandas as pd
 
-version = "0.5.4"
+version = "0.5.5"
 ExceptionType = Exception
 ExceptionType = None #comment this line before release
  

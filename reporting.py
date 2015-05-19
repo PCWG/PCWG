@@ -611,12 +611,12 @@ class report:
         sh.write(row,6, "TRUE" if analysis.aepCalcLCB.lcb > windSpeedAt85pct*1.5 else "FALSE")
         sh.write(row,7, "Threshold is 1.5*(WindSpeed@0.85*RatedPower)")
         row+=1
-        sh.write_merge(row,row,2,5, "AEP Extra. within 1% of AEP LCB:",self.bold_style)
-        ans = abs(1-(analysis.aepCalc.measuredYield/analysis.aepCalcLCB.measuredYield)) < 0.01
+        sh.write_merge(row,row,2,5, "AEP Extrap. within 1% of AEP LCB:",self.bold_style)
+        ans = abs(1-(analysis.aepCalc.AEP/analysis.aepCalcLCB.AEP)) < 0.01
         sh.write(row,6, "TRUE" if ans else "FALSE")
         if not ans:
-             sh.write(row,8, analysis.aepCalc.measuredYield)
-             sh.write(row,9, analysis.aepCalcLCB.measuredYield)
+             sh.write(row,8, analysis.aepCalc.AEP)
+             sh.write(row,9, analysis.aepCalcLCB.AEP)
 
     def printPowerCurves(self):
 

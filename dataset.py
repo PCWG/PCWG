@@ -190,9 +190,10 @@ class Dataset:
 
         self.timeStamp = config.timeStamp
         self.actualPower = "Actual Power"
-        self.actualPowerMin = config.powerMin
-        self.actualPowerMax = config.powerMax
-        self.actualPowerSD  = config.powerSD
+        self.hasAllPowers = None not in (config.powerMin,config.powerMax,config.powerSD)
+        self.powerMin = "Power Min"
+        self.powerMax = "Power Max"
+        self.powerSD  = "Power SD"
 
         self.hubWindSpeed = "Hub Wind Speed"
         self.hubTurbulence = "Hub Turbulence"
@@ -304,6 +305,11 @@ class Dataset:
             self.hasActualPower = True
         else:
             self.hasActualPower = False
+
+        if self.hasAllPowers:
+            dataFrame[self.powerMin] = dataFrame[config.powerMin]
+            dataFrame[self.powerMax] = dataFrame[config.powerMax]
+            dataFrame[self.powerSD] = dataFrame[config.powerSD]
 
         dataFrame = self.filterDataFrame(dataFrame, config.filters)
         dataFrame = self.excludeData(dataFrame, config)
@@ -447,12 +453,10 @@ class Dataset:
             requiredCols.append(self.profileHubToRotorRatio)
             requiredCols.append(self.profileHubToRotorDeviation)
 
-        if self.actualPowerMin is not None:
-            requiredCols.append(self.actualPowerMin)
-        if self.actualPowerMax is not None:
-            requiredCols.append(self.actualPowerMax)
-        if self.actualPowerSD is not None:
-            requiredCols.append(self.actualPowerSD)
+        if self.hasAllPowers:
+            requiredCols.append(self.powerMin)
+            requiredCols.append(self.powerMax)
+            requiredCols.append(self.powerSD)
 
         if self.hasActualPower:
             requiredCols.append(self.actualPower)
