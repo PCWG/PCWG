@@ -658,6 +658,7 @@ class Analysis:
             ax.set_ylabel(variable)
             file_out = path + "/"+variable.replace(" ","_")+"_By_"+by.replace(" ","_")+".png"
             plt.savefig(file_out)
+            plt.close()
             return file_out
         except:
             print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
@@ -678,6 +679,7 @@ class Analysis:
             ax.set_ylabel(powerCol)
             file_out = path + "/PowerCurve.png"
             plt.savefig(file_out)
+            plt.close()
             return file_out
         except:
             print "Tried to make a scatter chart. Couldn't."
@@ -697,6 +699,7 @@ class Analysis:
             ax.set_ylabel("Power [kW]")
             file_out = path + "/PowerValues.png"
             plt.savefig(file_out)
+            plt.close()
             return file_out
         except:
             print "Tried to make a full power scatter chart. Couldn't."

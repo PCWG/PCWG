@@ -556,7 +556,8 @@ class report:
         sh.write(row,4, analysis.aepCalc.AEP*100, self.two_dp_style)
         sh.write(row,5, analysis.aepCalcLCB.lcb, self.two_dp_style)
         sh.write(row,6, "{mi} - {ma}".format(mi=analysis.dataFrame[analysis.windDirection].min(),ma=analysis.dataFrame[analysis.windDirection].max()))
-        sh.write(row,7, float(len(analysis.dataFrame.index)) * hrsMultiplier, self.two_dp_style)
+        timeCovered = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount].sum() * hrsMultiplier
+        sh.write(row,7, timeCovered, self.two_dp_style)
         sh.write(row,8, "NOT YET CALCULATED")
 
         row += 3
@@ -602,7 +603,6 @@ class report:
 
         row+=2
         sh.write_merge(row,row,2,5, "More than 180 hours of data:", self.bold_style)
-        timeCovered = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount].sum() * hrsMultiplier
         sh.write(row,6, "TRUE" if timeCovered  > 180 else "FALSE")
         sh.write(row,7, "({0} Hours)".format(round(timeCovered,2)) , self.two_dp_style)
         row+=1
