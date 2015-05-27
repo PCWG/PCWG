@@ -483,22 +483,27 @@ class report:
         
         sh = book.add_sheet(sheetName, cell_overwrite_ok=True)
 
+        sh.write_merge(1,self.turbulenceBins.numberOfBins,0,0,"Turbulence Intensity", xlwt.easyxf('align: rotation 90'))
+        sh.write_merge(self.turbulenceBins.numberOfBins+2,self.turbulenceBins.numberOfBins+2,2,self.windSpeedBins.numberOfBins+1, "Wind Speed", self.bold_style)
+
         for i in range(self.windSpeedBins.numberOfBins):
-            sh.col(i + 1).width = 256 * 5
+            sh.col(i + 2).width = 256 * 5
 
         for j in range(self.turbulenceBins.numberOfBins):        
 
             turbulence = self.turbulenceBins.binCenterByIndex(j)
-            row = self.turbulenceBins.numberOfBins - j - 1
+            row = self.turbulenceBins.numberOfBins - j
             
-            sh.write(row, 0, turbulence, self.percent_no_dp_style)
+            sh.write(row, 1, turbulence, self.percent_no_dp_style)
             
             for i in range(self.windSpeedBins.numberOfBins):
 
                 windSpeed = self.windSpeedBins.binCenterByIndex(i)
-                col = i + 1
+                col = i + 2
                 
-                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)    
+                if j == 0:
+                    sh.write(self.turbulenceBins.numberOfBins+1, col, windSpeed, self.one_dp_style)
+
                 
                 if windSpeed in powerDeviations.matrix:
                     if turbulence  in powerDeviations.matrix[windSpeed]:
