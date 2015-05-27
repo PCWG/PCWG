@@ -1,8 +1,9 @@
 # Power Curve Working Group collaborative</h1>
+Tool for evaluating the power performance of wind turbines through power curve analysis.
 [PCWG Website](http://www.pcwg.org)
 
 ## Current Version
-v0.5.3
+v0.5.5
 
 ## Release Versions
 A full history of release versions can be found on [SourceForge](http://sourceforge.net/projects/pcwg/files/ "SourceForge")

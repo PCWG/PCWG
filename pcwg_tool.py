@@ -1596,7 +1596,6 @@ class UserInterface:
                 load_button.pack(side=RIGHT, padx=5, pady=5)
                 
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
-                calculate_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
                 anonym_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)

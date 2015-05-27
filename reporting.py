@@ -2,7 +2,7 @@ import xlwt
 import colour
 import numpy as np
 from os.path import dirname, join
-xlwt.XFStyle
+
 class report:
     bold_style = xlwt.easyxf('font: bold 1')
     no_dp_style = xlwt.easyxf(num_format_str='0')

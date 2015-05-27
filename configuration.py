@@ -224,7 +224,7 @@ class AnalysisConfiguration(XmlBase):
             
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
-            self.Name = self.getNodeValue(configurationNode, 'Name')
+            self.Name = self.getNodeValueIfExists(configurationNode, 'Name',None)
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
@@ -606,7 +606,7 @@ class DatasetConfiguration(XmlBase):
             self.timeStamp = ''
             self.referenceWindSpeed = ''
             self.referenceWindSpeedStdDev = ''
-            self.referenceWindDirection = ''
+            self.referenceWindDirection = None
             self.referenceWindDirectionOffset = 0
             self.turbineLocationWindSpeed = ''
             self.hubWindSpeed= ''
