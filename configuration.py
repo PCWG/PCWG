@@ -224,10 +224,11 @@ class AnalysisConfiguration(XmlBase):
             
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
+            self.Name = self.getNodeValueIfExists(configurationNode, 'Name',None)
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
-            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
+            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
 
@@ -242,6 +243,8 @@ class AnalysisConfiguration(XmlBase):
             self.readDatasets(configurationNode)
             self.readInnerRange(configurationNode)
             self.readTurbine(configurationNode)
+
+            self.nominalWindSpeedDistribution = self.getNodeValueIfExists(configurationNode,'NominalWindSpeedDistribution',None)
             
             self.readDensityCorrection(configurationNode)
             self.readREWS(configurationNode)
@@ -250,7 +253,7 @@ class AnalysisConfiguration(XmlBase):
         else:
 
             self.isNew = True
-
+            self.Name = ""
             self.powerCurveMinimumCount = 10
             self.baseLineMode = 'Hub'
             self.filterMode = 'All'
@@ -270,6 +273,7 @@ class AnalysisConfiguration(XmlBase):
             self.ratedPower = 1000.0
 
             self.specifiedPowerCurve = ''
+            self.nominalWindSpeedDistribution = None
 
             self.rewsActive = False        
             self.turbRenormActive = False
@@ -444,7 +448,7 @@ class PowerCurveConfiguration(XmlBase):
             speeds.append(speed)
             powers.append(self.powerCurveDictionary[speed])
 
-        if len(speeds) > 0:
+        if len(speeds) == 0:
             self.powerCurveLevels = pd.Series()
         else:
             self.powerCurveLevels = pd.DataFrame(powers, index = speeds, columns = ['Specified Power'])
@@ -480,7 +484,11 @@ class Filter(XmlBase):
 
     def printSummary(self):
 
-        print "%s\t%s\t%s\t%s\t%s" % (self.derived, self.column, self.filterType, self.inclusive, self.__str__())
+        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev=self.derived,
+                                                            col=   self.column,
+                                                            typ=self.filterType,
+                                                            incl=self.inclusive,
+                                                            desc=self.__str__())
          
         if not self.derived:
             return str(self.value)
@@ -502,7 +510,13 @@ class RelationshipFilter(XmlBase):
                 self.clauses.append(self.readSimpleFilter(node))  
     def __str__(self):
         return " - ".join([" {0} ".format(r.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in r.clauses])  for r in self.relationships])
-
+    def printSummary(self):
+        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev="\t",
+                                                            col=   self.column,
+                                                            typ=self.filterType,
+                                                            incl=self.inclusive,
+                                                            desc=self.__str__())
+        return self.__str__()
     def __init__(self, node):
         self.applied = False
         self.relationships = []
@@ -541,7 +555,8 @@ class DatasetConfiguration(XmlBase):
                 self.endDate = self.getNodeDate(configurationNode, 'EndDate')
             else:
                 self.endDate = None
-                
+
+            self.referenceWindDirection = self.getNodeValueIfExists(configurationNode, 'ReferenceWindDirection', None)
             self.hubWindSpeedMode = self.getNodeValue(configurationNode, 'HubWindSpeedMode')
             self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
 
@@ -591,7 +606,7 @@ class DatasetConfiguration(XmlBase):
             self.timeStamp = ''
             self.referenceWindSpeed = ''
             self.referenceWindSpeedStdDev = ''
-            self.referenceWindDirection = ''
+            self.referenceWindDirection = None
             self.referenceWindDirectionOffset = 0
             self.turbineLocationWindSpeed = ''
             self.hubWindSpeed= ''
@@ -737,7 +752,7 @@ class DatasetConfiguration(XmlBase):
         self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
 
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
-        self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
+        self.badData = self.getNodeValue(measurementsNode, 'BadDataValue')
         self.headerRows = self.getNodeInt(measurementsNode, 'HeaderRows')
 
         self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
@@ -795,11 +810,11 @@ class DatasetConfiguration(XmlBase):
             else:
                 self.shearMeasurements = self.readShearMeasurements(measurementsNode)
 
-        if self.nodeValueExists(measurementsNode, 'Power'):
-            self.power = self.getNodeValue(measurementsNode, 'Power')
-        else:
-            self.power = None
-            
+        self.power = self.getNodeValueIfExists(measurementsNode, 'Power',None)
+        self.powerMin = self.getNodeValueIfExists(measurementsNode, 'PowerMin',None)
+        self.powerMax = self.getNodeValueIfExists(measurementsNode, 'PowerMax',None)
+        self.powerSD  = self.getNodeValueIfExists(measurementsNode, 'PowerSD',None)
+
         self.windSpeedLevels = {}
         self.windDirectionLevels = {}
 
@@ -861,7 +876,7 @@ class DatasetConfiguration(XmlBase):
             self.calibrationEndDate = None
             self.siteCalibrationNumberOfSectors = None
             self.siteCalibrationCenterOfFirstSector = None
-            self.calibrationFilters = []       
+            self.calibrationFilters = []
             self.calibrationSlopes = {}
             self.calibrationOffsets = {}
             

@@ -1,10 +1,12 @@
 import xlwt
 import colour
 import numpy as np
+from os.path import dirname, join
 
 class report:
     bold_style = xlwt.easyxf('font: bold 1')
     no_dp_style = xlwt.easyxf(num_format_str='0')
+    one_dp_style = xlwt.easyxf(num_format_str='0.0')
     two_dp_style = xlwt.easyxf(num_format_str='0.00')
     four_dp_style = xlwt.easyxf(num_format_str='0.0000')
     percent_style = xlwt.easyxf(num_format_str='0.00%')
@@ -19,9 +21,13 @@ class report:
     
         book = xlwt.Workbook()
 
+        plotsDir = join(dirname(path),"PPAnalysisPlots")
+        analysis.png_plots(plotsDir)
+
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
             
         sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
+
         settingsSheet = book.add_sheet("Settings", cell_overwrite_ok=True)
 
         self.reportSettings(settingsSheet, analysis)
@@ -72,6 +78,10 @@ class report:
             calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
             self.reportCalibrations(calSheet,analysis)
 
+            if analysis.config.nominalWindSpeedDistribution is not None:
+                sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
+                self.report_aep(sh,analysis)
+
         book.save(path)
 
     def reportCalibrations(self,sh,analysis):
@@ -96,6 +106,8 @@ class report:
             if belowAbove:
                 sh.write(row,col+4,"Count <= 8m/s", self.bold_style)
                 sh.write(row,col+5,"Count >  8m/s", self.bold_style)
+                sh.write(row,col+6,"Valid Sector", self.bold_style)
+
 
             row+=1
             for key in sorted(calib.slopes):
@@ -106,6 +118,7 @@ class report:
                 if belowAbove:
                     sh.write(row,col+4,calib.belowAbove[key][0], self.no_dp_style)
                     sh.write(row,col+5,calib.belowAbove[key][1], self.no_dp_style)
+                    sh.write(row,col+6, "TRUE" if calib.belowAbove[key][0]*(analysis.timeStepInSeconds/3600.0) > 6.0 and  calib.belowAbove[key][1]*(analysis.timeStepInSeconds/3600.0) > 6.0 else "FALSE" , self.bold_style)
                 row += 1
 
             if len(conf.calibrationFilters) > 0:
@@ -439,12 +452,14 @@ class report:
                    'Specified Wind Speed':self.two_dp_style}
 
         for colname in powerCurveLevels.columns:
-            sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
+            if colname in styles.keys():
+                sh.write(rowOffset + 1, columnOffset + rowOrders[colname], colname, self.bold_style)
 
         countRow = 1
         for windSpeed in powerCurveLevels.index:
             for colname in powerCurveLevels.columns:
-                sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], powerCurveLevels[colname][windSpeed], styles[colname])
+                if colname in styles.keys():
+                    sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], powerCurveLevels[colname][windSpeed], styles[colname])
             countRow += 1
 
         return countRow
@@ -510,7 +525,7 @@ class report:
                 windSpeed = self.windSpeedBins.binCenterByIndex(i)
                 col = i + 1
                 
-                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.no_dp_style)    
+                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.one_dp_style)
                 
                 if windSpeed in deviationsA.matrix:
                     if turbulence  in deviationsA.matrix[windSpeed]:
@@ -519,6 +534,89 @@ class report:
                         if not np.isnan(deviationA) and not np.isnan(deviationB):
                             diff = abs(deviationA) - abs(deviationB)
                             sh.write(row, col, diff, gradient.getStyle(diff))
+
+    def report_aep(self,sh,analysis):
+        sh # get tables in PP report form
+        # Summary of EY acceptance test results:
+        hrsMultiplier = (analysis.timeStepInSeconds/3600.0)
+        row = 2
+        tall_style = xlwt.easyxf('font:height 360;') # 18pt
+        first_row = sh.row(row)
+        first_row.set_style(tall_style)
+        sh.write(row,2, "Reference Turbine", self.bold_style)
+        sh.write(row,3, "Measured (LCB) Pct of Warranted Annual Energy Yield (%)", self.bold_style)
+        sh.write(row,4, "Extrapolated Pct of Warranted Annual Energy Yield (%)", self.bold_style)
+        sh.write(row,5, "Last Complete Bin (LCB)", self.bold_style)
+        sh.write(row,6, "Direction Sectors Analysed (degrees)", self.bold_style)
+        sh.write(row,7, "Measured Hours", self.bold_style)
+        sh.write(row,8, "Annual Energy Yield Uncertainty as a percentage of the Warranted Annual Yield (%)", self.bold_style)
+        row += 1
+        sh.write(row,2, analysis.config.Name)
+        sh.write(row,3, analysis.aepCalcLCB.AEP*100, self.two_dp_style)
+        sh.write(row,4, analysis.aepCalc.AEP*100, self.two_dp_style)
+        sh.write(row,5, analysis.aepCalcLCB.lcb, self.two_dp_style)
+        sh.write(row,6, "{mi} - {ma}".format(mi=analysis.dataFrame[analysis.windDirection].min(),ma=analysis.dataFrame[analysis.windDirection].max()))
+        timeCovered = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount].sum() * hrsMultiplier
+        sh.write(row,7, timeCovered, self.two_dp_style)
+        sh.write(row,8, "NOT YET CALCULATED")
+
+        row += 3
+        sh.write_merge(row,row,2,6, "Measured Power Curve\n Reference Air Density = {ref} kg/m^3".format(ref=analysis.specifiedPowerCurve.referenceDensity), self.bold_style)
+        sh.write(row,7, "Category A Uncertainty", self.bold_style)
+        sh.write(row,8, "Category B Uncertainty", self.bold_style)
+        sh.write(row,9, "Category C Uncertainty", self.bold_style)
+        row += 1
+        sh.write(row,2, "Bin No", self.bold_style)
+        sh.write(row,3, "Hub Height Wind Speed", self.bold_style)
+        sh.write(row,4, "Power Output", self.bold_style)
+        sh.write(row,5, "Cp", self.bold_style)
+        sh.write(row,6, "Qty 10-Min Data", self.bold_style)
+        sh.write(row,7, "Standard Uncertainty", self.bold_style)
+        sh.write(row,8, "Standard Uncertainty", self.bold_style)
+        sh.write(row,9, "Standard Uncertainty", self.bold_style)
+        row += 1
+        sh.write(row,2, "I", self.bold_style)
+        sh.write(row,3, "Vi", self.bold_style)
+        sh.write(row,4, "Pi", self.bold_style)
+        sh.write(row,6, "Ni", self.bold_style)
+        sh.write(row,7, "si", self.bold_style)
+        sh.write(row,8, "ui", self.bold_style)
+        sh.write(row,9, "uc,I", self.bold_style)
+        row += 1
+        sh.write(row,3, "[m/s]", self.bold_style)
+        sh.write(row,4, "[kW]", self.bold_style)
+        sh.write(row,7, "[kW]", self.bold_style)
+        sh.write(row,8, "[kW]", self.bold_style)
+        sh.write(row,9, "[kW]", self.bold_style)
+        for binNo,ws in enumerate(analysis.allMeasuredPowerCurve.powerCurveLevels .index):
+            if ws <= analysis.aepCalcLCB.lcb and analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws] > 0:
+                row+=1
+                sh.write(row,2, binNo+1, self.no_dp_style)
+                sh.write(row,3, ws, self.two_dp_style)
+                sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.actualPower][ws], self.two_dp_style)
+                sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
+                datCount = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws]
+                sh.write(row,6, datCount, self.no_dp_style)
+                sh.write(row,7, "-", self.no_dp_style)
+                sh.write(row,8, "~", self.no_dp_style)
+                sh.write(row,9, "-", self.no_dp_style)
+
+        row+=2
+        sh.write_merge(row,row,2,5, "More than 180 hours of data:", self.bold_style)
+        sh.write(row,6, "TRUE" if timeCovered  > 180 else "FALSE")
+        sh.write(row,7, "({0} Hours)".format(round(timeCovered,2)) , self.two_dp_style)
+        row+=1
+        windSpeedAt85pct = analysis.specifiedPowerCurve.getThresholdWindSpeed()
+        sh.write_merge(row,row,2,5, "Largest WindSpeed > {0}:".format(round(windSpeedAt85pct*1.5,2)), self.bold_style)
+        sh.write(row,6, "TRUE" if analysis.aepCalcLCB.lcb > windSpeedAt85pct*1.5 else "FALSE")
+        sh.write(row,7, "Threshold is 1.5*(WindSpeed@0.85*RatedPower)")
+        row+=1
+        sh.write_merge(row,row,2,5, "AEP Extrap. within 1% of AEP LCB:",self.bold_style)
+        ans = abs(1-(analysis.aepCalc.AEP/analysis.aepCalcLCB.AEP)) < 0.01
+        sh.write(row,6, "TRUE" if ans else "FALSE")
+        if not ans:
+             sh.write(row,8, analysis.aepCalc.AEP)
+             sh.write(row,9, analysis.aepCalcLCB.AEP)
 
     def printPowerCurves(self):
 
@@ -683,3 +781,5 @@ class AnonReport(report):
             countRow += 1
 
         return countRow
+
+

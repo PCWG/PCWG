@@ -57,7 +57,11 @@ class PowerCurve:
             return powerCurveLevels.max()
         else:
             return ratedPower
-            
+
+    def getThresholdWindSpeed(self):
+        return float(interpolators.LinearPowerCurveInterpolator(self.powerCurveLevels[self.actualPower].as_matrix(), list(self.powerCurveLevels[self.actualPower].index))(0.85*self.ratedPower))
+
+
     def getTurbulenceLevels(self, powerCurveLevels, turbulenceLevels, fixedTurbulence):
 
         if fixedTurbulence != None:
@@ -83,11 +87,11 @@ class PowerCurve:
         return array
                 
     def createFunction(self, y_data, x_data):
-        
+
         if x_data is None:
             x_data = pd.Series(y_data.index, index = y_data.index)
         x, y = [], []
-        
+
         for i in y_data.index:
             if i in x_data.index:
                 x.append(x_data[i])
@@ -257,6 +261,8 @@ class IntegrationProbabilities:
         self.a = windSpeedStep / math.sqrt(2.0 * math.pi)
                 
     def probabilities(self, windSpeedMean, windSpeedStdDev):
+        if windSpeedStdDev == 0:
+            return np.nan
 
         oneOverStandardDeviation = 1.0 / windSpeedStdDev
         oneOverStandardDeviationSq = oneOverStandardDeviation * oneOverStandardDeviation
