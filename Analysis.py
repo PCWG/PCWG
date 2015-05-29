@@ -598,6 +598,9 @@ class Analysis:
         area = np.pi*(self.config.diameter/2.0)**2
         a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
         b = 1000*self.dataFrame[self.actualPower]/(0.5*self.specifiedPowerCurve.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
+        betzExceed = (len(a[a>16.0/27])*100.0)/len(a)
+        if betzExceed > 0.5:
+            print "{0:.02}% data points slightly exceed Betz limit - if this number is high, investigate...".format(betzExceed)
         if (abs(a-b) > 0.005).any():
             raise Exception("Density correction has not been applied consistently.")
         return a
