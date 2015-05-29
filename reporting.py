@@ -2,6 +2,7 @@ import xlwt
 import colour
 import numpy as np
 from os.path import dirname, join
+from configuration import TimeOfDayFilter,Filter,RelationshipFilter
 
 class report:
     bold_style = xlwt.easyxf('font: bold 1')
@@ -401,12 +402,18 @@ class report:
             row += 1
 
             for filter in datasetConfig.filters:
-
-                sh.write(row, labelColumn, filter.column)
-                sh.write(row, dataColumn, filter.filterType)
-                sh.write(row, dataColumn + 1, filter.inclusive)
-                sh.write(row, dataColumn + 2, str(filter))
-                sh.write(row, dataColumn + 3, "True") # always true if in list...
+                if isinstance(filter,TimeOfDayFilter):
+                    sh.write(row, labelColumn, "Time Of Day Filter")
+                    sh.write(row, dataColumn,     str(filter.startTime))
+                    sh.write(row, dataColumn + 1, str(filter.endTime))
+                    sh.write(row, dataColumn + 2, str(filter.daysOfTheWeek))
+                    sh.write(row, dataColumn + 3, str(filter.months))
+                else:
+                    sh.write(row, labelColumn, filter.column)
+                    sh.write(row, dataColumn, filter.filterType)
+                    sh.write(row, dataColumn + 1, filter.inclusive)
+                    sh.write(row, dataColumn + 2, str(filter))
+                    sh.write(row, dataColumn + 3, "True") # always true if in list...
 
                 row += 1
 

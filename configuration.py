@@ -143,6 +143,17 @@ class XmlBase:
                     ))
             return Filter(column, filterType, inclusive, columnFactors,derived=True)
 
+    def readToDFilter(self,node):
+        startTime = self.getNodeDate(node, 'StartTime')
+        endTime   = self.getNodeDate(node, 'EndTime')
+        days = self.getNodeValueIfExists(node,"DaysOfTheWeek","1,2,3,4,5,6,7")
+        months = self.getNodeValueIfExists(node,"Months",[])
+        if months != []:
+            months = [int(a) for a  in months.split(",")]
+        days = [int(a) for a  in days.split(",")]
+        return TimeOfDayFilter(startTime,endTime,days,months)
+
+
 
 class RelativePath:
 
@@ -472,7 +483,28 @@ class PowerCurveConfiguration(XmlBase):
             self.addFloatNode(doc, levelNode, "PowerCurveLevelPower", power)
         
         self.saveDocument(doc, self.path)
-        
+
+class TimeOfDayFilter(XmlBase):
+    """ Time of Day filter. everything after startTime is removed AND before endTime is removed.
+    """
+    def __init__(self,startTime,endTime, daysOfTheWeek,months=[]):
+        self.startTime = startTime
+        self.endTime = endTime
+        self.daysOfTheWeek = daysOfTheWeek
+        self.applied = False
+        self.months  = months
+        self.column = "TimeStamp"
+
+    def printSummary(self):
+        print str(self)
+
+    def __str__(self):
+        strMonths = "" if len(self.months) == 0 else "in months {0}".format(self.months)
+        return "TimeOfDayFilter: {st} - {end} on days:{days} {months}".format (st=self.startTime.time(),
+                                                            end= self.endTime.time(),
+                                                            days=",".join(str(a) for a in self.daysOfTheWeek),
+                                                            months= strMonths)
+
 class Filter(XmlBase):
     def __init__(self,column,filterType,inclusive,value,derived=False):
         self.derived = derived
@@ -567,7 +599,7 @@ class DatasetConfiguration(XmlBase):
 
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)
-            self.filters = self.readFilters(self.getNodes(configurationNode, 'Filter'))
+            self.filters = self.readFilters(self.getNode(configurationNode, 'Filters').childNodes)
             self.hasFilters = (len(self.filters) > 0)
             
             self.readExclusions(configurationNode)
@@ -840,13 +872,16 @@ class DatasetConfiguration(XmlBase):
         
         for node in filtersNode:
             
-            active = self.getNodeBool(node, 'Active')
+            if node.localName is not None and self.nodeExists(node,'Active'):
+                active = self.getNodeBool(node, 'Active')
             
-            if active:
-                if not self.nodeExists(node,'Relationship'):
-                    filters.append(self.readSimpleFilter(node))                
-                else:
-                    filters.append(RelationshipFilter(node))
+                if active:
+                    if node.localName == 'TimeOfDayFilter':
+                        filters.append(self.readToDFilter(node))
+                    elif self.nodeExists(node,'Relationship'):
+                        filters.append(RelationshipFilter(node))
+                    else:
+                        filters.append(self.readSimpleFilter(node))
         
         return filters
     
