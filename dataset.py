@@ -475,6 +475,16 @@ class Dataset:
             d['Derived'] *= ((df[col[0]]*float(col[1]))+float(col[2]))**float(col[3])
         return d['Derived']
 
+    def applyToDFilter(self,mask,componentFilter,dataFrame,printMsg=True):
+        dayMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.isoweekday() in d else False, args=[componentFilter.daysOfTheWeek] )
+        todMask = np.logical_and( dataFrame.index.time > componentFilter.startTime.time(),dataFrame.index.time < componentFilter.endTime.time() )
+        if len(componentFilter.months) > 0:
+            monthMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.month in d else False, args=[componentFilter.months] )
+            dayMask = dayMask & monthMask
+        totalMask = dayMask & todMask
+        mask = mask | totalMask
+        if printMsg: print "Applied filter:", str(componentFilter)
+        return mask.copy()
 
     def applySimpleFilter(self,mask,componentFilter,dataFrame,printMsg=True):
         filterColumn = componentFilter.column
@@ -561,10 +571,12 @@ class Dataset:
 
             if not componentFilter.applied:
                 try:
-                    if not hasattr(componentFilter, "relationships"):
-                        mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
-                    else:
+                    if hasattr(componentFilter,"startTime"):
+                        mask = self.applyToDFilter(mask,componentFilter,dataFrame)
+                    elif hasattr(componentFilter, "relationships"):
                         mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
+                    else:
+                        mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
                     print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
                     componentFilter.applied = True
                 except:
