@@ -2016,7 +2016,8 @@ class UserInterface:
                 tkMessageBox.showinfo("PCWG-Tool About", "Version: %s \nVisit http://www.pcwg.org for more info" % version)
 
         def addMessage(self, message):
-                self.listbox.insert(END, message)            
+                self.listbox.insert(END, message)
+                self.listbox.see(END)
                 self.root.update()               
 
 preferences = configuration.Preferences()

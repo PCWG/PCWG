@@ -143,7 +143,16 @@ class XmlBase:
                     self.getNodeValueIfExists(columnFactor, 'C', 1)
                     ))
             return Filter(active, column, filterType, inclusive, columnFactors,derived=True)
-
+        
+	def readToDFilter(self,node):
+            startTime = self.getNodeDate(node, 'StartTime')
+            endTime   = self.getNodeDate(node, 'EndTime')
+            days = self.getNodeValueIfExists(node,"DaysOfTheWeek","1,2,3,4,5,6,7")
+            months = self.getNodeValueIfExists(node,"Months",[])
+            if months != []:
+                months = [int(a) for a  in months.split(",")]
+            days = [int(a) for a  in days.split(",")]
+            return TimeOfDayFilter(startTime,endTime,days,months)
 
 class RelativePath:
 
@@ -475,7 +484,27 @@ class PowerCurveConfiguration(XmlBase):
             self.addFloatNode(doc, levelNode, "PowerCurveLevelPower", power)
         
         self.saveDocument(doc, self.path)
-        
+
+class TimeOfDayFilter(XmlBase):
+    """ Time of Day filter. everything after startTime is removed AND before endTime is removed.
+    """
+    def __init__(self,startTime,endTime, daysOfTheWeek,months=[]):
+        self.startTime = startTime
+        self.endTime = endTime
+        self.daysOfTheWeek = daysOfTheWeek
+        self.applied = False
+        self.months  = months
+        self.column = "TimeStamp"
+
+    def printSummary(self):
+        print str(self)
+
+    def __str__(self):
+        strMonths = "" if len(self.months) == 0 else "in months {0}".format(self.months)
+        return "TimeOfDayFilter: {st} - {end} on days:{days} {months}".format (st=self.startTime.time(),
+                                                            end= self.endTime.time(),
+                                                            days=",".join(str(a) for a in self.daysOfTheWeek),
+                                                            months= strMonths)
 class Filter(XmlBase):
     
     def __init__(self, active, column,filterType,inclusive,value,derived=False):
