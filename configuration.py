@@ -196,6 +196,7 @@ class Preferences(XmlBase):
         if not loaded:
             
             self.analysisLastOpened =  ""
+            self.workSpaceFolder = ""
 
     def loadPreferences(self):
 
