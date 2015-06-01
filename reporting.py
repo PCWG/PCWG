@@ -43,17 +43,28 @@ class report:
             #    if residualMatrix != None:
             #        self.reportPowerDeviations(book, "ResidualWindSpeed-%s" % name, residualMatrix, gradient)
 
-            if analysis.hasShear: rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve) )
+            if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
+                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve) )
+                
             rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve) )
-            if analysis.hasShear: rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve) )
+            
+            if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
+                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve) )
+
             rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 20, 'All', analysis.allMeasuredPowerCurve) )
 
             rowAfterCurves = max(rowsAfterCurves) + 5
             sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
             specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
-            if analysis.hasShear: self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
+
+            if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
+                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
+
             self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, specifiedLevels)
-            if analysis.hasShear: self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
+
+            if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
+                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
+
             self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
 
             self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
@@ -423,6 +434,7 @@ class report:
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 
         powerCurveLevels = powerCurve.powerCurveLevels.copy()
+
         if powerCurve.inputHubWindSpeed is None:
             powerCurveLevels['Specified Wind Speed'] = powerCurveLevels.index
             windSpeedCol = 'Specified Wind Speed'
