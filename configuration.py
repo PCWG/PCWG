@@ -128,9 +128,10 @@ class XmlBase:
         column = self.getNodeValue(node, 'DataColumn')        
         inclusive = self.getNodeBool(node, 'Inclusive')
         filterType = self.getNodeValue(node, 'FilterType')
+        active = self.getNodeBool(node, 'Active')
         if not len(self.getNode(node, 'FilterValue').childNodes) >1:
             value = self.getNodeValue(node, 'FilterValue')
-            return Filter(column, filterType, inclusive, value)    
+            return Filter(active, column, filterType, inclusive, value)    
         else:
             valueNode = self.getNode(node, 'FilterValue')
             columnFactors = []
@@ -141,19 +142,17 @@ class XmlBase:
                     self.getNodeValueIfExists(columnFactor, 'B', 0),
                     self.getNodeValueIfExists(columnFactor, 'C', 1)
                     ))
-            return Filter(column, filterType, inclusive, columnFactors,derived=True)
-
-    def readToDFilter(self,node):
-        startTime = self.getNodeDate(node, 'StartTime')
-        endTime   = self.getNodeDate(node, 'EndTime')
-        days = self.getNodeValueIfExists(node,"DaysOfTheWeek","1,2,3,4,5,6,7")
-        months = self.getNodeValueIfExists(node,"Months",[])
-        if months != []:
-            months = [int(a) for a  in months.split(",")]
-        days = [int(a) for a  in days.split(",")]
-        return TimeOfDayFilter(startTime,endTime,days,months)
-
-
+            return Filter(active, column, filterType, inclusive, columnFactors,derived=True)
+        
+	def readToDFilter(self,node):
+            startTime = self.getNodeDate(node, 'StartTime')
+            endTime   = self.getNodeDate(node, 'EndTime')
+            days = self.getNodeValueIfExists(node,"DaysOfTheWeek","1,2,3,4,5,6,7")
+            months = self.getNodeValueIfExists(node,"Months",[])
+            if months != []:
+                months = [int(a) for a  in months.split(",")]
+            days = [int(a) for a  in days.split(",")]
+            return TimeOfDayFilter(startTime,endTime,days,months)
 
 class RelativePath:
 
@@ -197,6 +196,7 @@ class Preferences(XmlBase):
         if not loaded:
             
             self.analysisLastOpened =  ""
+            self.workSpaceFolder = ""
 
     def loadPreferences(self):
 
@@ -206,6 +206,7 @@ class Preferences(XmlBase):
                 root = self.getNode(doc, "Preferences")
 
                 self.analysisLastOpened = self.getNodeValueIfExists(doc, "AnalysisLastOpened", "")
+                self.workSpaceFolder = self.getNodeValueIfExists(doc, "WorkSpaceFolder", "")
 
                 return True
 
@@ -219,6 +220,7 @@ class Preferences(XmlBase):
         root = self.addRootNode(doc, "Preferences", "http://www.pcwg.org")
 
         self.addTextNode(doc, root, "AnalysisLastOpened", self.analysisLastOpened)
+        self.addTextNode(doc, root, "WorkSpaceFolder", self.workSpaceFolder)
 
         self.saveDocument(doc, self.path)
                 
@@ -504,9 +506,10 @@ class TimeOfDayFilter(XmlBase):
                                                             end= self.endTime.time(),
                                                             days=",".join(str(a) for a in self.daysOfTheWeek),
                                                             months= strMonths)
-
 class Filter(XmlBase):
-    def __init__(self,column,filterType,inclusive,value,derived=False):
+    
+    def __init__(self, active, column,filterType,inclusive,value,derived=False):
+        self.active = active
         self.derived = derived
         self.column = column
         self.filterType = filterType
@@ -550,6 +553,7 @@ class RelationshipFilter(XmlBase):
                                                             desc=self.__str__())
         return self.__str__()
     def __init__(self, node):
+        self.active = True
         self.applied = False
         self.relationships = []
         self.sortRelationships(self.getNode(node,'Relationship'))        
@@ -595,11 +599,14 @@ class DatasetConfiguration(XmlBase):
             self.densityMode = self.getNodeValue(configurationNode, 'DensityMode')
             self.calculateDensity = self.getCalculateMode(self.densityMode)
 
+            print self.calculateDensity
+            print self.densityMode
+
             self.turbulenceWSsource = self.getNodeValueIfExists(configurationNode, 'TurbulenceWindSpeedSource', 'Reference')
 
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)
-            self.filters = self.readFilters(self.getNode(configurationNode, 'Filters').childNodes)
+            self.filters = self.readFilters(self.getNodes(configurationNode, 'Filter'))
             self.hasFilters = (len(self.filters) > 0)
             
             self.readExclusions(configurationNode)
@@ -653,7 +660,19 @@ class DatasetConfiguration(XmlBase):
             self.shearMeasurements[60.0] = ''
 
             self.filters = {}
+            self.calibrationDirections = {}
+            self.exclusions = []
 
+            self.calibrationStartDate = None
+            self.calibrationEndDate = None
+            self.siteCalibrationNumberOfSectors = 36
+            self.siteCalibrationCenterOfFirstSector = 0
+
+            self.calibrationFilters = []
+            self.calibrationSlopes = {}
+            self.calibrationOffsets = {}
+            self.calibrationActives = {}
+            
     def save(self):
 
         self.isNew = False
@@ -719,13 +738,47 @@ class DatasetConfiguration(XmlBase):
             self.addTextNode(doc, levelNode, "ProfileWindSpeed", self.windSpeedLevels[height])
             self.addTextNode(doc, levelNode, "ProfileWindDirection", self.windDirectionLevels[height])
 
+        #write clibrations
+        calibrationNode = self.addNode(doc, root, "Calibration")
+
+        if len(self.calibrationStartDate) > 0: self.addTextNode(doc, calibrationNode, "CalibrationStartDate", self.calibrationStartDate)
+        if len(self.calibrationEndDate) > 0: self.addTextNode(doc, calibrationNode, "CalibrationEndDate", self.calibrationEndDate)
+
+        self.addIntNode(doc, calibrationNode, "NumberOfSectors", self.siteCalibrationNumberOfSectors)
+        self.addIntNode(doc, calibrationNode, "CenterOfFirstSector", self.siteCalibrationCenterOfFirstSector)
+        
+        calibrationFiltersNode = self.addNode(doc, calibrationNode, "CalibrationFilters")
+
+        for calibrationFilter in self.calibrationFilters:
+            self.writeFilter(doc, calibrationFiltersNode, calibrationFilter, "CalibrationFilter")
+
+        calibrationDirectionsNode = self.addNode(doc, calibrationNode, "CalibrationDirections")
+        
+        for direction in self.calibrationDirections:
+            calibrationDirectionNode = self.addNode(doc, calibrationDirectionsNode, "CalibrationDirection")
+            self.addFloatNode(doc, calibrationDirectionNode, "Direction", direction)
+            self.addFloatNode(doc, calibrationDirectionNode, "Slope", self.calibrationSlopes[direction])
+            self.addFloatNode(doc, calibrationDirectionNode, "Offset", self.calibrationOffsets[direction])
+            self.addBoolNode(doc, calibrationDirectionNode, "Active", self.calibrationActives[direction])
+
+
+        #write filters
         filtersNode = self.addNode(doc, root, "Filters")
-        exclusionsNode = self.addNode(doc, root, "Exclusions")
 
         for filterItem in self.filters:
-            filterNode = self.addNode(doc, root, "Filter")
-            filtersNode.append()   
+            self.writeFilter(doc, filtersNode, filterItem, "Filter")
+            
+        #write exclusions
+        exclusionsNode = self.addNode(doc, root, "Exclusions")
 
+        for exclusion in self.exclusions:
+            
+            exclusionNode = self.addNode(doc, exclusionsNode, "Exclusion")
+
+            self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion.active)
+            self.addBoolNode(doc, exclusionNode, "ExclusionStartDate", exclusion.startDate)
+            self.addBoolNode(doc, exclusionNode, "ExclusionEndDate", exclusion.endDate)
+            
         self.saveDocument(doc, self.path)
 
     def readREWS(self, configurationNode):
@@ -866,22 +919,45 @@ class DatasetConfiguration(XmlBase):
         else:
             raise Exception("Unrecognised calculation mode: %s" % mode)
 
+    def writeFilter(self, doc, filtersNode, filterItem, nodeName):
+
+        filterNode = self.addNode(doc, filtersNode, nodeName)
+
+        self.addTextNode(doc, filterNode, "DataColumn", filterItem.column)
+        self.addTextNode(doc, filterNode, "FilterType", filterItem.filterType)
+        self.addBoolNode(doc, filterNode, "Inclusive", filterItem.inclusive)
+
+        if not filterItem.derived:
+            
+            self.addFloatNode(doc, filterNode, "FilterValue", filterItem.value)
+            
+        else:
+            
+            valueNode = self.addNode(doc, filterNode, "FilterValue")
+
+            for valueItem in filterItem.value:
+                
+                columnFactorNode = self.addNode(doc, valueNode, "ColumnFactor")
+
+                self.addTextNode(doc, filterNode, "DataColumn", columnFactorNode.valueItem[0])
+                self.addFloatNode(doc, filterNode, "A", columnFactorNode.valueItem[1])
+                self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
+                self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
+
+        self.addBoolNode(doc, filterNode, "Active", filterItem.active)
+        
     def readFilters(self, filtersNode):
 
         filters = []
         
         for node in filtersNode:
             
-            if node.localName is not None and self.nodeExists(node,'Active'):
-                active = self.getNodeBool(node, 'Active')
+            active = self.getNodeBool(node, 'Active')
             
-                if active:
-                    if node.localName == 'TimeOfDayFilter':
-                        filters.append(self.readToDFilter(node))
-                    elif self.nodeExists(node,'Relationship'):
-                        filters.append(RelationshipFilter(node))
-                    else:
-                        filters.append(self.readSimpleFilter(node))
+            if not self.nodeExists(node,'Relationship'):
+                filters.append(self.readSimpleFilter(node))                
+            else:
+                filters.append(RelationshipFilter(node))
         
         return filters
     
@@ -894,11 +970,10 @@ class DatasetConfiguration(XmlBase):
         for node in self.getNodes(exclusionsNode, 'Exclusion'):
 
             active = self.getNodeBool(node, 'ExclusionActive')
-             
-            if active:
-                startDate = self.getNodeDate(node, 'ExclusionStartDate')
-                endDate = self.getNodeDate(node, 'ExclusionEndDate')
-                self.exclusions.append((startDate, endDate))
+            startDate = self.getNodeDate(node, 'ExclusionStartDate')
+            endDate = self.getNodeDate(node, 'ExclusionEndDate')
+            
+            self.exclusions.append((startDate, endDate))
 
         self.hasExclusions = (len(self.exclusions) > 0)
         
@@ -914,6 +989,7 @@ class DatasetConfiguration(XmlBase):
             self.calibrationFilters = []
             self.calibrationSlopes = {}
             self.calibrationOffsets = {}
+            self.calibrationActives = {}
             
             return
 
@@ -936,8 +1012,7 @@ class DatasetConfiguration(XmlBase):
             self.siteCalibrationCenterOfFirstSector = 0.0
 
         if self.nodeExists(calibrationNode, 'CalibrationFilters'):
-            calFilterNode = self.getNode(calibrationNode, 'CalibrationFilters')
-            self.calibrationFilters = self.readFilters(calFilterNode.childNodes)
+            self.calibrationFilters = self.readFilters(self.getNodes(calibrationNode, 'CalibrationFilter'))
         else:
             self.calibrationFilters = []
             
