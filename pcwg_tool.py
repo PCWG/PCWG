@@ -9,12 +9,13 @@ import os
 import os.path
 import pandas as pd
 
-version = "0.5.4"
+version = "0.5.5"
 ExceptionType = Exception
 ExceptionType = None #comment this line before release
  
 class WindowStatus:
-
+        def __nonzero__(self):
+                return True
         def __init__(self, gui):
             self.gui = gui
 
@@ -651,7 +652,7 @@ class REWSProfileLevelDialog(BaseDialog):
                         
         def body(self, master):
 
-                self.prepareColumns(master)     
+                self.prepareColumns(master)
 
                 if not self.isNew:
                         items = self.text.split(",")
@@ -662,15 +663,15 @@ class REWSProfileLevelDialog(BaseDialog):
                         height = 0.0
                         windSpeed = ""
                         windDirection = ""
-                        
+
                 self.addTitleRow(master, "REWS Level Settings:")
-                
+                # get picker entries for these as well?
                 self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), height)
                 self.windSpeed = self.addEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
                 self.windDirection = self.addEntry(master, "Wind Direction:", ValidateNotBlank(master), windDirection, width = 60)
 
                 #dummy label to indent controls
-                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
+                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
 
         def apply(self):
                         
@@ -1066,7 +1067,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 pickButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 showHideCommand.addControl(pickButton)
                 return entry
-        
+
         def EditREWSProfileLevel(self):
 
                 items = self.rewsProfileLevelsListBox.curselection()
@@ -1137,7 +1138,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 relativePath = configuration.RelativePath(self.filePath.get())
                 return relativePath.convertToAbsolutePath(self.inputTimeSeriesPath.get())
-        
+
         def getHeaderRows(self):
 
                 headerRowsText = self.headerRows.get()
@@ -1574,7 +1575,6 @@ class UserInterface:
                 new_button = Button(settingsFrame, text="New", command = self.NewAnalysis)
 
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
-                AEP_button = Button(commandframe,text="AEP",command = self.CalculateAEP)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
@@ -1596,7 +1596,6 @@ class UserInterface:
                 load_button.pack(side=RIGHT, padx=5, pady=5)
                 
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
-                AEP_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
                 anonym_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
@@ -1616,9 +1615,12 @@ class UserInterface:
                 settingsFrame.pack(side=RIGHT,fill=BOTH, expand=1)
 
                 if len(self.preferences.analysisLastOpened) > 0:
-                        self.addMessage("Loading last analysis opened")
-                        self.LoadAnalysisFromPath(self.preferences.analysisLastOpened)
-                        
+                        try:
+                           self.addMessage("Loading last analysis opened")
+                           self.LoadAnalysisFromPath(self.preferences.analysisLastOpened)
+                        except IOError:
+                            self.addMessage("Couldn't load last analysis. File could not be found.")
+
                 self.root.mainloop()        
 
         def Benchmark(self):
@@ -1817,29 +1819,6 @@ class UserInterface:
                         
                         self.addMessage("ERROR Calculating Analysis: %s" % e)                    
 
-        def CalculateAEP(self):
-            if self.analysis == None:
-                        self.addMessage("ERROR: Analysis not yet calculated")
-                        return
-            else:
-                    try:
-                        fileName = askopenfilename(parent=self.root,defaultextension=".xml",title="Please select a Nominal Wind Speed Distribution XML")
-                        self.addMessage("Attempting AEP Calculation...")
-                        import aep
-                        aepCalc = aep.AEPCalculator(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
-                        ans = aepCalc.calculate_AEP()
-                        aepCalcLCB = aep.AEPCalculatorLCB(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
-                        ansLCB = aepCalcLCB.calculate_AEP()
-                        self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
-                        self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
-                        self.addMessage( "AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
-                        self.addMessage( "AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
-
-                    except ExceptionType as e:
-                        self.addMessage("ERROR Calculating AEP: %s" % e)
-
-
-                        
         def ClearConsole(self):
                 self.listbox.delete(0, END)
                 self.root.update()
@@ -1848,7 +1827,8 @@ class UserInterface:
                 tkMessageBox.showinfo("PCWG-Tool About", "Version: %s \nVisit http://www.pcwg.org for more info" % version)
 
         def addMessage(self, message):
-                self.listbox.insert(END, message)            
+                self.listbox.insert(END, message)
+                self.listbox.see(END)
                 self.root.update()               
 
 gui = UserInterface()

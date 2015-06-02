@@ -143,6 +143,17 @@ class XmlBase:
                     ))
             return Filter(column, filterType, inclusive, columnFactors,derived=True)
 
+    def readToDFilter(self,node):
+        startTime = self.getNodeDate(node, 'StartTime')
+        endTime   = self.getNodeDate(node, 'EndTime')
+        days = self.getNodeValueIfExists(node,"DaysOfTheWeek","1,2,3,4,5,6,7")
+        months = self.getNodeValueIfExists(node,"Months",[])
+        if months != []:
+            months = [int(a) for a  in months.split(",")]
+        days = [int(a) for a  in days.split(",")]
+        return TimeOfDayFilter(startTime,endTime,days,months)
+
+
 
 class RelativePath:
 
@@ -224,10 +235,11 @@ class AnalysisConfiguration(XmlBase):
             
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
+            self.Name = self.getNodeValueIfExists(configurationNode, 'Name',None)
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
-            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')        
+            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
 
@@ -242,6 +254,8 @@ class AnalysisConfiguration(XmlBase):
             self.readDatasets(configurationNode)
             self.readInnerRange(configurationNode)
             self.readTurbine(configurationNode)
+
+            self.nominalWindSpeedDistribution = self.getNodeValueIfExists(configurationNode,'NominalWindSpeedDistribution',None)
             
             self.readDensityCorrection(configurationNode)
             self.readREWS(configurationNode)
@@ -250,7 +264,7 @@ class AnalysisConfiguration(XmlBase):
         else:
 
             self.isNew = True
-
+            self.Name = ""
             self.powerCurveMinimumCount = 10
             self.baseLineMode = 'Hub'
             self.filterMode = 'All'
@@ -270,6 +284,7 @@ class AnalysisConfiguration(XmlBase):
             self.ratedPower = 1000.0
 
             self.specifiedPowerCurve = ''
+            self.nominalWindSpeedDistribution = None
 
             self.rewsActive = False        
             self.turbRenormActive = False
@@ -468,7 +483,28 @@ class PowerCurveConfiguration(XmlBase):
             self.addFloatNode(doc, levelNode, "PowerCurveLevelPower", power)
         
         self.saveDocument(doc, self.path)
-        
+
+class TimeOfDayFilter(XmlBase):
+    """ Time of Day filter. everything after startTime is removed AND before endTime is removed.
+    """
+    def __init__(self,startTime,endTime, daysOfTheWeek,months=[]):
+        self.startTime = startTime
+        self.endTime = endTime
+        self.daysOfTheWeek = daysOfTheWeek
+        self.applied = False
+        self.months  = months
+        self.column = "TimeStamp"
+
+    def printSummary(self):
+        print str(self)
+
+    def __str__(self):
+        strMonths = "" if len(self.months) == 0 else "in months {0}".format(self.months)
+        return "TimeOfDayFilter: {st} - {end} on days:{days} {months}".format (st=self.startTime.time(),
+                                                            end= self.endTime.time(),
+                                                            days=",".join(str(a) for a in self.daysOfTheWeek),
+                                                            months= strMonths)
+
 class Filter(XmlBase):
     def __init__(self,column,filterType,inclusive,value,derived=False):
         self.derived = derived
@@ -563,7 +599,7 @@ class DatasetConfiguration(XmlBase):
 
             self.readREWS(configurationNode)        
             self.readMeasurements(configurationNode)
-            self.filters = self.readFilters(self.getNodes(configurationNode, 'Filter'))
+            self.filters = self.readFilters(self.getNode(configurationNode, 'Filters').childNodes)
             self.hasFilters = (len(self.filters) > 0)
             
             self.readExclusions(configurationNode)
@@ -602,7 +638,7 @@ class DatasetConfiguration(XmlBase):
             self.timeStamp = ''
             self.referenceWindSpeed = ''
             self.referenceWindSpeedStdDev = ''
-            self.referenceWindDirection = ''
+            self.referenceWindDirection = None
             self.referenceWindDirectionOffset = 0
             self.turbineLocationWindSpeed = ''
             self.hubWindSpeed= ''
@@ -748,7 +784,7 @@ class DatasetConfiguration(XmlBase):
         self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
 
         self.timeStamp = self.getNodeValue(measurementsNode, 'TimeStamp')
-        self.badData = self.getNodeFloat(measurementsNode, 'BadDataValue')
+        self.badData = self.getNodeValue(measurementsNode, 'BadDataValue')
         self.headerRows = self.getNodeInt(measurementsNode, 'HeaderRows')
 
         self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
@@ -806,11 +842,11 @@ class DatasetConfiguration(XmlBase):
             else:
                 self.shearMeasurements = self.readShearMeasurements(measurementsNode)
 
-        if self.nodeValueExists(measurementsNode, 'Power'):
-            self.power = self.getNodeValue(measurementsNode, 'Power')
-        else:
-            self.power = None
-            
+        self.power = self.getNodeValueIfExists(measurementsNode, 'Power',None)
+        self.powerMin = self.getNodeValueIfExists(measurementsNode, 'PowerMin',None)
+        self.powerMax = self.getNodeValueIfExists(measurementsNode, 'PowerMax',None)
+        self.powerSD  = self.getNodeValueIfExists(measurementsNode, 'PowerSD',None)
+
         self.windSpeedLevels = {}
         self.windDirectionLevels = {}
 
@@ -836,13 +872,16 @@ class DatasetConfiguration(XmlBase):
         
         for node in filtersNode:
             
-            active = self.getNodeBool(node, 'Active')
+            if node.localName is not None and self.nodeExists(node,'Active'):
+                active = self.getNodeBool(node, 'Active')
             
-            if active:
-                if not self.nodeExists(node,'Relationship'):
-                    filters.append(self.readSimpleFilter(node))                
-                else:
-                    filters.append(RelationshipFilter(node))
+                if active:
+                    if node.localName == 'TimeOfDayFilter':
+                        filters.append(self.readToDFilter(node))
+                    elif self.nodeExists(node,'Relationship'):
+                        filters.append(RelationshipFilter(node))
+                    else:
+                        filters.append(self.readSimpleFilter(node))
         
         return filters
     
@@ -897,7 +936,8 @@ class DatasetConfiguration(XmlBase):
             self.siteCalibrationCenterOfFirstSector = 0.0
 
         if self.nodeExists(calibrationNode, 'CalibrationFilters'):
-            self.calibrationFilters = self.readFilters(self.getNodes(calibrationNode, 'CalibrationFilter'))
+            calFilterNode = self.getNode(calibrationNode, 'CalibrationFilters')
+            self.calibrationFilters = self.readFilters(calFilterNode.childNodes)
         else:
             self.calibrationFilters = []
             

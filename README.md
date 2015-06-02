@@ -1,8 +1,9 @@
 # Power Curve Working Group collaborative</h1>
+Tool for evaluating the power performance of wind turbines through power curve analysis.
 [PCWG Website](http://www.pcwg.org)
 
 ## Current Version
-v0.5.3
+v0.5.5
 
 ## Release Versions
 A full history of release versions can be found on [SourceForge](http://sourceforge.net/projects/pcwg/files/ "SourceForge")
@@ -14,13 +15,13 @@ To apply filters to your data a simple filter node can be added to the configura
 
 To filter timestamps when the shear exponent is above 0.2:
 ```xml
-<ns1:Filter>
-			<ns1:DataColumn>Shear Exponent</ns1:DataColumn>
-			<ns1:FilterType>Above</ns1:FilterType>
-			<ns1:Inclusive>0</ns1:Inclusive>
-			<ns1:FilterValue>0.2</ns1:FilterValue>
-			<ns1:Active>1</ns1:Active>
-</ns1:Filter>
+<Filter>
+			<DataColumn>Shear Exponent</DataColumn>
+			<FilterType>Above</FilterType>
+			<Inclusive>0</Inclusive>
+			<FilterValue>0.2</FilterValue>
+			<Active>1</Active>
+</Filter>
 ```
 
 A filter can be applied that is a function of another data column.
@@ -29,47 +30,60 @@ A, B and C are optional and default to 1,0 and 1 respectively.
 
 For example, to apply the filter [Turbulence] > “WS_stddev/(0.75*WSmean+5.6)”:
 ```xml
-<ns1:Filter>	
-	<ns1:FilterType>Above</ns1:FilterType>
-	<ns1:DataColumn>Hub Turbulence</ns1:DataColumn>
-	<ns1:Inclusive>0</ns1:Inclusive>
-	<ns1:Active>1</ns1:Active>			
-	<ns1:FilterValue>
-		<ns1:ColumnFactor>
-			<ns1:ColumnName>Mast1_60m_StdDeviation</ns1:ColumnName>
-			<ns1:A>1</ns1:A><ns1:B>0</ns1:B><ns1:C>-1</ns1:C>
-		</ns1:ColumnFactor>	
-		<ns1:ColumnFactor>
-			<ns1:ColumnName>Mast1_60m_WindSpeed</ns1:ColumnName>
-			<ns1:A>0.75</ns1:A><ns1:B>5.6</ns1:B><ns1:C>1</ns1:C>
-		</ns1:ColumnFactor>	
-	</ns1:FilterValue>	
-</ns1:Filter>
+<Filter>	
+	<FilterType>Above</FilterType>
+	<DataColumn>Hub Turbulence</DataColumn>
+	<Inclusive>0</Inclusive>
+	<Active>1</Active>			
+	<FilterValue>
+		<ColumnFactor>
+			<ColumnName>Mast1_60m_StdDeviation</ColumnName>
+			<A>1</A><B>0</B><C>-1</C>
+		</ColumnFactor>	
+		<ColumnFactor>
+			<ColumnName>Mast1_60m_WindSpeed</ColumnName>
+			<A>0.75</A><B>5.6</B><C>1</C>
+		</ColumnFactor>	
+	</FilterValue>	
+</Filter>
 ```
 
-Finally, data can be excluded using OR and AND relationships.
+Data can be excluded using OR and AND relationships.
 For example, to filter timestamps when [Power] < 0 AND 14.5 < [Wind speed] <= 20 :
 
 ```xml
-<ns1:Filter>			
-	<ns1:Active>1</ns1:Active>
-	<ns1:Relationship>
-		<ns1:Conjunction>AND</ns1:Conjunction>
-		<ns1:Clause>
-			<ns1:DataColumn>Actual Power</ns1:DataColumn>
-			<ns1:FilterType>Below</ns1:FilterType>
-			<ns1:Inclusive>0</ns1:Inclusive>
-			<ns1:FilterValue>0</ns1:FilterValue>					
-		</ns1:Clause>
-		<ns1:Clause>
-			<ns1:DataColumn>Hub Wind Speed</ns1:DataColumn>
-			<ns1:FilterType>Between</ns1:FilterType>
-			<ns1:Inclusive>0</ns1:Inclusive>
-			<ns1:FilterValue>14.5,20.000001</ns1:FilterValue>					
-		</ns1:Clause>	
-	</ns1:Relationship>
-</ns1:Filter>
-```		
+<Filter>			
+	<Active>1</Active>
+	<Relationship>
+		<Conjunction>AND</Conjunction>
+		<Clause>
+			<DataColumn>Actual Power</DataColumn>
+			<FilterType>Below</FilterType>
+			<Inclusive>0</Inclusive>
+			<FilterValue>0</FilterValue>					
+		</Clause>
+		<Clause>
+			<DataColumn>Hub Wind Speed</DataColumn>
+			<FilterType>Between</FilterType>
+			<Inclusive>0</Inclusive>
+			<FilterValue>14.5,20.000001</FilterValue>					
+		</Clause>	
+	</Relationship>
+</Filter>
+```	
+
+Time of day filters can be applied. Anything after StartTime AND before EndTime is excluded.
+The days of the week are entered and separated by commas. MONDAY = 1, Sunday = 7 	
+
+```xml
+		<TimeOfDayFilter>
+			<StartTime>08:00</StartTime>
+			<EndTime>21:00</EndTime>
+			<DaysOfTheWeek>1,2,3,4,5</DaysOfTheWeek>
+			<Months>9,10,11</Months>
+			<Active>1</Active>
+		</TimeOfDayFilter>
+```
 
 ### AEP:
 
@@ -78,16 +92,24 @@ To do this a nominal wind speed distribution is needed. As an XML it should look
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ns1:WindSpeedDistribution xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-<ns1:Bin><ns1:BinCentre>0</ns1:BinCentre><ns1:BinValue>9.9</ns1:BinValue></ns1:Bin>
-<ns1:Bin><ns1:BinCentre>0.5</ns1:BinCentre><ns1:BinValue>28.4</ns1:BinValue></ns1:Bin>
-<ns1:Bin><ns1:BinCentre>1</ns1:BinCentre><ns1:BinValue>51.4</ns1:BinValue></ns1:Bin>
-<ns1:Bin><ns1:BinCentre>1.5</ns1:BinCentre><ns1:BinValue>86.3</ns1:BinValue></ns1:Bin>
+<WindSpeedDistribution xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<Bin><BinCentre>0</BinCentre><BinValue>9.9</BinValue></Bin>
+<Bin><BinCentre>0.5</BinCentre><BinValue>28.4</BinValue></Bin>
+<Bin><BinCentre>1</BinCentre><BinValue>51.4</BinValue></Bin>
+<Bin><BinCentre>1.5</BinCentre><BinValue>86.3</BinValue></Bin>
 ...
-<ns1:Bin><ns1:BinCentre>29</ns1:BinCentre><ns1:BinValue>0.091</ns1:BinValue></ns1:Bin>
-<ns1:Bin><ns1:BinCentre>29.5</ns1:BinCentre><ns1:BinValue>0.068</ns1:BinValue></ns1:Bin>
-<ns1:Bin><ns1:BinCentre>30</ns1:BinCentre><ns1:BinValue>0.011</ns1:BinValue></ns1:Bin>
-<ns1:Bin><ns1:BinCentre>30.5</ns1:BinCentre><ns1:BinValue>0.006</ns1:BinValue></ns1:Bin>
-</ns1:WindSpeedDistribution>
+<Bin><BinCentre>29</BinCentre><BinValue>0.091</BinValue></Bin>
+<Bin><BinCentre>29.5</BinCentre><BinValue>0.068</BinValue></Bin>
+<Bin><BinCentre>30</BinCentre><BinValue>0.011</BinValue></Bin>
+<Bin><BinCentre>30.5</BinCentre><BinValue>0.006</BinValue></Bin>
+</WindSpeedDistribution>
 ```
 The AEP calculation first re-bins to 0.5 m/s bin widths.
+
+
+In the analysis config xml the following node should then be added:
+```xml
+<NominalWindSpeedDistribution>nwd_dist_filename.xml</NominalWindSpeedDistribution>
+```
+
+
