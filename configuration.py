@@ -444,7 +444,7 @@ class PowerCurveConfiguration(XmlBase):
 
             self.isNew = True
             self.name = ""
-            self.powerCurveDensity = 0.0
+            self.powerCurveDensity = 1.225 #0.0
             self.powerCurveTurbulence = 0.0
             
             self.setPowerCurve()
