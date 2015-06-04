@@ -614,6 +614,11 @@ class DatasetConfiguration(XmlBase):
                 
             self.readCalibration(configurationNode)
 
+            if self.nodeExists(configurationNode, 'SensitivityAnalysis'):
+                self.readSensitivityAnalysis(configurationNode)
+            else:
+                self.sensitivityDataColumns = []
+
         else:
 
             self.isNew = True
@@ -854,6 +859,19 @@ class DatasetConfiguration(XmlBase):
             height = self.getNodeFloat(node, 'Height')
             self.windSpeedLevels[height] = self.getNodeValue(node, 'ProfileWindSpeed')
             self.windDirectionLevels[height] = self.getNodeValue(node, 'ProfileWindDirection')
+
+    def readSensitivityAnalysis(self, configurationNode):
+        
+        sensitivityCols = []
+        sensitivityNode = self.getNode(configurationNode, 'SensitivityAnalysis')
+        
+        if self.nodeExists(sensitivityNode,"DataColumn"):
+            allSensitivityColNodes = self.getNodes(sensitivityNode,"DataColumn")
+            
+            for node in allSensitivityColNodes:
+                sensitivityCols.append(node.firstChild.data)
+                
+        self.sensitivityDataColumns = sensitivityCols
 
     def getCalculateMode(self, mode):
     

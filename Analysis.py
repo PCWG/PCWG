@@ -208,7 +208,11 @@ class Analysis:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
             self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution))
-
+        
+        if len(self.sensitivityDataColumns) > 0:
+            self.status.addMessage("Attempting power curve sensitivty analysis...")
+            self.performSensitivityAnalysis() #this method is not yet fully implemented
+        
         self.status.addMessage("Complete")
 
     def applyRemainingFilters(self):
@@ -317,6 +321,7 @@ class Analysis:
                 self.hasShear = data.hasShear
                 self.hasDensity = data.hasDensity
                 self.rewsDefined = data.rewsDefined
+                self.sensitivityDataColumns = data.sensitivityDataColumns
 
             else:
 
@@ -469,6 +474,47 @@ class Analysis:
         else:
             raise Exception("Unrecognised filter mode: %s" % self.filterMode)
 
+    def performSensitivityAnalysis(self):
+        
+        self.powerCurveSensitivityResults = {}
+        mask = self.getFilter()
+        filteredDataFrame = self.dataFrame[mask]
+        
+        for col in self.sensitivityDataColumns:
+            print "\nAttempting to compute sensitivity of power curve to %s..." % col
+            try:
+                self.powerCurveSensitivityResults[col] = self.calculatePowerCurveSensitivity(filteredDataFrame, col)
+                print "Calculation of sensitivity of power curve to %s complete." % col
+            except:
+                print "Could not run sensitivity analysis for %s." % col
+            
+    def calculatePowerCurveSensitivity(self, dataFrame, dataColumn):
+        
+        dataFrame['Energy MWh'] = dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
+        
+        #cutOffForCategories = [0, .2, .4, .6, .8, 1] #fraction of data 
+        labels = ["v low","low","medium","high","v high"] #categories to split data into using data_column
+        cutOffForCategories = list(np.arange(0.,1.,1./len(labels))) + [1.]
+        
+        #colours = ["#0000ff","#4400bb","#880088","#bb0044","#ff0000"] #for plots
+        minCount = len(labels) * 4 #at least 4 data points for each category for a ws bin to be valid
+        
+        wsBinnedCount = dataFrame[['Wind Speed Bin', dataColumn]].groupby('Wind Speed Bin').count()
+        validWsBins = wsBinnedCount.index[wsBinnedCount[dataColumn] > minCount] #ws bins that have enough data for the sensitivity analysis
+
+        #sensitivityPowerCurve = pd.DataFrame(index = validWsBins, columns = labels) #pre-allocating
+        dataFrame['Bin'] = np.nan #pre-allocating
+        
+        for wsBin in dataFrame['Wind Speed Bin'].unique():#validWsBins.index: #assign the bin within eacvh wind speed bin
+            if wsBin in validWsBins:
+                try:
+                    filt = dataFrame['Wind Speed Bin'] == wsBin
+                    dataFrame.loc[filt,'Bin'] = pd.qcut(dataFrame[dataColumn][filt], cutOffForCategories, labels = labels)
+                except:
+                    print "\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin)
+        
+        sensitivityResults = dataFrame[[self.actualPower, 'Energy MWh', 'Wind Speed Bin','Bin']].groupby(['Wind Speed Bin','Bin']).agg({self.actualPower: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len})
+        return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'})
 
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower):
 
