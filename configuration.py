@@ -954,10 +954,12 @@ class DatasetConfiguration(XmlBase):
             
             active = self.getNodeBool(node, 'Active')
             
-            if not self.nodeExists(node,'Relationship'):
-                filters.append(self.readSimpleFilter(node))                
-            else:
+            if node.localName == 'TimeOfDayFilter':
+                filters.append(self.readToDFilter(node))
+            elif self.nodeExists(node,'Relationship'):
                 filters.append(RelationshipFilter(node))
+            else:
+                filters.append(self.readSimpleFilter(node))
         
         return filters
     
