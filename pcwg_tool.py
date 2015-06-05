@@ -9,12 +9,59 @@ import os
 import os.path
 import pandas as pd
 
-version = "0.5.4"
+version = "0.5.5"
 ExceptionType = Exception
-ExceptionType = None #comment this line before release
- 
-class WindowStatus:
+#ExceptionType = None #comment this line before release
 
+def SelectFile(parent, defaultextension=None):
+        if len(preferences.workSpaceFolder) > 0:
+                return askopenfilename(parent=parent, initialdir=preferences.workSpaceFolder, defaultextension=defaultextension)
+        else:
+                return askopenfilename(parent=parent, defaultextension=defaultextension)
+                
+def encodePowerLevelValueAsText(windSpeed, power):
+        return "%f,%f" % (windSpeed, power)
+
+def extractPowerLevelValuesFromText(text):
+        items = text.split(",")
+        windSpeed = float(items[0])
+        power = float(items[1])
+        return (windSpeed, power)
+
+def extractREWSLevelValuesFromText(text):
+        items = text.split(",")
+        height = float(items[0])
+        windSpeed = items[1].strip()
+        windDirection = items[2].strip()
+        return (height, windSpeed, windDirection)
+
+def encodeREWSLevelValuesAsText(height, windSpeed, windDirection):
+        return "%0.4f,%s,%s" % (height, windSpeed, windDirection)
+
+def extractCalibrationDirectionValuesFromText(text):
+        
+        items = text.split(",")
+        direction = float(items[0])
+        slope = float(items[1].strip())
+        offset = float(items[2].strip())
+        activeText = items[3].strip() 
+
+        if activeText == "True":
+            active = True
+        elif activeText == "False":
+            active = False
+        else:
+            raise Exception("Unknown active status: %s" % activeText)
+
+        return (direction, slope, offset, active)
+
+def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
+
+        return "%0.4f,%0.4f,%0.4f,%s" % (direction, slope, offset, active)
+
+class WindowStatus:
+        def __nonzero__(self):
+                return True
         def __init__(self, gui):
             self.gui = gui
 
@@ -301,11 +348,32 @@ class ValidateDatasets:
                 
                 self.messageLabel['text'] = message
 
+class VariableEntry:
+
+        def __init__(self, variable, entry):
+                self.variable = variable
+                self.entry = entry
+                self.pickButton = None
+
+        def get(self):
+                return self.variable.get()
+
+        def set(self, value):
+                return self.variable.set(value)
+
+        def configure(self, state):
+                self.entry.configure(state = state)
+                if self.pickButton != None:
+                        self.pickButton.configure(state = state)
+
+        def bindPickButton(self, pickButton):
+                self.pickButton = pickButton
+                
 class ShowHideCommand:
 
         def __init__(self, master):
                 self.controls = []
-                self.show = True
+                self.visible = True
                 self.button = Button(master, command = self.showHide, height=1)
                 self.setButtonText()
                     
@@ -315,23 +383,33 @@ class ShowHideCommand:
                 
         def setButtonText(self):
 
-                if self.show:
+                if self.visible:
                         self.button['text'] = "Hide"
                 else:
                         self.button['text'] = "Show"
                         
         def showHide(self):
 
-                self.show = not self.show
+                self.visible = not self.visible
 
                 self.setButtonText()
 
                 for control in self.controls:
-                        if self.show:
+                        if self.visible:
                                 control.grid()
                         else:
                                 control.grid_remove()
-                
+
+        def hide(self):
+
+                if self.visible:
+                        self.showHide()
+
+        def show(self):
+
+                if not self.visible:
+                        self.showHide()
+                        
 class SetFileSaveAsCommand:
 
         def __init__(self, master, variable):
@@ -339,7 +417,7 @@ class SetFileSaveAsCommand:
                 self.variable = variable
 
         def __call__(self):
-                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml")
+                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=preferences.workSpaceFolder)
                 if len(fileName) > 0: self.variable.set(fileName)
         
 class SetFileOpenCommand:
@@ -351,7 +429,7 @@ class SetFileOpenCommand:
 
         def __call__(self):
 
-                fileName = askopenfilename(parent=self.master,defaultextension=".xml")
+                fileName = SelectFile(parent=self.master,defaultextension=".xml")
 
                 if len(fileName) > 0:
                         if self.basePathVariable != None:
@@ -463,7 +541,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
 
                 self.row += 1
 
-                return variable
+                return VariableEntry(variable, entry)
 
         def addFileSaveAsEntry(self, master, title, validation, value, width = 60, showHideCommand = None):
 
@@ -581,20 +659,12 @@ class CalibrationDirectionDialog(BaseDialog):
 
                 if not self.isNew:
                         
-                        items = self.text.split("\t")
+                        items = extractCalibrationDirectionValuesFromText(self.text)
                         
-                        direction = float(items[0])
-                        slope = float(items[1].strip())
-                        offset = float(items[2].strip())
-
-                        activeText = items[3].strip() 
-
-                        if activeText == "True":
-                            active = True
-                        elif activeText == "False":
-                            active = False
-                        else:
-                            raise Exception("Unknown active status: %s" % activeText)
+                        direction = items[0]
+                        slope = items[1]
+                        offset = items[2]
+                        active = items[3]
 
                 else:
                         direction = 0.0
@@ -623,7 +693,7 @@ class CalibrationDirectionDialog(BaseDialog):
                 else:
                     active = False
                         
-                self.text = "%0.4f\t%0.4f\t%0.4f\t%s" % (float(self.direction.get()), float(self.slope.get().strip()), float(self.offset.get().strip()), active)
+                self.text = encodeCalibrationDirectionValuesAsText(float(self.direction.get()), float(self.slope.get().strip()), float(self.offset.get().strip()), active)
 
                 if self.isNew:
                         self.status.addMessage("Calibration direction created")
@@ -651,30 +721,30 @@ class REWSProfileLevelDialog(BaseDialog):
                         
         def body(self, master):
 
-                self.prepareColumns(master)     
+                self.prepareColumns(master)
 
                 if not self.isNew:
-                        items = self.text.split(",")
-                        height = float(items[0])
-                        windSpeed = items[1].strip()
-                        windDirection = items[2].strip()
+                        items = extractRESLevelValuesFromText(self.text)
+                        height = items[0]
+                        windSpeed = items[1]
+                        windDirection = items[2]
                 else:
                         height = 0.0
                         windSpeed = ""
                         windDirection = ""
-                        
+
                 self.addTitleRow(master, "REWS Level Settings:")
-                
+                # get picker entries for these as well?
                 self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), height)
                 self.windSpeed = self.addEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
                 self.windDirection = self.addEntry(master, "Wind Direction:", ValidateNotBlank(master), windDirection, width = 60)
 
                 #dummy label to indent controls
-                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
+                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
 
         def apply(self):
                         
-                self.text = "%f,%s,%s" % (float(self.height.get()), self.windSpeed.get().strip(), self.windDirection.get().strip())
+                self.text = encodeREWSLevelValuesAsText(float(self.height.get()), self.windSpeed.get().strip(), self.windDirection.get().strip())
 
                 if self.isNew:
                         self.status.addMessage("Rotor level created")
@@ -711,13 +781,21 @@ class BaseConfigurationDialog(BaseDialog):
 
                 self.generalShowHide = ShowHideCommand(master)
 
-                #dummy label to indent controls
-                Label(master, text=" " * 5).grid(row = self.row, sticky=W, column=self.titleColumn)
+                #add spacer labels
+                spacer = " "
+                Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.titleColumn)
+                Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.labelColumn)
+                Label(master, text=spacer * 80).grid(row = self.row, sticky=W, column=self.inputColumn)
+                Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.buttonColumn)
+                Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.secondButtonColumn)
+                Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.messageColumn)
+                Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.showHideColumn)
+                self.row += 1
                 
                 self.addTitleRow(master, "General Settings:", self.generalShowHide)                
 
                 if self.config.isNew:
-                        path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save New Config")
+                        path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save New Config", initialdir=preferences.workSpaceFolder)
                 else:
                         path = self.config.path
                         
@@ -887,10 +965,15 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.startDate = self.addEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
                 self.endDate = self.addEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
                 
-                self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["Calculated", "Specified", "None"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
-                self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSqares", "None"], self.config.calibrationMethod, showHideCommand = self.generalShowHide)
-                self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified", "None"], self.config.densityMode, showHideCommand = self.generalShowHide)
+                self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["Calculated", "Specified"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
+                self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
 
+                self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod, showHideCommand = self.generalShowHide)
+                self.calibrationMethod.trace("w", self.calibrationMethodChange)
+                
+                self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified", "None"], self.config.densityMode, showHideCommand = self.generalShowHide)
+                self.densityMode.trace("w", self.densityMethodChange)
+                
                 rewsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
                 self.rewsDefined = self.addCheckBox(master, "REWS Active", self.config.rewsDefined, showHideCommand = rewsShowHide)
@@ -905,7 +988,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
 
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
-                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%d/%m/%Y %H:%M']), width=5, height=1)
+                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M']), width=5, height=1)
                 pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 measurementShowHide.addControl(pickDateFormatButton)
 
@@ -975,46 +1058,134 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 calibrationShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationShowHide)
+                calibrationShowHide.button.grid(row=self.row, sticky=N+E+W, column=self.showHideColumn)
                 self.calibrationStartDate = self.addEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)
-                self.calibrationStartDate = self.addEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
+                self.calibrationEndDate = self.addEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
                 self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationShowHide)
                 self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationShowHide)
     
-                calibrationSectorsShowHide = ShowHideCommand(master)
-                self.addTitleRow(master, "Calibration Sectors:", showHideCommand = calibrationSectorsShowHide)
+                self.addTitleRow(master, "Calibration Sectors:", showHideCommand = calibrationShowHide)
                 self.calibrationDirectionsScrollBar = Scrollbar(master, orient=VERTICAL)
-                calibrationSectorsShowHide.addControl(self.calibrationDirectionsScrollBar)
+                calibrationShowHide.addControl(self.calibrationDirectionsScrollBar)
                 
                 self.calibrationDirectionsListBox = Listbox(master, yscrollcommand=self.calibrationDirectionsScrollBar.set, selectmode=EXTENDED, height=3)
-                calibrationSectorsShowHide.addControl(self.calibrationDirectionsListBox)
-                self.calibrationDirectionsListBox.insert(END, "Direction\tSlope\tOffset\tActive")
+                calibrationShowHide.addControl(self.calibrationDirectionsListBox)
+                self.calibrationDirectionsListBox.insert(END, "Direction,Slope,Offset,Active")
+                                
+                self.calibrationDirectionsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
+                self.calibrationDirectionsScrollBar.configure(command=self.calibrationDirectionsListBox.yview)
+                self.calibrationDirectionsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
+
+                self.newCalibrationDirectionButton = Button(master, text="New", command = self.NewCalibrationDirection, width=5, height=1)
+                self.newCalibrationDirectionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
+                calibrationShowHide.addControl(self.newCalibrationDirectionButton)
+                
+                self.editCalibrationDirectionButton = Button(master, text="Edit", command = self.EditCalibrationDirection, width=5, height=1)
+                self.editCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
+                calibrationShowHide.addControl(self.editCalibrationDirectionButton)
+                self.calibrationDirectionsListBox.bind("<Double-Button-1>", self.EditCalibrationDirection)
+                
+                self.deleteCalibrationDirectionButton = Button(master, text="Delete", command = self.RemoveCalibrationDirection, width=5, height=1)
+                self.deleteCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+                calibrationShowHide.addControl(self.deleteCalibrationDirectionButton)
+                self.row +=1
 
                 if not self.isNew:
                         for direction in sorted(self.config.calibrationSlopes):
                                 slope = self.config.calibrationSlopes[direction]
                                 offset = self.config.calibrationOffsets[direction]
-                                active = True #todo
-                                text = "%0.4f\t%0.4f\t%0.4f\t%s" % (direction, slope, offset, active)
+                                active = self.config.calibrationActives[direction]
+                                text = encodeCalibrationDirectionValuesAsText(direction, slope, offset, active)
                                 self.calibrationDirectionsListBox.insert(END, text)
                                 
-                self.calibrationDirectionsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.calibrationDirectionsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
-                self.calibrationDirectionsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
+                #set initial visibility
+                self.generalShowHide.show()
+                rewsShowHide.hide()
+                measurementShowHide.hide()
+                shearShowHide.hide()
+                rewsProfileShowHide.hide()
+                calibrationShowHide.hide()
 
-                self.newCalibrationDirectionButton = Button(master, text="New", command = self.NewCalibrationDirection, width=5, height=1)
-                self.newCalibrationDirectionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                calibrationSectorsShowHide.addControl(self.newCalibrationDirectionButton)
-                
-                self.editCalibrationDirectionButton = Button(master, text="Edit", command = self.EditCalibrationDirection, width=5, height=1)
-                self.editCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                calibrationSectorsShowHide.addControl(self.editCalibrationDirectionButton)
-                self.calibrationDirectionsListBox.bind("<Double-Button-1>", self.EditCalibrationDirection)
-                
-                self.deleteCalibrationDirectionButton = Button(master, text="Delete", command = self.RemoveCalibrationDirection, width=5, height=1)
-                self.deleteCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                calibrationSectorsShowHide.addControl(self.deleteCalibrationDirectionButton)
-                self.row +=1
+                self.calibrationMethodChange()
+                self.densityMethodChange()
 
+        def densityMethodChange(self, *args):
+                
+                if self.densityMode.get() == "Specified":
+                        self.temperature.configure(state='disabled')
+                        self.pressure.configure(state='disabled')
+                        self.density.configure(state='normal')
+                elif self.densityMode.get() == "Calculated":
+                        self.temperature.configure(state='normal')
+                        self.pressure.configure(state='normal')
+                        self.density.configure(state='disabled')
+                elif self.densityMode.get() == "None":
+                        self.temperature.configure(state='disabled')
+                        self.pressure.configure(state='disabled')
+                        self.density.configure(state='disabled')
+                else:
+                        raise Exception("Unknown density methods: %s" % self.densityMode.get())
+
+        def hubWindSpeedModeChange(self, *args):
+                
+                self.calibrationMethodChange()
+                
+        def calibrationMethodChange(self, *args):
+
+                if self.hubWindSpeedMode.get() == "Calculated":
+
+                        self.hubWindSpeed.configure(state='disabled')
+                        self.hubTurbulence.configure(state='disabled')
+
+                        self.siteCalibrationNumberOfSectors.configure(state='normal')
+                        self.siteCalibrationCenterOfFirstSector.configure(state='normal')
+                        self.referenceWindSpeed.configure(state='normal')
+                        self.referenceWindSpeedStdDev.configure(state='normal')
+                        self.referenceWindDirection.configure(state='normal')
+                        self.referenceWindDirectionOffset.configure(state='normal')
+                                
+                        if self.calibrationMethod.get() == "LeastSquares":
+                                self.turbineLocationWindSpeed.configure(state='normal')
+                                self.calibrationDirectionsListBox.configure(state='disabled')
+                                self.deleteCalibrationDirectionButton.configure(state='disabled')
+                                self.editCalibrationDirectionButton.configure(state='disabled')
+                                self.newCalibrationDirectionButton.configure(state='disabled')
+                                self.calibrationStartDate.configure(state='normal')
+                                self.calibrationEndDate.configure(state='normal')
+                        elif self.calibrationMethod.get() == "Specified":
+                                self.turbineLocationWindSpeed.configure(state='disabled')
+                                self.calibrationDirectionsListBox.configure(state='normal')
+                                self.deleteCalibrationDirectionButton.configure(state='normal')
+                                self.editCalibrationDirectionButton.configure(state='normal')
+                                self.newCalibrationDirectionButton.configure(state='normal')
+                                self.calibrationStartDate.configure(state='disabled')
+                                self.calibrationEndDate.configure(state='disabled')
+                        else:
+                                raise Exception("Unknown calibration methods: %s" % self.calibrationMethod.get())
+     
+                elif self.hubWindSpeedMode.get() == "Specified":
+
+                        self.hubWindSpeed.configure(state='normal')
+                        self.hubTurbulence.configure(state='normal')
+
+                        self.turbineLocationWindSpeed.configure(state='disabled')                        
+                        self.calibrationDirectionsListBox.configure(state='disabled')
+                        self.deleteCalibrationDirectionButton.configure(state='disabled')
+                        self.editCalibrationDirectionButton.configure(state='disabled')
+                        self.newCalibrationDirectionButton.configure(state='disabled')
+                        self.calibrationStartDate.configure(state='disabled')
+                        self.calibrationEndDate.configure(state='disabled')
+                        self.siteCalibrationNumberOfSectors.configure(state='disabled')
+                        self.siteCalibrationCenterOfFirstSector.configure(state='disabled')
+                        self.referenceWindSpeed.configure(state='disabled')
+                        self.referenceWindSpeedStdDev.configure(state='disabled')
+                        self.referenceWindDirection.configure(state='disabled')
+                        self.referenceWindDirectionOffset.configure(state='disabled')
+
+                else:
+                        raise Exception("Unknown hub wind speed mode: %s" % self.hubWindSpeedMode.get())
+                
+                
         def NewCalibrationDirection(self):
 
             configDialog = CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText)
@@ -1065,8 +1236,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 pickButton = Button(master, text=".", command = ColumnPicker(self, entry), width=5, height=1)
                 pickButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 showHideCommand.addControl(pickButton)
+                entry.bindPickButton(pickButton)
                 return entry
-        
+
         def EditREWSProfileLevel(self):
 
                 items = self.rewsProfileLevelsListBox.curselection()
@@ -1094,7 +1266,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.rewsProfileLevelsListBox.insert(END, text)
                         
                 self.sortLevels()
-                self.validatedREWSProfileLevels.validate()               
+                #self.validatedREWSProfileLevels.validate()               
 
         def removeREWSProfileLevels(self):
                 
@@ -1114,19 +1286,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 for i in range(self.rewsProfileLevelsListBox.size()):
                         text = self.rewsProfileLevelsListBox.get(i)
-                        levels[self.getValues(text)[0]] = text
+                        levels[extractREWSLevelValuesFromText(text)[0]] = text
 
                 self.rewsProfileLevelsListBox.delete(0, END)
 
                 for height in sorted(levels):
                         self.rewsProfileLevelsListBox.insert(END, levels[height])
-
-        def getValues(self, text):
-                items = text.split(",")
-                height = float(items[0])
-                windSpeed = items[1].strip()
-                direction = items[2].strip()
-                return (height, windSpeed, direction)
 
         def getInputTimeSeriesRelativePath(self):
 
@@ -1137,7 +1302,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 relativePath = configuration.RelativePath(self.filePath.get())
                 return relativePath.convertToAbsolutePath(self.inputTimeSeriesPath.get())
-        
+
         def getHeaderRows(self):
 
                 headerRowsText = self.headerRows.get()
@@ -1186,7 +1351,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.windSpeedLevels = {}
 
                 for i in range(self.rewsProfileLevelsListBox.size()):
-                        items = self.getValues(self.rewsProfileLevelsListBox.get(i))
+                        items = self.extractREWSProfileLevelValuesFromText(self.rewsProfileLevelsListBox.get(i))
                         self.config.windSpeedLevels[items[0]] = items[1]
                         self.config.windDirectionLevels[items[0]] = items[2]
 
@@ -1196,9 +1361,32 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         shearHeight = self.shearWindSpeedHeights[i].get()
                         shearColumn = self.shearWindSpeeds[i].get()
                         self.config.shearMeasurements[shearHeight] = shearColumn
-                        
-                        
 
+                self.config.calibrationDirections = {}
+                self.config.calibrationSlopes = {}
+                self.config.calibrationOffsets = {}
+                self.config.calibrationActives = {}
+
+                self.config.calibrationStartDate = self.calibrationStartDate.get()
+                self.config.calibrationEndDate = self.calibrationEndDate.get()
+                self.config.siteCalibrationNumberOfSectors = int(self.siteCalibrationNumberOfSectors.get())
+                self.config.siteCalibrationCenterOfFirstSector = int(self.siteCalibrationCenterOfFirstSector.get()) 
+                
+                #calbirations
+                for i in range(self.calibrationDirectionsListBox.size()):
+
+                        if i > 0:
+                                
+                                direction, slope, offset, active = extractCalibrationDirectionValuesFromText(self.calibrationDirectionsListBox.get(i))
+                                
+                                if not direction in self.config.calibrationDirections:
+                                        self.config.calibrationDirections[direction] = direction
+                                        self.config.calibrationSlopes[direction] = slope
+                                        self.config.calibrationOffsets[direction] = offset
+                                        self.config.calibrationActives[direction] = active
+                                else:
+                                        raise Exception("Duplicate calibration direction: %f" % direction)
+                         
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
@@ -1286,22 +1474,13 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
                 for i in range(self.powerCurveLevelsListBox.size()):
                         text = self.powerCurveLevelsListBox.get(i)
-                        windSpeed, power = self.getValues(text)
+                        windSpeed, power = extractPowerLevelValuesFromText(text)
                         levels[windSpeed] = power
 
                 self.powerCurveLevelsListBox.delete(0, END)
 
                 for windSpeed in sorted(levels):
-                        self.powerCurveLevelsListBox.insert(END, self.formatLevel(windSpeed, levels[windSpeed]))
-
-        def formatLevel(self, windSpeed, power):
-                return "%f,%f" % (windSpeed, power)
-        
-        def getValues(self, text):
-                items = text.split(",")
-                windSpeed = float(items[0])
-                power = float(items[1])
-                return (windSpeed, power)
+                        self.powerCurveLevelsListBox.insert(END, encodePowerLevelValueAsText(windSpeed, levels[windSpeed]))
                         
         def setConfigValues(self):
 
@@ -1415,6 +1594,13 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive, showHideCommand = correctionSettingsShowHide)
                 self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive, showHideCommand = correctionSettingsShowHide)                        
 
+                #hide all initially
+                self.generalShowHide.show()
+                powerCurveShowHide.hide()
+                datasetsShowHide.show()
+                innerRangeShowHide.hide()
+                turbineSettingsShowHide.hide()
+                correctionSettingsShowHide.hide()
 
         def EditPowerCurve(self):
                 
@@ -1451,16 +1637,10 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
 
                                 if datasetConfig.hasFilters:
-                                        self.status.addMessage("GUI currently does not support editing datasets with filters.")
-                                        return
+                                        self.status.addMessage("Warning: GUI currently does not support editing filters.")
 
                                 if datasetConfig.hasExclusions:
-                                        self.status.addMessage("GUI currently does not support editing datasets with exclusions.")
-                                        return
-
-                                if datasetConfig.hasCalibration:
-                                        self.status.addMessage("GUI currently does not support editing datasets with a calibration.")
-                                        return
+                                        self.status.addMessage("Warning: GUI currently does not support editing exclusions.")
                                         
                                 configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
                                 
@@ -1478,18 +1658,18 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                         self.status.addMessage("ERROR creating dataset config: %s" % e)
                         
         def setAnalysisFilePath(self):
-                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml")
+                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=preferences.workSpaceFolder)
                 if len(fileName) > 0: self.analysisFilePath.set(fileName)
                 
         def setSpecifiedPowerCurve(self):
-                fileName = askopenfilename(parent=self.master,defaultextension=".xml")
+                fileName = SelectFile(parent=self.master,defaultextension=".xml")
                 self.setSpecifiedPowerCurveFromPath(fileName)
                 
         def setSpecifiedPowerCurveFromPath(self, fileName):
                 if len(fileName) > 0: self.specifiedPowerCurve.set(fileName)
                 
         def addDataset(self):
-                fileName = askopenfilename(parent=self.master,defaultextension=".xml")
+                fileName = SelectFile(parent=self.master,defaultextension=".xml")
                 if len(fileName) > 0: self.addDatasetFromPath(fileName)
 
         def addDatasetFromPath(self, path, index = None):
@@ -1554,14 +1734,12 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 class UserInterface:
 
         def __init__(self):
-
-                self.preferences = configuration.Preferences()
                 
                 self.analysis = None
                 self.analysisConfiguration = None
                 
                 self.root = Tk()
-                self.root.geometry("700x400")
+                self.root.geometry("800x400")
                 self.root.title("PCWG")
 
                 labelsFrame = Frame(self.root)
@@ -1574,14 +1752,14 @@ class UserInterface:
                 new_button = Button(settingsFrame, text="New", command = self.NewAnalysis)
 
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
-                AEP_button = Button(commandframe,text="AEP",command = self.CalculateAEP)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
                 benchmark_button = Button(commandframe, text="Benchmark", command = self.Benchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
                 about_button = Button(commandframe, text="About", command = self.About)
-
+                set_work_space_button = Button(commandframe, text="Set Work Space", command = self.SetWorkSpace)
+                
                 self.analysisFilePathLabel = Label(labelsFrame, text="Analysis File")
                 self.analysisFilePathTextBox = Entry(settingsFrame)
 
@@ -1596,13 +1774,13 @@ class UserInterface:
                 load_button.pack(side=RIGHT, padx=5, pady=5)
                 
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
-                AEP_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
                 anonym_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
                 benchmark_button.pack(side=LEFT, padx=5, pady=5)
                 clear_console_button.pack(side=LEFT, padx=5, pady=5)
                 about_button.pack(side=LEFT, padx=5, pady=5)
+                set_work_space_button.pack(side=LEFT, padx=5, pady=5)
                 
                 self.analysisFilePathLabel.pack(anchor=NW, padx=5, pady=5)
                 self.analysisFilePathTextBox.pack(anchor=NW,fill=X, expand=1, padx=5, pady=5)
@@ -1615,10 +1793,13 @@ class UserInterface:
                 labelsFrame.pack(side=LEFT)
                 settingsFrame.pack(side=RIGHT,fill=BOTH, expand=1)
 
-                if len(self.preferences.analysisLastOpened) > 0:
-                        self.addMessage("Loading last analysis opened")
-                        self.LoadAnalysisFromPath(self.preferences.analysisLastOpened)
-                        
+                if len(preferences.analysisLastOpened) > 0:
+                        try:
+                           self.addMessage("Loading last analysis opened")
+                           self.LoadAnalysisFromPath(preferences.analysisLastOpened)
+                        except IOError:
+                            self.addMessage("Couldn't load last analysis. File could not be found.")
+
                 self.root.mainloop()        
 
         def Benchmark(self):
@@ -1721,19 +1902,29 @@ class UserInterface:
 
                 conf = configuration.AnalysisConfiguration()
                 configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
-                          
+        
         def LoadAnalysis(self):
 
-                fileName = askopenfilename(parent=self.root)
+                fileName = SelectFile(self.root)
                 if len(fileName) < 1: return
                 
                 self.LoadAnalysisFromPath(fileName)
 
+        def SetWorkSpace(self):
+
+                folder = askdirectory(parent=self.root, initialdir=preferences.workSpaceFolder)
+                if len(folder) < 1: return
+                
+                preferences.workSpaceFolder = folder
+                preferences.save()
+
+                self.addMessage("Workspace set to: %s" % folder)
+                        
         def LoadAnalysisFromPath(self, fileName):
 
                 try:
-                        self.preferences.analysisLastOpened = fileName
-                        self.preferences.save()
+                        preferences.analysisLastOpened = fileName
+                        preferences.save()
                 except ExceptionType as e:
                     self.addMessage("Cannot save preferences: %s" % e)
                     
@@ -1761,7 +1952,7 @@ class UserInterface:
                         return
 
                 try:
-                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report")
+                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
                         self.analysis.report(fileName, version)
                         self.addMessage("Report written to %s" % fileName)
                 except ExceptionType as e:
@@ -1782,7 +1973,7 @@ class UserInterface:
                         return
                 
                 try:
-                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report")
+                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.workSpaceFolder)
                         self.analysis.anonym_report(fileName, version)
                         self.addMessage("Anonymous report written to %s" % fileName)
                         self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
@@ -1797,7 +1988,7 @@ class UserInterface:
                         return
 
                 try:
-                        fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series")
+                        fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
                         self.analysis.export(fileName)
                         self.addMessage("Time series written to %s" % fileName)
                 except ExceptionType as e:
@@ -1817,26 +2008,6 @@ class UserInterface:
                         
                         self.addMessage("ERROR Calculating Analysis: %s" % e)                    
 
-        def CalculateAEP(self):
-            if self.analysis == None:
-                        self.addMessage("ERROR: Analysis not yet calculated")
-                        return
-            else:
-                    try:
-                        fileName = askopenfilename(parent=self.root,defaultextension=".xml",title="Please select a Nominal Wind Speed Distribution XML")
-                        self.addMessage("Attempting AEP Calculation...")
-                        import aep
-                        aepCalc = aep.AEPCalculator(self.analysis.specifiedPowerCurve,self.analysis.allMeasuredPowerCurve,distributionPath=fileName)
-                        ans = aepCalc.calculate_AEP()
-                        self.addMessage( "Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
-                        self.addMessage( "Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
-                        self.addMessage( "AEP: {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
-
-                    except ExceptionType as e:
-                        self.addMessage("ERROR Calculating AEP: %s" % e)
-
-
-                        
         def ClearConsole(self):
                 self.listbox.delete(0, END)
                 self.root.update()
@@ -1845,10 +2016,15 @@ class UserInterface:
                 tkMessageBox.showinfo("PCWG-Tool About", "Version: %s \nVisit http://www.pcwg.org for more info" % version)
 
         def addMessage(self, message):
-                self.listbox.insert(END, message)            
+                self.listbox.insert(END, message)
+                self.listbox.see(END)
                 self.root.update()               
 
+preferences = configuration.Preferences()
+                
 gui = UserInterface()
+
+preferences.save()
 
 print "Done"
 

@@ -26,22 +26,23 @@ class PowerCurve:
         
         self.referenceDensity = referenceDensity
         self.rotorGeometry = rotorGeometry
-
-        self.firstWindSpeed = min(self.powerCurveLevels.index)
-        self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels)
-        self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels)
+        
+        has_pc = len(self.powerCurveLevels.index) != 0
+        self.firstWindSpeed = min(self.powerCurveLevels.index) if has_pc else None
+        self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels) if has_pc else None
+        self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels) if has_pc else None
         
         if self.inputHubWindSpeed is None:
             ws_data = None
         else:
             ws_data = powerCurveLevels[self.inputHubWindSpeed]
-        self.powerFunction = self.createFunction(powerCurveLevels[self.actualPower], ws_data)
+        self.powerFunction = self.createFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
         
-        self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower])
+        self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower]) if has_pc else None
 
-        self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data)
+        self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
 
-        if turbulenceRenormalisation:
+        if (turbulenceRenormalisation and has_pc):
             self.calcZeroTurbulencePowerCurve()
 
     def calcZeroTurbulencePowerCurve(self):
@@ -57,7 +58,11 @@ class PowerCurve:
             return powerCurveLevels.max()
         else:
             return ratedPower
-            
+
+    def getThresholdWindSpeed(self):
+        return float(interpolators.LinearPowerCurveInterpolator(self.powerCurveLevels[self.actualPower].as_matrix(), list(self.powerCurveLevels[self.actualPower].index))(0.85*self.ratedPower))
+
+
     def getTurbulenceLevels(self, powerCurveLevels, turbulenceLevels, fixedTurbulence):
 
         if fixedTurbulence != None:
@@ -83,11 +88,11 @@ class PowerCurve:
         return array
                 
     def createFunction(self, y_data, x_data):
-        
+
         if x_data is None:
             x_data = pd.Series(y_data.index, index = y_data.index)
         x, y = [], []
-        
+
         for i in y_data.index:
             if i in x_data.index:
                 x.append(x_data[i])
@@ -257,6 +262,8 @@ class IntegrationProbabilities:
         self.a = windSpeedStep / math.sqrt(2.0 * math.pi)
                 
     def probabilities(self, windSpeedMean, windSpeedStdDev):
+        if windSpeedStdDev == 0:
+            return np.nan
 
         oneOverStandardDeviation = 1.0 / windSpeedStdDev
         oneOverStandardDeviationSq = oneOverStandardDeviation * oneOverStandardDeviation
