@@ -254,8 +254,18 @@ class Dataset:
 
         if config.calculateHubWindSpeed:
 
+            if dataFrame[config.referenceWindSpeed].count() < 1:
+                raise Exception("Reference wind speed column is empty: cannot apply calibration")
+            
+            if dataFrame[config.referenceWindDirection].count() < 1:
+                raise Exception("Reference wind direction column is empty: cannot apply calibration")
+            
             self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
+
+            if dataFrame[self.hubWindSpeed].count() < 1:
+                raise Exception("Hub wind speed column is empty after application of calibration")
+            
             if (config.hubTurbulence != ''):
                 dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             else:
@@ -357,12 +367,25 @@ class Dataset:
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
-        dataFrame[self.referenceDirectionBin] = dataFrame[self.referenceDirectionBin] - config.siteCalibrationCenterOfFirstSector
-        df = dataFrame.copy()
-
+        #dataFrame[self.referenceDirectionBin] = dataFrame[self.referenceDirectionBin] - config.siteCalibrationCenterOfFirstSector
+        
         if config.calibrationMethod == "Specified":
+
+            print "Applying Specified calibration"
+            print "Direction\tSlope\tOffset\tApplicable Datapoints" 
+
+            for direction in config.calibrationSlopes:
+                if config.calibrationActives[direction]:
+                    mask = (dataFrame[self.referenceDirectionBin] == direction)
+                    dataCount = dataFrame[mask][self.referenceDirectionBin].count()
+                    print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
+                
             return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
+
         else:
+
+            df = dataFrame.copy()
+        
             calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, timeStepInSeconds, dataFrame)
 
             if config.calibrationStartDate != None and config.calibrationEndDate != None:
@@ -372,11 +395,13 @@ class Dataset:
             self.filteredCalibrationDataframe = dataFrame.copy()
 
             dataFrame = dataFrame[calibration.requiredColumns + [self.referenceDirectionBin, config.referenceWindDirection]].dropna()
+            
             if len(dataFrame) < 1:
                 raise Exception("No data are available to carry out calibration.")
 
             siteCalibCalc = self.createSiteCalibrationCalculator(dataFrame,config.referenceWindSpeed, calibration)
             dataFrame = df
+            
             return siteCalibCalc
 
     def getCalibrationMethod(self,calibrationMethod,referenceColumn, turbineLocationColumn, timeStepInSeconds, dataFrame):
@@ -391,6 +416,7 @@ class Dataset:
         return calibration
 
     def createSiteCalibrationCalculator(self,dataFrame, valueColumn, calibration ):
+        
         groups = dataFrame[calibration.requiredColumns].groupby(dataFrame[self.referenceDirectionBin])
 
         slopes = {}
@@ -406,6 +432,7 @@ class Dataset:
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+            
             if valueColumn == self.hubWindSpeedForTurbulence:
                 belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
 
@@ -468,12 +495,22 @@ class Dataset:
                 requiredCols.append(col)
         
         if len(dataFrame[requiredCols].dropna()[requiredCols[0]]) > 0:
+
             return dataFrame[requiredCols]
+
         else:
+            
             print "Number of null columns:"
             print dataFrame[requiredCols].isnull().sum()
-            raise Exception("One of the required columns is empty.\n{0}".format(requiredCols))
 
+            text = "One of the required columns is empty.\n"
+
+            for col in requiredCols:
+                text += "- %s: %d\n" % (col, dataFrame[col].dropna().count())
+                
+            raise Exception(text)
+
+        
     def createDerivedColumn(self,df,cols):
         d = df.copy()
         d['Derived'] = 1
@@ -564,7 +601,8 @@ class Dataset:
         print "Derived\tColumn\tFilterType\tInclusive\tValue"
 
         for componentFilter in filters:
-            componentFilter.printSummary()
+            if componentFilter.active:
+                componentFilter.printSummary()
 
         print ""
 
@@ -575,18 +613,20 @@ class Dataset:
 
         for componentFilter in filters:
 
-            if not componentFilter.applied:
-                try:
-                    if hasattr(componentFilter,"startTime"):
-                        mask = self.applyToDFilter(mask,componentFilter,dataFrame)
-                    elif hasattr(componentFilter, "relationships"):
-                        mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
-                    else:
-                        mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
-                    print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
-                    componentFilter.applied = True
-                except:
-                    componentFilter.applied = False
+            if componentFilter.active:
+				if not componentFilter.applied:
+					try:
+						if hasattr(componentFilter,"startTime"):
+							mask = self.applyToDFilter(mask,componentFilter,dataFrame)
+						elif hasattr(componentFilter, "relationships"):
+							mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
+						else:
+							mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
+						print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
+						componentFilter.applied = True
+					except:
+						componentFilter.applied = False
+						
         print ""
 
         return dataFrame[~mask]
