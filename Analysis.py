@@ -81,6 +81,7 @@ class Analysis:
         self.dataCount = "Data Count"
         self.windDirection = "Wind Direction"
         self.powerCoeff = "Power Coefficient"
+        self.inputHubWindSpeedSource = 'Undefined'
 
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
@@ -121,18 +122,20 @@ class Analysis:
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
         self.powerCurvePadder = PadderFactory().generate(config.powerCurvePaddingMode,self.actualPower, self.inputHubWindSpeed, self.hubTurbulence, self.dataCount)
-
-        powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
+        
+        powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve) if config.specifiedPowerCurve != '' else None)
         self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence", turbulenceRenormalisation = self.turbRenormActive)
-
+        
         if self.densityCorrectionActive:
             if self.hasDensity:
                 self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(powerCurveConfig.powerCurveDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
                 self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.densityCorrectedHubWindSpeed]
+                self.inputHubWindSpeedSource = self.densityCorrectedHubWindSpeed
             else:
                 raise Exception("Density data column not specified.")
         else:
             self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.hubWindSpeed]
+            self.inputHubWindSpeedSource = self.hubWindSpeed
 
         self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)
         self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
@@ -208,7 +211,11 @@ class Analysis:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
             self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution))
-
+        
+        if len(self.sensitivityDataColumns) > 0:
+            self.status.addMessage("Attempting power curve sensitivty analysis...")
+            self.performSensitivityAnalysis() #this method is not yet fully implemented
+        
         self.status.addMessage("Complete")
 
     def applyRemainingFilters(self):
@@ -246,8 +253,8 @@ class Analysis:
                 print "(Re)inserting filtered data "
                 self.dataFrame = self.dataFrame.append(d)
 
-                if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
-                    print [str(filter) for filter in dataSetConf.filters if not filter.applied]
+                if len([filter for filter in dataSetConf.filters if ((not filter.applied) & (filter.active))]) > 0:
+                    print [str(filter) for filter in dataSetConf.filters if ((not filter.applied) & (filter.active))]
                     raise Exception("Filters have not been able to be applied!")
 
             else:
@@ -317,6 +324,7 @@ class Analysis:
                 self.hasShear = data.hasShear
                 self.hasDensity = data.hasDensity
                 self.rewsDefined = data.rewsDefined
+                self.sensitivityDataColumns = data.sensitivityDataColumns
 
             else:
 
@@ -469,6 +477,48 @@ class Analysis:
         else:
             raise Exception("Unrecognised filter mode: %s" % self.filterMode)
 
+    def performSensitivityAnalysis(self):
+        
+        self.powerCurveSensitivityResults = {}
+        mask = self.getFilter()
+        filteredDataFrame = self.dataFrame[mask]
+        
+        for col in self.sensitivityDataColumns:
+            print "\nAttempting to compute sensitivity of power curve to %s..." % col
+            try:
+                self.powerCurveSensitivityResults[col] = self.calculatePowerCurveSensitivity(filteredDataFrame, col)
+                print "Calculation of sensitivity of power curve to %s complete." % col
+            except:
+                print "Could not run sensitivity analysis for %s." % col
+            
+    def calculatePowerCurveSensitivity(self, dataFrame, dataColumn):
+        
+        dataFrame['Energy MWh'] = dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
+        
+        self.sensitivityLabels = {"V Low":"#0000ff", "Low":"#4400bb", "Medium":"#880088", "High":"#bb0044", "V High":"#ff0000"} #categories to split data into using data_column and colour to plot
+        cutOffForCategories = list(np.arange(0.,1.,1./len(self.sensitivityLabels.keys()))) + [1.]
+        
+        minCount = len(self.sensitivityLabels.keys()) * 4 #at least 4 data points for each category for a ws bin to be valid
+        
+        wsBinnedCount = dataFrame[['Wind Speed Bin', dataColumn]].groupby('Wind Speed Bin').count()
+        validWsBins = wsBinnedCount.index[wsBinnedCount[dataColumn] > minCount] #ws bins that have enough data for the sensitivity analysis
+
+        dataFrame['Bin'] = np.nan #pre-allocating
+        
+        for wsBin in dataFrame['Wind Speed Bin'].unique(): #within each wind speed bin, bin again by the categorising by sensCol
+            if wsBin in validWsBins:
+                try:
+                    filt = dataFrame['Wind Speed Bin'] == wsBin
+                    dataFrame.loc[filt,'Bin'] = pd.qcut(dataFrame[dataColumn][filt], cutOffForCategories, labels = self.sensitivityLabels.keys())
+                except:
+                    print "\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin)
+        
+        sensitivityResults = dataFrame[[self.actualPower, 'Energy MWh', 'Wind Speed Bin','Bin']].groupby(['Wind Speed Bin','Bin']).agg({self.actualPower: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len})
+        sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
+        for i in sensitivityResults.index:
+            sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, 'Actual Power'] - self.allMeasuredPowerCurve.powerCurveLevels.loc[i[0], 'Actual Power']
+            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * self.allMeasuredPowerCurve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
+        return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'})
 
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower):
 
@@ -651,6 +701,41 @@ class Analysis:
         self.plotBy(self.hubWindSpeed,path,self.powerCoeff,self.dataFrame)
         self.plotBy('Input Hub Wind Speed',path,self.powerCoeff,self.allMeasuredPowerCurve)
         #self.plotBy(self.windDirection,path,self.inflowAngle)
+        if len(self.powerCurveSensitivityResults.keys()) > 0:
+            for sensCol in self.powerCurveSensitivityResults.keys():
+                self.plotPowerCurveSensitivity(sensCol, path)
+            
+    def plotPowerCurveSensitivity(self, sensCol, path):
+        try:
+            df = self.powerCurveSensitivityResults[sensCol].reset_index()
+            from matplotlib import pyplot as plt
+            plt.ioff()
+            fig = plt.figure(figsize = (12,5))
+            fig.suptitle('Power Curve Sensitivity to %s' % sensCol)
+            ax1 = fig.add_subplot(121)
+            ax1.hold(True)
+            ax2 = fig.add_subplot(122)
+            ax2.hold(True)
+            for label in self.sensitivityLabels.keys():
+                filt = df['Bin'] == label
+                ax1.plot(df['Wind Speed Bin'][filt], df['Actual Power'][filt], label = label, color = self.sensitivityLabels[label])
+                ax2.plot(df['Wind Speed Bin'][filt], df['Energy Delta MWh'][filt], label = label, color = self.sensitivityLabels[label])
+            ax1.set_xlabel('Wind Speed (m/s)')
+            ax1.set_ylabel('Power (kW)')
+            ax2.set_xlabel('Wind Speed (m/s)')
+            ax2.set_ylabel('Energy Difference from Mean (MWh)')
+            box1 = ax1.get_position()
+            box2 = ax2.get_position()
+            ax1.set_position([box1.x0 - 0.05 * box1.width, box1.y0 + box1.height * 0.17,
+                         box1.width * 0.95, box1.height * 0.8])
+            ax2.set_position([box2.x0 + 0.05 * box2.width, box2.y0 + box2.height * 0.17,
+                         box2.width * 1.05, box2.height * 0.8])
+            handles, labels = ax1.get_legend_handles_labels()
+            fig.legend(handles, labels, loc='lower center', ncol = len(self.sensitivityLabels.keys()), fancybox = True, shadow = True)
+            file_out = path + os.sep + 'Power Curve Sensitivity to %s.png' % sensCol
+            fig.savefig(file_out)
+        except:
+            print "Tried to make a plot of power curve sensitivity to %s. Couldn't." % sensCol
 
     def plotBy(self,by,path,variable,df):
         if not isinstance(df,turbine.PowerCurve):
@@ -660,6 +745,7 @@ class Analysis:
             df=df.powerCurveLevels[df.powerCurveLevels['Input Hub Wind Speed'] <= self.allMeasuredPowerCurve.cutOutWindSpeed]
         try:
             from matplotlib import pyplot as plt
+            plt.ioff()
             ax = df.plot(kind=kind,x=by ,y=variable,title=variable+" By " +by,alpha=0.6,legend=None)
             ax.set_xlim([df[by].min()-1,df[by].max()+1])
             ax.set_xlabel(by)
@@ -674,27 +760,34 @@ class Analysis:
     def plotPowerCurve(self,path):
         try:
             from matplotlib import pyplot as plt
-            windSpeedCol = self.densityCorrectedHubWindSpeed
+            plt.ioff()
+            windSpeedCol = self.inputHubWindSpeed
             powerCol = 'Actual Power'
             ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve (corrected to {dens} kg/m^3)".format(dens=self.specifiedPowerCurve.referenceDensity),alpha=0.15,label='Filtered Data')
-            ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+            has_spec_pc = len(self.specifiedPowerCurve.powerCurveLevels.index) != 0  
+            if has_spec_pc:
+                ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
             allMeasured = self.allMeasuredPowerCurve.powerCurveLevels[['Input Hub Wind Speed','Actual Power','Data Count']][self.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index('Input Hub Wind Speed')
             ax = allMeasured['Actual Power'].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
                                   label='Mean Power Curve')
             ax.legend(loc=4)
-            ax.set_xlim([self.specifiedPowerCurve.powerCurveLevels.index.min(), self.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
-            ax.set_xlabel(windSpeedCol)
-            ax.set_ylabel(powerCol)
+            if has_spec_pc:
+                ax.set_xlim([self.specifiedPowerCurve.powerCurveLevels.index.min(), self.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
+            else:
+                ax.set_xlim([min(self.dataFrame[windSpeedCol].min(),allMeasured.index.min()), max(self.dataFrame[windSpeedCol].max(),allMeasured.index.max()+2.0)])
+            ax.set_xlabel(self.inputHubWindSpeedSource + ' (m/s)')
+            ax.set_ylabel(powerCol + ' (kW)')
             file_out = path + "/PowerCurve.png"
             plt.savefig(file_out)
             plt.close()
             return file_out
         except:
-            print "Tried to make a scatter chart. Couldn't."
+            print "Tried to make a power curve scatter chart. Couldn't."
 
     def plotPowerLimits(self,path):
         try:
             from matplotlib import pyplot as plt
+            plt.ioff()
             windSpeedCol = self.densityCorrectedHubWindSpeed
             ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=self.actualPower ,title="Power Values Corrected to {dens} kg/m^3".format(dens=self.specifiedPowerCurve.referenceDensity),alpha=0.5,label='Power Mean')
             ax = self.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Min",alpha=0.2,label='Power Min',color = 'orange')

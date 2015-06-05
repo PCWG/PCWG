@@ -34,7 +34,8 @@ class report:
         self.reportSettings(settingsSheet, analysis)
 
         rowsAfterCurves = []
-        rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve) )
+        if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
+            rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve) )
 
         if analysis.hasActualPower:
 
@@ -145,12 +146,18 @@ class report:
                 row += 1
 
                 for filt in conf.calibrationFilters:
-
-                    sh.write(row, col, filt.column)
-                    sh.write(row, col+1, filt.filterType)
-                    sh.write(row, col+2, filt.inclusive)
-                    sh.write(row, col+3, str(filt))
-                    sh.write(row, col+4, "True") # always true if in list...
+                    if isinstance(filt,TimeOfDayFilter):
+                        sh.write(row, col, "Time Of Day Filter")
+                        sh.write(row, col + 1, str(filt.startTime))
+                        sh.write(row, col + 2, str(filt.endTime))
+                        sh.write(row, col + 3, str(filt.daysOfTheWeek))
+                        sh.write(row, col + 4, str(filt.months))
+                    else:
+                        sh.write(row, col, filt.column)
+                        sh.write(row, col+1, filt.filterType)
+                        sh.write(row, col+2, filt.inclusive)
+                        sh.write(row, col+3, str(filt))
+                        sh.write(row, col+4, "True") # always true if in list...
                     row += 1
 
 

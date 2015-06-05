@@ -26,22 +26,23 @@ class PowerCurve:
         
         self.referenceDensity = referenceDensity
         self.rotorGeometry = rotorGeometry
-
-        self.firstWindSpeed = min(self.powerCurveLevels.index)
-        self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels)
-        self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels)
+        
+        has_pc = len(self.powerCurveLevels.index) != 0
+        self.firstWindSpeed = min(self.powerCurveLevels.index) if has_pc else None
+        self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels) if has_pc else None
+        self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels) if has_pc else None
         
         if self.inputHubWindSpeed is None:
             ws_data = None
         else:
             ws_data = powerCurveLevels[self.inputHubWindSpeed]
-        self.powerFunction = self.createFunction(powerCurveLevels[self.actualPower], ws_data)
+        self.powerFunction = self.createFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
         
-        self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower])
+        self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower]) if has_pc else None
 
-        self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data)
+        self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
 
-        if turbulenceRenormalisation:
+        if (turbulenceRenormalisation and has_pc):
             self.calcZeroTurbulencePowerCurve()
 
     def calcZeroTurbulencePowerCurve(self):
