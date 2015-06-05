@@ -81,6 +81,7 @@ class Analysis:
         self.dataCount = "Data Count"
         self.windDirection = "Wind Direction"
         self.powerCoeff = "Power Coefficient"
+        self.inputHubWindSpeedSource = 'Undefined'
 
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
@@ -124,15 +125,17 @@ class Analysis:
         
         powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve) if config.specifiedPowerCurve != '' else None)
         self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence", turbulenceRenormalisation = self.turbRenormActive)
-
+        
         if self.densityCorrectionActive:
             if self.hasDensity:
                 self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(powerCurveConfig.powerCurveDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
                 self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.densityCorrectedHubWindSpeed]
+                self.inputHubWindSpeedSource = self.densityCorrectedHubWindSpeed
             else:
                 raise Exception("Density data column not specified.")
         else:
             self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.hubWindSpeed]
+            self.inputHubWindSpeedSource = self.hubWindSpeed
 
         self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)
         self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
@@ -250,8 +253,8 @@ class Analysis:
                 print "(Re)inserting filtered data "
                 self.dataFrame = self.dataFrame.append(d)
 
-                if len([filter for filter in dataSetConf.filters if not filter.applied]) > 0:
-                    print [str(filter) for filter in dataSetConf.filters if not filter.applied]
+                if len([filter for filter in dataSetConf.filters if ((not filter.applied) & (filter.active))]) > 0:
+                    print [str(filter) for filter in dataSetConf.filters if ((not filter.applied) & (filter.active))]
                     raise Exception("Filters have not been able to be applied!")
 
             else:
@@ -758,7 +761,7 @@ class Analysis:
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
-            windSpeedCol = self.densityCorrectedHubWindSpeed
+            windSpeedCol = self.inputHubWindSpeed
             powerCol = 'Actual Power'
             ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve (corrected to {dens} kg/m^3)".format(dens=self.specifiedPowerCurve.referenceDensity),alpha=0.15,label='Filtered Data')
             has_spec_pc = len(self.specifiedPowerCurve.powerCurveLevels.index) != 0  
@@ -772,8 +775,8 @@ class Analysis:
                 ax.set_xlim([self.specifiedPowerCurve.powerCurveLevels.index.min(), self.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
             else:
                 ax.set_xlim([min(self.dataFrame[windSpeedCol].min(),allMeasured.index.min()), max(self.dataFrame[windSpeedCol].max(),allMeasured.index.max()+2.0)])
-            ax.set_xlabel(windSpeedCol)
-            ax.set_ylabel(powerCol)
+            ax.set_xlabel(self.inputHubWindSpeedSource + ' (m/s)')
+            ax.set_ylabel(powerCol + ' (kW)')
             file_out = path + "/PowerCurve.png"
             plt.savefig(file_out)
             plt.close()
