@@ -216,6 +216,8 @@ class Dataset:
 
         self.rewsDefined = config.rewsDefined
 
+        self.sensitivityDataColumns = config.sensitivityDataColumns
+
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
 
         if config.inputTimeSeriesPath[-3:] == 'csv':
@@ -487,7 +489,11 @@ class Dataset:
 
         if self.hasActualPower:
             requiredCols.append(self.actualPower)
-
+        
+        for col in self.sensitivityDataColumns:
+            if col not in requiredCols:
+                requiredCols.append(col)
+        
         if len(dataFrame[requiredCols].dropna()[requiredCols[0]]) > 0:
 
             return dataFrame[requiredCols]
