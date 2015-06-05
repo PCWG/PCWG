@@ -463,7 +463,9 @@ class Dataset:
         if self.hasActualPower:
             requiredCols.append(self.actualPower)
         
-        requiredCols += self.sensitivityDataColumns        
+        for col in self.sensitivityDataColumns:
+            if col not in requiredCols:
+                requiredCols.append(col)
         
         if len(dataFrame[requiredCols].dropna()[requiredCols[0]]) > 0:
             return dataFrame[requiredCols]

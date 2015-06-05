@@ -492,28 +492,29 @@ class Analysis:
         
         dataFrame['Energy MWh'] = dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
         
-        #cutOffForCategories = [0, .2, .4, .6, .8, 1] #fraction of data 
-        labels = ["v low","low","medium","high","v high"] #categories to split data into using data_column
-        cutOffForCategories = list(np.arange(0.,1.,1./len(labels))) + [1.]
+        self.sensitivityLabels = {"V Low":"#0000ff", "Low":"#4400bb", "Medium":"#880088", "High":"#bb0044", "V High":"#ff0000"} #categories to split data into using data_column and colour to plot
+        cutOffForCategories = list(np.arange(0.,1.,1./len(self.sensitivityLabels.keys()))) + [1.]
         
-        #colours = ["#0000ff","#4400bb","#880088","#bb0044","#ff0000"] #for plots
-        minCount = len(labels) * 4 #at least 4 data points for each category for a ws bin to be valid
+        minCount = len(self.sensitivityLabels.keys()) * 4 #at least 4 data points for each category for a ws bin to be valid
         
         wsBinnedCount = dataFrame[['Wind Speed Bin', dataColumn]].groupby('Wind Speed Bin').count()
         validWsBins = wsBinnedCount.index[wsBinnedCount[dataColumn] > minCount] #ws bins that have enough data for the sensitivity analysis
 
-        #sensitivityPowerCurve = pd.DataFrame(index = validWsBins, columns = labels) #pre-allocating
         dataFrame['Bin'] = np.nan #pre-allocating
         
-        for wsBin in dataFrame['Wind Speed Bin'].unique():#validWsBins.index: #assign the bin within eacvh wind speed bin
+        for wsBin in dataFrame['Wind Speed Bin'].unique(): #within each wind speed bin, bin again by the categorising by sensCol
             if wsBin in validWsBins:
                 try:
                     filt = dataFrame['Wind Speed Bin'] == wsBin
-                    dataFrame.loc[filt,'Bin'] = pd.qcut(dataFrame[dataColumn][filt], cutOffForCategories, labels = labels)
+                    dataFrame.loc[filt,'Bin'] = pd.qcut(dataFrame[dataColumn][filt], cutOffForCategories, labels = self.sensitivityLabels.keys())
                 except:
                     print "\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin)
         
         sensitivityResults = dataFrame[[self.actualPower, 'Energy MWh', 'Wind Speed Bin','Bin']].groupby(['Wind Speed Bin','Bin']).agg({self.actualPower: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len})
+        sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
+        for i in sensitivityResults.index:
+            sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, 'Actual Power'] - self.allMeasuredPowerCurve.powerCurveLevels.loc[i[0], 'Actual Power']
+            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * self.allMeasuredPowerCurve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
         return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'})
 
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower):
@@ -697,6 +698,41 @@ class Analysis:
         self.plotBy(self.hubWindSpeed,path,self.powerCoeff,self.dataFrame)
         self.plotBy('Input Hub Wind Speed',path,self.powerCoeff,self.allMeasuredPowerCurve)
         #self.plotBy(self.windDirection,path,self.inflowAngle)
+        if len(self.powerCurveSensitivityResults.keys()) > 0:
+            for sensCol in self.powerCurveSensitivityResults.keys():
+                self.plotPowerCurveSensitivity(sensCol, path)
+            
+    def plotPowerCurveSensitivity(self, sensCol, path):
+        try:
+            df = self.powerCurveSensitivityResults[sensCol].reset_index()
+            from matplotlib import pyplot as plt
+            plt.ioff()
+            fig = plt.figure(figsize = (12,5))
+            fig.suptitle('Power Curve Sensitivity to %s' % sensCol)
+            ax1 = fig.add_subplot(121)
+            ax1.hold(True)
+            ax2 = fig.add_subplot(122)
+            ax2.hold(True)
+            for label in self.sensitivityLabels.keys():
+                filt = df['Bin'] == label
+                ax1.plot(df['Wind Speed Bin'][filt], df['Actual Power'][filt], label = label, color = self.sensitivityLabels[label])
+                ax2.plot(df['Wind Speed Bin'][filt], df['Energy Delta MWh'][filt], label = label, color = self.sensitivityLabels[label])
+            ax1.set_xlabel('Wind Speed (m/s)')
+            ax1.set_ylabel('Power (kW)')
+            ax2.set_xlabel('Wind Speed (m/s)')
+            ax2.set_ylabel('Energy Difference from Mean (MWh)')
+            box1 = ax1.get_position()
+            box2 = ax2.get_position()
+            ax1.set_position([box1.x0 - 0.05 * box1.width, box1.y0 + box1.height * 0.17,
+                         box1.width * 0.95, box1.height * 0.8])
+            ax2.set_position([box2.x0 + 0.05 * box2.width, box2.y0 + box2.height * 0.17,
+                         box2.width * 1.05, box2.height * 0.8])
+            handles, labels = ax1.get_legend_handles_labels()
+            fig.legend(handles, labels, loc='lower center', ncol = len(self.sensitivityLabels.keys()), fancybox = True, shadow = True)
+            file_out = path + os.sep + 'Power Curve Sensitivity to %s.png' % sensCol
+            fig.savefig(file_out)
+        except:
+            print "Tried to make a plot of power curve sensitivity to %s. Couldn't." % sensCol
 
     def plotBy(self,by,path,variable,df):
         if not isinstance(df,turbine.PowerCurve):
