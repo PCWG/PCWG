@@ -2006,7 +2006,7 @@ class UserInterface:
 
                 except ExceptionType as e:
                         
-                        self.addMessage("ERROR Calculating Analysis: %s" % e)                    
+                        self.addMessage("ERROR Calculating Analysis: %s" % e)
 
         def ClearConsole(self):
                 self.listbox.delete(0, END)

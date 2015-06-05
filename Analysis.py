@@ -214,7 +214,9 @@ class Analysis:
         
         if len(self.sensitivityDataColumns) > 0:
             self.status.addMessage("Attempting power curve sensitivty analysis...")
-            self.performSensitivityAnalysis() #this method is not yet fully implemented
+            self.performSensitivityAnalysis()
+            
+        self.calculatePowerCurveScatterMetric()
         
         self.status.addMessage("Complete")
 
@@ -587,6 +589,14 @@ class Analysis:
                                     filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).count())
 
         return rewsMatrix
+
+    def calculatePowerCurveScatterMetric(self): #this calculates a metric for the scatter of the all measured PC
+        
+        energyDiffMWh = (self.dataFrame['Actual Power'] - self.dataFrame[self.inputHubWindSpeed].apply(self.allMeasuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.)
+        energyMWh = self.dataFrame['Actual Power'] * (float(self.timeStepInSeconds) / 3600.)
+        self.powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
+        print "AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.)
+        self.status.addMessage("AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.))
 
     def report(self, path,version="unknown"):
 
