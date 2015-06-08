@@ -614,19 +614,19 @@ class Dataset:
         for componentFilter in filters:
 
             if componentFilter.active:
-				if not componentFilter.applied:
-					try:
-						if hasattr(componentFilter,"startTime"):
-							mask = self.applyToDFilter(mask,componentFilter,dataFrame)
-						elif hasattr(componentFilter, "relationships"):
-							mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
-						else:
-							mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
-						print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
-						componentFilter.applied = True
-					except:
-						componentFilter.applied = False
-						
+                if not componentFilter.applied:
+                    try:
+                        if hasattr(componentFilter,"startTime"):
+                            mask = self.applyToDFilter(mask,componentFilter,dataFrame)
+                        elif hasattr(componentFilter, "relationships"):
+                            mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
+                        else:
+                            mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
+                        print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
+                        componentFilter.applied = True
+                    except:
+                        componentFilter.applied = False
+
         print ""
 
         return dataFrame[~mask]
