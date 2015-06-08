@@ -593,9 +593,9 @@ class Analysis:
     def calculatePowerCurveScatterMetric(self): #this calculates a metric for the scatter of the all measured PC
         
         try:
-            energyDiffMWh = (self.dataFrame[self.actualPower] - self.dataFrame[self.inputHubWindSpeed].apply(self.allMeasuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.)
+            energyDiffMWh = np.abs((self.dataFrame[self.actualPower] - self.dataFrame[self.inputHubWindSpeed].apply(self.allMeasuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
-            self.powerCurveScatterMetric = abs(energyDiffMWh.sum() / energyMWh.sum())
+            self.powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
             print "AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.)
             self.status.addMessage("AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.))
         except:
