@@ -294,7 +294,10 @@ class Dataset:
         else:
 
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
-            dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            if (config.hubTurbulence != ''):
+                dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            else:
+                dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
             self.residualWindSpeedMatrix = None
 
         if self.shearCalibration and config.shearCalibrationMethod != "Reference":

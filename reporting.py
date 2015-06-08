@@ -625,7 +625,10 @@ class report:
                 sh.write(row,2, binNo+1, self.no_dp_style)
                 sh.write(row,3, ws, self.two_dp_style)
                 sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.actualPower][ws], self.two_dp_style)
-                sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
+                if analysis.powerCoeff in analysis.allMeasuredPowerCurve.powerCurveLevels.columns:
+                    sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
+                else:
+                    sh.write(row,5, "-", self.no_dp_style)
                 datCount = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws]
                 sh.write(row,6, datCount, self.no_dp_style)
                 sh.write(row,7, "-", self.no_dp_style)

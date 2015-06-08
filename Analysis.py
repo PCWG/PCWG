@@ -592,11 +592,14 @@ class Analysis:
 
     def calculatePowerCurveScatterMetric(self): #this calculates a metric for the scatter of the all measured PC
         
-        energyDiffMWh = (self.dataFrame['Actual Power'] - self.dataFrame[self.inputHubWindSpeed].apply(self.allMeasuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.)
-        energyMWh = self.dataFrame['Actual Power'] * (float(self.timeStepInSeconds) / 3600.)
-        self.powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
-        print "AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.)
-        self.status.addMessage("AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.))
+        try:
+            energyDiffMWh = (self.dataFrame[self.actualPower] - self.dataFrame[self.inputHubWindSpeed].apply(self.allMeasuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.)
+            energyMWh = self.dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
+            self.powerCurveScatterMetric = abs(energyDiffMWh.sum() / energyMWh.sum())
+            print "AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.)
+            self.status.addMessage("AllMeasuredPowerCurve scatter metric is %s%%." % (self.powerCurveScatterMetric * 100.))
+        except:
+            print "Could not calculate power curve scatter metric."
 
     def report(self, path,version="unknown"):
 
@@ -744,6 +747,7 @@ class Analysis:
             fig.legend(handles, labels, loc='lower center', ncol = len(self.sensitivityLabels.keys()), fancybox = True, shadow = True)
             file_out = path + os.sep + 'Power Curve Sensitivity to %s.png' % sensCol
             fig.savefig(file_out)
+            plt.close()
         except:
             print "Tried to make a plot of power curve sensitivity to %s. Couldn't." % sensCol
 
