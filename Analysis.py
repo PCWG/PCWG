@@ -118,6 +118,8 @@ class Analysis:
         turb_bin_width = 0.02
         last_turb_bin = 0.25
 
+        self.powerCurveSensitivityResults = {}
+
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
@@ -478,8 +480,7 @@ class Analysis:
             raise Exception("Unrecognised filter mode: %s" % self.filterMode)
 
     def performSensitivityAnalysis(self):
-        
-        self.powerCurveSensitivityResults = {}
+
         mask = self.getFilter()
         filteredDataFrame = self.dataFrame[mask]
         
