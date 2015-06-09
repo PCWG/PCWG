@@ -220,9 +220,9 @@ class Analysis:
             self.performSensitivityAnalysis()
         
         if self.hasActualPower:
-            self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve)
+            self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
-                self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve)
+                self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.turbulencePower)
         
         self.status.addMessage("Complete")
 
@@ -597,11 +597,11 @@ class Analysis:
 
         return rewsMatrix
 
-    def calculatePowerCurveScatterMetric(self, measuredPowerCurve): #this calculates a metric for the scatter of the all measured PC
+    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn): #this calculates a metric for the scatter of the all measured PC
         
         try:
-            energyDiffMWh = np.abs((self.dataFrame[self.actualPower] - self.dataFrame[self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
-            energyMWh = self.dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
+            energyDiffMWh = np.abs((self.dataFrame[powerColumn] - self.dataFrame[self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
+            energyMWh = self.dataFrame[powerColumn] * (float(self.timeStepInSeconds) / 3600.)
             self.powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
             print "%s scatter metric is %s%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.)
             self.status.addMessage("%s scatter metric is %s%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.))
