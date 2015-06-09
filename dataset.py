@@ -519,8 +519,11 @@ class Dataset:
         return d['Derived']
 
     def applyToDFilter(self,mask,componentFilter,dataFrame,printMsg=True):
+        startTime = (dataFrame.index - datetime.timedelta(seconds=self.timeStepInSeconds))
+        endTime =  dataFrame.index # explicit assumption is that we're using end format data.
         dayMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.isoweekday() in d else False, args=[componentFilter.daysOfTheWeek] )
-        todMask = np.logical_and( dataFrame.index.time > componentFilter.startTime.time(),dataFrame.index.time <= componentFilter.endTime.time() )
+        todMask = np.logical_and( startTime.time >= componentFilter.startTime.time(),
+                                  endTime.time   <= componentFilter.endTime.time() )
         if len(componentFilter.months) > 0:
             monthMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.month in d else False, args=[componentFilter.months] )
             dayMask = dayMask & monthMask
