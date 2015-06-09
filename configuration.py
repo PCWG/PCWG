@@ -1034,7 +1034,7 @@ class DatasetConfiguration(XmlBase):
             self.siteCalibrationCenterOfFirstSector = 0.0
 
         if self.nodeExists(calibrationNode, 'CalibrationFilters'):
-            self.calibrationFilters = self.readFilters(self.getNodes(calibrationNode, 'CalibrationFilter'))
+            self.calibrationFilters = self.readFilters([n for n in self.getNode(calibrationNode,"CalibrationFilters").childNodes if not n.nodeType == n.TEXT_NODE])
         else:
             self.calibrationFilters = []
 
