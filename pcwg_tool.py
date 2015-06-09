@@ -11,7 +11,7 @@ import pandas as pd
 
 version = "0.5.5"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
 
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
@@ -1956,7 +1956,7 @@ class UserInterface:
                         self.analysis.report(fileName, version)
                         self.addMessage("Report written to %s" % fileName)
                 except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Report: %s" % e)            
+                        self.addMessage("ERROR Exporting Report: %s" % e)
 
         def ExportAnonymousReport(self):
 
@@ -2006,7 +2006,7 @@ class UserInterface:
 
                 except ExceptionType as e:
                         
-                        self.addMessage("ERROR Calculating Analysis: %s" % e)                    
+                        self.addMessage("ERROR Calculating Analysis: %s" % e)
 
         def ClearConsole(self):
                 self.listbox.delete(0, END)

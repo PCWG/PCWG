@@ -10,12 +10,13 @@ import pandas as pd
 class PowerCurve:
 
     def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, powerCol, turbCol, wsCol = None,
-                 countCol = None, fixedTurbulence = None, ratedPower = None,turbulenceRenormalisation=True):
+                 countCol = None, fixedTurbulence = None, ratedPower = None,turbulenceRenormalisation=True, name = 'Undefined'):
         
         self.actualPower = powerCol #strings defining column names
         self.inputHubWindSpeed = wsCol
         self.hubTurbulence = turbCol
         self.dataCount = countCol
+        self.name = name
 
         if (self.hubTurbulence is not None) and fixedTurbulence != None:
             raise Exception("Cannot specify both turbulence levels and fixed turbulence")
