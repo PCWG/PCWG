@@ -22,7 +22,7 @@ class report:
     
         book = xlwt.Workbook()
 
-        plotsDir = join(dirname(path),"PPAnalysisPlots")
+        plotsDir = analysis.config.path.replace(".xml","_PPAnalysisPlots")
         analysis.png_plots(plotsDir)
 
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)

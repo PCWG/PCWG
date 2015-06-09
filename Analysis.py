@@ -707,7 +707,7 @@ class Analysis:
 
     def export(self, path):
         op_path = os.path.dirname(path)
-        plotsDir = os.path.join(op_path,"PPAnalysisPlots")
+        plotsDir = self.config.path.replace(".xml","_PPAnalysisPlots")
         self.png_plots(plotsDir)
         self.dataFrame.to_csv(path, sep = '\t')
 
