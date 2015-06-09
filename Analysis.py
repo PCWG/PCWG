@@ -713,7 +713,9 @@ class Analysis:
 
     def png_plots(self,path):
         chckMake(path)
-        self.plotPowerCurve(path)
+        self.plotPowerCurve(path, self.inputHubWindSpeed, self.actualPower)
+        if self.turbRenormActive:
+            self.plotPowerCurve(path, self.inputHubWindSpeed, self.turbulencePower)
         if self.hasAllPowers:
             self.plotPowerLimits(path)
         self.plotBy(self.windDirection,path,self.shearExponent,self.dataFrame)
@@ -779,12 +781,12 @@ class Analysis:
         except:
             print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
 
-    def plotPowerCurve(self,path):
+    def plotPowerCurve(self,path, windSpeedCol, powerCol):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
-            windSpeedCol = self.inputHubWindSpeed
-            powerCol = 'Actual Power'
+            #windSpeedCol = self.inputHubWindSpeed
+            #powerCol = 'Actual Power'
             ax = self.dataFrame.plot(kind='scatter',x=windSpeedCol,y=powerCol,title="Power Curve (corrected to {dens} kg/m^3)".format(dens=self.specifiedPowerCurve.referenceDensity),alpha=0.15,label='Filtered Data')
             has_spec_pc = len(self.specifiedPowerCurve.powerCurveLevels.index) != 0  
             if has_spec_pc:
@@ -799,7 +801,7 @@ class Analysis:
                 ax.set_xlim([min(self.dataFrame[windSpeedCol].min(),allMeasured.index.min()), max(self.dataFrame[windSpeedCol].max(),allMeasured.index.max()+2.0)])
             ax.set_xlabel(self.inputHubWindSpeedSource + ' (m/s)')
             ax.set_ylabel(powerCol + ' (kW)')
-            file_out = path + "/PowerCurve.png"
+            file_out = path + "/PowerCurve - " + powerCol + " vs " + windSpeedCol + ".png"
             plt.savefig(file_out)
             plt.close()
             return file_out
