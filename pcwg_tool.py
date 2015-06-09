@@ -11,7 +11,7 @@ import pandas as pd
 
 version = "0.5.5"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
 
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:

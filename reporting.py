@@ -54,7 +54,10 @@ class report:
                 rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve) )
 
             rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 20, 'All', analysis.allMeasuredPowerCurve) )
-
+            
+            if analysis.turbRenormActive:
+                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve) )
+            
             rowAfterCurves = max(rowsAfterCurves) + 5
             sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
             specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
@@ -470,12 +473,13 @@ class report:
 
         rowOrders = { 'Data Count':4,
                      'Actual Power':2,   'Hub Turbulence':3,        'Input Hub Wind Speed':1,
-                     'Specified Power':2,'Specified Turbulence':3,  'Specified Wind Speed':1}
+                     'Specified Power':2,'Specified Turbulence':3,  'Specified Wind Speed':1,
+                     'Turbulence Power':2}
 
         styles = { 'Data Count':self.no_dp_style, 'Input Hub Wind Speed':self.two_dp_style,
                    'Actual Power': self.no_dp_style,  'Hub Turbulence':self.percent_no_dp_style,
                    'Specified Power':self.no_dp_style,'Specified Turbulence':self.percent_no_dp_style,
-                   'Specified Wind Speed':self.two_dp_style}
+                   'Specified Wind Speed':self.two_dp_style,'Turbulence Power':self.no_dp_style}
 
         for colname in powerCurveLevels.columns:
             if colname in styles.keys():
@@ -651,6 +655,13 @@ class report:
         if not ans:
              sh.write(row,8, analysis.aepCalc.AEP)
              sh.write(row,9, analysis.aepCalcLCB.AEP)
+        if analysis.turbRenormActive:
+            row += 5
+            sh.write(row,3, "Turbulence Corrected Measured (LCB) Pct of Warranted Annual Energy Yield (%)", self.bold_style)
+            sh.write(row,4, "Turbulence Corrected Extrapolated Pct of Warranted Annual Energy Yield (%)", self.bold_style)
+            sh.write(row+1,3, analysis.turbCorrectedAepCalc.AEP*100, self.two_dp_style)
+            sh.write(row+1,4, analysis.turbCorrectedAepCalcLCB.AEP*100, self.two_dp_style)
+
 
     def printPowerCurves(self):
 

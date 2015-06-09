@@ -213,7 +213,8 @@ class Dataset:
         self.hasDirection = config.referenceWindDirection not in (None,'')
         self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
-
+        self.turbRenormActive = analysisConfig.turbRenormActive
+        self.turbulencePower = 'Turbulence Power'
         self.rewsDefined = config.rewsDefined
 
         self.sensitivityDataColumns = config.sensitivityDataColumns
