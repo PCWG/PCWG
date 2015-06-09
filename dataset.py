@@ -370,13 +370,12 @@ class Dataset:
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
-        #dataFrame[self.referenceDirectionBin] = dataFrame[self.referenceDirectionBin] - config.siteCalibrationCenterOfFirstSector
+        dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
         
         if config.calibrationMethod == "Specified":
 
             print "Applying Specified calibration"
             print "Direction\tSlope\tOffset\tApplicable Datapoints" 
-
             for direction in config.calibrationSlopes:
                 if config.calibrationActives[direction]:
                     mask = (dataFrame[self.referenceDirectionBin] == direction)

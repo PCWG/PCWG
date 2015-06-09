@@ -1956,7 +1956,7 @@ class UserInterface:
                         self.analysis.report(fileName, version)
                         self.addMessage("Report written to %s" % fileName)
                 except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Report: %s" % e)            
+                        self.addMessage("ERROR Exporting Report: %s" % e)
 
         def ExportAnonymousReport(self):
 
