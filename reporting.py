@@ -656,7 +656,7 @@ class report:
              sh.write(row,8, analysis.aepCalc.AEP)
              sh.write(row,9, analysis.aepCalcLCB.AEP)
         if analysis.turbRenormActive:
-            row += 5
+            row += 2
             sh.write(row,3, "Turbulence Corrected Measured (LCB) Pct of Warranted Annual Energy Yield (%)", self.bold_style)
             sh.write(row,4, "Turbulence Corrected Extrapolated Pct of Warranted Annual Energy Yield (%)", self.bold_style)
             sh.write(row+1,3, analysis.turbCorrectedAepCalc.AEP*100, self.two_dp_style)
