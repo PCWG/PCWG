@@ -35,7 +35,7 @@ class report:
 
         rowsAfterCurves = []
         if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
-            rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve) )
+            rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
 
         if analysis.hasActualPower:
 
@@ -46,17 +46,17 @@ class report:
             #        self.reportPowerDeviations(book, "ResidualWindSpeed-%s" % name, residualMatrix, gradient)
 
             if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
-                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve) )
+                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve, analysis) )
                 
-            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve) )
+            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, analysis) )
             
             if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
-                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve) )
+                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve, analysis) )
 
-            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 20, 'All', analysis.allMeasuredPowerCurve) )
+            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 20, 'All', analysis.allMeasuredPowerCurve, analysis) )
             
             if analysis.turbRenormActive:
-                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve) )
+                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, analysis) )
             
             rowAfterCurves = max(rowsAfterCurves) + 5
             sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
@@ -448,7 +448,7 @@ class report:
                 row += 1
         return row
 
-    def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
+    def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve, analysis):
 
         powerCurveLevels = powerCurve.powerCurveLevels.copy()
 
@@ -456,7 +456,7 @@ class report:
             powerCurveLevels['Specified Wind Speed'] = powerCurveLevels.index
             windSpeedCol = 'Specified Wind Speed'
         else:
-            windSpeedCol = 'Input Hub Wind Speed'
+            windSpeedCol = analysis.inputHubWindSpeed #'Input Hub Wind Speed'
 
         powerCurveLevels = powerCurveLevels.sort(windSpeedCol)
 
@@ -472,14 +472,14 @@ class report:
         sh.col(columnOffset + 5).width = 256 * 5
 
         rowOrders = { 'Data Count':4,
-                     'Actual Power':2,   'Hub Turbulence':3,        'Input Hub Wind Speed':1,
+                     analysis.actualPower:2,   analysis.hubTurbulence:3, analysis.inputHubWindSpeed:1,
                      'Specified Power':2,'Specified Turbulence':3,  'Specified Wind Speed':1,
-                     'Turbulence Power':2}
+                     analysis.measuredTurbulencePower:2}
 
-        styles = { 'Data Count':self.no_dp_style, 'Input Hub Wind Speed':self.two_dp_style,
-                   'Actual Power': self.no_dp_style,  'Hub Turbulence':self.percent_no_dp_style,
+        styles = { 'Data Count':self.no_dp_style, analysis.inputHubWindSpeed:self.two_dp_style,
+                   analysis.actualPower: self.no_dp_style,  analysis.hubTurbulence:self.percent_no_dp_style,
                    'Specified Power':self.no_dp_style,'Specified Turbulence':self.percent_no_dp_style,
-                   'Specified Wind Speed':self.two_dp_style,'Turbulence Power':self.no_dp_style}
+                   'Specified Wind Speed':self.two_dp_style,analysis.measuredTurbulencePower:self.no_dp_style}
 
         for colname in powerCurveLevels.columns:
             if colname in styles.keys():
@@ -519,7 +519,7 @@ class report:
         for i in range(self.windSpeedBins.numberOfBins):
             sh.col(i + 2).width = 256 * 5
 
-        for j in range(self.turbulenceBins.numberOfBins):        
+        for j in range(self.turbulenceBins.numberOfBins):
 
             turbulence = self.turbulenceBins.binCenterByIndex(j)
             row = self.turbulenceBins.numberOfBins - j
