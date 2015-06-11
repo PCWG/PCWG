@@ -659,8 +659,8 @@ class report:
             row += 2
             sh.write(row,3, "Turbulence Corrected Measured (LCB) Pct of Warranted Annual Energy Yield (%)", self.bold_style)
             sh.write(row,4, "Turbulence Corrected Extrapolated Pct of Warranted Annual Energy Yield (%)", self.bold_style)
-            sh.write(row+1,3, analysis.turbCorrectedAepCalc.AEP*100, self.two_dp_style)
-            sh.write(row+1,4, analysis.turbCorrectedAepCalcLCB.AEP*100, self.two_dp_style)
+            sh.write(row+1,3, analysis.turbCorrectedAepCalcLCB.AEP*100, self.two_dp_style)
+            sh.write(row+1,4, analysis.turbCorrectedAepCalc.AEP*100, self.two_dp_style)
 
 
     def printPowerCurves(self):
