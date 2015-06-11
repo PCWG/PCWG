@@ -22,7 +22,7 @@ class report:
     
         book = xlwt.Workbook()
 
-        plotsDir = join(dirname(path),"PPAnalysisPlots")
+        plotsDir = analysis.config.path.replace(".xml","_PPAnalysisPlots")
         analysis.png_plots(plotsDir)
 
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
@@ -71,6 +71,9 @@ class report:
                 self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
 
             self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
+
+            if analysis.turbRenormActive:
+                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, specifiedLevels)
 
             self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
             #self.reportPowerDeviations(book, "HubPowerDeviationsInnerShear", analysis.hubPowerDeviationsInnerShear, gradient)
