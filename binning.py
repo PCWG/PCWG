@@ -7,8 +7,8 @@ class Bins:
         self.centerOfFirstBin = centerOfFirstBin
         self.binWidth = binWidth
         self.centerOfLastBin = centerOfLastBin
-        start_of_first_bin = self.centerOfFirstBin - self.binWidth
-        end_of_last_bin = self.centerOfLastBin + self.binWidth
+        start_of_first_bin = self.centerOfFirstBin - (0.5*self.binWidth)
+        end_of_last_bin = self.centerOfLastBin + (0.5*self.binWidth)
         self.numberOfBins = (end_of_last_bin - start_of_first_bin)/self.binWidth
         #if not float(self.numberOfBins).is_integer():
         if not abs(float(self.numberOfBins)) % int(1) < 1e-12: #tolerance on int check
