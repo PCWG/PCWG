@@ -213,7 +213,8 @@ class Dataset:
         self.hasDirection = config.referenceWindDirection not in (None,'')
         self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
-
+        self.turbRenormActive = analysisConfig.turbRenormActive
+        self.turbulencePower = 'Turbulence Power'
         self.rewsDefined = config.rewsDefined
 
         self.sensitivityDataColumns = config.sensitivityDataColumns
@@ -294,7 +295,10 @@ class Dataset:
         else:
 
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
-            dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            if (config.hubTurbulence != ''):
+                dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            else:
+                dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
             self.residualWindSpeedMatrix = None
 
         if self.shearCalibration and config.shearCalibrationMethod != "Reference":
@@ -367,13 +371,12 @@ class Dataset:
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
-        #dataFrame[self.referenceDirectionBin] = dataFrame[self.referenceDirectionBin] - config.siteCalibrationCenterOfFirstSector
+        dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
         
         if config.calibrationMethod == "Specified":
 
             print "Applying Specified calibration"
             print "Direction\tSlope\tOffset\tApplicable Datapoints" 
-
             for direction in config.calibrationSlopes:
                 if config.calibrationActives[direction]:
                     mask = (dataFrame[self.referenceDirectionBin] == direction)
