@@ -213,8 +213,11 @@ class Dataset:
         self.hasDirection = config.referenceWindDirection not in (None,'')
         self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
-
+        self.turbRenormActive = analysisConfig.turbRenormActive
+        self.turbulencePower = 'Turbulence Power'
         self.rewsDefined = config.rewsDefined
+
+        self.sensitivityDataColumns = config.sensitivityDataColumns
 
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
 
@@ -292,7 +295,10 @@ class Dataset:
         else:
 
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
-            dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            if (config.hubTurbulence != ''):
+                dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+            else:
+                dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
             self.residualWindSpeedMatrix = None
 
         if self.shearCalibration and config.shearCalibrationMethod != "Reference":
@@ -365,13 +371,12 @@ class Dataset:
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
-        #dataFrame[self.referenceDirectionBin] = dataFrame[self.referenceDirectionBin] - config.siteCalibrationCenterOfFirstSector
+        dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
         
         if config.calibrationMethod == "Specified":
 
             print "Applying Specified calibration"
             print "Direction\tSlope\tOffset\tApplicable Datapoints" 
-
             for direction in config.calibrationSlopes:
                 if config.calibrationActives[direction]:
                     mask = (dataFrame[self.referenceDirectionBin] == direction)
@@ -487,7 +492,11 @@ class Dataset:
 
         if self.hasActualPower:
             requiredCols.append(self.actualPower)
-
+        
+        for col in self.sensitivityDataColumns:
+            if col not in requiredCols:
+                requiredCols.append(col)
+        
         if len(dataFrame[requiredCols].dropna()[requiredCols[0]]) > 0:
 
             return dataFrame[requiredCols]
@@ -513,8 +522,11 @@ class Dataset:
         return d['Derived']
 
     def applyToDFilter(self,mask,componentFilter,dataFrame,printMsg=True):
+        startTime = (dataFrame.index - datetime.timedelta(seconds=self.timeStepInSeconds))
+        endTime =  dataFrame.index # explicit assumption is that we're using end format data.
         dayMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.isoweekday() in d else False, args=[componentFilter.daysOfTheWeek] )
-        todMask = np.logical_and( dataFrame.index.time > componentFilter.startTime.time(),dataFrame.index.time <= componentFilter.endTime.time() )
+        todMask = np.logical_and( startTime.time >= componentFilter.startTime.time(),
+                                  endTime.time   <= componentFilter.endTime.time() )
         if len(componentFilter.months) > 0:
             monthMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.month in d else False, args=[componentFilter.months] )
             dayMask = dayMask & monthMask
@@ -608,19 +620,19 @@ class Dataset:
         for componentFilter in filters:
 
             if componentFilter.active:
-				if not componentFilter.applied:
-					try:
-						if hasattr(componentFilter,"startTime"):
-							mask = self.applyToDFilter(mask,componentFilter,dataFrame)
-						elif hasattr(componentFilter, "relationships"):
-							mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
-						else:
-							mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
-						print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
-						componentFilter.applied = True
-					except:
-						componentFilter.applied = False
-						
+                if not componentFilter.applied:
+                    try:
+                        if hasattr(componentFilter,"startTime"):
+                            mask = self.applyToDFilter(mask,componentFilter,dataFrame)
+                        elif hasattr(componentFilter, "relationships"):
+                            mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
+                        else:
+                            mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
+                        print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
+                        componentFilter.applied = True
+                    except:
+                        componentFilter.applied = False
+
         print ""
 
         return dataFrame[~mask]
