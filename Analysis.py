@@ -503,7 +503,8 @@ class Analysis:
         
         dataFrame['Energy MWh'] = dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
         
-        self.sensitivityLabels = {"V Low":"#0000ff", "Low":"#4400bb", "Medium":"#880088", "High":"#bb0044", "V High":"#ff0000"} #categories to split data into using data_column and colour to plot
+        from collections import OrderedDict
+        self.sensitivityLabels = OrderedDict([("V Low","#0000ff"), ("Low","#4400bb"), ("Medium","#880088"), ("High","#bb0044"), ("V High","#ff0000")]) #categories to split data into using data_column and colour to plot
         cutOffForCategories = list(np.arange(0.,1.,1./len(self.sensitivityLabels.keys()))) + [1.]
         
         minCount = len(self.sensitivityLabels.keys()) * 4 #at least 4 data points for each category for a ws bin to be valid
