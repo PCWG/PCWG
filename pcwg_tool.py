@@ -1212,9 +1212,24 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.referenceWindDirection.configure(state='disabled')
                         self.referenceWindDirectionOffset.configure(state='disabled')
 
+                elif self.hubWindSpeedMode.get() == "None":
+                        self.hubWindSpeed.configure(state='disabled')
+                        self.hubTurbulence.configure(state='disabled')
+                        self.turbineLocationWindSpeed.configure(state='disabled')
+                        self.calibrationDirectionsListBox.configure(state='disabled')
+                        self.deleteCalibrationDirectionButton.configure(state='disabled')
+                        self.editCalibrationDirectionButton.configure(state='disabled')
+                        self.newCalibrationDirectionButton.configure(state='disabled')
+                        self.calibrationStartDate.configure(state='disabled')
+                        self.calibrationEndDate.configure(state='disabled')
+                        self.siteCalibrationNumberOfSectors.configure(state='disabled')
+                        self.siteCalibrationCenterOfFirstSector.configure(state='disabled')
+                        self.referenceWindSpeed.configure(state='disabled')
+                        self.referenceWindSpeedStdDev.configure(state='disabled')
+                        self.referenceWindDirection.configure(state='disabled')
+                        self.referenceWindDirectionOffset.configure(state='disabled')
                 else:
                         raise Exception("Unknown hub wind speed mode: %s" % self.hubWindSpeedMode.get())
-                
                 
         def NewCalibrationDirection(self):
 
