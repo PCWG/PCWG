@@ -1045,7 +1045,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
                         self.shearWindSpeeds.append( self.addPickerEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
-                        self.shearWindSpeedHeights.append(self.addPickerEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
+                        self.shearWindSpeedHeights.append(self.addEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
 
                 rewsProfileShowHide = ShowHideCommand(master)
                 label = Label(master, text="REWS Profile Levels:")
