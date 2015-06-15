@@ -91,6 +91,9 @@ class ValidateBase:
 
                 self.executeValidation("", "", "")
 
+        def link(self, control):
+            self.control = control
+
         def setMessage(self, message):
 
                 if self.messageLabel != None:  
@@ -202,6 +205,30 @@ class ValidatePositiveFloat(ValidateBase):
 
         def mask(self, text, value):
                 return (text in '0123456789.-')
+
+class ValidateSpecifiedPowerDeviationMatrix(ValidateBase):
+
+        def __init__(self, master, activeVariable):
+            
+            self.activeVariable = activeVariable
+            self.activeVariable.trace("w", self.refreshValidation)
+
+            ValidateBase.__init__(self, master)
+
+        def refreshValidation(self, *args):
+
+            #todo work out what goes here
+            self.control.tk.call(self.control._w, 'validate')
+
+        def validate(self, value):
+
+                active = bool(self.activeVariable.get())
+                message = "Value not specified"
+
+                if active:
+                    return ValidationResult(len(value) > 0, message)
+                else:
+                    return ValidationResult(True, "")
 
 class ValidateSpecifiedPowerCurve(ValidateBase):
 
@@ -538,6 +565,8 @@ class BaseDialog(tkSimpleDialog.Dialog):
                         showHideCommand.addControl(entry)
                         if validation != None:
                                 showHideCommand.addControl(validation.messageLabel)
+
+                validation.link(entry)
 
                 self.row += 1
 
@@ -1592,7 +1621,10 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.addTitleRow(master, "Correction Settings:", correctionSettingsShowHide)
                 self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive, showHideCommand = correctionSettingsShowHide)
                 self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive, showHideCommand = correctionSettingsShowHide)
-                self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive, showHideCommand = correctionSettingsShowHide)                        
+                self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive, showHideCommand = correctionSettingsShowHide)  
+                self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive, showHideCommand = correctionSettingsShowHide)               
+
+                self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specifiedPowerDeviationMatrix, self.filePath, showHideCommand = correctionSettingsShowHide)
 
                 #hide all initially
                 self.generalShowHide.show()
@@ -1664,7 +1696,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
         def setSpecifiedPowerCurve(self):
                 fileName = SelectFile(parent=self.master,defaultextension=".xml")
                 self.setSpecifiedPowerCurveFromPath(fileName)
-                
+
         def setSpecifiedPowerCurveFromPath(self, fileName):
                 if len(fileName) > 0: self.specifiedPowerCurve.set(fileName)
                 
@@ -1724,6 +1756,9 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
                 self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
                 self.config.rewsActive = bool(self.rewsCorrectionActive.get())
+
+                self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix.get())
+                self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
 
                 self.config.datasets = []
 

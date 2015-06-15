@@ -2,6 +2,7 @@ import xml.dom.minidom
 import dateutil
 import os
 import pandas as pd
+import numpy as np
 
 class XmlBase:
 
@@ -263,6 +264,8 @@ class AnalysisConfiguration(XmlBase):
             self.readREWS(configurationNode)
             self.readTurbRenorm(configurationNode)
 
+            self.readPowerDeviationMatrix(configurationNode)
+
         else:
 
             self.isNew = True
@@ -291,6 +294,9 @@ class AnalysisConfiguration(XmlBase):
             self.rewsActive = False
             self.turbRenormActive = False
             self.densityCorrectionActive = False
+
+            self.specifiedPowerDeviationMatrix = ""
+            self.powerDeviationMatrixActive = False
 
     def setDefaultInnerRangeTurbulence(self):
         self.innerRangeLowerTurbulence = 0.08
@@ -354,6 +360,10 @@ class AnalysisConfiguration(XmlBase):
         rewsNode = self.addNode(doc, root, "RotorEquivalentWindSpeed")
         self.addBoolNode(doc, rewsNode, "Active", self.rewsActive)
 
+        powerDeviationMatrixNode = self.addNode(doc, root, "PowerDeviationMatrix")
+        self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specifiedPowerDeviationMatrix)
+        self.addBoolNode(doc, powerDeviationMatrixNode, "Active", self.powerDeviationMatrixActive)
+
         self.saveDocument(doc, self.path)
 
     def readDatasets(self, configurationNode):
@@ -389,6 +399,16 @@ class AnalysisConfiguration(XmlBase):
         self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
 
         self.specifiedPowerCurve = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve','')
+        
+    def readPowerDeviationMatrix(self, configurationNode):
+
+        if self.nodeExists(configurationNode, 'PowerDeviationMatrix'):
+            powerDeviationMatrixNode = self.getNode(configurationNode, 'PowerDeviationMatrix')
+            self.powerDeviationMatrixActive = self.getNodeBool(powerDeviationMatrixNode, 'Active')
+            self.specifiedPowerDeviationMatrix = self.getNodeValue(powerDeviationMatrixNode, 'SpecifiedPowerDeviationMatrix')
+        else:
+            self.powerDeviationMatrixActive = False      
+            self.specifiedPowerDeviationMatrix = ""
 
     def readREWS(self, configurationNode):
 
@@ -1046,5 +1066,104 @@ class DatasetConfiguration(XmlBase):
             direction = self.getNodeFloat(node, 'Direction')
             self.calibrationActives[direction] = self.getNodeBool(node, 'Active')
             self.calibrationSlopes[direction] = self.getNodeFloat(node, 'Slope')
-            self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset')
+            self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset') 
+    
+class PowerDeviationMatrixConfiguration(XmlBase):
+
+    def __init__(self, path = None):
+
+        if path != None:
+
+            self.isNew = False
+            doc = self.readDoc(path)
+
+            self.path = path
+
+            matrixNode = self.getNode(doc, 'PowerDeviationMatrix')
+
+            self.name = self.getNodeValue(matrixNode, 'Name')
+            
+            dimensionsNode = self.getNode(matrixNode, 'Dimensions')
+
+            self.dimensions = []
+
+            for node in self.getNodes(dimensionsNode, 'Dimension'):
+                
+                parameter = self.getNodeValue(node, 'Parameter')
+                centerOfFirstBin = self.getNodeFloat(node, 'CenterOfFirstBin')
+                binWidth = self.getNodeFloat(node, 'BinWidth')
+
+                self.dimensions.append(PowerDeviationMatrixDimension(parameter, centerOfFirstBin, binWidth))
+
+            cellsNode = self.getNode(doc, 'Cells')
+
+            self.cells = {}
+            
+            for cellNode in self.getNodes(cellsNode, 'Cell'):
+
+                cellDimensionsNode = self.getNode(cellNode, 'CellDimensions')
+
+                cellDimensions = {}
+
+                for cellDimensionNode in self.getNodes(cellDimensionsNode, 'CellDimension'):
+                    parameter = self.getNodeValue(cellDimensionNode, 'Parameter')
+                    center = self.getNodeFloat(cellDimensionNode, 'BinCenter')
+                    cellDimensions[parameter] = center
+
+                value = self.getNodeFloat(cellNode, 'Value')
+
+                cellKeyList = []
+
+                for i in range(len(self.dimensions)):
+                    parameter = self.dimensions[i].parameter
+                    binCenter = cellDimensions[parameter]
+                    cellKeyList.append(binCenter)
+
+                key = tuple(cellKeyList)
+
+                self.cells[key] = value
+            
+        else:
+
+            self.isNew = True
+            self.name = ""
+            self.dimensions = []
+            self.cells = {}
+
+
+    def save(self):
+
+        self.isNew = False
+        
+        doc = self.createDocument()             
+        root = self.addRootNode(doc, "PowerDeviationMatrix", "http://www.pcwg.org")      
+
+        self.addTextNode(doc, root, "Name", self.name)
+   
+    def __getitem__(self, parameters):
+
+        keyList = []
+
+        for dimension in self.dimensions:
+            
+            value = parameters[dimension.parameter]
+            
+            binValue = round((value - dimension.centerOfFirstBin) / dimension.binWidth, 0) * dimension.binWidth + dimension.centerOfFirstBin
+
+            keyList.append(binValue)
+        
+        key = tuple(keyList)
+
+        if key in self.cells:
+            return self.cells[key]
+        else:
+            return np.nan
+
+class PowerDeviationMatrixDimension:
+
+    def __init__(self, parameter, centerOfFirstBin, binWidth):
+        self.parameter = parameter
+        self.centerOfFirstBin = centerOfFirstBin
+        self.binWidth = binWidth
+
 
