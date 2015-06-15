@@ -566,7 +566,8 @@ class BaseDialog(tkSimpleDialog.Dialog):
                         if validation != None:
                                 showHideCommand.addControl(validation.messageLabel)
 
-                validation.link(entry)
+                if validation != None:
+                    validation.link(entry)
 
                 self.row += 1
 
