@@ -330,7 +330,12 @@ class Analysis:
 
         for i in range(len(config.datasets)):
 
-            datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
+
+            if not isinstance(config.datasets[i],configuration.DatasetConfiguration):
+                datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
+            else:
+                datasetConfig = config.datasets[i]
+
             data = dataset.Dataset(datasetConfig, rotorGeometry, config)
 
             if hasattr(data,"calibrationCalculator"):

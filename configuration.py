@@ -86,7 +86,7 @@ class XmlBase:
 
     def addTextNode(self, doc, parentNode, nodeName, value):
         node = self.addNode(doc, parentNode, nodeName)
-        node.appendChild(doc.createTextNode(value))
+        node.appendChild(doc.createTextNode(value.strip()))
 
     def addIntNode(self, doc, parentNode, nodeName, value):
         self.addTextNode(doc, parentNode, nodeName, "%d" % value)
