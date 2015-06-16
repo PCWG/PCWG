@@ -377,10 +377,21 @@ class ValidateDatasets:
 
 class VariableEntry:
 
-        def __init__(self, variable, entry):
+        def __init__(self, variable, entry, tip):
                 self.variable = variable
                 self.entry = entry
                 self.pickButton = None
+                self.tip = tip
+
+        def clearTip(self):
+            self.setTip("")
+
+        def setTipNotRequired(self):
+            self.setTip("Not Required")
+
+        def setTip(self, text):
+            if self.tip != None:
+                self.tip['text'] = text
 
         def get(self):
                 return self.variable.get()
@@ -476,8 +487,9 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 self.inputColumn = 2
                 self.buttonColumn = 3
                 self.secondButtonColumn = 4
-                self.messageColumn = 5
-                self.showHideColumn = 6
+                self.tipColumn = 5
+                self.messageColumn = 6
+                self.showHideColumn = 7
                 
                 self.validations = []
 
@@ -492,6 +504,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 master.columnconfigure(self.inputColumn, pad=10, weight = 1)
                 master.columnconfigure(self.buttonColumn, pad=10, weight = 0)
                 master.columnconfigure(self.secondButtonColumn, pad=10, weight = 0)
+                master.columnconfigure(self.tipColumn, pad=10, weight = 0)
                 master.columnconfigure(self.messageColumn, pad=10, weight = 0)
 
         def addOption(self, master, title, options, value, showHideCommand = None):
@@ -548,6 +561,9 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 label = Label(master, text=title)
                 label.grid(row = self.row, sticky=W, column=self.labelColumn)
 
+                tipLabel = Label(master, text="")
+                tipLabel.grid(row = self.row, sticky=W, column=self.tipColumn)
+
                 if validation != None:
                         validation.messageLabel.grid(row = self.row, sticky=W, column=self.messageColumn)
                         validation.title = title
@@ -563,6 +579,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 if showHideCommand != None:
                         showHideCommand.addControl(label)
                         showHideCommand.addControl(entry)
+                        showHideCommand.addControl(tipLabel)
                         if validation != None:
                                 showHideCommand.addControl(validation.messageLabel)
 
@@ -571,7 +588,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
 
                 self.row += 1
 
-                return VariableEntry(variable, entry)
+                return VariableEntry(variable, entry, tipLabel)
 
         def addFileSaveAsEntry(self, master, title, validation, value, width = 60, showHideCommand = None):
 
@@ -995,7 +1012,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.startDate = self.addEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
                 self.endDate = self.addEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
                 
-                self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["Calculated", "Specified"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
+                self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["None", "Calculated", "Specified"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
                 self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
 
                 self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod, showHideCommand = self.generalShowHide)
@@ -1089,7 +1106,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 calibrationShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationShowHide)
                 calibrationShowHide.button.grid(row=self.row, sticky=N+E+W, column=self.showHideColumn)
-                self.calibrationStartDate = self.addEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)
+
+                self.calibrationStartDate = self.addEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)                
                 self.calibrationEndDate = self.addEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
                 self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationShowHide)
                 self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationShowHide)
@@ -1142,17 +1160,17 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         def densityMethodChange(self, *args):
                 
                 if self.densityMode.get() == "Specified":
-                        self.temperature.configure(state='disabled')
-                        self.pressure.configure(state='disabled')
-                        self.density.configure(state='normal')
+                        self.temperature.setTipNotRequired()
+                        self.pressure.setTipNotRequired()
+                        self.density.clearTip()
                 elif self.densityMode.get() == "Calculated":
-                        self.temperature.configure(state='normal')
-                        self.pressure.configure(state='normal')
-                        self.density.configure(state='disabled')
+                        self.temperature.clearTip()
+                        self.pressure.clearTip()
+                        self.density.setTipNotRequired()
                 elif self.densityMode.get() == "None":
-                        self.temperature.configure(state='disabled')
-                        self.pressure.configure(state='disabled')
-                        self.density.configure(state='disabled')
+                        self.temperature.setTipNotRequired()
+                        self.pressure.setTipNotRequired()
+                        self.density.setTipNotRequired()
                 else:
                         raise Exception("Unknown density methods: %s" % self.densityMode.get())
 
@@ -1164,70 +1182,73 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 if self.hubWindSpeedMode.get() == "Calculated":
 
-                        self.hubWindSpeed.configure(state='disabled')
-                        self.hubTurbulence.configure(state='disabled')
+                        self.hubWindSpeed.setTipNotRequired()
+                        self.hubTurbulence.setTipNotRequired()
 
-                        self.siteCalibrationNumberOfSectors.configure(state='normal')
-                        self.siteCalibrationCenterOfFirstSector.configure(state='normal')
-                        self.referenceWindSpeed.configure(state='normal')
-                        self.referenceWindSpeedStdDev.configure(state='normal')
-                        self.referenceWindDirection.configure(state='normal')
-                        self.referenceWindDirectionOffset.configure(state='normal')
+                        self.siteCalibrationNumberOfSectors.clearTip()
+                        self.siteCalibrationCenterOfFirstSector.clearTip()
+                        self.referenceWindSpeed.clearTip()
+                        self.referenceWindSpeedStdDev.clearTip()
+                        self.referenceWindDirection.clearTip()
+                        self.referenceWindDirectionOffset.clearTip()
                                 
                         if self.calibrationMethod.get() == "LeastSquares":
-                                self.turbineLocationWindSpeed.configure(state='normal')
-                                self.calibrationDirectionsListBox.configure(state='disabled')
-                                self.deleteCalibrationDirectionButton.configure(state='disabled')
-                                self.editCalibrationDirectionButton.configure(state='disabled')
-                                self.newCalibrationDirectionButton.configure(state='disabled')
-                                self.calibrationStartDate.configure(state='normal')
-                                self.calibrationEndDate.configure(state='normal')
+                                self.turbineLocationWindSpeed.clearTip()
+                                #self.calibrationDirectionsListBox.setTipNotRequired()
+                                #self.deleteCalibrationDirectionButton.setTipNotRequired()
+                                #self.editCalibrationDirectionButton.setTipNotRequired()
+                                #self.newCalibrationDirectionButton.setTipNotRequired()
+                                self.calibrationStartDate.clearTip()
+                                self.calibrationEndDate.clearTip()
                         elif self.calibrationMethod.get() == "Specified":
-                                self.turbineLocationWindSpeed.configure(state='disabled')
-                                self.calibrationDirectionsListBox.configure(state='normal')
-                                self.deleteCalibrationDirectionButton.configure(state='normal')
-                                self.editCalibrationDirectionButton.configure(state='normal')
-                                self.newCalibrationDirectionButton.configure(state='normal')
-                                self.calibrationStartDate.configure(state='disabled')
-                                self.calibrationEndDate.configure(state='disabled')
+                                self.turbineLocationWindSpeed.setTipNotRequired()
+                                #self.calibrationDirectionsListBox.clearTip()
+                                #self.deleteCalibrationDirectionButton.clearTip()
+                                #self.editCalibrationDirectionButton.clearTip()
+                                #self.newCalibrationDirectionButton.clearTip()
+                                self.calibrationStartDate.setTipNotRequired()
+                                self.calibrationEndDate.setTipNotRequired()
                         else:
                                 raise Exception("Unknown calibration methods: %s" % self.calibrationMethod.get())
      
                 elif self.hubWindSpeedMode.get() == "Specified":
 
-                        self.hubWindSpeed.configure(state='normal')
-                        self.hubTurbulence.configure(state='normal')
+                        self.hubWindSpeed.clearTip()
+                        self.hubTurbulence.clearTip()
 
-                        self.turbineLocationWindSpeed.configure(state='disabled')                        
-                        self.calibrationDirectionsListBox.configure(state='disabled')
-                        self.deleteCalibrationDirectionButton.configure(state='disabled')
-                        self.editCalibrationDirectionButton.configure(state='disabled')
-                        self.newCalibrationDirectionButton.configure(state='disabled')
-                        self.calibrationStartDate.configure(state='disabled')
-                        self.calibrationEndDate.configure(state='disabled')
-                        self.siteCalibrationNumberOfSectors.configure(state='disabled')
-                        self.siteCalibrationCenterOfFirstSector.configure(state='disabled')
-                        self.referenceWindSpeed.configure(state='disabled')
-                        self.referenceWindSpeedStdDev.configure(state='disabled')
-                        self.referenceWindDirection.configure(state='disabled')
-                        self.referenceWindDirectionOffset.configure(state='disabled')
+                        self.turbineLocationWindSpeed.setTipNotRequired()                    
+                        #self.calibrationDirectionsListBox.setTipNotRequired()
+                        #self.deleteCalibrationDirectionButton.setTipNotRequired()
+                        #self.editCalibrationDirectionButton.setTipNotRequired()
+                        #self.newCalibrationDirectionButton.setTipNotRequired()
+                        self.calibrationStartDate.setTipNotRequired()
+                        self.calibrationEndDate.setTipNotRequired()
+                        self.siteCalibrationNumberOfSectors.setTipNotRequired()
+                        self.siteCalibrationCenterOfFirstSector.setTipNotRequired()
+                        self.referenceWindSpeed.setTipNotRequired()
+                        self.referenceWindSpeedStdDev.setTipNotRequired()
+                        self.referenceWindDirection.setTipNotRequired()
+                        self.referenceWindDirectionOffset.setTipNotRequired()
 
                 elif self.hubWindSpeedMode.get() == "None":
-                        self.hubWindSpeed.configure(state='disabled')
-                        self.hubTurbulence.configure(state='disabled')
-                        self.turbineLocationWindSpeed.configure(state='disabled')
-                        self.calibrationDirectionsListBox.configure(state='disabled')
-                        self.deleteCalibrationDirectionButton.configure(state='disabled')
-                        self.editCalibrationDirectionButton.configure(state='disabled')
-                        self.newCalibrationDirectionButton.configure(state='disabled')
-                        self.calibrationStartDate.configure(state='disabled')
-                        self.calibrationEndDate.configure(state='disabled')
-                        self.siteCalibrationNumberOfSectors.configure(state='disabled')
-                        self.siteCalibrationCenterOfFirstSector.configure(state='disabled')
-                        self.referenceWindSpeed.configure(state='disabled')
-                        self.referenceWindSpeedStdDev.configure(state='disabled')
-                        self.referenceWindDirection.configure(state='disabled')
-                        self.referenceWindDirectionOffset.configure(state='disabled')
+                        
+                        self.hubWindSpeed.setTipNotRequired()
+                        self.hubTurbulence.setTipNotRequired()
+
+                        self.turbineLocationWindSpeed.setTipNotRequired()
+                        #self.calibrationDirectionsListBox.setTipNotRequired()
+                        #self.deleteCalibrationDirectionButton.setTipNotRequired()
+                        #self.editCalibrationDirectionButton.setTipNotRequired()
+                        #self.newCalibrationDirectionButton.setTipNotRequired()
+                        self.calibrationStartDate.setTipNotRequired()
+                        self.calibrationEndDate.setTipNotRequired()
+                        self.siteCalibrationNumberOfSectors.setTipNotRequired()
+                        self.siteCalibrationCenterOfFirstSector.setTipNotRequired()
+                        self.referenceWindSpeed.setTipNotRequired()
+                        self.referenceWindSpeedStdDev.setTipNotRequired()
+                        self.referenceWindDirection.setTipNotRequired()
+                        self.referenceWindDirectionOffset.setTipNotRequired()
+
                 else:
                         raise Exception("Unknown hub wind speed mode: %s" % self.hubWindSpeedMode.get())
                 
