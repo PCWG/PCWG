@@ -26,7 +26,13 @@ class XmlBase:
             return False
 
     def getValue(self, node):
-        return node.firstChild.data
+        
+        firstChild = node.firstChild
+
+        if firstChild != None:
+            return node.firstChild.data
+        else:
+            return ""
 
     def getNodeDate(self, node, query):
         return dateutil.parser.parse(self.getNodeValue(node, query))

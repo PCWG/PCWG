@@ -347,6 +347,7 @@ class ValidateDatasets:
                 self.listbox = listbox
                 self.messageLabel = Label(master, text="", fg="red")
                 self.validate()
+                self.title = "Datasets Validation"
 
         def validate(self):
                 
