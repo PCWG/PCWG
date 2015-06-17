@@ -61,6 +61,25 @@ class TurbulencePowerCalculator:
     def power(self, row):
         return self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn])
 
+class PowerDeviationMatrixPowerCalculator:
+
+    def __init__(self, powerCurve, powerDeviationMatrix, windSpeedColumn, parameterColumns):
+
+        self.powerDeviationMatrix = powerDeviationMatrix
+        self.windSpeedColumn = windSpeedColumn
+        self.parameterColumns = parameterColumns
+
+    def power(self, row):
+
+        parameters = {}
+
+        for dimension in self.powerDeviationMatrix.dimensions:
+            column = self.parameterColumns[dimension.parameter]
+            value = row[column]
+            parameters[dimension.parameter] = value
+
+        return self.powerDeviationMatrix[parameters]
+
 class Analysis:
 
     def __init__(self, config, status = NullStatus()):
@@ -73,6 +92,7 @@ class Analysis:
         self.basePower = "Simulated Reference TI Power"
         self.hubPower = "Hub Power"
         self.rewsPower = "REWS Power"
+        self.powerDeviationMatrixPower = "Power Deviation Matrix Power"
         self.turbulencePower = "Simulated TI Corrected Power"
         self.combinedPower = "Combined Power"
         self.windSpeedBin = "Wind Speed Bin"
@@ -98,6 +118,12 @@ class Analysis:
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
         self.turbRenormActive = config.turbRenormActive
+        self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
+
+        if self.powerDeviationMatrixActive:
+            self.status.addMessage("Loading power deviation matrix...")
+            self.specifiedPowerDeviationMatrix = configuration.PowerDeviationMatrixConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerDeviationMatrix))
+
         self.powerCurveMinimumCount = config.powerCurveMinimumCount
         self.powerCurvePaddingMode = config.powerCurvePaddingMode
         self.ratedPower = config.ratedPower
@@ -182,8 +208,13 @@ class Analysis:
                 self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected')
 
         if config.turbRenormActive and config.rewsActive:
-            self.status.addMessage("Calculating Combined Correction...")
+            self.status.addMessage("Calculating Combined (REWS + Turbulence) Correction...")
             self.calculationCombined()
+
+        if config.powerDeviationMatrixActive:
+            self.status.addMessage("Calculating Power Deviation Matrix Correction...")
+            self.calculatePowerDeviationMatrixCorrection()
+            self.status.addMessage("Power Deviation Matrix Correction Complete.")
 
         if self.hasActualPower:
 
@@ -206,6 +237,9 @@ class Analysis:
             if config.turbRenormActive and config.rewsActive:
                 self.combPowerDeviations = self.calculatePowerDeviationMatrix(self.combinedPower, allFilterMode)
                 if self.hasShear: self.combPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.combinedPower, innerShearFilterMode)
+
+            if config.powerDeviationMatrixActive:
+                self.powerDeviationMatrixPowerDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPowerPower, allFilterMode)
 
             self.status.addMessage("Power Curve Deviation Matrices Complete.")
 
@@ -296,7 +330,12 @@ class Analysis:
 
         for i in range(len(config.datasets)):
 
-            datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
+
+            if not isinstance(config.datasets[i],configuration.DatasetConfiguration):
+                datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
+            else:
+                datasetConfig = config.datasets[i]
+
             data = dataset.Dataset(datasetConfig, rotorGeometry, config)
 
             if hasattr(data,"calibrationCalculator"):
@@ -705,6 +744,29 @@ class Analysis:
         self.combinedYieldCount = self.dataFrame[self.getFilter()][self.combinedPower].count()
         self.combinedDelta = self.combinedYield / self.baseYield - 1.0
         self.status.addMessage("Comb Delta: %f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
+
+    def calculatePowerDeviationMatrixCorrection(self):
+
+        parameterColumns = {}
+
+        windSpeed = self.inputHubWindSpeed
+
+        for dimension in self.specifiedPowerDeviationMatrix.dimensions:
+            if dimension.parameter.lower() == "turbulence":
+                parameterColumns[dimension.parameter] = self.hubTurbulence
+            elif dimension.parameter.lower() == "windspeed":
+                #todo consider introducing an 'inputWindSpeed' Column
+                parameterColumns[dimension.parameter] = windSpeed
+            elif dimension.parameter.lower() == "shearExponent":
+                parameterColumns[dimension.parameter] = self.shearExponent
+            else:
+                raise Exception("Unkown parameter %s" % dimension.parameter)
+
+        self.dataFrame[self.powerDeviationMatrixPower] = self.dataFrame.apply(PowerDeviationMatrixPowerCalculator(self.powerCurve, self.specifiedPowerDeviationMatrix, windSpeed, parameterColumns).power, axis=1)
+        self.powerDeviationMatrixYield = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].sum() * self.timeStampHours
+        self.powerDeviationMatrixYieldCount = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].count()
+        self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
+        self.status.addMessage("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
 
     def export(self, path):
         op_path = os.path.dirname(path)
