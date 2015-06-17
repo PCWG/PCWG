@@ -205,7 +205,7 @@ class ValidatePositiveFloat(ValidateBase):
 
 class ValidateSpecifiedPowerCurve(ValidateBase):
 
-        def validate(self, value):
+       def validate(self, value):
 
                 message = "Value not specified"
 
@@ -575,9 +575,11 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 for validation in self.validations:
                         
                         if not validation.valid:
-                                message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                                if not isinstance(validation,ValidateDatasets):
+                                        message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                                else:
+                                         message += "Datasets error. \r"
                                 valid = False
-
                 if not valid:
 
                         tkMessageBox.showwarning(
