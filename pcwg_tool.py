@@ -578,7 +578,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
                                 if not isinstance(validation,ValidateDatasets):
                                         message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
                                 else:
-                                         message += "Datasets error. \r"
+                                        message += "Datasets error. \r"
                                 valid = False
                 if not valid:
 
@@ -726,7 +726,7 @@ class REWSProfileLevelDialog(BaseDialog):
                 self.prepareColumns(master)
 
                 if not self.isNew:
-                        items = extractRESLevelValuesFromText(self.text)
+                        items = extractREWSLevelValuesFromText(self.text)
                         height = items[0]
                         windSpeed = items[1]
                         windDirection = items[2]
