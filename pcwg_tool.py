@@ -232,7 +232,7 @@ class ValidateSpecifiedPowerDeviationMatrix(ValidateBase):
 
 class ValidateSpecifiedPowerCurve(ValidateBase):
 
-        def validate(self, value):
+       def validate(self, value):
 
                 message = "Value not specified"
 
@@ -623,9 +623,11 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 for validation in self.validations:
                         
                         if not validation.valid:
-                                message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                                if not isinstance(validation,ValidateDatasets):
+                                        message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                                else:
+                                        message += "Datasets error. \r"
                                 valid = False
-
                 if not valid:
 
                         tkMessageBox.showwarning(
@@ -772,7 +774,7 @@ class REWSProfileLevelDialog(BaseDialog):
                 self.prepareColumns(master)
 
                 if not self.isNew:
-                        items = extractRESLevelValuesFromText(self.text)
+                        items = extractREWSLevelValuesFromText(self.text)
                         height = items[0]
                         windSpeed = items[1]
                         windDirection = items[2]
@@ -929,9 +931,10 @@ class ColumnPicker:
                 inputTimeSeriesPath = self.parentDialog.getInputTimeSeriesAbsolutePath()
                 headerRows = self.parentDialog.getHeaderRows()
                                 
-                if self.parentDialog.availableColumnsFile != inputTimeSeriesPath:
+                if self.parentDialog.availableColumnsFile != inputTimeSeriesPath or self.parentDialog.columnsFileHeaderRows != headerRows:
 
                         self.parentDialog.availableColumns = []
+                        self.parentDialog.columnsFileHeaderRows = headerRows
                         self.parentDialog.availableColumnsFile = inputTimeSeriesPath
 
                         try:
@@ -1003,8 +1006,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         def addFormElements(self, master):
 
                 self.availableColumnsFile = None
+                self.columnsFileHeaderRows = None
                 self.availableColumns = []
-        
+
                 self.shearWindSpeedHeights = []
                 self.shearWindSpeeds = []
 
@@ -1019,7 +1023,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod, showHideCommand = self.generalShowHide)
                 self.calibrationMethod.trace("w", self.calibrationMethodChange)
                 
-                self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified", "None"], self.config.densityMode, showHideCommand = self.generalShowHide)
+                self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified"], self.config.densityMode, showHideCommand = self.generalShowHide)
                 self.densityMode.trace("w", self.densityMethodChange)
                 
                 rewsShowHide = ShowHideCommand(master)
