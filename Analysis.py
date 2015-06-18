@@ -794,6 +794,8 @@ class Analysis:
             has_spec_pc = len(self.specifiedPowerCurve.powerCurveLevels.index) != 0
             if has_spec_pc:
                 ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+            if self.specifiedPowerCurve != self.powerCurve:
+                ax = self.powerCurve.powerCurveLevels.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.powerCurve.name)
             meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
             ax = meanPowerCurve[powerCol].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
                                   label='Mean Power Curve')
@@ -859,7 +861,7 @@ class Analysis:
             ax = self.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power SD",alpha=0.2,label='Power SD',color = 'purple')
             ax = self.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
             ax.set_xlim([self.specifiedPowerCurve.powerCurveLevels.index.min(), self.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
-            ax.legend(loc=4)
+            ax.legend(loc=4, scatterpoints = 1)
             ax.set_xlabel(windSpeedCol)
             ax.set_ylabel("Power [kW]")
             file_out = path + "/PowerValues.png"

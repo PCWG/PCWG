@@ -7,9 +7,9 @@ from scipy.interpolate import interp1d
 import rebin
 
 def run(analysis,fileName, measuredPowerCurve):
-    aepCalc = AEPCalculator(analysis.specifiedPowerCurve,measuredPowerCurve,distributionPath=fileName)
+    aepCalc = AEPCalculator(analysis.powerCurve,measuredPowerCurve,distributionPath=fileName)
     ans = aepCalc.calculate_AEP()
-    aepCalcLCB = AEPCalculatorLCB(analysis.specifiedPowerCurve,measuredPowerCurve,distributionPath=fileName)
+    aepCalcLCB = AEPCalculatorLCB(analysis.powerCurve,measuredPowerCurve,distributionPath=fileName)
     ansLCB = aepCalcLCB.calculate_AEP()
     if analysis.status:
         analysis.status.addMessage("Calculating AEP using %s power curve:" % measuredPowerCurve.name)
