@@ -669,11 +669,13 @@ class Analysis:
 
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
 
-        self.dataFrame[normalisedWSBin] = np.nan
-        mask = self.dataFrame[self.inputHubWindSpeed] < self.observedRatedWindSpeed
-        self.dataFrame.loc[mask,normalisedWSBin] = ((self.dataFrame[mask][self.inputHubWindSpeed] - self.powerCurve.cutInWindSpeed) / (self.observedRatedWindSpeed - self.powerCurve.cutInWindSpeed))
-        self.dataFrame.loc[~mask,normalisedWSBin] = 1 + ((self.dataFrame[~mask][self.inputHubWindSpeed] - self.observedRatedWindSpeed) / (self.powerCurve.cutOutWindSpeed - self.observedRatedWindSpeed  ) )
-        self.dataFrame[normalisedWSBin] = self.dataFrame[normalisedWSBin].map(self.normalisedWindSpeedBins.binCenter)
+        #commented oput solution dependent on discussion around anonymous wind speeds
+        #self.dataFrame[normalisedWSBin] = np.nan
+        #mask = self.dataFrame[self.inputHubWindSpeed] < self.observedRatedWindSpeed
+        #self.dataFrame.loc[mask,normalisedWSBin] = ((self.dataFrame[mask][self.inputHubWindSpeed] - self.powerCurve.cutInWindSpeed) / (self.observedRatedWindSpeed - self.powerCurve.cutInWindSpeed))
+        #self.dataFrame.loc[~mask,normalisedWSBin] = 1 + ((self.dataFrame[~mask][self.inputHubWindSpeed] - self.observedRatedWindSpeed) / (self.powerCurve.cutOutWindSpeed - self.observedRatedWindSpeed  ) )
+        #self.dataFrame[normalisedWSBin] = self.dataFrame[normalisedWSBin].map(self.normalisedWindSpeedBins.binCenter)
+        self.dataFrame[normalisedWSBin] = (self.dataFrame[self.inputHubWindSpeed] / self.observedRatedWindSpeed).map(self.normalisedWindSpeedBins.binCenter)
 
         self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
                                                                                ,windBin = normalisedWSBin
