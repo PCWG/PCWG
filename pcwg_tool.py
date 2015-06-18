@@ -9,9 +9,9 @@ import os
 import os.path
 import pandas as pd
 
-version = "0.5.5"
+version = "0.5.6 (Release Candidate 1)"
 ExceptionType = Exception
-ExceptionType = None #comment this line before release
+#ExceptionType = None #comment this line before release
 
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
