@@ -932,21 +932,21 @@ class ColumnPicker:
                 headerRows = self.parentDialog.getHeaderRows()
                                 
                 if self.parentDialog.availableColumnsFile != inputTimeSeriesPath or self.parentDialog.columnsFileHeaderRows != headerRows:
-
                         self.parentDialog.availableColumns = []
+                        try:
+                                dataFrame = pd.read_csv(inputTimeSeriesPath, sep = '\t', skiprows = headerRows)
+                                for col in dataFrame:
+                                        self.parentDialog.availableColumns.append(col)
+                        except ExceptionType as e:
+                                tkMessageBox.showwarning(
+                                "Column header error",
+                                "It was not possible to read column headers using the provided inputs.\rPlease check and amend 'Input Time Series Path' and/or 'Header Rows'.\r"
+                                )
+                                self.status.addMessage("ERROR reading columns from %s: %s" % (inputTimeSeriesPath, e))
+
                         self.parentDialog.columnsFileHeaderRows = headerRows
                         self.parentDialog.availableColumnsFile = inputTimeSeriesPath
 
-                        try:
-                                
-                                dataFrame = pd.read_csv(inputTimeSeriesPath, sep = '\t', skiprows = headerRows)
-        
-                                for col in dataFrame:
-                                        self.parentDialog.availableColumns.append(col)
-
-                        except ExceptionType as e:
-                                self.status.addMessage("ERROR reading columns from %s: %s" % (inputTimeSeriesPath, e))
-                        
                 try:                                
                         dialog = ColumnPickerDialog(self.parentDialog, self.parentDialog.status, self.pick, self.parentDialog.availableColumns, self.entry.get())
                 except ExceptionType as e:
