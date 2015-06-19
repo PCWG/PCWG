@@ -26,7 +26,7 @@ class XmlBase:
             return False
 
     def getValue(self, node):
-        
+
         firstChild = node.firstChild
 
         if firstChild != None:
@@ -405,7 +405,7 @@ class AnalysisConfiguration(XmlBase):
         self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
 
         self.specifiedPowerCurve = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve','')
-        
+
     def readPowerDeviationMatrix(self, configurationNode):
 
         if self.nodeExists(configurationNode, 'PowerDeviationMatrix'):
@@ -413,7 +413,7 @@ class AnalysisConfiguration(XmlBase):
             self.powerDeviationMatrixActive = self.getNodeBool(powerDeviationMatrixNode, 'Active')
             self.specifiedPowerDeviationMatrix = self.getNodeValue(powerDeviationMatrixNode, 'SpecifiedPowerDeviationMatrix')
         else:
-            self.powerDeviationMatrixActive = False      
+            self.powerDeviationMatrixActive = False
             self.specifiedPowerDeviationMatrix = ""
 
     def readREWS(self, configurationNode):
@@ -634,7 +634,7 @@ class DatasetConfiguration(XmlBase):
             self.readREWS(configurationNode)
             self.readMeasurements(configurationNode)
             if self.nodeExists(configurationNode,"Filters"):
-                self.filters = self.readFilters([n for n in self.getNode(configurationNode,"Filters").childNodes if not n.nodeType == n.TEXT_NODE])
+                self.filters = self.readFilters([n for n in self.getNode(configurationNode,"Filters").childNodes if not n.nodeType in (n.TEXT_NODE,n.COMMENT_NODE)])
             self.hasFilters = (len(self.filters) > 0)
 
             self.readExclusions(configurationNode)
@@ -1060,7 +1060,7 @@ class DatasetConfiguration(XmlBase):
             self.siteCalibrationCenterOfFirstSector = 0.0
 
         if self.nodeExists(calibrationNode, 'CalibrationFilters'):
-            self.calibrationFilters = self.readFilters([n for n in self.getNode(calibrationNode,"CalibrationFilters").childNodes if not n.nodeType == n.TEXT_NODE])
+            self.calibrationFilters = self.readFilters([n for n in self.getNode(calibrationNode,"CalibrationFilters").childNodes if not n.nodeType in (n.TEXT_NODE,n.COMMENT_NODE)])
         else:
             self.calibrationFilters = []
 
@@ -1072,8 +1072,8 @@ class DatasetConfiguration(XmlBase):
             direction = self.getNodeFloat(node, 'Direction')
             self.calibrationActives[direction] = self.getNodeBool(node, 'Active')
             self.calibrationSlopes[direction] = self.getNodeFloat(node, 'Slope')
-            self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset') 
-    
+            self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset')
+
 class PowerDeviationMatrixConfiguration(XmlBase):
 
     def __init__(self, path = None):
@@ -1088,13 +1088,13 @@ class PowerDeviationMatrixConfiguration(XmlBase):
             matrixNode = self.getNode(doc, 'PowerDeviationMatrix')
 
             self.name = self.getNodeValue(matrixNode, 'Name')
-            
+
             dimensionsNode = self.getNode(matrixNode, 'Dimensions')
 
             self.dimensions = []
 
             for node in self.getNodes(dimensionsNode, 'Dimension'):
-                
+
                 parameter = self.getNodeValue(node, 'Parameter')
                 centerOfFirstBin = self.getNodeFloat(node, 'CenterOfFirstBin')
                 binWidth = self.getNodeFloat(node, 'BinWidth')
@@ -1104,7 +1104,7 @@ class PowerDeviationMatrixConfiguration(XmlBase):
             cellsNode = self.getNode(doc, 'Cells')
 
             self.cells = {}
-            
+
             for cellNode in self.getNodes(cellsNode, 'Cell'):
 
                 cellDimensionsNode = self.getNode(cellNode, 'CellDimensions')
@@ -1128,7 +1128,7 @@ class PowerDeviationMatrixConfiguration(XmlBase):
                 key = tuple(cellKeyList)
 
                 self.cells[key] = value
-            
+
         else:
 
             self.isNew = True
@@ -1140,24 +1140,24 @@ class PowerDeviationMatrixConfiguration(XmlBase):
     def save(self):
 
         self.isNew = False
-        
-        doc = self.createDocument()             
-        root = self.addRootNode(doc, "PowerDeviationMatrix", "http://www.pcwg.org")      
+
+        doc = self.createDocument()
+        root = self.addRootNode(doc, "PowerDeviationMatrix", "http://www.pcwg.org")
 
         self.addTextNode(doc, root, "Name", self.name)
-   
+
     def __getitem__(self, parameters):
 
         keyList = []
 
         for dimension in self.dimensions:
-            
+
             value = parameters[dimension.parameter]
-            
+
             binValue = round((value - dimension.centerOfFirstBin) / dimension.binWidth, 0) * dimension.binWidth + dimension.centerOfFirstBin
 
             keyList.append(binValue)
-        
+
         key = tuple(keyList)
 
         if key in self.cells:
