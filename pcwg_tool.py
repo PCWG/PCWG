@@ -9,7 +9,7 @@ import os
 import os.path
 import pandas as pd
 
-version = "0.5.5"
+version = "0.5.6 (Release Candidate 1)"
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
 
@@ -90,6 +90,9 @@ class ValidateBase:
                         self.messageLabel = None
 
                 self.executeValidation("", "", "")
+
+        def link(self, control):
+            self.control = control
 
         def setMessage(self, message):
 
@@ -203,9 +206,33 @@ class ValidatePositiveFloat(ValidateBase):
         def mask(self, text, value):
                 return (text in '0123456789.-')
 
-class ValidateSpecifiedPowerCurve(ValidateBase):
+class ValidateSpecifiedPowerDeviationMatrix(ValidateBase):
+
+        def __init__(self, master, activeVariable):
+            
+            self.activeVariable = activeVariable
+            self.activeVariable.trace("w", self.refreshValidation)
+
+            ValidateBase.__init__(self, master)
+
+        def refreshValidation(self, *args):
+
+            #todo work out what goes here
+            self.control.tk.call(self.control._w, 'validate')
 
         def validate(self, value):
+
+                active = bool(self.activeVariable.get())
+                message = "Value not specified"
+
+                if active:
+                    return ValidationResult(len(value) > 0, message)
+                else:
+                    return ValidationResult(True, "")
+
+class ValidateSpecifiedPowerCurve(ValidateBase):
+
+       def validate(self, value):
 
                 message = "Value not specified"
 
@@ -320,6 +347,7 @@ class ValidateDatasets:
                 self.listbox = listbox
                 self.messageLabel = Label(master, text="", fg="red")
                 self.validate()
+                self.title = "Datasets Validation"
 
         def validate(self):
                 
@@ -350,10 +378,21 @@ class ValidateDatasets:
 
 class VariableEntry:
 
-        def __init__(self, variable, entry):
+        def __init__(self, variable, entry, tip):
                 self.variable = variable
                 self.entry = entry
                 self.pickButton = None
+                self.tip = tip
+
+        def clearTip(self):
+            self.setTip("")
+
+        def setTipNotRequired(self):
+            self.setTip("Not Required")
+
+        def setTip(self, text):
+            if self.tip != None:
+                self.tip['text'] = text
 
         def get(self):
                 return self.variable.get()
@@ -449,8 +488,9 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 self.inputColumn = 2
                 self.buttonColumn = 3
                 self.secondButtonColumn = 4
-                self.messageColumn = 5
-                self.showHideColumn = 6
+                self.tipColumn = 5
+                self.messageColumn = 6
+                self.showHideColumn = 7
                 
                 self.validations = []
 
@@ -465,6 +505,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 master.columnconfigure(self.inputColumn, pad=10, weight = 1)
                 master.columnconfigure(self.buttonColumn, pad=10, weight = 0)
                 master.columnconfigure(self.secondButtonColumn, pad=10, weight = 0)
+                master.columnconfigure(self.tipColumn, pad=10, weight = 0)
                 master.columnconfigure(self.messageColumn, pad=10, weight = 0)
 
         def addOption(self, master, title, options, value, showHideCommand = None):
@@ -521,6 +562,9 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 label = Label(master, text=title)
                 label.grid(row = self.row, sticky=W, column=self.labelColumn)
 
+                tipLabel = Label(master, text="")
+                tipLabel.grid(row = self.row, sticky=W, column=self.tipColumn)
+
                 if validation != None:
                         validation.messageLabel.grid(row = self.row, sticky=W, column=self.messageColumn)
                         validation.title = title
@@ -536,12 +580,16 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 if showHideCommand != None:
                         showHideCommand.addControl(label)
                         showHideCommand.addControl(entry)
+                        showHideCommand.addControl(tipLabel)
                         if validation != None:
                                 showHideCommand.addControl(validation.messageLabel)
 
+                if validation != None:
+                    validation.link(entry)
+
                 self.row += 1
 
-                return VariableEntry(variable, entry)
+                return VariableEntry(variable, entry, tipLabel)
 
         def addFileSaveAsEntry(self, master, title, validation, value, width = 60, showHideCommand = None):
 
@@ -575,9 +623,11 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 for validation in self.validations:
                         
                         if not validation.valid:
-                                message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                                if not isinstance(validation,ValidateDatasets):
+                                        message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                                else:
+                                        message += "Datasets error. \r"
                                 valid = False
-
                 if not valid:
 
                         tkMessageBox.showwarning(
@@ -724,7 +774,7 @@ class REWSProfileLevelDialog(BaseDialog):
                 self.prepareColumns(master)
 
                 if not self.isNew:
-                        items = extractRESLevelValuesFromText(self.text)
+                        items = extractREWSLevelValuesFromText(self.text)
                         height = items[0]
                         windSpeed = items[1]
                         windDirection = items[2]
@@ -881,21 +931,22 @@ class ColumnPicker:
                 inputTimeSeriesPath = self.parentDialog.getInputTimeSeriesAbsolutePath()
                 headerRows = self.parentDialog.getHeaderRows()
                                 
-                if self.parentDialog.availableColumnsFile != inputTimeSeriesPath:
-
+                if self.parentDialog.availableColumnsFile != inputTimeSeriesPath or self.parentDialog.columnsFileHeaderRows != headerRows:
                         self.parentDialog.availableColumns = []
-                        self.parentDialog.availableColumnsFile = inputTimeSeriesPath
-
                         try:
-                                
                                 dataFrame = pd.read_csv(inputTimeSeriesPath, sep = '\t', skiprows = headerRows)
-        
                                 for col in dataFrame:
                                         self.parentDialog.availableColumns.append(col)
-
                         except ExceptionType as e:
+                                tkMessageBox.showwarning(
+                                "Column header error",
+                                "It was not possible to read column headers using the provided inputs.\rPlease check and amend 'Input Time Series Path' and/or 'Header Rows'.\r"
+                                )
                                 self.status.addMessage("ERROR reading columns from %s: %s" % (inputTimeSeriesPath, e))
-                        
+
+                        self.parentDialog.columnsFileHeaderRows = headerRows
+                        self.parentDialog.availableColumnsFile = inputTimeSeriesPath
+
                 try:                                
                         dialog = ColumnPickerDialog(self.parentDialog, self.parentDialog.status, self.pick, self.parentDialog.availableColumns, self.entry.get())
                 except ExceptionType as e:
@@ -955,8 +1006,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         def addFormElements(self, master):
 
                 self.availableColumnsFile = None
+                self.columnsFileHeaderRows = None
                 self.availableColumns = []
-        
+
                 self.shearWindSpeedHeights = []
                 self.shearWindSpeeds = []
 
@@ -965,13 +1017,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.startDate = self.addEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
                 self.endDate = self.addEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
                 
-                self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["Calculated", "Specified"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
+                self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["None", "Calculated", "Specified"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
                 self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
 
                 self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod, showHideCommand = self.generalShowHide)
                 self.calibrationMethod.trace("w", self.calibrationMethodChange)
                 
-                self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified", "None"], self.config.densityMode, showHideCommand = self.generalShowHide)
+                self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified"], self.config.densityMode, showHideCommand = self.generalShowHide)
                 self.densityMode.trace("w", self.densityMethodChange)
                 
                 rewsShowHide = ShowHideCommand(master)
@@ -1015,7 +1067,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
                         self.shearWindSpeeds.append( self.addPickerEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
-                        self.shearWindSpeedHeights.append(self.addPickerEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
+                        self.shearWindSpeedHeights.append(self.addEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
 
                 rewsProfileShowHide = ShowHideCommand(master)
                 label = Label(master, text="REWS Profile Levels:")
@@ -1059,7 +1111,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 calibrationShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationShowHide)
                 calibrationShowHide.button.grid(row=self.row, sticky=N+E+W, column=self.showHideColumn)
-                self.calibrationStartDate = self.addEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)
+
+                self.calibrationStartDate = self.addEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)                
                 self.calibrationEndDate = self.addEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
                 self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationShowHide)
                 self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationShowHide)
@@ -1112,17 +1165,17 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         def densityMethodChange(self, *args):
                 
                 if self.densityMode.get() == "Specified":
-                        self.temperature.configure(state='disabled')
-                        self.pressure.configure(state='disabled')
-                        self.density.configure(state='normal')
+                        self.temperature.setTipNotRequired()
+                        self.pressure.setTipNotRequired()
+                        self.density.clearTip()
                 elif self.densityMode.get() == "Calculated":
-                        self.temperature.configure(state='normal')
-                        self.pressure.configure(state='normal')
-                        self.density.configure(state='disabled')
+                        self.temperature.clearTip()
+                        self.pressure.clearTip()
+                        self.density.setTipNotRequired()
                 elif self.densityMode.get() == "None":
-                        self.temperature.configure(state='disabled')
-                        self.pressure.configure(state='disabled')
-                        self.density.configure(state='disabled')
+                        self.temperature.setTipNotRequired()
+                        self.pressure.setTipNotRequired()
+                        self.density.setTipNotRequired()
                 else:
                         raise Exception("Unknown density methods: %s" % self.densityMode.get())
 
@@ -1134,57 +1187,75 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 if self.hubWindSpeedMode.get() == "Calculated":
 
-                        self.hubWindSpeed.configure(state='disabled')
-                        self.hubTurbulence.configure(state='disabled')
+                        self.hubWindSpeed.setTipNotRequired()
+                        self.hubTurbulence.setTipNotRequired()
 
-                        self.siteCalibrationNumberOfSectors.configure(state='normal')
-                        self.siteCalibrationCenterOfFirstSector.configure(state='normal')
-                        self.referenceWindSpeed.configure(state='normal')
-                        self.referenceWindSpeedStdDev.configure(state='normal')
-                        self.referenceWindDirection.configure(state='normal')
-                        self.referenceWindDirectionOffset.configure(state='normal')
+                        self.siteCalibrationNumberOfSectors.clearTip()
+                        self.siteCalibrationCenterOfFirstSector.clearTip()
+                        self.referenceWindSpeed.clearTip()
+                        self.referenceWindSpeedStdDev.clearTip()
+                        self.referenceWindDirection.clearTip()
+                        self.referenceWindDirectionOffset.clearTip()
                                 
                         if self.calibrationMethod.get() == "LeastSquares":
-                                self.turbineLocationWindSpeed.configure(state='normal')
-                                self.calibrationDirectionsListBox.configure(state='disabled')
-                                self.deleteCalibrationDirectionButton.configure(state='disabled')
-                                self.editCalibrationDirectionButton.configure(state='disabled')
-                                self.newCalibrationDirectionButton.configure(state='disabled')
-                                self.calibrationStartDate.configure(state='normal')
-                                self.calibrationEndDate.configure(state='normal')
+                                self.turbineLocationWindSpeed.clearTip()
+                                #self.calibrationDirectionsListBox.setTipNotRequired()
+                                #self.deleteCalibrationDirectionButton.setTipNotRequired()
+                                #self.editCalibrationDirectionButton.setTipNotRequired()
+                                #self.newCalibrationDirectionButton.setTipNotRequired()
+                                self.calibrationStartDate.clearTip()
+                                self.calibrationEndDate.clearTip()
                         elif self.calibrationMethod.get() == "Specified":
-                                self.turbineLocationWindSpeed.configure(state='disabled')
-                                self.calibrationDirectionsListBox.configure(state='normal')
-                                self.deleteCalibrationDirectionButton.configure(state='normal')
-                                self.editCalibrationDirectionButton.configure(state='normal')
-                                self.newCalibrationDirectionButton.configure(state='normal')
-                                self.calibrationStartDate.configure(state='disabled')
-                                self.calibrationEndDate.configure(state='disabled')
+                                self.turbineLocationWindSpeed.setTipNotRequired()
+                                #self.calibrationDirectionsListBox.clearTip()
+                                #self.deleteCalibrationDirectionButton.clearTip()
+                                #self.editCalibrationDirectionButton.clearTip()
+                                #self.newCalibrationDirectionButton.clearTip()
+                                self.calibrationStartDate.setTipNotRequired()
+                                self.calibrationEndDate.setTipNotRequired()
                         else:
                                 raise Exception("Unknown calibration methods: %s" % self.calibrationMethod.get())
      
                 elif self.hubWindSpeedMode.get() == "Specified":
 
-                        self.hubWindSpeed.configure(state='normal')
-                        self.hubTurbulence.configure(state='normal')
+                        self.hubWindSpeed.clearTip()
+                        self.hubTurbulence.clearTip()
 
-                        self.turbineLocationWindSpeed.configure(state='disabled')                        
-                        self.calibrationDirectionsListBox.configure(state='disabled')
-                        self.deleteCalibrationDirectionButton.configure(state='disabled')
-                        self.editCalibrationDirectionButton.configure(state='disabled')
-                        self.newCalibrationDirectionButton.configure(state='disabled')
-                        self.calibrationStartDate.configure(state='disabled')
-                        self.calibrationEndDate.configure(state='disabled')
-                        self.siteCalibrationNumberOfSectors.configure(state='disabled')
-                        self.siteCalibrationCenterOfFirstSector.configure(state='disabled')
-                        self.referenceWindSpeed.configure(state='disabled')
-                        self.referenceWindSpeedStdDev.configure(state='disabled')
-                        self.referenceWindDirection.configure(state='disabled')
-                        self.referenceWindDirectionOffset.configure(state='disabled')
+                        self.turbineLocationWindSpeed.setTipNotRequired()                    
+                        #self.calibrationDirectionsListBox.setTipNotRequired()
+                        #self.deleteCalibrationDirectionButton.setTipNotRequired()
+                        #self.editCalibrationDirectionButton.setTipNotRequired()
+                        #self.newCalibrationDirectionButton.setTipNotRequired()
+                        self.calibrationStartDate.setTipNotRequired()
+                        self.calibrationEndDate.setTipNotRequired()
+                        self.siteCalibrationNumberOfSectors.setTipNotRequired()
+                        self.siteCalibrationCenterOfFirstSector.setTipNotRequired()
+                        self.referenceWindSpeed.setTipNotRequired()
+                        self.referenceWindSpeedStdDev.setTipNotRequired()
+                        self.referenceWindDirection.setTipNotRequired()
+                        self.referenceWindDirectionOffset.setTipNotRequired()
+
+                elif self.hubWindSpeedMode.get() == "None":
+                        
+                        self.hubWindSpeed.setTipNotRequired()
+                        self.hubTurbulence.setTipNotRequired()
+
+                        self.turbineLocationWindSpeed.setTipNotRequired()
+                        #self.calibrationDirectionsListBox.setTipNotRequired()
+                        #self.deleteCalibrationDirectionButton.setTipNotRequired()
+                        #self.editCalibrationDirectionButton.setTipNotRequired()
+                        #self.newCalibrationDirectionButton.setTipNotRequired()
+                        self.calibrationStartDate.setTipNotRequired()
+                        self.calibrationEndDate.setTipNotRequired()
+                        self.siteCalibrationNumberOfSectors.setTipNotRequired()
+                        self.siteCalibrationCenterOfFirstSector.setTipNotRequired()
+                        self.referenceWindSpeed.setTipNotRequired()
+                        self.referenceWindSpeedStdDev.setTipNotRequired()
+                        self.referenceWindDirection.setTipNotRequired()
+                        self.referenceWindDirectionOffset.setTipNotRequired()
 
                 else:
                         raise Exception("Unknown hub wind speed mode: %s" % self.hubWindSpeedMode.get())
-                
                 
         def NewCalibrationDirection(self):
 
@@ -1592,7 +1663,10 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.addTitleRow(master, "Correction Settings:", correctionSettingsShowHide)
                 self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive, showHideCommand = correctionSettingsShowHide)
                 self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive, showHideCommand = correctionSettingsShowHide)
-                self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive, showHideCommand = correctionSettingsShowHide)                        
+                self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive, showHideCommand = correctionSettingsShowHide)  
+                self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive, showHideCommand = correctionSettingsShowHide)               
+
+                self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specifiedPowerDeviationMatrix, self.filePath, showHideCommand = correctionSettingsShowHide)
 
                 #hide all initially
                 self.generalShowHide.show()
@@ -1664,7 +1738,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
         def setSpecifiedPowerCurve(self):
                 fileName = SelectFile(parent=self.master,defaultextension=".xml")
                 self.setSpecifiedPowerCurveFromPath(fileName)
-                
+
         def setSpecifiedPowerCurveFromPath(self, fileName):
                 if len(fileName) > 0: self.specifiedPowerCurve.set(fileName)
                 
@@ -1724,6 +1798,9 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
                 self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
                 self.config.rewsActive = bool(self.rewsCorrectionActive.get())
+
+                self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix.get())
+                self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
 
                 self.config.datasets = []
 
@@ -1956,7 +2033,7 @@ class UserInterface:
                         self.analysis.report(fileName, version)
                         self.addMessage("Report written to %s" % fileName)
                 except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Report: %s" % e)            
+                        self.addMessage("ERROR Exporting Report: %s" % e)
 
         def ExportAnonymousReport(self):
 
@@ -2006,7 +2083,7 @@ class UserInterface:
 
                 except ExceptionType as e:
                         
-                        self.addMessage("ERROR Calculating Analysis: %s" % e)                    
+                        self.addMessage("ERROR Calculating Analysis: %s" % e)
 
         def ClearConsole(self):
                 self.listbox.delete(0, END)
