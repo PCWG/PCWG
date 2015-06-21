@@ -1832,7 +1832,7 @@ class UserInterface:
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
-                benchmark_button = Button(commandframe, text="Benchmark", command = self.Benchmark)
+                benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
                 about_button = Button(commandframe, text="About", command = self.About)
                 set_work_space_button = Button(commandframe, text="Set Work Space", command = self.SetWorkSpace)
@@ -1879,38 +1879,42 @@ class UserInterface:
 
                 self.root.mainloop()        
 
-        def Benchmark(self):
+        def RunBenchmark(self):
 
                 self.LoadAnalysisFromPath("")
                 
                 self.ClearConsole()
-
-                benchmarks = []
-
-                tolerance = 0.0001
                 
-                benchmarks.append(("Data\Dataset 1 Analysis.xml", 0.000000, 0.005083, 0.000072, 0.005271))
-                benchmarks.append(("Data\Dataset 2 Analysis.xml", 0.000000, -0.002431, 0.005831, 0.003464))
-                benchmarks.append(("Data\Dataset 3 Analysis.xml", 0.000000, -0.003406, -0.012374, -0.015835))
-
-                benchmarkPassed = True
-                totalTime = 0.0
+                #read the benchmark config xml
+                path = askopenfilename(parent = self.root, title="Select Benchmark Configuration", initialfile = "Data\\Benchmark.xml")
                 
-                for i in range(len(benchmarks)):
-                        benchmark = benchmarks[i]
-                        self.addMessage("Executing Benchmark %d of %d" % (i + 1, len(benchmarks)))
-                        benchmarkResults = self.BenchmarkAnalysis(benchmark[0], benchmark[1], benchmark[2], benchmark[3], benchmark[4], tolerance)
-                        benchmarkPassed = benchmarkPassed & benchmarkResults[0]
-                        totalTime += benchmarkResults[1]
-
-                if benchmarkPassed:
-                        self.addMessage("All benchmarks passed")
+                if len(path) > 0:
+                    self.addMessage("Loading benchmark configuration file: %s" % path)                
+                    benchmarkConfig = configuration.BenchmarkConfiguration(path)
+                    
+                    self.addMessage("Loaded benchmark configuration: %s" % benchmarkConfig.name)
+                    self.addMessage("")
+                    
+                    benchmarkPassed = True
+                    totalTime = 0.0
+                    
+                    for i in range(len(benchmarkConfig.benchmarks)):
+                            benchmark = benchmarkConfig.benchmarks[i]
+                            self.addMessage("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
+                            benchmarkResults = self.BenchmarkAnalysis(benchmark.analysisPath,  benchmarkConfig.tolerance, benchmark.expectedResults)
+                            benchmarkPassed = benchmarkPassed & benchmarkResults[0]
+                            totalTime += benchmarkResults[1]
+    
+                    if benchmarkPassed:
+                            self.addMessage("All benchmarks passed")
+                    else:
+                            self.addMessage("There are failing benchmarks")
+    
+                    self.addMessage("Total Time Taken: %fs" % totalTime)
                 else:
-                        self.addMessage("There are failing benchmarks")
-
-                self.addMessage("Total Time Taken: %fs" % totalTime)
+                    self.addMessage("No benchmark loaded")
                 
-        def BenchmarkAnalysis(self, path, hubDelta, rewsDelta, turbulenceDelta, combinedDelta, tolerance):
+        def BenchmarkAnalysis(self, path, tolerance, dictExpectedResults):
 
                 self.addMessage("Calculating %s (please wait)..." % path)
 
@@ -1930,11 +1934,12 @@ class UserInterface:
                         benchmarkPassed = False
 
                 if analysis != None:
-                        
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Hub Delta", hubDelta, analysis.hubDelta, tolerance)
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("REWS Delta", rewsDelta, analysis.rewsDelta, tolerance)
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Turbulence Delta", turbulenceDelta, analysis.turbulenceDelta, tolerance)
-                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Combined Delta", combinedDelta, analysis.combinedDelta, tolerance)
+                        for (field, value) in dictExpectedResults.iteritems():
+                            benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, eval("analysis.%s" % field), tolerance)
+#                        benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, exec("analysis.%s" % field), tolerance)
+#                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("REWS Delta", rewsDelta, analysis.rewsDelta, tolerance)
+#                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Turbulence Delta", turbulenceDelta, analysis.turbulenceDelta, tolerance)
+#                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Combined Delta", combinedDelta, analysis.combinedDelta, tolerance)
                                          
                 if benchmarkPassed:
                         self.addMessage("Benchmark Passed")
@@ -2020,8 +2025,8 @@ class UserInterface:
                         except ExceptionType as e:
                             self.addMessage("ERROR loading config: %s" % e)                
 
-                        self.addMessage("Analysis config loaded: %s" % fileName)                
-
+                        self.addMessage("Analysis config loaded: %s" % fileName)
+                        
         def ExportReport(self):
 
                 if self.analysis == None:            
