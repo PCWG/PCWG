@@ -258,7 +258,7 @@ class Analysis:
                 mask = self.dataFrame[self.timeStamp] > datasetStart
                 mask = mask & (self.dataFrame[self.timeStamp] < datasetEnd)
 
-                dateRangeDataFrame = self.dataFrame[datasetStart:datasetEnd]
+                dateRangeDataFrame = self.dataFrame.loc[mask, :]
 
                 self.dataFrame = self.dataFrame.drop(dateRangeDataFrame.index)
 
@@ -515,9 +515,9 @@ class Analysis:
         filteredDataFrame.drop(rand_columns, axis = 1, inplace = True)
         
         #sensitivity to time of day, time of year, time elapsed in test
-        filteredDataFrame['Days Elapsed In Test'] = (filteredDataFrame.index - filteredDataFrame.index[0]).days
-        filteredDataFrame['Hours From Noon'] = np.abs(filteredDataFrame.index.hour - 12)
-        filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame.index.dayofyear - 182)
+        filteredDataFrame['Days Elapsed In Test'] = (filteredDataFrame[self.timeStamp] - filteredDataFrame[self.timeStamp].min()).dt.days
+        filteredDataFrame['Hours From Noon'] = np.abs(filteredDataFrame[self.timeStamp].dt.hour - 12)
+        filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame[self.timeStamp].dt.dayofyear - 182)
         
         #for col in self.sensitivityDataColumns:
         for col in (filteredDataFrame.columns):
