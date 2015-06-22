@@ -1908,7 +1908,7 @@ class UserInterface:
                     if benchmarkPassed:
                             self.addMessage("All benchmarks passed")
                     else:
-                            self.addMessage("There are failing benchmarks")
+                            self.addMessage("There are failing benchmarks", red = True)
     
                     self.addMessage("Total Time Taken: %fs" % totalTime)
                 else:
@@ -1944,7 +1944,7 @@ class UserInterface:
                 if benchmarkPassed:
                         self.addMessage("Benchmark Passed")
                 else:
-                        self.addMessage("Benchmark Failed")
+                        self.addMessage("Benchmark Failed", red = True)
 
                 end = datetime.datetime.now()
 
@@ -1963,19 +1963,19 @@ class UserInterface:
                 diff = abs(expected - actual)
                 passed = (diff <= tolerance)
 
-                text = "%s: %s (expected) vs %s (actual) =>" % (title, self.formatPercentTwoDP(expected), self.formatPercentTwoDP(actual))
+                text = "{title}: {expec:0.10} (expected) vs {act:0.10} (actual) =>".format(title = title, expec=expected, act= actual)
                 
                 if passed:
                         self.addMessage("%s passed" % text)
                 else:
-                        self.addMessage("%s failed" % text)
+                        self.addMessage("%s failed" % text, red = True)
 
                 return passed
                 
         def EditAnalysis(self):
 
                 if self.analysisConfiguration == None:            
-                        self.addMessage("ERROR: Analysis not loaded")
+                        self.addMessage("ERROR: Analysis not loaded", red = True)
                         return
                 
                 configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
@@ -2022,15 +2022,14 @@ class UserInterface:
                         
                         try:
                             self.analysisConfiguration = configuration.AnalysisConfiguration(fileName)
+                            self.addMessage("Analysis config loaded: %s" % fileName)
                         except ExceptionType as e:
-                            self.addMessage("ERROR loading config: %s" % e)                
-
-                        self.addMessage("Analysis config loaded: %s" % fileName)
+                            self.addMessage("ERROR loading config: %s" % e, red = True)                      
                         
         def ExportReport(self):
 
                 if self.analysis == None:            
-                        self.addMessage("ERROR: Analysis not yet calculated")
+                        self.addMessage("ERROR: Analysis not yet calculated", red = True)
                         return
 
                 try:
@@ -2038,20 +2037,20 @@ class UserInterface:
                         self.analysis.report(fileName, version)
                         self.addMessage("Report written to %s" % fileName)
                 except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Report: %s" % e)
+                        self.addMessage("ERROR Exporting Report: %s" % e, red = True)
 
         def ExportAnonymousReport(self):
 
                 if self.analysis == None:
-                        self.addMessage("ERROR: Analysis not yet calculated")
+                        self.addMessage("ERROR: Analysis not yet calculated", red = True)
                         return
                 
                 if not self.analysis.hasActualPower:
-                        self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power")
+                        self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power", red = True)
                         return
 
                 if not self.analysis.config.turbRenormActive:
-                        self.addMessage("ERROR: Anonymous report can only be generated if turb renorm is active")
+                        self.addMessage("ERROR: Anonymous report can only be generated if turb renorm is active", red = True)
                         return
                 
                 try:
@@ -2061,12 +2060,12 @@ class UserInterface:
                         self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
                         self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
                 except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Anonymous Report: %s" % e)
+                        self.addMessage("ERROR Exporting Anonymous Report: %s" % e, red = True)
 
         def ExportTimeSeries(self):
 
                 if self.analysis == None:
-                        self.addMessage("ERROR: Analysis not yet calculated")
+                        self.addMessage("ERROR: Analysis not yet calculated", red = True)
                         return
 
                 try:
@@ -2074,12 +2073,12 @@ class UserInterface:
                         self.analysis.export(fileName)
                         self.addMessage("Time series written to %s" % fileName)
                 except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Time Series: %s" % e)
+                        self.addMessage("ERROR Exporting Time Series: %s" % e, red = True)
 
         def Calculate(self):
 
                 if self.analysisConfiguration == None:
-                        self.addMessage("ERROR: Analysis Config file not specified")
+                        self.addMessage("ERROR: Analysis Config file not specified", red = True)
                         return
 
                 try:
@@ -2088,7 +2087,7 @@ class UserInterface:
 
                 except ExceptionType as e:
                         
-                        self.addMessage("ERROR Calculating Analysis: %s" % e)
+                        self.addMessage("ERROR Calculating Analysis: %s" % e, red = True)
 
         def ClearConsole(self):
                 self.listbox.delete(0, END)
@@ -2097,8 +2096,10 @@ class UserInterface:
         def About(self):
                 tkMessageBox.showinfo("PCWG-Tool About", "Version: %s \nVisit http://www.pcwg.org for more info" % version)
 
-        def addMessage(self, message):
+        def addMessage(self, message, red=False):
                 self.listbox.insert(END, message)
+                if red:
+                     self.listbox.itemconfig(END, {'bg':'red','foreground':"white"})
                 self.listbox.see(END)
                 self.root.update()               
 
