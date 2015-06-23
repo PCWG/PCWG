@@ -175,6 +175,7 @@ class Analysis:
 
             self.status.addMessage("Calculating actual power curves...")
 
+            self.hours = len(self.dataFrame.index)*1.0 / 6.0
             self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'All Measured')
 
             self.innerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Inner Turbulence')
@@ -584,8 +585,6 @@ class Analysis:
             dfPowerCoeff = filteredDataFrame[self.powerCoeff].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         else:
             dfPowerCoeff = None
-
-        self.hours = dfDataCount.count() / 6.0
 
         if len(dfPowerLevels.index) != 0:
             #padding
