@@ -585,6 +585,7 @@ class Analysis:
         else:
             dfPowerCoeff = None
 
+        self.hours = dfDataCount.count() / 6.0
 
         if len(dfPowerLevels.index) != 0:
             #padding
