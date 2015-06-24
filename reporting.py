@@ -736,31 +736,50 @@ class AnonReport(report):
         self.turbulenceBins = turbulence_bins
         self.normalisedWindSpeedBins = wind_bins
 
-    def report(self, path, analysis):
+    def report(self, path, analysis, powerDeviationMatrix = True, scatterMetric=False):
         
         self.analysis = analysis
         book = xlwt.Workbook()
-        gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
+
 
         sh = book.add_sheet("Anonymous Report", cell_overwrite_ok=True)
         sh.write(0, 0, "PCWG Tool Version Number:")
         sh.write(0, 1, self.version)
         sh.write(0, 2, xlwt.Formula('HYPERLINK("http://www.pcwg.org";"PCWG Website")'))
+        row = 1
 
+        if powerDeviationMatrix:
+            row = self.report_power_deviation_matrix(sh,analysis,book)
+            row += 5
+
+        if scatterMetric:
+            row = self.report_scatter_metric(sh,analysis,row)
+
+        book.save(path)
+
+    def report_scatter_metric(self,sh,analysis,row):
+        sh.write(row,   1, "Scatter Metric:", self.bold_style)
+        sh.write(row+1, 1, "{0}".format(analysis.powerCurveScatterMetric) , self.percent_style)
+        return row + 2
+
+    def report_power_deviation_matrix(self,sh,analysis,book):
+
+        gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
         pcStart = 2
         pcEnd   = pcStart + self.normalisedWindSpeedBins.numberOfBins + 5
         
         deviationMatrixStart = pcEnd + 5
+        row= []
 
-        self.reportPowerCurve(sh, pcStart, 0, 'Power Curve', self.targetPowerCurve)
+        row.append( self.reportPowerCurve(sh, pcStart, 0, 'Power Curve', self.targetPowerCurve) )
 
-        self.reportPowerDeviations(sh,deviationMatrixStart, analysis.normalisedHubPowerDeviations, gradient, "Hub Power")
+        row.append( self.reportPowerDeviations(sh,deviationMatrixStart, analysis.normalisedHubPowerDeviations, gradient, "Hub Power"))
 
         if analysis.normalisedTurbPowerDeviations != None:
             deviationMatrixStart += (self.turbulenceBins.numberOfBins + 5) * 2
-            self.reportPowerDeviations(sh,deviationMatrixStart, analysis.normalisedTurbPowerDeviations, gradient, "Turb Corrected Power")
+            row.append(self.reportPowerDeviations(sh,deviationMatrixStart, analysis.normalisedTurbPowerDeviations, gradient, "Turb Corrected Power") )
 
-        book.save(path)
+        return max(row)
 
     def reportPowerDeviations(self,sh, startRow, powerDeviations, gradient, name):
 
@@ -797,6 +816,7 @@ class AnonReport(report):
                         if not np.isnan(deviation):
                             sh.write(row, col, deviation, gradient.getStyle(deviation))
                             sh.write(countRow, col, count, self.no_dp_style)
+        return row
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 
