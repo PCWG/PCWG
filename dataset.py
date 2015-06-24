@@ -364,7 +364,7 @@ class Dataset:
 
     def createCalibration(self, dataFrame, config, timeStepInSeconds):
 
-        self.referenceDirectionBin = "Reference Direction Bin"
+        self.referenceDirectionBin = "Reference Direction Bin Centre"
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
         siteCalibrationBinWidth = 360.0 / config.siteCalibrationNumberOfSectors
 
