@@ -145,6 +145,7 @@ class Analysis:
         last_turb_bin = 0.25
 
         self.powerCurveSensitivityResults = {}
+        self.powerCurveSensitivityVariationMetrics = pd.DataFrame(columns = ['Power Curve Variation Metric'])
 
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
@@ -169,7 +170,7 @@ class Analysis:
         self.applyRemainingFilters()
 
         if self.hasDensity and self.densityCorrectionActive:
-            self.dataFrame[self.powerCoeff]  = self.calculateCp()
+            self.dataFrame[self.powerCoeff] = self.calculateCp()
 
         if self.hasActualPower:
 
@@ -247,13 +248,18 @@ class Analysis:
         if self.config.nominalWindSpeedDistribution is not None:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
-            self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredPowerCurve)
-            if self.turbRenormActive:
-                self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredTurbCorrectedPowerCurve)
+            if len(self.specifiedPowerCurve.powerCurveLevels) != 0:
+                self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredPowerCurve)
+                if self.turbRenormActive:
+                    self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredTurbCorrectedPowerCurve)
+            else:
+                self.status.addMessage("A specified power curve is required for AEP calculation. No specified curve defined.")
         
         if len(self.sensitivityDataColumns) > 0:
-            self.status.addMessage("Attempting power curve sensitivty analysis...")
-            self.performSensitivityAnalysis()
+            sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
+            sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
+            self.status.addMessage("Attempting power curve sensitivty analysis for %s power curve..." % sens_pow_curve.name)
+            self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column)
         
         if self.hasActualPower:
             self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower)
@@ -287,7 +293,7 @@ class Analysis:
                 mask = self.dataFrame[self.timeStamp] > datasetStart
                 mask = mask & (self.dataFrame[self.timeStamp] < datasetEnd)
 
-                dateRangeDataFrame = self.dataFrame[datasetStart:datasetEnd]
+                dateRangeDataFrame = self.dataFrame.loc[mask, :]
 
                 self.dataFrame = self.dataFrame.drop(dateRangeDataFrame.index)
 
@@ -526,24 +532,46 @@ class Analysis:
         else:
             raise Exception("Unrecognised filter mode: %s" % self.filterMode)
 
-    def performSensitivityAnalysis(self):
+    def performSensitivityAnalysis(self, power_curve, power_column, n_random_tests = 20):
 
         mask = self.getFilter()
         filteredDataFrame = self.dataFrame[mask]
         
-        for col in self.sensitivityDataColumns:
+        #calculate significance threshold based on generated random variable
+        rand_columns, rand_sensitivity_results = [], []
+        for i in range(n_random_tests):
+            rand_columns.append('Random ' + str(i + 1))
+        filteredDataFrame[rand_columns] = pd.DataFrame(np.random.rand(len(filteredDataFrame),n_random_tests), columns=rand_columns, index = filteredDataFrame.index)
+        for col in rand_columns:
+            variation_metric = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)[1]
+            rand_sensitivity_results.append(variation_metric)
+        self.sensitivityAnalysisThreshold = np.mean(rand_sensitivity_results)
+        print "\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.)
+        filteredDataFrame.drop(rand_columns, axis = 1, inplace = True)
+        
+        #sensitivity to time of day, time of year, time elapsed in test
+        filteredDataFrame['Days Elapsed In Test'] = (filteredDataFrame[self.timeStamp] - filteredDataFrame[self.timeStamp].min()).dt.days
+        filteredDataFrame['Hours From Noon'] = np.abs(filteredDataFrame[self.timeStamp].dt.hour - 12)
+        filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame[self.timeStamp].dt.dayofyear - 182)
+        
+        #for col in self.sensitivityDataColumns:
+        for col in (filteredDataFrame.columns):
             print "\nAttempting to compute sensitivity of power curve to %s..." % col
             try:
-                self.powerCurveSensitivityResults[col] = self.calculatePowerCurveSensitivity(filteredDataFrame, col)
-                print "Calculation of sensitivity of power curve to %s complete." % col
+                self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)
+                print "Variation of power curve with respect to %s is %.2f%%." % (col, self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] * 100.)
+                if self.powerCurveSensitivityVariationMetrics.loc[col,'Power Curve Variation Metric'] == 0:
+                    self.powerCurveSensitivityVariationMetrics.drop(col, axis = 1, inplace = True)
             except:
                 print "Could not run sensitivity analysis for %s." % col
+        self.powerCurveSensitivityVariationMetrics.sort('Power Curve Variation Metric', ascending = False, inplace = True)
             
-    def calculatePowerCurveSensitivity(self, dataFrame, dataColumn):
+    def calculatePowerCurveSensitivity(self, dataFrame, power_curve, dataColumn, power_column):
         
-        dataFrame['Energy MWh'] = dataFrame[self.actualPower] * (float(self.timeStepInSeconds) / 3600.)
+        dataFrame['Energy MWh'] = (dataFrame[power_column] * (float(self.timeStepInSeconds) / 3600.)).astype('float')
         
-        self.sensitivityLabels = {"V Low":"#0000ff", "Low":"#4400bb", "Medium":"#880088", "High":"#bb0044", "V High":"#ff0000"} #categories to split data into using data_column and colour to plot
+        from collections import OrderedDict
+        self.sensitivityLabels = OrderedDict([("V Low","#0000ff"), ("Low","#4400bb"), ("Medium","#880088"), ("High","#bb0044"), ("V High","#ff0000")]) #categories to split data into using data_column and colour to plot
         cutOffForCategories = list(np.arange(0.,1.,1./len(self.sensitivityLabels.keys()))) + [1.]
         
         minCount = len(self.sensitivityLabels.keys()) * 4 #at least 4 data points for each category for a ws bin to be valid
@@ -561,12 +589,13 @@ class Analysis:
                 except:
                     print "\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin)
         
-        sensitivityResults = dataFrame[[self.actualPower, 'Energy MWh', 'Wind Speed Bin','Bin']].groupby(['Wind Speed Bin','Bin']).agg({self.actualPower: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len})
+        sensitivityResults = dataFrame[[power_column, 'Energy MWh', 'Wind Speed Bin','Bin']].groupby(['Wind Speed Bin','Bin']).agg({power_column: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len})
         sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
         for i in sensitivityResults.index:
-            sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, 'Actual Power'] - self.allMeasuredPowerCurve.powerCurveLevels.loc[i[0], 'Actual Power']
-            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * self.allMeasuredPowerCurve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
-        return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'})
+            sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, power_column] - power_curve.powerCurveLevels.loc[i[0], power_column]
+            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * power_curve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
+        
+        return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'}), np.abs(sensitivityResults['Energy Delta MWh']).sum() / (power_curve.powerCurveLevels[power_column] * power_curve.powerCurveLevels['Data Count'] * (float(self.timeStepInSeconds) / 3600.)).sum()
 
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name):
         
@@ -642,8 +671,8 @@ class Analysis:
             energyDiffMWh = np.abs((self.dataFrame[powerColumn] - self.dataFrame[self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame[powerColumn] * (float(self.timeStepInSeconds) / 3600.)
             self.powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
-            print "%s scatter metric is %s%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.)
-            self.status.addMessage("%s scatter metric is %s%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.))
+            print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.)
+            self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.))
         except:
             print "Could not calculate power curve scatter metric."
 
@@ -741,7 +770,7 @@ class Analysis:
         self.turbulenceYieldCount = self.dataFrame[self.getFilter()][self.turbulencePower].count()
         self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
         if self.hasActualPower:
-            self.dataFrame[self.measuredTurbulencePower] = self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]
+            self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]).astype('float')
         self.status.addMessage("Turb Delta: %f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
 
     def calculationCombined(self):
@@ -796,7 +825,21 @@ class Analysis:
         if len(self.powerCurveSensitivityResults.keys()) > 0:
             for sensCol in self.powerCurveSensitivityResults.keys():
                 self.plotPowerCurveSensitivity(sensCol, path)
+            self.plotPowerCurveSensitivityVariationMetrics(path)
             
+    def plotPowerCurveSensitivityVariationMetrics(self, path):
+        try:
+            from matplotlib import pyplot as plt
+            plt.ioff()
+            (self.powerCurveSensitivityVariationMetrics*100.).plot(kind = 'bar', title = 'Summary of Power Curve Variation by Variable. Significance Threshold = %.2f%%' % (self.sensitivityAnalysisThreshold * 100), figsize = (12,8))
+            plt.ylabel('Variation Metric (%)')
+            file_out = path + os.sep + 'Power Curve Sensitivity Analysis Variation Metric Summary.png'
+            plt.savefig(file_out)
+            plt.close('all')
+        except:
+            print "Tried to plot summary of Power Curve Sensitivity Analysis Variation Metric. Couldn't."
+        self.powerCurveSensitivityVariationMetrics.to_csv(path + os.sep + 'Power Curve Sensitivity Analysis Variation Metric.csv')        
+
     def plotPowerCurveSensitivity(self, sensCol, path):
         try:
             df = self.powerCurveSensitivityResults[sensCol].reset_index()
@@ -808,9 +851,10 @@ class Analysis:
             ax1.hold(True)
             ax2 = fig.add_subplot(122)
             ax2.hold(True)
+            power_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
             for label in self.sensitivityLabels.keys():
                 filt = df['Bin'] == label
-                ax1.plot(df['Wind Speed Bin'][filt], df['Actual Power'][filt], label = label, color = self.sensitivityLabels[label])
+                ax1.plot(df['Wind Speed Bin'][filt], df[power_column][filt], label = label, color = self.sensitivityLabels[label])
                 ax2.plot(df['Wind Speed Bin'][filt], df['Energy Delta MWh'][filt], label = label, color = self.sensitivityLabels[label])
             ax1.set_xlabel('Wind Speed (m/s)')
             ax1.set_ylabel('Power (kW)')
