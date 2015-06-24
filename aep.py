@@ -13,8 +13,8 @@ def run(analysis,fileName, measuredPowerCurve):
     ansLCB = aepCalcLCB.calculate_AEP()
     if analysis.status:
         analysis.status.addMessage("Calculating AEP using %s power curve:" % measuredPowerCurve.name)
-        analysis.status.addMessage( "    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
-        analysis.status.addMessage( "    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
+        analysis.status.addMessage( "    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield/1000.0))
+        analysis.status.addMessage( "    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield/1000.0))
         analysis.status.addMessage( "    AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
         analysis.status.addMessage( "    AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
     return aepCalc,aepCalcLCB
