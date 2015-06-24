@@ -1935,7 +1935,10 @@ class UserInterface:
 
                 if analysis != None:
                         for (field, value) in dictExpectedResults.iteritems():
-                            benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, eval("analysis.%s" % field), tolerance)
+                            try:
+                                benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, eval("analysis.%s" % field), tolerance)
+                            except:
+                                raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, exec("analysis.%s" % field), tolerance)
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("REWS Delta", rewsDelta, analysis.rewsDelta, tolerance)
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Turbulence Delta", turbulenceDelta, analysis.turbulenceDelta, tolerance)
@@ -2024,7 +2027,7 @@ class UserInterface:
                             self.analysisConfiguration = configuration.AnalysisConfiguration(fileName)
                             self.addMessage("Analysis config loaded: %s" % fileName)
                         except ExceptionType as e:
-                            self.addMessage("ERROR loading config: %s" % e, red = True)                      
+                            self.addMessage("ERROR loading config: %s" % e, red = True)
                         
         def ExportReport(self):
 

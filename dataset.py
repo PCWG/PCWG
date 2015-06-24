@@ -183,7 +183,7 @@ class Dataset:
     def __init__(self, config, rotorGeometry, analysisConfig):
 
         self.relativePath = configuration.RelativePath(config.path)
-
+        self.nameColumn = "Dataset Name"
         self.name = config.name
 
         self.timeStepInSeconds = config.timeStepInSeconds
@@ -237,7 +237,7 @@ class Dataset:
         elif config.endDate != None:
             dataFrame = dataFrame[ : config.endDate]
 
-        dataFrame[self.name] = config.name
+        dataFrame[self.nameColumn] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
 
         if self.hasDirection:
@@ -464,7 +464,7 @@ class Dataset:
 
         requiredCols = []
 
-        requiredCols.append(self.name)
+        requiredCols.append(self.nameColumn)
         requiredCols.append(self.timeStamp)
 
         requiredCols.append(self.hubWindSpeed)
