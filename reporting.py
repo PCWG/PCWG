@@ -760,7 +760,7 @@ class AnonReport(report):
     def report_scatter_metric(self,sh,analysis,row):
         sh.write(row,   1, "Scatter Metric:", self.bold_style)
         sh.write(row+1, 1, "{0}".format(analysis.powerCurveScatterMetric) , self.percent_style)
-        return row + 2
+        return row + 3
 
     def report_power_deviation_matrix(self,sh,analysis,book):
 

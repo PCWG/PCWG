@@ -682,10 +682,24 @@ class Analysis:
         report = reporting.report(self.windSpeedBins, self.turbulenceBins,version)
         report.report(path, self)
 
-    def anonym_report(self, path,version="unknown"):
+    def anonym_report(self, path, version="unknown", scatter = False, deviationMatrix = True):
 
         if not self.hasActualPower:
             raise Exception("Anonymous report can only be generated if analysis has actual power data")
+
+        if deviationMatrix:
+            self.calculate_anonymous_values()
+        else:
+            self.normalisedWindSpeedBins = []
+
+        report = reporting.AnonReport(targetPowerCurve = self.powerCurve,
+                                      wind_bins = self.normalisedWindSpeedBins,
+                                      turbulence_bins = self.turbulenceBins,
+                                      version= version)
+
+        report.report(path, self, powerDeviationMatrix = deviationMatrix, scatterMetric= scatter)
+
+    def calculate_anonymous_values(self):
 
         self.observedRatedPower = self.powerCurve.zeroTurbulencePowerCurve.maxPower
         self.observedRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(self.powerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
@@ -718,12 +732,6 @@ class Analysis:
         else:
             self.normalisedTurbPowerDeviations = None
 
-        report = reporting.AnonReport(targetPowerCurve = self.powerCurve,
-                                      wind_bins = self.normalisedWindSpeedBins,
-                                      turbulence_bins = self.turbulenceBins,
-                                      version= version)
-
-        report.report(path, self)
 
     def calculateBase(self):
 
