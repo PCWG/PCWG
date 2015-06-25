@@ -40,11 +40,19 @@ class PowerCurve:
         self.powerFunction = self.createFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
         
         self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower]) if has_pc else None
-
+        if 'Data Count' in self.powerCurveLevels.columns:
+            self.hours = self.powerCurveLevels['Data Count'].sum()*1.0/6.0
+        else:
+            self.hours = 0.0
         self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
 
         if (turbulenceRenormalisation and has_pc):
-            self.calcZeroTurbulencePowerCurve()
+            print "Calculating zero turbulence curve for {0} Power Curve".format(self.name)
+            try:
+                self.calcZeroTurbulencePowerCurve()
+                print "Calculation of zero turbulence curve for {0} Power Curve successful".format(self.name)
+            except:
+                print "Calculation of zero turbulence curve for {0} Power Curve unsuccessful".format(self.name)
 
     def calcZeroTurbulencePowerCurve(self):
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
