@@ -371,20 +371,21 @@ class Dataset:
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
-        dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
+        #dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
         
         if config.calibrationMethod == "Specified":
+            if all([dir in config.calibrationSlopes.keys() for dir in config.calibrationActives.keys()]):
+                print "Applying Specified calibration"
+                print "Direction\tSlope\tOffset\tApplicable Datapoints"
+                for direction in config.calibrationSlopes:
+                    if config.calibrationActives[direction]:
+                        mask = (dataFrame[self.referenceDirectionBin] == direction)
+                        dataCount = dataFrame[mask][self.referenceDirectionBin].count()
+                        print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
 
-            print "Applying Specified calibration"
-            print "Direction\tSlope\tOffset\tApplicable Datapoints" 
-            for direction in config.calibrationSlopes:
-                if config.calibrationActives[direction]:
-                    mask = (dataFrame[self.referenceDirectionBin] == direction)
-                    dataCount = dataFrame[mask][self.referenceDirectionBin].count()
-                    print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
-                
-            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
-
+                return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
+            else:
+                raise Exception("The specified slopes have different bin centres to that specified by siteCalibrationCenterOfFirstSector which is: {0}".format(config.siteCalibrationCenterOfFirstSector))
         else:
 
             df = dataFrame.copy()
