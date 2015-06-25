@@ -9,9 +9,11 @@ import os
 import os.path
 import pandas as pd
 
-version = "0.5.6 (Release Candidate 1)"
+columnSeparator = "|"
+
+version = "0.5.7 (Release Candidate 1)"
 ExceptionType = Exception
-ExceptionType = None #comment this line before release
+#ExceptionType = None #comment this line before release
 
 def getBoolFromText(text):
         
@@ -28,29 +30,28 @@ def SelectFile(parent, defaultextension=None):
         else:
                 return askopenfilename(parent=parent, defaultextension=defaultextension)
 
-                
 def encodePowerLevelValueAsText(windSpeed, power):
-        return "%f|%f" % (windSpeed, power)
+        return "%f%s%f" % (windSpeed, columnSeparator, power)
 
 def extractPowerLevelValuesFromText(text):
-        items = text.split("|")
+        items = text.split(columnSeparator)
         windSpeed = float(items[0])
         power = float(items[1])
         return (windSpeed, power)
 
 def extractREWSLevelValuesFromText(text):
-        items = text.split("|")
+        items = text.split(columnSeparator)
         height = float(items[0])
         windSpeed = items[1].strip()
         windDirection = items[2].strip()
         return (height, windSpeed, windDirection)
 
 def encodeREWSLevelValuesAsText(height, windSpeed, windDirection):
-        return "%0.4f|%s|%s" % (height, windSpeed, windDirection)
+        return "%0.4f%s%s%s%s" % (height, columnSeparator, windSpeed, columnSeparator, windDirection)
 
 def extractCalibrationDirectionValuesFromText(text):
         
-        items = text.split("|")
+        items = text.split(columnSeparator)
         direction = float(items[0])
         slope = float(items[1].strip())
         offset = float(items[2].strip())
@@ -60,11 +61,11 @@ def extractCalibrationDirectionValuesFromText(text):
 
 def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
 
-        return "%0.4f|%0.4f|%0.4f|%s" % (direction, slope, offset, active)
+        return "%0.4f%s%0.4f%s%0.4f%s%s" % (direction, columnSeparator, slope, columnSeparator, offset, columnSeparator, active)
 
 def extractExclusionValuesFromText(text):
         
-        items = text.split("|")
+        items = text.split(columnSeparator)
         startDate = items[0].strip()
         endDate = items[1].strip()
         active = getBoolFromText(items[2].strip())
@@ -73,13 +74,13 @@ def extractExclusionValuesFromText(text):
 
 def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
 
-        return "%s|%f|%s|%s|%s" % (column, value, filterType, inclusive, active)
+        return "%s%s%f%s%s%s%s%s%s" % (column, columnSeparator, value, columnSeparator, filterType, columnSeparator, inclusive, columnSeparator, active)
 
 def extractFilterValuesFromText(text):
 
         try:
         
-                items = text.split("|")
+                items = text.split(columnSeparator)
                 column = items[0].strip()
                 value = float(items[1].strip())
                 filterType = items[2].strip()
@@ -93,7 +94,7 @@ def extractFilterValuesFromText(text):
         
 def encodeExclusionValuesAsText(startDate, endDate, active):
 
-        return "%s|%s|%s" % (startDate, endDate, active)
+        return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
 
 def intSafe(text, valueIfBlank = 0):
     try:
@@ -1004,10 +1005,10 @@ class REWSProfileLevelDialog(BaseDialog):
                         windDirection = ""
 
                 self.addTitleRow(master, "REWS Level Settings:")
-                # get picker entries for these as well?
+
                 self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), height)
                 self.windSpeed = self.addPickerEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
-                self.windDirection = self.addPickerEntry(master, "Wind Direction:", ValidateNotBlank(master), windDirection, width = 60)
+                self.windDirection = self.addPickerEntry(master, "Wind Direction:", None, windDirection, width = 60)
 
                 #dummy label to indent controls
                 Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
@@ -1129,7 +1130,34 @@ class ColumnPickerDialog(BaseDialog):
         def apply(self):
                         
                 self.callback(self.column.get())
-      
+
+#class DatePickerDialog(BaseDialog):
+#
+#       def __init__(self, master, status, callback, date):
+#
+#                self.callback = callback
+#                self.date = date
+#                
+#                BaseDialog.__init__(self, master, status)
+#                        
+#        def body(self, master):
+#
+#                thisYear = dt.datetime.today().year
+#                
+#                self.day = self.addEntry(master, "Day:", range(1, 31 + 1, 1), selectedDay, showHideCommand = None)
+#                self.month = self.addEntry(master, "Month:", range(1, 12 + 1, 1), selectedMonth, showHideCommand = None)
+#                self.year = self.addOption(master, "Year:", range(1980, thisYear + 1, 1), selectedYear, showHideCommand = None)
+#
+#                self.hour = self.addEntry(master, "Month:", range(0, 23 + 1, 1), selectedMonth, showHideCommand = None)
+#                self.year = self.addOption(master, "Minute:", range(0, 60, 10), selectedYear, showHideCommand = None)
+#                
+#                if len(self.availableColumns) > 0:
+#                        self.column = self.addOption(master, "Select Column:", self.availableColumns, self.column)
+#                        
+#        def apply(self)
+#                date = datetime()
+#                self.callback(self.column.get())
+       
 class ColumnPicker:
 
         def __init__(self, parentDialog, entry):
@@ -1214,13 +1242,6 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified"], self.config.densityMode, showHideCommand = self.generalShowHide)
                 self.densityMode.trace("w", self.densityMethodChange)
                 
-                rewsShowHide = ShowHideCommand(master)
-                self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
-                self.rewsDefined = self.addCheckBox(master, "REWS Active", self.config.rewsDefined, showHideCommand = rewsShowHide)
-                self.numberOfRotorLevels = self.addEntry(master, "REWS Number of Rotor Levels:", ValidateNonNegativeInteger(master), self.config.numberOfRotorLevels, showHideCommand = rewsShowHide)
-                self.rotorMode = self.addOption(master, "REWS Rotor Mode:", ["EvenlySpacedLevels", "ProfileLevels"], self.config.rotorMode, showHideCommand = rewsShowHide)
-                self.hubMode = self.addOption(master, "Hub Mode:", ["Interpolated", "PiecewiseExponent"], self.config.hubMode, showHideCommand = rewsShowHide)                
-
                 measurementShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Measurement Settings:", showHideCommand = measurementShowHide)
                 self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = measurementShowHide)
@@ -1257,6 +1278,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.shearWindSpeeds.append( self.addPickerEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
                         self.shearWindSpeedHeights.append(self.addEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
 
+                rewsShowHide = ShowHideCommand(master)
+                self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
+                self.rewsDefined = self.addCheckBox(master, "REWS Active", self.config.rewsDefined, showHideCommand = rewsShowHide)
+                self.numberOfRotorLevels = self.addEntry(master, "REWS Number of Rotor Levels:", ValidateNonNegativeInteger(master), self.config.numberOfRotorLevels, showHideCommand = rewsShowHide)
+                self.rotorMode = self.addOption(master, "REWS Rotor Mode:", ["EvenlySpacedLevels", "ProfileLevels"], self.config.rotorMode, showHideCommand = rewsShowHide)
+                self.hubMode = self.addOption(master, "Hub Mode:", ["Interpolated", "PiecewiseExponent"], self.config.hubMode, showHideCommand = rewsShowHide)                
+
                 rewsProfileShowHide = ShowHideCommand(master)
                 label = Label(master, text="REWS Profile Levels:")
                 label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
@@ -1273,8 +1301,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         for height in sorted(self.config.windSpeedLevels):
                                 windSpeed = self.config.windSpeedLevels[height]
                                 direction = self.config.windDirectionLevels[height]
-                                text = "%f,%s,%s" % (height, windSpeed, direction)
-                                self.rewsProfileLevelsListBox.insert(END, text)
+                                self.rewsProfileLevelsListBox.insert(END, encodeREWSLevelValuesAsText(height, windSpeed, direction))
                                 
                 self.rewsProfileLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.rewsProfileLevelsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
@@ -1880,8 +1907,7 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 
                 for windSpeed in self.config.powerCurveDictionary:
                         power = self.config.powerCurveDictionary[windSpeed]
-                        text = "{0},{1}".format(windSpeed, power)
-                        self.powerCurveLevelsListBox.insert(END, text)
+                        self.powerCurveLevelsListBox.insert(END, encodePowerLevelValueAsText(windSpeed, power))
                                 
                 self.powerCurveLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.powerCurveLevelsScrollBar.configure(command=self.powerCurveLevelsListBox.yview)
@@ -1964,9 +1990,7 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 powerCurveDictionary = {}
 
                 for i in range(self.powerCurveLevelsListBox.size()):
-                        values = self.getValues(self.powerCurveLevelsListBox.get(i))
-                        windSpeed = values[0]
-                        power = values[1]
+                        windSpeed, power = extractPowerLevelValuesFromText(self.powerCurveLevelsListBox.get(i))
                         powerCurveDictionary[windSpeed] = power
                                 
                 self.config.setPowerCurve(powerCurveDictionary)
@@ -1981,11 +2005,12 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", ValidatePositiveInteger(master), self.config.powerCurveMinimumCount, showHideCommand = self.generalShowHide)
 
-                filterModeOptions = ["All", "Inner", "InnerTurb", "InnerShear", "Outer", "OuterTurb", "OuterShear", "LowShearLowTurbulence", "LowShearHighTurbulence", "HighShearHighTurbulence", "HighShearLowTurbulence"]
+                filterModeOptions = ["All", "Inner", "Outer"]
                 self.filterMode = self.addOption(master, "Filter Mode:", filterModeOptions, self.config.filterMode, showHideCommand = self.generalShowHide)
+                
+                powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
+                self.powerCurveMode = self.addOption(master, "Power Curve Mode:", powerCurveModes, self.config.powerCurveMode, showHideCommand = self.generalShowHide)
 
-                self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode, showHideCommand = self.generalShowHide)
-                self.powerCurveMode = self.addOption(master, "Power Curve Mode:", ["Specified", "AllMeasured", "InnerMeasured", "InnerTurbulenceMeasured", "OuterMeasured", "OuterTurbulenceMeasured"], self.config.powerCurveMode, showHideCommand = self.generalShowHide)
                 self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Linear", "Observed", "Specified", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
 
                 powerCurveShowHide = ShowHideCommand(master)  
@@ -2069,6 +2094,10 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specifiedPowerDeviationMatrix, self.filePath, showHideCommand = correctionSettingsShowHide)
 
+                advancedSettingsShowHide = ShowHideCommand(master)
+                self.addTitleRow(master, "Advanced Settings:", advancedSettingsShowHide)
+                self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode, showHideCommand = advancedSettingsShowHide)
+
                 #hide all initially
                 self.generalShowHide.show()
                 powerCurveShowHide.hide()
@@ -2076,6 +2105,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 innerRangeShowHide.hide()
                 turbineSettingsShowHide.hide()
                 correctionSettingsShowHide.hide()
+                advancedSettingsShowHide.hide()
 
         def EditPowerCurve(self):
                 
