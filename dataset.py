@@ -364,27 +364,28 @@ class Dataset:
 
     def createCalibration(self, dataFrame, config, timeStepInSeconds):
 
-        self.referenceDirectionBin = "Reference Direction Bin"
+        self.referenceDirectionBin = "Reference Direction Bin Centre"
         dataFrame[config.referenceWindDirection] = (dataFrame[config.referenceWindDirection] + config.referenceWindDirectionOffset) % 360
         siteCalibrationBinWidth = 360.0 / config.siteCalibrationNumberOfSectors
 
         dataFrame[self.referenceDirectionBin] = (dataFrame[config.referenceWindDirection] - config.siteCalibrationCenterOfFirstSector) / siteCalibrationBinWidth
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
-        dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
+        #dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
         
         if config.calibrationMethod == "Specified":
+            if all([dir in config.calibrationSlopes.keys() for dir in config.calibrationActives.keys()]):
+                print "Applying Specified calibration"
+                print "Direction\tSlope\tOffset\tApplicable Datapoints"
+                for direction in config.calibrationSlopes:
+                    if config.calibrationActives[direction]:
+                        mask = (dataFrame[self.referenceDirectionBin] == direction)
+                        dataCount = dataFrame[mask][self.referenceDirectionBin].count()
+                        print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
 
-            print "Applying Specified calibration"
-            print "Direction\tSlope\tOffset\tApplicable Datapoints" 
-            for direction in config.calibrationSlopes:
-                if config.calibrationActives[direction]:
-                    mask = (dataFrame[self.referenceDirectionBin] == direction)
-                    dataCount = dataFrame[mask][self.referenceDirectionBin].count()
-                    print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
-                
-            return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
-
+                return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
+            else:
+                raise Exception("The specified slopes have different bin centres to that specified by siteCalibrationCenterOfFirstSector which is: {0}".format(config.siteCalibrationCenterOfFirstSector))
         else:
 
             df = dataFrame.copy()
@@ -451,12 +452,18 @@ class Dataset:
 
         mask = pd.Series([True]*len(dataFrame),index=dataFrame.index)
         print "Data set length prior to exclusions: {0}".format(len(mask[mask]))
+
         for exclusion in config.exclusions:
+
             startDate = exclusion[0]
             endDate = exclusion[1]
-            subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
-            mask = mask & ~subMask
-            print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask]))
+            active = exclusion[2]
+
+            if active:
+                subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
+                mask = mask & ~subMask
+                print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask]))
+
         print "Data set length after exclusions: {0}".format(len(mask[mask]))
         return dataFrame[mask]
 
@@ -548,17 +555,17 @@ class Dataset:
             filterValue = self.createDerivedColumn(dataFrame,componentFilter.value)
         #print (filterColumn, filterType, filterInclusive, filterValue)
 
-        if filterType == "Below":
+        if filterType.lower() == "below":
              mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
 
-        elif filterType == "Above":
+        elif filterType.lower() == "above":
             mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
 
-        elif filterType == "AboveOrBelow":
+        elif filterType.lower() == "aboveorbelow" or filterType.lower() == "notequal":
             mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
             mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
 
-        elif filterType == "Between":
+        elif filterType.lower() == "between":
             if len(filterValue) != 2:
                 raise Exception("Filter mode is between, but a comma separated list has not been provided as FilterValue")
             mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
