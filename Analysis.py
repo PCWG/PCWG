@@ -253,7 +253,7 @@ class Analysis:
                 if self.hasShear: self.combPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.combinedPower, innerShearFilterMode)
 
             if config.powerDeviationMatrixActive:
-                self.powerDeviationMatrixPowerDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPowerPower, allFilterMode)
+                self.powerDeviationMatrixPowerDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
 
             self.status.addMessage("Power Curve Deviation Matrices Complete.")
 
@@ -274,9 +274,9 @@ class Analysis:
             self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column)
         
         if self.hasActualPower:
-            self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower)
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
-                self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
+                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
         
         self.status.addMessage("Complete")
 
@@ -567,8 +567,8 @@ class Analysis:
         filteredDataFrame['Hours From Noon'] = np.abs(filteredDataFrame[self.timeStamp].dt.hour - 12)
         filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame[self.timeStamp].dt.dayofyear - 182)
         
-        #for col in self.sensitivityDataColumns:
-        for col in (filteredDataFrame.columns):
+        for col in self.sensitivityDataColumns:
+        #for col in (filteredDataFrame.columns): # if we want to do the sensitivity analysis for all columns in the dataframe...
             print "\nAttempting to compute sensitivity of power curve to %s..." % col
             try:
                 self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)
@@ -683,21 +683,37 @@ class Analysis:
         try:
             energyDiffMWh = np.abs((self.dataFrame[powerColumn] - self.dataFrame[self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame[powerColumn] * (float(self.timeStepInSeconds) / 3600.)
-            self.powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
-            print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.)
-            self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.))
+            powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
+            print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
+            self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
+            return powerCurveScatterMetric
         except:
             print "Could not calculate power curve scatter metric."
+            return np.nan
 
     def report(self, path,version="unknown"):
 
         report = reporting.report(self.windSpeedBins, self.turbulenceBins,version)
         report.report(path, self)
 
-    def anonym_report(self, path,version="unknown"):
+    def anonym_report(self, path, version="unknown", scatter = False, deviationMatrix = True):
 
         if not self.hasActualPower:
             raise Exception("Anonymous report can only be generated if analysis has actual power data")
+
+        if deviationMatrix:
+            self.calculate_anonymous_values()
+        else:
+            self.normalisedWindSpeedBins = []
+
+        report = reporting.AnonReport(targetPowerCurve = self.powerCurve,
+                                      wind_bins = self.normalisedWindSpeedBins,
+                                      turbulence_bins = self.turbulenceBins,
+                                      version= version)
+
+        report.report(path, self, powerDeviationMatrix = deviationMatrix, scatterMetric= scatter)
+
+    def calculate_anonymous_values(self):
 
         self.observedRatedPower = self.powerCurve.zeroTurbulencePowerCurve.maxPower
         self.observedRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(self.powerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
@@ -730,12 +746,6 @@ class Analysis:
         else:
             self.normalisedTurbPowerDeviations = None
 
-        report = reporting.AnonReport(targetPowerCurve = self.powerCurve,
-                                      wind_bins = self.normalisedWindSpeedBins,
-                                      turbulence_bins = self.turbulenceBins,
-                                      version= version)
-
-        report.report(path, self)
 
     def calculateBase(self):
 
@@ -816,11 +826,15 @@ class Analysis:
         self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
         self.status.addMessage("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
 
-    def export(self, path):
+    def export(self, path, full = True):
         op_path = os.path.dirname(path)
         plotsDir = self.config.path.replace(".xml","_PPAnalysisPlots")
         self.png_plots(plotsDir)
         self.dataFrame.to_csv(path, sep = '\t')
+        if full:
+            rootPath = os.path.dirname(path)
+            for ds in self.datasetConfigs:
+                ds.data.fullDataFrame.to_csv(rootPath + os.sep + "FilteredDataSet_AllColumns_{0}.dat".format(ds.name), sep = '\t')
 
     def png_plots(self,path):
         chckMake(path)

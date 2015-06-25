@@ -2432,25 +2432,24 @@ class UserInterface:
                         self.addMessage("ERROR Exporting Report: %s" % e, red = True)
 
         def ExportAnonymousReport(self):
+                scatter = True
+                deviationMatrix = True
 
                 if self.analysis == None:
                         self.addMessage("ERROR: Analysis not yet calculated", red = True)
                         return
                 
-                if not self.analysis.hasActualPower:
-                        self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power", red = True)
-                        return
-
-                if not self.analysis.config.turbRenormActive:
-                        self.addMessage("ERROR: Anonymous report can only be generated if turb renorm is active", red = True)
-                        return
+                if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+                        self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+                        deviationMatrix = False
                 
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.workSpaceFolder)
-                        self.analysis.anonym_report(fileName, version)
+                        self.analysis.anonym_report(fileName, version, scatter = scatter, deviationMatrix = deviationMatrix)
                         self.addMessage("Anonymous report written to %s" % fileName)
-                        self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
-                        self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
+                        if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
+                                self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
+                                self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
                 except ExceptionType as e:
                         self.addMessage("ERROR Exporting Anonymous Report: %s" % e, red = True)
 
