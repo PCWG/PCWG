@@ -452,12 +452,18 @@ class Dataset:
 
         mask = pd.Series([True]*len(dataFrame),index=dataFrame.index)
         print "Data set length prior to exclusions: {0}".format(len(mask[mask]))
+
         for exclusion in config.exclusions:
+
             startDate = exclusion[0]
             endDate = exclusion[1]
-            subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
-            mask = mask & ~subMask
-            print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask]))
+            active = exclusion[2]
+
+            if active:
+                subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
+                mask = mask & ~subMask
+                print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask]))
+
         print "Data set length after exclusions: {0}".format(len(mask[mask]))
         return dataFrame[mask]
 

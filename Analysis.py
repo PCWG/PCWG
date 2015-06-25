@@ -150,8 +150,20 @@ class Analysis:
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
         
-        powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve) if config.specifiedPowerCurve != '' else None)
-        self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence", turbulenceRenormalisation = self.turbRenormActive, name = 'Specified')
+        if config.specifiedPowerCurve != '':
+
+            powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
+            
+            self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
+                                                          self.rotorGeometry, "Specified Power", "Specified Turbulence", \
+                                                          turbulenceRenormalisation = self.turbRenormActive, name = 'Specified')
+
+            self.referenceDensity = self.specifiedPowerCurve.referenceDensity
+            
+        else:
+             
+            self.specifiedPowerCurve = None
+            self.referenceDensity = 1.225 #todo consider adding UI setting for this
         
         if self.densityCorrectionActive:
             if self.hasDensity:
@@ -262,10 +274,12 @@ class Analysis:
             self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column)
         
         if self.hasActualPower:
-            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower)
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index)
             if self.turbRenormActive:
-                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
-        
+                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index)
+            self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByWindSpeed(self.allMeasuredPowerCurve, self.actualPower)
+            if self.turbRenormActive:
+                self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
         self.status.addMessage("Complete")
 
     def applyRemainingFilters(self):
@@ -632,7 +646,7 @@ class Analysis:
             if dfPowerCoeff is not None:
                 powerLevels[self.powerCoeff] = dfPowerCoeff
 
-            return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, powerColumn,
+            return turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, powerColumn,
                                       self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount,
                                             turbulenceRenormalisation = (self.turbRenormActive if powerColumn != self.turbulencePower else False), name = name)
 
@@ -666,11 +680,11 @@ class Analysis:
 
         return rewsMatrix
 
-    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn): #this calculates a metric for the scatter of the all measured PC
+    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows): #this calculates a metric for the scatter of the all measured PC
         
         try:
-            energyDiffMWh = np.abs((self.dataFrame[powerColumn] - self.dataFrame[self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
-            energyMWh = self.dataFrame[powerColumn] * (float(self.timeStepInSeconds) / 3600.)
+            energyDiffMWh = np.abs((self.dataFrame.loc[rows, powerColumn] - self.dataFrame.loc[rows, self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
+            energyMWh = self.dataFrame.loc[rows, powerColumn] * (float(self.timeStepInSeconds) / 3600.)
             powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
             print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
             self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
@@ -678,6 +692,15 @@ class Analysis:
         except:
             print "Could not calculate power curve scatter metric."
             return np.nan
+            
+    def calculateScatterMetricByWindSpeed(self, measuredPowerCurve, powerColumn):
+        index = self.dataFrame[self.windSpeedBin].unique()
+        index.sort()
+        df = pd.DataFrame(index = index, columns = ['Scatter Metric'])
+        for ws in df.index:
+            rows = self.dataFrame[self.inputHubWindSpeed] == ws
+            df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
+        return df
 
     def report(self, path,version="unknown"):
 
@@ -752,7 +775,7 @@ class Analysis:
     def calculateCp(self):
         area = np.pi*(self.config.diameter/2.0)**2
         a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
-        b = 1000*self.dataFrame[self.actualPower]/(0.5*self.specifiedPowerCurve.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
+        b = 1000*self.dataFrame[self.actualPower]/(0.5*self.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
         betzExceed = (len(a[a>16.0/27])*100.0)/len(a)
         if betzExceed > 0.5:
             print "{0:.02}% data points slightly exceed Betz limit - if this number is high, investigate...".format(betzExceed)
