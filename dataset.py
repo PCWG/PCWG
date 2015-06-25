@@ -549,17 +549,17 @@ class Dataset:
             filterValue = self.createDerivedColumn(dataFrame,componentFilter.value)
         #print (filterColumn, filterType, filterInclusive, filterValue)
 
-        if filterType == "Below":
+        if filterType.lower() == "below":
              mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
 
-        elif filterType == "Above":
+        elif filterType.lower() == "above":
             mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
 
-        elif filterType == "AboveOrBelow":
+        elif filterType.lower() == "aboveorbelow" or filterType.lower() == "notequal":
             mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
             mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
 
-        elif filterType == "Between":
+        elif filterType.lower() == "between":
             if len(filterValue) != 2:
                 raise Exception("Filter mode is between, but a comma separated list has not been provided as FilterValue")
             mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
