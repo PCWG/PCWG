@@ -775,7 +775,7 @@ class AnonReport(report):
         deviationMatrixStart = pcEnd + 5
         row= []
 
-        row.append( self.reportPowerCurve(sh, pcStart, 0, 'Power Curve', self.targetPowerCurve) )
+        row.append( self.reportPowerCurve(sh, pcStart, 0, self.targetPowerCurve.name + ' Power Curve', self.targetPowerCurve) )
 
         row.append( self.reportPowerDeviations(sh,deviationMatrixStart, analysis.normalisedHubPowerDeviations, gradient, "Hub Power"))
 
@@ -835,8 +835,11 @@ class AnonReport(report):
         for i in range(self.normalisedWindSpeedBins.numberOfBins):
 
             windSpeed = self.normalisedWindSpeedBins.binCenterByIndex(i)
-            mask = self.analysis.dataFrame['Normalised WS Bin'] == windSpeed
-            dataCount = self.analysis.dataFrame[mask]['Normalised WS Bin'].count()
+            if 'Data Count' in powerCurve.powerCurveLevels.columns:
+                dataCount = powerCurve.powerCurveLevels.loc[windSpeed, 'Data Count']
+            else:
+                mask = self.analysis.dataFrame['Normalised WS Bin'] == windSpeed
+                dataCount = self.analysis.dataFrame[mask]['Normalised WS Bin'].count()
             absoluteWindSpeed = windSpeed * self.analysis.observedRatedWindSpeed
             
             sh.write(rowOffset + countRow + 1, columnOffset + 1, windSpeed, self.two_dp_style)

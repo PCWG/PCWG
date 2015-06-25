@@ -59,6 +59,18 @@ def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
 
         return "%0.4f,%0.4f,%0.4f,%s" % (direction, slope, offset, active)
 
+def intSafe(text, valueIfBlank = 0):
+    try:
+        return int(text)
+    except:
+        return valueIfBlank
+        
+def floatSafe(text, valueIfBlank = 0.):
+    try:
+        return float(text)
+    except:
+        return valueIfBlank
+
 class WindowStatus:
         def __nonzero__(self):
                 return True
@@ -1393,7 +1405,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.densityMode = self.densityMode.get()
 
                 self.config.rewsDefined = bool(self.rewsDefined.get())
-                self.config.numberOfRotorLevels = int(self.numberOfRotorLevels.get())
+                self.config.numberOfRotorLevels = intSafe(self.numberOfRotorLevels.get())
                 self.config.rotorMode = self.rotorMode.get()
                 self.config.hubMode = self.hubMode.get()
 
@@ -1408,7 +1420,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.referenceWindSpeed = self.referenceWindSpeed.get()
                 self.config.referenceWindSpeedStdDev = self.referenceWindSpeedStdDev.get()
                 self.config.referenceWindDirection = self.referenceWindDirection.get()
-                self.config.referenceWindDirectionOffset = float(self.referenceWindDirectionOffset.get())
+                self.config.referenceWindDirectionOffset = floatSafe(self.referenceWindDirectionOffset.get())
                 self.config.turbineLocationWindSpeed = self.turbineLocationWindSpeed.get()
                 
                 self.config.temperature = self.temperature.get()
@@ -1422,7 +1434,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.windSpeedLevels = {}
 
                 for i in range(self.rewsProfileLevelsListBox.size()):
-                        items = self.extractREWSProfileLevelValuesFromText(self.rewsProfileLevelsListBox.get(i))
+                        items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBox.get(i))
                         self.config.windSpeedLevels[items[0]] = items[1]
                         self.config.windDirectionLevels[items[0]] = items[2]
 
@@ -1440,8 +1452,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.config.calibrationStartDate = self.calibrationStartDate.get()
                 self.config.calibrationEndDate = self.calibrationEndDate.get()
-                self.config.siteCalibrationNumberOfSectors = int(self.siteCalibrationNumberOfSectors.get())
-                self.config.siteCalibrationCenterOfFirstSector = int(self.siteCalibrationCenterOfFirstSector.get()) 
+                self.config.siteCalibrationNumberOfSectors = intSafe(self.siteCalibrationNumberOfSectors.get())
+                self.config.siteCalibrationCenterOfFirstSector = intSafe(self.siteCalibrationCenterOfFirstSector.get()) 
                 
                 #calbirations
                 for i in range(self.calibrationDirectionsListBox.size()):
