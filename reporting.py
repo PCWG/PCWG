@@ -736,7 +736,7 @@ class AnonReport(report):
         self.turbulenceBins = turbulence_bins
         self.normalisedWindSpeedBins = wind_bins
 
-    def report(self, path, analysis, powerDeviationMatrix = True, scatterMetric=False):
+    def report(self, path, analysis, powerDeviationMatrix = True, scatterMetric=True):
         
         self.analysis = analysis
         book = xlwt.Workbook()
@@ -750,16 +750,19 @@ class AnonReport(report):
 
         if powerDeviationMatrix:
             row = self.report_power_deviation_matrix(sh,analysis,book)
-            row += 5
 
         if scatterMetric:
-            row = self.report_scatter_metric(sh,analysis,row)
+            row = self.report_scatter_metric(sh,analysis,row, analysis.turbRenormActive)
 
         book.save(path)
 
-    def report_scatter_metric(self,sh,analysis,row):
-        sh.write(row,   1, "Scatter Metric:", self.bold_style)
+    def report_scatter_metric(self,sh,analysis,row, turbRenormActive):
+        row += 5
+        sh.write(row,   1, "Scatter Metric Before TI Renormalisation:", self.bold_style)
         sh.write(row+1, 1, "{0}".format(analysis.powerCurveScatterMetric) , self.percent_style)
+        if turbRenormActive:
+            sh.write(row,   2, "Scatter Metric After TI Renormalisation:", self.bold_style)
+            sh.write(row+1, 2, "{0}".format(analysis.powerCurveScatterMetricAfterTiRenorm) , self.percent_style)
         return row + 3
 
     def report_power_deviation_matrix(self,sh,analysis,book):
@@ -816,7 +819,8 @@ class AnonReport(report):
                         if not np.isnan(deviation):
                             sh.write(row, col, deviation, gradient.getStyle(deviation))
                             sh.write(countRow, col, count, self.no_dp_style)
-        return row
+                            
+        return startRow + self.turbulenceBins.numberOfBins + countShift
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve):
 
