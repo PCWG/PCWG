@@ -7,14 +7,14 @@ from scipy.interpolate import interp1d
 import rebin
 
 def run(analysis,fileName, measuredPowerCurve):
-    aepCalc = AEPCalculator(analysis.specifiedPowerCurve,measuredPowerCurve,distributionPath=fileName)
+    aepCalc = AEPCalculator(analysis.powerCurve,measuredPowerCurve,distributionPath=fileName)
     ans = aepCalc.calculate_AEP()
-    aepCalcLCB = AEPCalculatorLCB(analysis.specifiedPowerCurve,measuredPowerCurve,distributionPath=fileName)
+    aepCalcLCB = AEPCalculatorLCB(analysis.powerCurve,measuredPowerCurve,distributionPath=fileName)
     ansLCB = aepCalcLCB.calculate_AEP()
     if analysis.status:
         analysis.status.addMessage("Calculating AEP using %s power curve:" % measuredPowerCurve.name)
-        analysis.status.addMessage( "    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield))
-        analysis.status.addMessage( "    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield))
+        analysis.status.addMessage( "    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield/1000.0))
+        analysis.status.addMessage( "    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield/1000.0))
         analysis.status.addMessage( "    AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
         analysis.status.addMessage( "    AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
     return aepCalc,aepCalcLCB
