@@ -28,7 +28,6 @@ def SelectFile(parent, defaultextension=None):
         else:
                 return askopenfilename(parent=parent, defaultextension=defaultextension)
 
-                
 def encodePowerLevelValueAsText(windSpeed, power):
         return "%f|%f" % (windSpeed, power)
 
@@ -1129,7 +1128,34 @@ class ColumnPickerDialog(BaseDialog):
         def apply(self):
                         
                 self.callback(self.column.get())
-      
+
+#class DatePickerDialog(BaseDialog):
+#
+#       def __init__(self, master, status, callback, date):
+#
+#                self.callback = callback
+#                self.date = date
+#                
+#                BaseDialog.__init__(self, master, status)
+#                        
+#        def body(self, master):
+#
+#                thisYear = dt.datetime.today().year
+#                
+#                self.day = self.addEntry(master, "Day:", range(1, 31 + 1, 1), selectedDay, showHideCommand = None)
+#                self.month = self.addEntry(master, "Month:", range(1, 12 + 1, 1), selectedMonth, showHideCommand = None)
+#                self.year = self.addOption(master, "Year:", range(1980, thisYear + 1, 1), selectedYear, showHideCommand = None)
+#
+#                self.hour = self.addEntry(master, "Month:", range(0, 23 + 1, 1), selectedMonth, showHideCommand = None)
+#                self.year = self.addOption(master, "Minute:", range(0, 60, 10), selectedYear, showHideCommand = None)
+#                
+#                if len(self.availableColumns) > 0:
+#                        self.column = self.addOption(master, "Select Column:", self.availableColumns, self.column)
+#                        
+#        def apply(self)
+#                date = datetime()
+#                self.callback(self.column.get())
+       
 class ColumnPicker:
 
         def __init__(self, parentDialog, entry):
