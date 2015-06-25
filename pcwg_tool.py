@@ -13,7 +13,7 @@ columnSeparator = "|"
 
 version = "0.5.7 (Release Candidate 2)"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
 
 def getBoolFromText(text):
         

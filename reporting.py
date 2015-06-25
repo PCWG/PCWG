@@ -34,8 +34,9 @@ class report:
         self.reportSettings(settingsSheet, analysis)
 
         rowsAfterCurves = []
-        if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
-            rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
+        if analysis.specifiedPowerCurve is not None:
+            if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
+                rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
 
         if analysis.hasActualPower:
 
@@ -57,23 +58,23 @@ class report:
             
             if analysis.turbRenormActive:
                 rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, analysis) )
-            
-            rowAfterCurves = max(rowsAfterCurves) + 5
-            sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
-            specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
-
-            if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
-                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
-
-            self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, specifiedLevels)
-
-            if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
-                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
-
-            self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
-
-            if analysis.turbRenormActive:
-                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, specifiedLevels)
+            if analysis.specifiedPowerCurve is not None:
+                rowAfterCurves = max(rowsAfterCurves) + 5
+                sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
+                specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
+    
+                if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
+    
+                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, specifiedLevels)
+    
+                if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
+    
+                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
+    
+                if analysis.turbRenormActive:
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, specifiedLevels)
 
             self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
             #self.reportPowerDeviations(book, "HubPowerDeviationsInnerShear", analysis.hubPowerDeviationsInnerShear, gradient)
@@ -835,11 +836,8 @@ class AnonReport(report):
         for i in range(self.normalisedWindSpeedBins.numberOfBins):
 
             windSpeed = self.normalisedWindSpeedBins.binCenterByIndex(i)
-            if 'Data Count' in powerCurve.powerCurveLevels.columns:
-                dataCount = powerCurve.powerCurveLevels.loc[windSpeed, 'Data Count']
-            else:
-                mask = self.analysis.dataFrame['Normalised WS Bin'] == windSpeed
-                dataCount = self.analysis.dataFrame[mask]['Normalised WS Bin'].count()
+            mask = self.analysis.dataFrame['Normalised WS Bin'] == windSpeed
+            dataCount = self.analysis.dataFrame[mask]['Normalised WS Bin'].count()
             absoluteWindSpeed = windSpeed * self.analysis.observedRatedWindSpeed
             
             sh.write(rowOffset + countRow + 1, columnOffset + 1, windSpeed, self.two_dp_style)

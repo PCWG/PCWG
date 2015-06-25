@@ -106,11 +106,14 @@ class MatplotlibPlotter(object):
             from matplotlib import pyplot as plt
             plt.ioff()
             if (windSpeedCol == self.analysis.densityCorrectedHubWindSpeed) or ((windSpeedCol == self.analysis.inputHubWindSpeed) and (self.analysis.densityCorrectionActive)):
-                plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.specifiedPowerCurve.referenceDensity)
+                plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.referenceDensity)
             else:
                 plotTitle = "Power Curve"
             ax = self.analysis.dataFrame.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
-            has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
+            if self.analysis.specifiedPowerCurve is not None:
+                has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
+            else:
+                has_spec_pc = False
             if has_spec_pc:
                 ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
             if self.analysis.specifiedPowerCurve != self.analysis.powerCurve:
@@ -130,6 +133,7 @@ class MatplotlibPlotter(object):
             plt.close()
             return file_out
         except:
+            raise
             print "Tried to make a power curve scatter chart for %s. Couldn't." % meanPowerCurveObj.name
 
     def plotTurbCorrectedPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj):
@@ -137,11 +141,14 @@ class MatplotlibPlotter(object):
             from matplotlib import pyplot as plt
             plt.ioff()
             if (windSpeedCol == self.analysis.densityCorrectedHubWindSpeed) or ((windSpeedCol == self.analysis.inputHubWindSpeed) and (self.analysis.densityCorrectionActive)):
-                plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.specifiedPowerCurve.referenceDensity)
+                plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.referenceDensity)
             else:
                 plotTitle = "Power Curve"
             ax = self.analysis.dataFrame.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
-            has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
+            if self.analysis.specifiedPowerCurve is not None:
+                has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
+            else:
+                has_spec_pc = False
             if has_spec_pc:
                 ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
             meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
@@ -174,7 +181,7 @@ class MatplotlibPlotter(object):
             from matplotlib import pyplot as plt
             plt.ioff()
             windSpeedCol = self.analysis.densityCorrectedHubWindSpeed
-            ax = self.analysis.dataFrame.plot(kind='scatter',x=windSpeedCol,y=self.analysis.actualPower ,title="Power Values Corrected to {dens} kg/m^3".format(dens=self.analysis.specifiedPowerCurve.referenceDensity),alpha=0.5,label='Power Mean')
+            ax = self.analysis.dataFrame.plot(kind='scatter',x=windSpeedCol,y=self.analysis.actualPower ,title="Power Values Corrected to {dens} kg/m^3".format(dens=self.analysis.referenceDensity),alpha=0.5,label='Power Mean')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Min",alpha=0.2,label='Power Min',color = 'orange')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Max",alpha=0.2,label='Power Max',color = 'green')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power SD",alpha=0.2,label='Power SD',color = 'purple')
