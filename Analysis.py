@@ -227,9 +227,9 @@ class Analysis:
             self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column)
         
         if self.hasActualPower:
-            self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower)
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
-                self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
+                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
         
         self.status.addMessage("Complete")
 
@@ -519,8 +519,8 @@ class Analysis:
         filteredDataFrame['Hours From Noon'] = np.abs(filteredDataFrame[self.timeStamp].dt.hour - 12)
         filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame[self.timeStamp].dt.dayofyear - 182)
         
-        #for col in self.sensitivityDataColumns:
-        for col in (filteredDataFrame.columns):
+        for col in self.sensitivityDataColumns:
+        #for col in (filteredDataFrame.columns): # if we want to do the sensitivity analysis for all columns in the dataframe...
             print "\nAttempting to compute sensitivity of power curve to %s..." % col
             try:
                 self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)
@@ -636,11 +636,13 @@ class Analysis:
         try:
             energyDiffMWh = np.abs((self.dataFrame[powerColumn] - self.dataFrame[self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame[powerColumn] * (float(self.timeStepInSeconds) / 3600.)
-            self.powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
-            print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.)
-            self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, self.powerCurveScatterMetric * 100.))
+            powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
+            print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
+            self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
+            return powerCurveScatterMetric
         except:
             print "Could not calculate power curve scatter metric."
+            return np.nan
 
     def report(self, path,version="unknown"):
 

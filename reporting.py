@@ -774,7 +774,7 @@ class AnonReport(report):
             turbulence = self.turbulenceBins.binCenterByIndex(j)
             
             row = startRow + self.turbulenceBins.numberOfBins - j
-            countRow = row + countShift                        
+            countRow = row + countShift
 
             sh.write(row, 0, turbulence, self.percent_no_dp_style)
             sh.write(countRow, 0, turbulence, self.percent_no_dp_style)
