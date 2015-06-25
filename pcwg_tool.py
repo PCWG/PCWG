@@ -11,7 +11,7 @@ import pandas as pd
 
 columnSeparator = "|"
 
-version = "0.5.7 (Release Candidate 1)"
+version = "0.5.7 (Release Candidate 2)"
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
 
@@ -1412,7 +1412,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 self.filtersListBox = Listbox(master, yscrollcommand=self.filtersScrollBar.set, selectmode=EXTENDED, height=3)
                 filtersShowHide.addControl(self.filtersListBox)
-                self.filtersListBox.insert(END, "Colulmn,Value,FilterType,Inclusive,Active")
+                self.filtersListBox.insert(END, "Column,Value,FilterType,Inclusive,Active")
                                 
                 self.filtersListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.filtersScrollBar.configure(command=self.filtersListBox.yview)
@@ -1452,17 +1452,20 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         def densityMethodChange(self, *args):
                 
                 if self.densityMode.get() == "Specified":
-                        self.temperature.setTipNotRequired()
-                        self.pressure.setTipNotRequired()
+                        densityModeSpecifiedComment = "Not required when density mode is set to specified"
+                        self.temperature.setTip(densityModeSpecifiedComment)
+                        self.pressure.setTip(densityModeSpecifiedComment)
                         self.density.clearTip()
                 elif self.densityMode.get() == "Calculated":
+                        densityModeCalculatedComment = "Not required when density mode is set to calculate"
                         self.temperature.clearTip()
                         self.pressure.clearTip()
-                        self.density.setTipNotRequired()
+                        self.density.setTip(densityModeCalculatedComment)
                 elif self.densityMode.get() == "None":
-                        self.temperature.setTipNotRequired()
-                        self.pressure.setTipNotRequired()
-                        self.density.setTipNotRequired()
+                        densityModeNoneComment = "Not required when density mode is set to none"
+                        self.temperature.setTip(densityModeNoneComment)
+                        self.pressure.setTip(densityModeNoneComment)
+                        self.density.setTip(densityModeNoneComment)
                 else:
                         raise Exception("Unknown density methods: %s" % self.densityMode.get())
 
@@ -1474,8 +1477,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 if self.hubWindSpeedMode.get() == "Calculated":
 
-                        self.hubWindSpeed.setTipNotRequired()
-                        self.hubTurbulence.setTipNotRequired()
+                        hubWindSpeedModeCalculatedComment = "Not required for calculated hub wind speed mode"
+
+                        self.hubWindSpeed.setTip(hubWindSpeedModeCalculatedComment)
+                        self.hubTurbulence.setTip(hubWindSpeedModeCalculatedComment)
 
                         self.siteCalibrationNumberOfSectors.clearTip()
                         self.siteCalibrationCenterOfFirstSector.clearTip()
@@ -1486,18 +1491,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 
                         if self.calibrationMethod.get() == "LeastSquares":
                                 self.turbineLocationWindSpeed.clearTip()
-                                #self.calibrationDirectionsListBox.setTipNotRequired()
-                                #self.deleteCalibrationDirectionButton.setTipNotRequired()
-                                #self.editCalibrationDirectionButton.setTipNotRequired()
-                                #self.newCalibrationDirectionButton.setTipNotRequired()
                                 self.calibrationStartDate.clearTip()
                                 self.calibrationEndDate.clearTip()
                         elif self.calibrationMethod.get() == "Specified":
                                 self.turbineLocationWindSpeed.setTipNotRequired()
-                                #self.calibrationDirectionsListBox.clearTip()
-                                #self.deleteCalibrationDirectionButton.clearTip()
-                                #self.editCalibrationDirectionButton.clearTip()
-                                #self.newCalibrationDirectionButton.clearTip()
                                 self.calibrationStartDate.setTipNotRequired()
                                 self.calibrationEndDate.setTipNotRequired()
                         else:
@@ -1505,41 +1502,36 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
      
                 elif self.hubWindSpeedMode.get() == "Specified":
 
+                        hubWindSpeedModeSpecifiedComment = "Not required for specified hub wind speed mode"
+                        
                         self.hubWindSpeed.clearTip()
                         self.hubTurbulence.clearTip()
 
-                        self.turbineLocationWindSpeed.setTipNotRequired()                    
-                        #self.calibrationDirectionsListBox.setTipNotRequired()
-                        #self.deleteCalibrationDirectionButton.setTipNotRequired()
-                        #self.editCalibrationDirectionButton.setTipNotRequired()
-                        #self.newCalibrationDirectionButton.setTipNotRequired()
-                        self.calibrationStartDate.setTipNotRequired()
-                        self.calibrationEndDate.setTipNotRequired()
-                        self.siteCalibrationNumberOfSectors.setTipNotRequired()
-                        self.siteCalibrationCenterOfFirstSector.setTipNotRequired()
-                        self.referenceWindSpeed.setTipNotRequired()
-                        self.referenceWindSpeedStdDev.setTipNotRequired()
-                        self.referenceWindDirection.setTipNotRequired()
-                        self.referenceWindDirectionOffset.setTipNotRequired()
+                        self.turbineLocationWindSpeed.setTip(hubWindSpeedModeSpecifiedComment)                    
+                        self.calibrationStartDate.setTip(hubWindSpeedModeSpecifiedComment)
+                        self.calibrationEndDate.setTip(hubWindSpeedModeSpecifiedComment)
+                        self.siteCalibrationNumberOfSectors.setTip(hubWindSpeedModeSpecifiedComment)
+                        self.siteCalibrationCenterOfFirstSector.setTip(hubWindSpeedModeSpecifiedComment)
+                        self.referenceWindSpeed.setTip(hubWindSpeedModeSpecifiedComment)
+                        self.referenceWindSpeedStdDev.setTip(hubWindSpeedModeSpecifiedComment)
+                        self.referenceWindDirection.setTip(hubWindSpeedModeSpecifiedComment)
+                        self.referenceWindDirectionOffset.setTip(hubWindSpeedModeSpecifiedComment)
 
                 elif self.hubWindSpeedMode.get() == "None":
-                        
-                        self.hubWindSpeed.setTipNotRequired()
-                        self.hubTurbulence.setTipNotRequired()
 
-                        self.turbineLocationWindSpeed.setTipNotRequired()
-                        #self.calibrationDirectionsListBox.setTipNotRequired()
-                        #self.deleteCalibrationDirectionButton.setTipNotRequired()
-                        #self.editCalibrationDirectionButton.setTipNotRequired()
-                        #self.newCalibrationDirectionButton.setTipNotRequired()
-                        self.calibrationStartDate.setTipNotRequired()
-                        self.calibrationEndDate.setTipNotRequired()
-                        self.siteCalibrationNumberOfSectors.setTipNotRequired()
-                        self.siteCalibrationCenterOfFirstSector.setTipNotRequired()
-                        self.referenceWindSpeed.setTipNotRequired()
-                        self.referenceWindSpeedStdDev.setTipNotRequired()
-                        self.referenceWindDirection.setTipNotRequired()
-                        self.referenceWindDirectionOffset.setTipNotRequired()
+                        hubWindSpeedModeNoneComment = "Not required when hub wind speed mode is set to none"
+                        
+                        self.hubWindSpeed.setTip(hubWindSpeedModeNoneComment)
+                        self.hubTurbulence.setTip(hubWindSpeedModeNoneComment)
+                        self.turbineLocationWindSpeed.setTip(hubWindSpeedModeNoneComment)
+                        self.calibrationStartDate.setTip(hubWindSpeedModeNoneComment)
+                        self.calibrationEndDate.setTip(hubWindSpeedModeNoneComment)
+                        self.siteCalibrationNumberOfSectors.setTip(hubWindSpeedModeNoneComment)
+                        self.siteCalibrationCenterOfFirstSector.setTip(hubWindSpeedModeNoneComment)
+                        self.referenceWindSpeed.setTip(hubWindSpeedModeNoneComment)
+                        self.referenceWindSpeedStdDev.setTip(hubWindSpeedModeNoneComment)
+                        self.referenceWindDirection.setTip(hubWindSpeedModeNoneComment)
+                        self.referenceWindDirectionOffset.setTip(hubWindSpeedModeNoneComment)
 
                 else:
                         raise Exception("Unknown hub wind speed mode: %s" % self.hubWindSpeedMode.get())
