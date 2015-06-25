@@ -138,6 +138,8 @@ class XmlBase:
         active = active if active else self.getNodeBool(node, 'Active')
         if not len(self.getNode(node, 'FilterValue').childNodes) >1:
             value = self.getNodeValue(node, 'FilterValue')
+            if not "," in value:
+                value = float(value)
             return Filter(active, column, filterType, inclusive, value)
         else:
             valueNode = self.getNode(node, 'FilterValue')
@@ -844,10 +846,10 @@ class DatasetConfiguration(XmlBase):
         for exclusion in self.exclusions:
 
             exclusionNode = self.addNode(doc, exclusionsNode, "Exclusion")
-
-            self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion.active)
-            self.addBoolNode(doc, exclusionNode, "ExclusionStartDate", exclusion.startDate)
-            self.addBoolNode(doc, exclusionNode, "ExclusionEndDate", exclusion.endDate)
+        
+            self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion[2])
+            self.addTextNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
+            self.addTextNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
 
         self.saveDocument(doc, self.path)
 
@@ -1058,7 +1060,7 @@ class DatasetConfiguration(XmlBase):
             startDate = self.getNodeDate(node, 'ExclusionStartDate')
             endDate = self.getNodeDate(node, 'ExclusionEndDate')
 
-            self.exclusions.append((startDate, endDate))
+            self.exclusions.append((startDate, endDate, active))
 
         self.hasExclusions = (len(self.exclusions) > 0)
 

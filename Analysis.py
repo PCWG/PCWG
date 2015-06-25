@@ -150,8 +150,20 @@ class Analysis:
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
         
-        powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve) if config.specifiedPowerCurve != '' else None)
-        self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, self.rotorGeometry, "Specified Power", "Specified Turbulence", turbulenceRenormalisation = self.turbRenormActive, name = 'Specified')
+        if config.specifiedPowerCurve != '':
+
+            powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
+            
+            self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
+                                                          self.rotorGeometry, "Specified Power", "Specified Turbulence", \
+                                                          turbulenceRenormalisation = self.turbRenormActive, name = 'Specified')
+
+            self.referenceDensity = self.specifiedPowerCurve.referenceDensity
+            
+        else:
+             
+            self.specifiedPowerCurve = None
+            self.referenceDensity = 1.225 #todo consider adding UI setting for this
         
         if self.densityCorrectionActive:
             if self.hasDensity:
@@ -632,7 +644,7 @@ class Analysis:
             if dfPowerCoeff is not None:
                 powerLevels[self.powerCoeff] = dfPowerCoeff
 
-            return turbine.PowerCurve(powerLevels, self.specifiedPowerCurve.referenceDensity, self.rotorGeometry, powerColumn,
+            return turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, powerColumn,
                                       self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount,
                                             turbulenceRenormalisation = (self.turbRenormActive if powerColumn != self.turbulencePower else False), name = name)
 
@@ -742,7 +754,7 @@ class Analysis:
     def calculateCp(self):
         area = np.pi*(self.config.diameter/2.0)**2
         a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
-        b = 1000*self.dataFrame[self.actualPower]/(0.5*self.specifiedPowerCurve.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
+        b = 1000*self.dataFrame[self.actualPower]/(0.5*self.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
         betzExceed = (len(a[a>16.0/27])*100.0)/len(a)
         if betzExceed > 0.5:
             print "{0:.02}% data points slightly exceed Betz limit - if this number is high, investigate...".format(betzExceed)
