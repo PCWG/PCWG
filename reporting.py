@@ -759,10 +759,10 @@ class AnonReport(report):
     def report_scatter_metric(self,sh,analysis,row, turbRenormActive):
         row += 5
         sh.write(row,   1, "Scatter Metric Before TI Renormalisation:", self.bold_style)
-        sh.write(row+1, 1, "{0}".format(analysis.powerCurveScatterMetric) , self.percent_style)
+        sh.write(row+1, 1, analysis.powerCurveScatterMetric, self.percent_style)
         if turbRenormActive:
             sh.write(row,   2, "Scatter Metric After TI Renormalisation:", self.bold_style)
-            sh.write(row+1, 2, "{0}".format(analysis.powerCurveScatterMetricAfterTiRenorm) , self.percent_style)
+            sh.write(row+1, 2, analysis.powerCurveScatterMetricAfterTiRenorm , self.percent_style)
         return row + 3
 
     def report_power_deviation_matrix(self,sh,analysis,book):
