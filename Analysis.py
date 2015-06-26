@@ -167,7 +167,7 @@ class Analysis:
         
         if self.densityCorrectionActive:
             if self.hasDensity:
-                self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(powerCurveConfig.powerCurveDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
+                self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(self.referenceDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
                 self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.densityCorrectedHubWindSpeed]
                 self.inputHubWindSpeedSource = self.densityCorrectedHubWindSpeed
             else:
@@ -698,9 +698,10 @@ class Analysis:
         index.sort()
         df = pd.DataFrame(index = index, columns = ['Scatter Metric'])
         for ws in df.index:
-            rows = self.dataFrame[self.inputHubWindSpeed] == ws
-            df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
-        return df
+            if ws >= measuredPowerCurve.cutInWindSpeed:
+                rows = self.dataFrame[self.inputHubWindSpeed] == ws
+                df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
+        return df.dropna()
 
     def report(self, path,version="unknown"):
 
