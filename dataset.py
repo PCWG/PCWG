@@ -6,7 +6,20 @@ import configuration
 import rews
 import binning
 
+def getSeparatorConfigValue(separator):
 
+        separator = separator.upper()
+        
+        if separator == "TAB":
+                return "\t"
+        elif separator == "SPACE":
+                return " "
+        elif separator == "COMMA":
+                return ","
+        elif separator == "SEMI-COLON":
+                return ";"
+        else:
+                raise Exception("Unkown separator: '%s'" % separator)
 
 class DeviationMatrix(object):
     def __init__(self,deviationMatrix,countMatrix):
@@ -220,15 +233,9 @@ class Dataset:
         self.sensitivityDataColumns = config.sensitivityDataColumns
 
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
-
-        if config.inputTimeSeriesPath[-3:] == 'csv':
-            separator = ','
-        elif config.inputTimeSeriesPath[-3:] in ('dat',"txt"):
-            separator = '\t'
-        else:
-            raise Exception("The input time series path is to an unrecognised file type:\n%s" % config.inputTimeSeriesPath)
-
-        dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, parse_dates = True, date_parser = dateConverter, sep = separator, skiprows = config.headerRows).replace(config.badData, np.nan)
+        dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, \
+                                parse_dates = True, date_parser = dateConverter, sep = getSeparatorValue(config.separator), \
+                                skiprows = config.headerRows).replace(config.badData, np.nan)
 
         if config.startDate != None and config.endDate != None:
             dataFrame = dataFrame[config.startDate : config.endDate]
