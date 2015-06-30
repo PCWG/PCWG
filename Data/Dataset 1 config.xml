@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
 <Configuration xmlns="http://www.pcwg.org">
 	<Name>Dataset 1</Name>
-	<StartDate>2011-10-07 12:50:00</StartDate>
-	<EndDate>2012-07-23 15:30:00</EndDate>
+	<StartDate>2011-10-07T12:50:00</StartDate>
+	<EndDate>2012-07-23T15:30:00</EndDate>
 	<HubWindSpeedMode>Specified</HubWindSpeedMode>
 	<DensityMode>Specified</DensityMode>
 	<RotorEquivalentWindSpeed>

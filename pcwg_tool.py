@@ -8,13 +8,22 @@ import datetime
 import os
 import os.path
 import pandas as pd
+import dateutil
 
 columnSeparator = "|"
+datePickerFormat = "%d-%m-%Y %H:%M"
+datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
-version = "0.5.7 (Release Candidate 2)"
-ExceptionType = Exception
+version = "0.5.7 (Release Candidate 3)"
+#ExceptionType = Exception
 ExceptionType = None #comment this line before release
-
+        
+def getDateFromEntry(entry):
+        if len(entry.get()) > 0:
+                return datetime.datetime.strptime(entry.get(), datePickerFormat)
+        else:
+                return None
+   
 def getBoolFromText(text):
         
         if text == "True":
@@ -22,7 +31,7 @@ def getBoolFromText(text):
         elif text == "False":
             active = False
         else:
-            raise Exception("Cannat convert Text to Boolean: %s" % activeText)
+            raise Exception("Cannot convert Text to Boolean: %s" % activeText)
         
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
@@ -569,6 +578,30 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 master.columnconfigure(self.tipColumn, pad=10, weight = 0)
                 master.columnconfigure(self.messageColumn, pad=10, weight = 0)
 
+        def addDatePickerEntry(self, master, title, validation, value, width = None, showHideCommand = None):
+
+                if value != None:
+                        textValue = value.strftime(datePickerFormat)
+                else:
+                        textValue = None
+                        
+                entry = self.addEntry(master, title + " " + datePickerFormatDisplay, validation, textValue, width = width, showHideCommand = showHideCommand)
+                entry.entry.config(state=DISABLED)
+                
+                pickButton = Button(master, text=".", command = DatePicker(self, entry, datePickerFormat), width=3, height=1)
+                pickButton.grid(row=(self.row-1), sticky=N, column=self.inputColumn)
+
+                clearButton = Button(master, text="x", command = ClearEntry(entry), width=3, height=1)
+                clearButton.grid(row=(self.row-1), sticky=W, column=self.inputColumn, padx = 135)
+
+                if showHideCommand != None:
+                        showHideCommand.addControl(pickButton)
+                        showHideCommand.addControl(clearButton)
+                        
+                entry.bindPickButton(pickButton)
+
+                return entry
+                
         def addPickerEntry(self, master, title, validation, value, width = None, showHideCommand = None):
 
                 entry = self.addEntry(master, title, validation, value, width = width, showHideCommand = showHideCommand)
@@ -715,6 +748,14 @@ class BaseDialog(tkSimpleDialog.Dialog):
         
                         return 1
 
+class ClearEntry:
+
+        def __init__(self, entry):
+                self.entry = entry
+        
+        def __call__(self):
+                self.entry.set("")
+                
 class PowerCurveLevelDialog(BaseDialog):
 
         def __init__(self, master, status, callback, text = None, index = None):
@@ -862,6 +903,10 @@ class ExclusionDialog(BaseDialog):
 
                 self.prepareColumns(master)     
 
+                #dummy label to force width
+                Label(master, text=" " * 275).grid(row = self.row, sticky=W, column=self.titleColumn, columnspan = 8)
+                self.row += 1
+                
                 if not self.isNew:
                         
                         items = extractExclusionValuesFromText(self.text)
@@ -871,14 +916,14 @@ class ExclusionDialog(BaseDialog):
                         active = items[2]
 
                 else:
-                        startDate = ''
-                        endDate = ''
+                        startDate = None
+                        endDate = None 
                         active = False
                         
                 self.addTitleRow(master, "Exclusion Settings:")
                 
-                self.startDate = self.addEntry(master, "Start Date:", ValidateNotBlank(master), startDate)
-                self.endDate = self.addEntry(master, "End Date:", ValidateNotBlank(master), endDate)
+                self.startDate = self.addDatePickerEntry(master, "Start Date:", ValidateNotBlank(master), startDate)
+                self.endDate = self.addDatePickerEntry(master, "End Date:", ValidateNotBlank(master), endDate)
 
                 if active:
                     self.active = self.addCheckBox(master, "Active:", 1)
@@ -1131,33 +1176,129 @@ class ColumnPickerDialog(BaseDialog):
                         
                 self.callback(self.column.get())
 
-#class DatePickerDialog(BaseDialog):
-#
-#       def __init__(self, master, status, callback, date):
-#
-#                self.callback = callback
-#                self.date = date
-#                
-#                BaseDialog.__init__(self, master, status)
-#                        
-#        def body(self, master):
-#
-#                thisYear = dt.datetime.today().year
-#                
-#                self.day = self.addEntry(master, "Day:", range(1, 31 + 1, 1), selectedDay, showHideCommand = None)
-#                self.month = self.addEntry(master, "Month:", range(1, 12 + 1, 1), selectedMonth, showHideCommand = None)
-#                self.year = self.addOption(master, "Year:", range(1980, thisYear + 1, 1), selectedYear, showHideCommand = None)
-#
-#                self.hour = self.addEntry(master, "Month:", range(0, 23 + 1, 1), selectedMonth, showHideCommand = None)
-#                self.year = self.addOption(master, "Minute:", range(0, 60, 10), selectedYear, showHideCommand = None)
-#                
-#                if len(self.availableColumns) > 0:
-#                        self.column = self.addOption(master, "Select Column:", self.availableColumns, self.column)
-#                        
-#        def apply(self)
-#                date = datetime()
-#                self.callback(self.column.get())
-       
+class DatePickerDialog(BaseDialog):
+
+        def __init__(self, master, status, callback, date, dateFormat):
+
+                self.callback = callback
+                self.date = date
+                self.dateFormat = dateFormat
+                
+                BaseDialog.__init__(self, master, status)
+
+        def validate(self):
+
+                valid = True
+                return 0
+                
+        def body(self, master):
+
+                thisYear = datetime.datetime.today().year
+
+                if self.date != None:
+                        selectedDay = self.date.day
+                        selectedMonth = self.date.month
+                        selectedYear = self.date.year
+                        selectedHour = self.date.hour
+                        selectedMinute = self.date.minute
+                else:
+                        selectedDay = None
+                        selectedMonth = None
+                        selectedYear = None
+                        selectedHour = None
+                        selectedMinute = None
+                                
+                self.parseButton = Button(master, text="Parse Clipboard", command = ParseClipBoard(master, self.dateFormat, self.parseClipBoard), width=30, height=1)
+                self.parseButton.grid(row=self.row, column=self.titleColumn, columnspan = 8)
+                self.row += 1
+                
+                spacer = Label(master, text=" " * 60)
+                spacer.grid(row=self.row, column=self.titleColumn, columnspan = 4)
+                spacer = Label(master, text=" " * 60)
+                spacer.grid(row=self.row, column=self.secondButtonColumn, columnspan = 4)
+                
+                self.row += 1
+                
+                self.day = self.addEntry(master, "Day:", ValidateNonNegativeInteger(master), selectedDay, showHideCommand = None)
+                self.month = self.addEntry(master, "Month:", ValidateNonNegativeInteger(master), selectedMonth, showHideCommand = None)
+                self.year = self.addEntry(master, "Year:", ValidateNonNegativeInteger(master), selectedYear, showHideCommand = None)
+                self.hour = self.addEntry(master, "Hour:", ValidateNonNegativeInteger(master), selectedHour, showHideCommand = None)
+                self.minute = self.addEntry(master, "Minute:", ValidateNonNegativeInteger(master), selectedMinute, showHideCommand = None)
+
+                self.validations.append(self.validateDate)
+
+        def validateDate(self):
+
+                try:
+                        self.getDate()
+                except Exception as e:
+                        pass
+                        
+        def parseClipBoard(self, date):
+                
+                self.day.set(date.day)
+                self.month.set(date.month)
+                self.year.set(date.year)
+                self.hour.set(date.hour)
+                self.minute.set(date.minute)
+                
+        def getDate(self):
+                return datetime.datetime(int(self.year.get()), int(self.month.get()), int(self.day.get()), int(self.hour.get()), int(self.minute.get()))
+        
+        def apply(self):
+                self.callback(self.getDate())
+
+class ParseClipBoard:
+
+        def __init__(self, master, dateFormat, callback):
+                self.master = master
+                self.dateFormat = dateFormat
+                self.callback = callback
+
+        def __call__(self):
+                
+                try:
+                        
+                        clipboard = self.master.selection_get(selection = "CLIPBOARD")
+                        
+                        if len(clipboard) > 0:
+
+                                try:                                        
+                                        date = datetime.datetime.strptime(clipboard, self.dateFormat)
+                                except Exception as e:
+                                        try:
+                                                date = dateutil.parser.parse(clipboard)
+                                        except Exception as e:
+                                                date = None
+                                                print "Can't parse clipboard (%s)" % e.message
+
+                                if date != None:
+                                        self.callback(date)
+                                        
+                except Exception as e:
+                        print "Can't parse clipboard (%s)" % e.message
+                        
+class DatePicker:
+
+        def __init__(self, parentDialog, entry, dateFormat):
+
+                self.parentDialog = parentDialog
+                self.entry = entry
+                self.dateFormat = dateFormat
+        
+        def __call__(self):
+
+                if len(self.entry.get()) > 0:
+                        date = datetime.datetime.strptime(self.entry.get(), self.dateFormat)
+                else:
+                        date = None
+
+                DatePickerDialog(self.parentDialog, self.parentDialog.status, self.pick, date, self.dateFormat)
+
+        def pick(self, date):
+                
+                self.entry.set(date.strftime(datePickerFormat))
+                        
 class ColumnPicker:
 
         def __init__(self, parentDialog, entry):
@@ -1213,6 +1354,7 @@ class DateFormatPicker:
                 if len(column) > 0:
                         self.entry.set(column)
 
+                       
 class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
@@ -1230,8 +1372,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.name = self.addEntry(master, "Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
 
-                self.startDate = self.addEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
-                self.endDate = self.addEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
+                self.startDate = self.addDatePickerEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
+                self.endDate = self.addDatePickerEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
                 
                 self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["None", "Calculated", "Specified"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
                 self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
@@ -1252,6 +1394,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M']), width=5, height=1)
                 pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 measurementShowHide.addControl(pickDateFormatButton)
+
+                self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = measurementShowHide)
 
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = measurementShowHide)
 
@@ -1327,8 +1471,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationShowHide)
                 calibrationShowHide.button.grid(row=self.row, sticky=N+E+W, column=self.showHideColumn)
 
-                self.calibrationStartDate = self.addEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)                
-                self.calibrationEndDate = self.addEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
+                self.calibrationStartDate = self.addDatePickerEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)                
+                self.calibrationEndDate = self.addDatePickerEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
                 self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationShowHide)
                 self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationShowHide)
     
@@ -1445,6 +1589,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 rewsProfileShowHide.hide()
                 calibrationShowHide.hide()
                 exclusionsShowHide.hide()
+                filtersShowHide.hide()
 
                 self.calibrationMethodChange()
                 self.densityMethodChange()
@@ -1786,8 +1931,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         def setConfigValues(self):
 
                 self.config.name = self.name.get()
-                self.config.startDate = self.startDate.get()
-                self.config.endDate = self.endDate.get()
+                self.config.startDate = getDateFromEntry(self.startDate)
+                self.config.endDate = getDateFromEntry(self.endDate)
                 self.config.hubWindSpeedMode = self.hubWindSpeedMode.get()
                 self.config.calibrationMethod = self.calibrationMethod.get()
                 self.config.densityMode = self.densityMode.get()
@@ -1801,8 +1946,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
                 self.config.badData = float(self.badData.get())
                 self.config.dateFormat = self.dateFormat.get()
+                self.config.separator = self.separator.get()
                 self.config.headerRows = self.getHeaderRows()
                 self.config.timeStamp = self.timeStamp.get()
+
 
                 self.config.power = self.power.get()
                 self.config.referenceWindSpeed = self.referenceWindSpeed.get()
@@ -1838,8 +1985,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.calibrationOffsets = {}
                 self.config.calibrationActives = {}
 
-                self.config.calibrationStartDate = self.calibrationStartDate.get()
-                self.config.calibrationEndDate = self.calibrationEndDate.get()
+                self.config.calibrationStartDate = getDateFromEntry(self.calibrationStartDate)
+                self.config.calibrationEndDate = getDateFromEntry(self.calibrationEndDate)
                 self.config.siteCalibrationNumberOfSectors = intSafe(self.siteCalibrationNumberOfSectors.get())
                 self.config.siteCalibrationCenterOfFirstSector = intSafe(self.siteCalibrationCenterOfFirstSector.get()) 
                 

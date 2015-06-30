@@ -3,8 +3,8 @@
 	
 	<ns1:Name>Dataset 2</ns1:Name>
 
-	<ns1:StartDate>31/10/2012 10:00</ns1:StartDate>
-	<ns1:EndDate>09/04/2013 14:50</ns1:EndDate>
+	<ns1:StartDate>2012-10-31T10:00:00</ns1:StartDate>
+	<ns1:EndDate>2013-04-09T14:50:00</ns1:EndDate>
 
 	<ns1:HubWindSpeedMode>Specified</ns1:HubWindSpeedMode>
 	<ns1:DensityMode>None</ns1:DensityMode>	
