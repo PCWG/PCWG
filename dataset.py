@@ -6,7 +6,7 @@ import configuration
 import rews
 import binning
 
-def getSeparatorConfigValue(separator):
+def getSeparatorValue(separator):
 
         separator = separator.upper()
         
