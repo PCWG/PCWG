@@ -15,8 +15,8 @@ datePickerFormat = "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.7 (Release Candidate 3)"
-#ExceptionType = Exception
-ExceptionType = None #comment this line before release
+ExceptionType = Exception
+#ExceptionType = None #comment this line before release
         
 def getDateFromEntry(entry):
         if len(entry.get()) > 0:
@@ -1115,7 +1115,7 @@ class BaseConfigurationDialog(BaseDialog):
                 else:
                         path = self.config.path
                         
-                self.filePath = self.addFileSaveAsEntry(master, "File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
+                self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
 
                 self.addFormElements(master)
 
@@ -1370,7 +1370,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearWindSpeedHeights = []
                 self.shearWindSpeeds = []
 
-                self.name = self.addEntry(master, "Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
+                self.name = self.addEntry(master, "Dataset Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
+                self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = self.generalShowHide)
 
                 self.startDate = self.addDatePickerEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
                 self.endDate = self.addDatePickerEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
@@ -1386,7 +1387,6 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 measurementShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Measurement Settings:", showHideCommand = measurementShowHide)
-                self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = measurementShowHide)
                 self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds, showHideCommand = measurementShowHide)
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
 
@@ -1419,8 +1419,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.row += 1
                 
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
-                        self.shearWindSpeeds.append( self.addPickerEntry(master, "Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
-                        self.shearWindSpeedHeights.append(self.addEntry(master, "Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
+                        self.shearWindSpeeds.append( self.addPickerEntry(master, "Shear Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
+                        self.shearWindSpeedHeights.append(self.addEntry(master, "Shear Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
 
                 rewsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
@@ -1544,7 +1544,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 startDate = exclusion[0]
                                 endDate = exclusion[1]
                                 active = exclusion[2]
-                                text = encodeexclusionValuesAsText(startDate, endDate, active)
+                                text = encodeExclusionValuesAsText(startDate, endDate, active)
                                 self.exclusionsListBox.insert(END, text)
 
                 #Filters
@@ -1652,7 +1652,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.hubWindSpeed.clearTip()
                         self.hubTurbulence.clearTip()
 
-                        self.turbineLocationWindSpeed.setTip(hubWindSpeedModeSpecifiedComment)                    
+                        self.turbineLocationWindSpeed.setTip(hubWindSpeedModeSpecifiedComment)
                         self.calibrationStartDate.setTip(hubWindSpeedModeSpecifiedComment)
                         self.calibrationEndDate.setTip(hubWindSpeedModeSpecifiedComment)
                         self.siteCalibrationNumberOfSectors.setTip(hubWindSpeedModeSpecifiedComment)
@@ -2148,7 +2148,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.filterMode = self.addOption(master, "Filter Mode:", filterModeOptions, self.config.filterMode, showHideCommand = self.generalShowHide)
                 
                 powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
-                self.powerCurveMode = self.addOption(master, "Power Curve Mode:", powerCurveModes, self.config.powerCurveMode, showHideCommand = self.generalShowHide)
+                self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode, showHideCommand = self.generalShowHide)
 
                 self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Linear", "Observed", "Specified", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
 
@@ -2159,7 +2159,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.powerCurveBinSize = self.addEntry(master, "Bin Size:", ValidatePositiveFloat(master), self.config.powerCurveBinSize, showHideCommand = powerCurveShowHide)
 
                 datasetsShowHide = ShowHideCommand(master)  
-                Label(master, text="Datasets:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                Label(master, text="Dataset Configuration XMLs:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 datasetsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
                 self.row += 1
 
@@ -2264,7 +2264,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                         
         def NewPowerCurve(self):
 
-                config = PowerCurveConfiguration()
+                config = configuration.PowerCurveConfiguration()
                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
 
         def EditDataset(self, event = None):
@@ -2666,7 +2666,7 @@ class UserInterface:
                 self.root.update()
 
         def About(self):
-                tkMessageBox.showinfo("PCWG-Tool About", "Version: %s \nVisit http://www.pcwg.org for more info" % version)
+                tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=version))
 
         def addMessage(self, message, red=False):
                 self.listbox.insert(END, message)
