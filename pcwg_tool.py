@@ -31,7 +31,7 @@ def getBoolFromText(text):
         elif text == "False":
             active = False
         else:
-            raise Exception("Cannot convert Text to Boolean: %s" % activeText)
+            raise Exception("Cannot convert Text to Boolean: %s" % text)
         
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
