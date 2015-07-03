@@ -188,7 +188,6 @@ class Analysis:
 
             self.status.addMessage("Calculating actual power curves...")
 
-            self.hours = len(self.dataFrame.index)*1.0 / 6.0
             self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'All Measured')
 
             self.innerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Inner Turbulence')
@@ -256,7 +255,7 @@ class Analysis:
                 self.powerDeviationMatrixPowerDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
 
             self.status.addMessage("Power Curve Deviation Matrices Complete.")
-
+        self.hours = len(self.dataFrame.index)*1.0 / 6.0
         if self.config.nominalWindSpeedDistribution is not None:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
@@ -838,7 +837,7 @@ class Analysis:
         self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
         self.status.addMessage("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
 
-    def export(self, path, full = True):
+    def export(self, path, full = True, calibration = True ):
         op_path = os.path.dirname(path)
         plotsDir = self.config.path.replace(".xml","_PPAnalysisPlots")
         self.png_plots(plotsDir)
@@ -847,6 +846,8 @@ class Analysis:
             rootPath = os.path.dirname(path)
             for ds in self.datasetConfigs:
                 ds.data.fullDataFrame.to_csv(rootPath + os.sep + "FilteredDataSet_AllColumns_{0}.dat".format(ds.name), sep = '\t')
+                if calibration and hasattr(ds.data,"filteredCalibrationDataframe"):
+                    ds.data.filteredCalibrationDataframe.to_csv(rootPath + os.sep + "CalibrationDataSet_{0}.dat".format(ds.name), sep = '\t')
 
     def png_plots(self,path):
         chckMake(path)

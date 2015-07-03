@@ -2482,7 +2482,7 @@ class UserInterface:
     
                     self.addMessage("Total Time Taken: %fs" % totalTime)
                 else:
-                    self.addMessage("No benchmark loaded")
+                    self.addMessage("No benchmark loaded", red = True)
                 
         def BenchmarkAnalysis(self, path, tolerance, dictExpectedResults):
 
