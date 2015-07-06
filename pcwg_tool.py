@@ -2280,12 +2280,6 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 relativePath = configuration.RelativePath(self.filePath.get()) 
                                 datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
 
-                                if datasetConfig.hasFilters:
-                                        self.status.addMessage("Warning: GUI currently does not support editing filters.")
-
-                                if datasetConfig.hasExclusions:
-                                        self.status.addMessage("Warning: GUI currently does not support editing exclusions.")
-                                        
                                 configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
                                 
                         except ExceptionType as e:
