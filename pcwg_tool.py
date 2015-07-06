@@ -1187,9 +1187,15 @@ class DatePickerDialog(BaseDialog):
                 BaseDialog.__init__(self, master, status)
 
         def validate(self):
-
-                valid = True
-                return 0
+                valid = False
+                
+                if type(self.getDate()) == datetime.datetime:
+                    valid = True
+                    
+                if valid:
+                    return 1
+                else:
+                    return 0
                 
         def body(self, master):
 
@@ -1246,7 +1252,7 @@ class DatePickerDialog(BaseDialog):
                 return datetime.datetime(int(self.year.get()), int(self.month.get()), int(self.day.get()), int(self.hour.get()), int(self.minute.get()))
         
         def apply(self):
-                self.callback(self.getDate())
+                    self.callback(self.getDate())
 
 class ParseClipBoard:
 
@@ -1391,7 +1397,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
 
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
-                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M']), width=5, height=1)
+                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%y %H:%M:%S']), width=5, height=1)
                 pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 measurementShowHide.addControl(pickDateFormatButton)
 
