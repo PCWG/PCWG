@@ -171,6 +171,38 @@ class XmlBase:
             months = [int(a) for a  in months.split(",")]
         days = [int(a) for a  in days.split(",")]
         return TimeOfDayFilter(active,startTime,endTime,days,months)
+        
+    def readSimpleCalibrationFilter(self,node,active=True):
+        column = self.getNodeValue(node, 'DataColumn')
+        inclusive = self.getNodeBool(node, 'Inclusive')
+        calibrationFilterType = self.getNodeValue(node, 'FilterType')
+        active = active if active else self.getNodeBool(node, 'Active')
+        if not len(self.getNode(node, 'FilterValue').childNodes) >1:
+            value = self.getNodeValue(node, 'FilterValue')
+            if not "," in value:
+                value = float(value)
+            return CalibrationFilter(active, column, filterType, inclusive, value)
+        else:
+            valueNode = self.getNode(node, 'FilterValue')
+            columnFactors = []
+            for columnFactor in self.getNodes(valueNode,'ColumnFactor'):
+                columnFactors.append((
+                    self.getNodeValueIfExists(columnFactor, 'ColumnName', 'Actual Power'),
+                    self.getNodeValueIfExists(columnFactor, 'A', 1),
+                    self.getNodeValueIfExists(columnFactor, 'B', 0),
+                    self.getNodeValueIfExists(columnFactor, 'C', 1)
+                    ))
+            return CalibrationFilter(active, column, filterType, inclusive, columnFactors,derived=True)
+            
+    def readToDCalibrationFilter(self,active,node):
+        startTime = self.getNodeDate(node, 'StartTime')
+        endTime   = self.getNodeDate(node, 'EndTime')
+        days = self.getNodeValueIfExists(node,"DaysOfTheWeek","1,2,3,4,5,6,7")
+        months = self.getNodeValueIfExists(node,"Months",[])
+        if months != []:
+            months = [int(a) for a  in months.split(",")]
+        days = [int(a) for a  in days.split(",")]
+        return TimeOfDayCalibrationFilter(active,startTime,endTime,days,months)
 
 class RelativePath:
 
@@ -642,6 +674,88 @@ class RelationshipFilter(XmlBase):
         self.filterType  = ", ".join([", ".join(str(f.filterType) for f in r.clauses) for r in self.relationships])
         self.inclusive  = ", ".join([", ".join(str(f.inclusive) for f in r.clauses) for r in self.relationships])
         self.value  = ", ".join([", ".join(str(f.value) for f in r.clauses) for r in self.relationships])
+        
+class TimeOfDayCalibationFilter(XmlBase):
+    """ Time of Day filter. everything after startTime is removed AND before endTime is removed.
+    """
+    def __init__(self,active, startTime, endTime, daysOfTheWeek, months=[]):
+        self.active = active
+        self.startTime = startTime
+        self.endTime = endTime
+        self.daysOfTheWeek = daysOfTheWeek
+        self.applied = False
+        self.months  = months
+        self.column = "TimeStamp"
+
+    def printSummary(self):
+        print str(self)
+
+    def __str__(self):
+        strMonths = "" if len(self.months) == 0 else "in months {0}".format(self.months)
+        return "TimeOfDayFilter: {st} - {end} on days:{days} {months}".format (st=self.startTime.time(),
+                                                            end= self.endTime.time(),
+                                                            days=",".join(str(a) for a in self.daysOfTheWeek),
+                                                            months= strMonths)
+class CalibrationFilter(XmlBase):
+
+    def __init__(self, active, column,filterType,inclusive,value,derived=False):
+        self.active = active
+        self.derived = derived
+        self.column = column
+        self.filterType = filterType
+        self.inclusive = inclusive
+        self.value = value
+        self.applied = False
+
+    def printSummary(self):
+
+        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev=self.derived,
+                                                            col=   self.column,
+                                                            typ=self.filterType,
+                                                            incl=self.inclusive,
+                                                            desc=self.__str__())
+
+        if not self.derived:
+            return str(self.value)
+        else:
+            return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])
+
+    def __str__(self):
+        if not self.derived:
+            return str(self.value)
+        else:
+            return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])
+
+class CalibrationRelationshipFilter(XmlBase):
+    class CalibrationFilterRelationship(XmlBase):
+        def __init__(self,conjunction,clauseNodes):
+            self.conjunction = conjunction
+            self.clauses = []
+            for node in clauseNodes:
+                self.clauses.append(self.readSimpleCalibrationFilter(node, True))
+    def __str__(self):
+        return " - ".join([" {0} ".format(r.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in r.clauses])  for r in self.relationships])
+    def printSummary(self):
+        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev="\t",
+                                                            col=   self.column,
+                                                            typ=self.filterType,
+                                                            incl=self.inclusive,
+                                                            desc=self.__str__())
+        return self.__str__()
+    def __init__(self, active,  node):
+        self.active = active
+        self.applied = False
+        self.relationships = []
+        self.sortRelationships(self.getNode(node,'Relationship'))
+    def sortRelationships(self,node):
+
+        self.relationships.append(self.CalibrationFilterRelationship(self.getNodeValue(node,'Conjunction'),
+                                                         self.getNodes(node,'Clause')))
+        # for excel reporting
+        self.column  = ", ".join([", ".join(str(f.column) for f in r.clauses) for r in self.relationships])
+        self.filterType  = ", ".join([", ".join(str(f.filterType) for f in r.clauses) for r in self.relationships])
+        self.inclusive  = ", ".join([", ".join(str(f.inclusive) for f in r.clauses) for r in self.relationships])
+        self.value  = ", ".join([", ".join(str(f.value) for f in r.clauses) for r in self.relationships])
 
 
 class DatasetConfiguration(XmlBase):
@@ -729,11 +843,15 @@ class DatasetConfiguration(XmlBase):
             self.referenceWindDirection = None
             self.referenceWindDirectionOffset = 0
             self.turbineLocationWindSpeed = ''
+            self.turbineAvailabilityCount = ''
             self.hubWindSpeed= ''
             self.hubTurbulence = ''
             self.temperature = ''
             self.pressure = ''
             self.power = ''
+            self.powerMin = ''
+            self.powerMax = ''
+            self.powerSD = ''
             self.density = ''
 
             self.shearMeasurements = {}
@@ -810,6 +928,7 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "Density", self.density)
 
         self.addTextNode(doc, measurementsNode, "TurbineLocationWindSpeed", self.turbineLocationWindSpeed)
+        self.addTextNode(doc, measurementsNode, "TurbineAvailabilityCount", self.turbineAvailabilityCount)
 
         if self.power is not None:
             self.addTextNode(doc, measurementsNode, "Power", self.power)
@@ -852,8 +971,8 @@ class DatasetConfiguration(XmlBase):
 
         calibrationFiltersNode = self.addNode(doc, calibrationNode, "CalibrationFilters")
 
-        for calibrationFilter in self.calibrationFilters:
-            self.writeFilter(doc, calibrationFiltersNode, calibrationFilter, "CalibrationFilter")
+        for calibrationFilterItem in self.calibrationFilters:
+            self.writeCalibrationFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
 
         calibrationDirectionsNode = self.addNode(doc, calibrationNode, "CalibrationDirections")
 
@@ -879,8 +998,8 @@ class DatasetConfiguration(XmlBase):
             exclusionNode = self.addNode(doc, exclusionsNode, "Exclusion")
         
             self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion[2])
-            self.addDateNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
-            self.addDateNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
+            self.addTextNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
+            self.addTextNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
 
         self.saveDocument(doc, self.path)
 
@@ -945,6 +1064,7 @@ class DatasetConfiguration(XmlBase):
         self.separator = self.getNodeValueIfExists(measurementsNode, 'Separator', 'TAB')
 
         self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
+        self.turbineAvailabilityCount = self.getNodeValueIfExists(measurementsNode, 'TurbineAvailabilityCount', '')
 
         self.hubWindSpeed = self.getNodeValueIfExists(measurementsNode, 'HubWindSpeed', '')
         self.hubTurbulence = self.getNodeValueIfExists(measurementsNode, 'HubTurbulence', '')
@@ -1084,9 +1204,9 @@ class DatasetConfiguration(XmlBase):
 
         calibrationFilterNode = self.addNode(doc, calibrationFiltersNode, nodeName)
 
-        self.addTextNode(doc, filterNode, "DataColumn", calibrationFilterItem.column)
-        self.addTextNode(doc, filterNode, "FilterType", calibrationFilterItem.filterType)
-        self.addBoolNode(doc, filterNode, "Inclusive", calibrationFilterItem.inclusive)
+        self.addTextNode(doc, calibrationFilterNode, "DataColumn", calibrationFilterItem.column)
+        self.addTextNode(doc, calibrationFilterNode, "FilterType", calibrationFilterItem.filterType)
+        self.addBoolNode(doc, calibrationFilterNode, "Inclusive", calibrationFilterItem.inclusive)
 
         if not calibrationFilterItem.derived:
 
@@ -1100,10 +1220,10 @@ class DatasetConfiguration(XmlBase):
 
                 columnFactorNode = self.addNode(doc, valueNode, "ColumnFactor")
 
-                self.addTextNode(doc, filterNode, "DataColumn", columnFactorNode.valueItem[0])
-                self.addFloatNode(doc, filterNode, "A", columnFactorNode.valueItem[1])
-                self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
-                self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
+                self.addTextNode(doc, calibrationFilterNode, "DataColumn", columnFactorNode.valueItem[0])
+                self.addFloatNode(doc, calibrationFilterNode, "A", columnFactorNode.valueItem[1])
+                self.addFloatNode(doc, calibrationFilterNode, "B", columnFactorNode.valueItem[2])
+                self.addFloatNode(doc, calibrationFilterNode, "C", columnFactorNode.valueItem[3])
 
         self.addBoolNode(doc, calibrationFilterNode, "Active", calibrationFilterItem.active)
 
@@ -1116,11 +1236,11 @@ class DatasetConfiguration(XmlBase):
             active = self.getNodeBool(node, 'Active')
 
             if node.localName == 'TimeOfDayFilter':
-                calibrationFilters.append(self.readToDFilter(active,node))
+                calibrationFilters.append(self.readToDCalibrationFilter(active,node))
             elif self.nodeExists(node,'Relationship'):
-                calibrationFilters.append(RelationshipFilter(active,node))
+                calibrationFilters.append(CalibrationRelationshipFilter(active,node))
             else:
-                calibrationFilters.append(self.readSimpleFilter(node,active))
+                calibrationFilters.append(self.readSimpleCalibrationFilter(node,active))
 
         return calibrationFilters
    

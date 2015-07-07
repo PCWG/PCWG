@@ -100,6 +100,27 @@ def extractFilterValuesFromText(text):
 
         except Exception as ex:
                 raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
+                
+def encodeCalibrationFilterValuesAsText(column, value, calibrationFilterType, inclusive, active):
+
+        return "%s%s%f%s%s%s%s%s%s" % (column, columnSeparator, value, columnSeparator, calibrationFilterType, columnSeparator, inclusive, columnSeparator, active)
+
+def extractCalibrationFilterValuesFromText(text):
+
+        try:
+        
+                items = text.split(columnSeparator)
+                column = items[0].strip()
+                value = float(items[1].strip())
+                calibrationFilterType = items[2].strip()
+                inclusive = getBoolFromText(items[3].strip())
+                active = getBoolFromText(items[4].strip())
+
+                return (column, value, calibrationFilterType, inclusive, active)
+
+        except Exception as ex:
+                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
+        
         
 def encodeExclusionValuesAsText(startDate, endDate, active):
 
@@ -907,6 +928,87 @@ class FilterDialog(BaseDialog):
                 else:
                         self.callback(self.text, self.index)
 
+class CalibrationFilterDialog(BaseDialog):
+
+        def __init__(self, master, status, callback, text = None, index = None):
+
+                self.callback = callback
+                self.text = text
+                self.index = index
+                
+                self.callback = callback
+
+                self.isNew = (text == None)
+                
+                BaseDialog.__init__(self, master, status)
+
+        def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
+                return self.parent.ShowColumnPicker(parentDialog, pick, selectedColumn)
+
+        def body(self, master):
+
+                self.prepareColumns(master)     
+
+                if not self.isNew:
+                        
+                        items = extractCalibrationFilterValuesFromText(self.text)
+                        
+                        column = items[0]
+                        value = items[1]
+                        calibrationFilterType = items[2]
+                        inclusive = items[3]
+                        active = items[4]
+
+                else:
+                        column = ''
+                        value = 0.0
+                        calibrationFilterType = 'Below'
+                        inclusive = False
+                        active = False
+                        
+                self.addTitleRow(master, "Calibration Filter Settings:")
+                
+                self.column = self.addPickerEntry(master, "Column:", ValidateNotBlank(master), column)
+                self.value = self.addEntry(master, "Value:", ValidateFloat(master), value)
+                self.calibrationFilterType = self.addOption(master, "Calibration Filter Type:", ["Below", "Above", "AboveOrBelow"], calibrationFilterType)
+
+                if inclusive:
+                    self.inclusive = self.addCheckBox(master, "Inclusive:", 1)
+                else:
+                    self.inclusive = self.addCheckBox(master, "Inclusive:", 0)
+                    
+                if active:
+                    self.active = self.addCheckBox(master, "Active:", 1)
+                else:
+                    self.active = self.addCheckBox(master, "Active:", 0)
+                    
+                #dummy label to indent controls
+                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
+
+        def apply(self):
+
+                if int(self.active.get()) == 1:
+                    active = True
+                else:
+                    active = False
+
+                if int(self.inclusive.get()) == 1:
+                    inclusive = True
+                else:
+                    inclusive = False
+                        
+                self.text = encodeCalibrationFilterValuesAsText(self.column.get(), float(self.value.get()), self.calibrationFilterType.get(), inclusive, active)
+
+                if self.isNew:
+                        self.status.addMessage("Calibration Filter created")
+                else:
+                        self.status.addMessage("Calibration Filter updated")
+
+                if self.index== None:
+                        self.callback(self.text)
+                else:
+                        self.callback(self.text, self.index)
+
 class ExclusionDialog(BaseDialog):
 
         def __init__(self, master, status, callback, text = None, index = None):
@@ -1419,7 +1521,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
 
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
-                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%y %H:%M:%S']), width=5, height=1)
+                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S']), width=5, height=1)
                 pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 measurementShowHide.addControl(pickDateFormatButton)
 
@@ -1428,6 +1530,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = measurementShowHide)
 
                 self.timeStamp = self.addPickerEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide) 
+                self.turbineAvailabilityCount = self.addPickerEntry(master, "Turbine Availability Count:", None, self.config.turbineAvailabilityCount, width = 60, showHideCommand = measurementShowHide) #Could be taken out? Doesn't have to be used.
                 self.turbineLocationWindSpeed = self.addPickerEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60, showHideCommand = measurementShowHide) #Should this be with reference wind speed?
                 self.hubWindSpeed = self.addPickerEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60, showHideCommand = measurementShowHide)
                 self.hubTurbulence = self.addPickerEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60, showHideCommand = measurementShowHide)
@@ -1559,24 +1662,25 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.calibrationFiltersScrollBar.configure(command=self.calibrationFiltersListBox.yview)
                 self.calibrationFiltersScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
 
-                self.newCalibrationFilterButton = Button(master, text="New", command = self.NewFilter, width=5, height=1)
+                self.newCalibrationFilterButton = Button(master, text="New", command = self.NewCalibrationFilter, width=5, height=1)
                 self.newCalibrationFilterButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 calibrationShowHide.addControl(self.newCalibrationFilterButton)
                 
-                self.editCalibrationFilterButton = Button(master, text="Edit", command = self.EditFilter, width=5, height=1)
+                self.editCalibrationFilterButton = Button(master, text="Edit", command = self.EditCalibrationFilter, width=5, height=1)
                 self.editCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 calibrationShowHide.addControl(self.editCalibrationFilterButton)
-                self.calibrationFiltersListBox.bind("<Double-Button-1>", self.EditFilter)
+                self.calibrationFiltersListBox.bind("<Double-Button-1>", self.EditCalibrationFilter)
                 
-                self.deleteCalibrationFilterButton = Button(master, text="Delete", command = self.RemoveFilter, width=5, height=1)
+                self.deleteCalibrationFilterButton = Button(master, text="Delete", command = self.RemoveCalibrationFilter, width=5, height=1)
                 self.deleteCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 calibrationShowHide.addControl(self.deleteCalibrationFilterButton)
                 self.row +=1
 
                 if not self.isNew:
                         for calibrationFilterItem in sorted(self.config.calibrationFilters):
-                                text = encodeFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
+                                text = encodeCalibrationFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
                                 self.calibrationFiltersListBox.insert(END, text)
+
                
                #Exclusions
                 exclusionsShowHide = ShowHideCommand(master)
@@ -1612,7 +1716,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 startDate = exclusion[0]
                                 endDate = exclusion[1]
                                 active = exclusion[2]
-                                text = encodeexclusionValuesAsText(startDate, endDate, active)
+                                text = encodeExclusionValuesAsText(startDate, endDate, active)
                                 self.exclusionsListBox.insert(END, text)
 
                 #Filters
@@ -1793,7 +1897,52 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.filtersListBox.delete(index, index)
                         self.filtersListBox.insert(index, text)
                 else:
-                        self.filtersListBox.insert(END, text)     
+                        self.filtersListBox.insert(END, text)    
+                        
+        def NewCalibrationFilter(self):
+
+            configDialog = CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText)
+
+        def EditCalibrationFilter(self, event = None):
+
+            items = self.calibrationFiltersListBox.curselection()
+
+            if len(items) == 1:
+
+                    idx = int(items[0])
+
+                    if idx > 0:
+
+                        text = self.calibrationFiltersListBox.get(items[0])                        
+                        
+                        try:
+                            dialog = CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText, text, idx)                                
+                        except ExceptionType as e:
+                            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+            
+
+        def RemoveCalibrationFilter(self):
+
+            items = self.calibrationFiltersListBox.curselection()
+            pos = 0
+            
+            for i in items:
+                
+                idx = int(i) - pos
+                
+                if idx > 0:
+                    self.calibrationFiltersListBox.delete(idx, idx)
+
+                pos += 1
+            
+        def addCalibrationFilterFromText(self, text, index = None):
+
+                if index != None:
+                        self.calibrationFiltersListBox.delete(index, index)
+                        self.calibrationFiltersListBox.insert(index, text)
+                else:
+                        self.calibrationFiltersListBox.insert(END, text)     
+
 
 
         def NewExclusion(self):
@@ -2030,6 +2179,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.referenceWindDirection = self.referenceWindDirection.get()
                 self.config.referenceWindDirectionOffset = floatSafe(self.referenceWindDirectionOffset.get())
                 self.config.turbineLocationWindSpeed = self.turbineLocationWindSpeed.get()
+                self.config.turbineAvailabilityCount = self.turbineAvailabilityCount.get()
                 
                 self.config.temperature = self.temperature.get()
                 self.config.pressure = self.pressure.get()
@@ -2084,7 +2234,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                         if i > 0:
                                 calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractCalibrationFilterValuesFromText(self.calibrationFiltersListBox.get(i))
-                                self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibationFilterColumn, calibationFilterType, calibraionFilterInclusive, calibrationFilterValue))
+                                self.config.calibrationFilters.append(configuration.CalibrationFilter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
                 #exclusions
 
                 self.config.exclusions = []
