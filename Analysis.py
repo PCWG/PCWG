@@ -837,13 +837,15 @@ class Analysis:
         self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
         self.status.addMessage("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
 
-    def export(self, path, full = True, calibration = True ):
+    def export(self, path,clean = True,  full = True, calibration = True ):
         op_path = os.path.dirname(path)
         plotsDir = self.config.path.replace(".xml","_PPAnalysisPlots")
         self.png_plots(plotsDir)
-        self.dataFrame.to_csv(path, sep = '\t')
+        if clean:
+            self.dataFrame.to_csv(path, sep = '\t')
         if full:
-            rootPath = os.path.dirname(path)
+            rootPath = self.config.path.split(".")[0] + "_TimeSeriesData"
+            chckMake(rootPath)
             for ds in self.datasetConfigs:
                 ds.data.fullDataFrame.to_csv(rootPath + os.sep + "FilteredDataSet_AllColumns_{0}.dat".format(ds.name), sep = '\t')
                 if calibration and hasattr(ds.data,"filteredCalibrationDataframe"):

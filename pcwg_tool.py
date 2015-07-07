@@ -1283,7 +1283,52 @@ class ParseClipBoard:
                                         
                 except Exception as e:
                         print "Can't parse clipboard (%s)" % e.message
-                        
+
+class ExportDataSetDialog(BaseDialog):
+
+        def __init__(self, master, status):
+                #self.callback = callback
+                self.cleanDataset  = True
+                self.allDatasets  = False
+                self.calibrationDatasets  = False
+                BaseDialog.__init__(self, master, status)
+
+        def validate(self):
+
+                valid = any(self.getSelections())
+
+                if valid:
+                        return 1
+                else:
+                        return 0
+
+        def body(self, master):
+
+                spacer = Label(master, text=" " * 30)
+                spacer.grid(row=self.row, column=self.titleColumn, columnspan = 2)
+                spacer = Label(master, text=" " * 30)
+                spacer.grid(row=self.row, column=self.secondButtonColumn, columnspan = 2)
+
+                self.row += 1
+                cleanDataset = self.cleanDataset
+                allDatasets = self.allDatasets
+                calibrationDatasets = self.calibrationDatasets
+
+                self.cleanDataset = self.addCheckBox (master, "Clean Combined Dataset:", cleanDataset, showHideCommand = None)
+                spacer = Label(master, text="Extra Time Series:")
+                spacer.grid(row=self.row, column=self.titleColumn, columnspan = 2)
+                self.row += 1
+
+                self.allDatasets = self.addCheckBox(master, "    Filtered Individual Datasets:", allDatasets, showHideCommand = None)
+                self.calibrationDatasets = self.addCheckBox(master, "    Calibration Datasets:", calibrationDatasets, showHideCommand = None)
+
+        def getSelections(self):
+                return (bool(self.cleanDataset.get()), bool(self.allDatasets.get()), bool(self.calibrationDatasets.get()))
+
+        def apply(self):
+                return self.getSelections()
+
+
 class DatePicker:
 
         def __init__(self, parentDialog, entry, dateFormat):
@@ -2642,8 +2687,14 @@ class UserInterface:
 
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
-                        self.analysis.export(fileName)
-                        self.addMessage("Time series written to %s" % fileName)
+                        selections = ExportDataSetDialog(self.root, None)
+                        clean, full, calibration = selections.getSelections()
+                        self.analysis.export(fileName, clean, full, calibration)
+                        if clean:
+                                self.addMessage("Time series written to %s" % fileName)
+                        if any((full, calibration)):
+                                self.addMessage("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+
                 except ExceptionType as e:
                         self.addMessage("ERROR Exporting Time Series: %s" % e, red = True)
 
