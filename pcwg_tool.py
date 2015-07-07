@@ -1607,21 +1607,22 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 rewsProfileShowHide.addControl(self.deleteREWSProfileLevelButton)
                 self.row +=1
 
-                calibrationShowHide = ShowHideCommand(master)
-                self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationShowHide)
-                calibrationShowHide.button.grid(row=self.row, sticky=N+E+W, column=self.showHideColumn)
+                calibrationSettingsShowHide = ShowHideCommand(master)
+                self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationSettingsShowHide)
+                calibrationSettingsShowHide.button.grid(row=self.row, sticky=N+E+W, column=self.showHideColumn)
 
-                self.calibrationStartDate = self.addDatePickerEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationShowHide)                
-                self.calibrationEndDate = self.addDatePickerEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationShowHide)
-                self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationShowHide)
-                self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationShowHide)
+                self.calibrationStartDate = self.addDatePickerEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationSettingsShowHide)                
+                self.calibrationEndDate = self.addDatePickerEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationSettingsShowHide)
+                self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationSettingsShowHide)
+                self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationSettingsShowHide)
     
-                self.addTitleRow(master, "Calibration Sectors:", showHideCommand = calibrationShowHide)
+                calibrationSectorsShowHide = ShowHideCommand(master)
+                self.addTitleRow(master, "Calibration Sectors:", showHideCommand = calibrationSectorsShowHide)
                 self.calibrationDirectionsScrollBar = Scrollbar(master, orient=VERTICAL)
-                calibrationShowHide.addControl(self.calibrationDirectionsScrollBar)
+                calibrationSectorsShowHide.addControl(self.calibrationDirectionsScrollBar)
                 
                 self.calibrationDirectionsListBox = Listbox(master, yscrollcommand=self.calibrationDirectionsScrollBar.set, selectmode=EXTENDED, height=3)
-                calibrationShowHide.addControl(self.calibrationDirectionsListBox)
+                calibrationSectorsShowHide.addControl(self.calibrationDirectionsListBox)
                 self.calibrationDirectionsListBox.insert(END, "Direction,Slope,Offset,Active")
                                 
                 self.calibrationDirectionsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
@@ -1630,16 +1631,16 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.newCalibrationDirectionButton = Button(master, text="New", command = self.NewCalibrationDirection, width=5, height=1)
                 self.newCalibrationDirectionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                calibrationShowHide.addControl(self.newCalibrationDirectionButton)
+                calibrationSectorsShowHide.addControl(self.newCalibrationDirectionButton)
                 
                 self.editCalibrationDirectionButton = Button(master, text="Edit", command = self.EditCalibrationDirection, width=5, height=1)
                 self.editCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                calibrationShowHide.addControl(self.editCalibrationDirectionButton)
+                calibrationSectorsShowHide.addControl(self.editCalibrationDirectionButton)
                 self.calibrationDirectionsListBox.bind("<Double-Button-1>", self.EditCalibrationDirection)
                 
                 self.deleteCalibrationDirectionButton = Button(master, text="Delete", command = self.RemoveCalibrationDirection, width=5, height=1)
                 self.deleteCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                calibrationShowHide.addControl(self.deleteCalibrationDirectionButton)
+                calibrationSectorsShowHide.addControl(self.deleteCalibrationDirectionButton)
                 self.row +=1
 
                 if not self.isNew:
@@ -1649,13 +1650,14 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 active = self.config.calibrationActives[direction]
                                 text = encodeCalibrationDirectionValuesAsText(direction, slope, offset, active)
                                 self.calibrationDirectionsListBox.insert(END, text)
-                               
-                self.addTitleRow(master, "Calibration Filters:", showHideCommand = calibrationShowHide)
+                 
+                calibrationFiltersShowHide = ShowHideCommand(master)
+                self.addTitleRow(master, "Calibration Filters:", showHideCommand = calibrationFiltersShowHide)
                 self.calibrationFiltersScrollBar = Scrollbar(master, orient=VERTICAL)
-                calibrationShowHide.addControl(self.calibrationFiltersScrollBar)
+                calibrationFiltersShowHide.addControl(self.calibrationFiltersScrollBar)
                 
                 self.calibrationFiltersListBox = Listbox(master, yscrollcommand=self.calibrationFiltersScrollBar.set, selectmode=EXTENDED, height=3)
-                calibrationShowHide.addControl(self.calibrationFiltersListBox)
+                calibrationFiltersShowHide.addControl(self.calibrationFiltersListBox)
                 self.calibrationFiltersListBox.insert(END, "Column,Value,FilterType,Inclusive,Active")
                                 
                 self.calibrationFiltersListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
@@ -1664,16 +1666,16 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.newCalibrationFilterButton = Button(master, text="New", command = self.NewCalibrationFilter, width=5, height=1)
                 self.newCalibrationFilterButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                calibrationShowHide.addControl(self.newCalibrationFilterButton)
+                calibrationFiltersShowHide.addControl(self.newCalibrationFilterButton)
                 
                 self.editCalibrationFilterButton = Button(master, text="Edit", command = self.EditCalibrationFilter, width=5, height=1)
                 self.editCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                calibrationShowHide.addControl(self.editCalibrationFilterButton)
+                calibrationFiltersShowHide.addControl(self.editCalibrationFilterButton)
                 self.calibrationFiltersListBox.bind("<Double-Button-1>", self.EditCalibrationFilter)
                 
                 self.deleteCalibrationFilterButton = Button(master, text="Delete", command = self.RemoveCalibrationFilter, width=5, height=1)
                 self.deleteCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                calibrationShowHide.addControl(self.deleteCalibrationFilterButton)
+                calibrationFiltersShowHide.addControl(self.deleteCalibrationFilterButton)
                 self.row +=1
 
                 if not self.isNew:
@@ -1759,7 +1761,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 measurementShowHide.hide()
                 shearShowHide.hide()
                 rewsProfileShowHide.hide()
-                calibrationShowHide.hide()
+                calibrationSettingsShowHide.hide()                
+                calibrationSectorsShowHide.hide()
+                calibrationFiltersShowHide.hide()
                 exclusionsShowHide.hide()
                 filtersShowHide.hide()
                 powerShowHide.hide()
