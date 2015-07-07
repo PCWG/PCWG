@@ -377,7 +377,8 @@ class AnalysisConfiguration(XmlBase):
         self.addTextNode(doc, root, "BaseLineMode", self.baseLineMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
-
+        self.addTextNode(doc, root, "NominalWindSpeedDistribution", self.nominalWindSpeedDistribution)
+        
         powerCurveBinsNode = self.addNode(doc, root, "PowerCurveBins")
 
         self.addFloatNode(doc, powerCurveBinsNode, "FirstBinCentre", self.powerCurveFirstBin)
@@ -812,6 +813,12 @@ class DatasetConfiguration(XmlBase):
 
         if self.power is not None:
             self.addTextNode(doc, measurementsNode, "Power", self.power)
+        if self.powerMin is not None:
+            self.addTextNode(doc, measurementsNode, "PowerMin", self.powerMin)
+        if self.powerMax is not None:
+            self.addTextNode(doc, measurementsNode, "PowerMax", self.powerMax)
+        if self.powerSD is not None:
+            self.addTextNode(doc, measurementsNode, "PowerSD", self.powerSD)
 
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
@@ -1073,6 +1080,50 @@ class DatasetConfiguration(XmlBase):
 
         return filters
 
+    def writeCalibrationFilter(self, doc, calibrationFiltersNode, calibrationFilterItem, nodeName):
+
+        calibrationFilterNode = self.addNode(doc, calibrationFiltersNode, nodeName)
+
+        self.addTextNode(doc, filterNode, "DataColumn", calibrationFilterItem.column)
+        self.addTextNode(doc, filterNode, "FilterType", calibrationFilterItem.filterType)
+        self.addBoolNode(doc, filterNode, "Inclusive", calibrationFilterItem.inclusive)
+
+        if not calibrationFilterItem.derived:
+
+            self.addFloatNode(doc, calibrationFilterNode, "FilterValue", calibrationFilterItem.value)
+
+        else:
+
+            valueNode = self.addNode(doc, calibrationFilterNode, "FilterValue")
+
+            for valueItem in calibrationFilterItem.value:
+
+                columnFactorNode = self.addNode(doc, valueNode, "ColumnFactor")
+
+                self.addTextNode(doc, filterNode, "DataColumn", columnFactorNode.valueItem[0])
+                self.addFloatNode(doc, filterNode, "A", columnFactorNode.valueItem[1])
+                self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
+                self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
+
+        self.addBoolNode(doc, calibrationFilterNode, "Active", calibrationFilterItem.active)
+
+    def readCalibrationFilters(self, calibrationFiltersNode):
+
+        calibrationFilters = []
+
+        for node in calibrationFiltersNode:
+
+            active = self.getNodeBool(node, 'Active')
+
+            if node.localName == 'TimeOfDayFilter':
+                calibrationFilters.append(self.readToDFilter(active,node))
+            elif self.nodeExists(node,'Relationship'):
+                calibrationFilters.append(RelationshipFilter(active,node))
+            else:
+                calibrationFilters.append(self.readSimpleFilter(node,active))
+
+        return calibrationFilters
+   
     def readExclusions(self, configurationNode):
 
         exclusionsNode = self.getNode(configurationNode, 'Exclusions')

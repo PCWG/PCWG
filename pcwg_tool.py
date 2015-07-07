@@ -315,7 +315,29 @@ class ValidateAnalysisFilePath(ValidateBase):
                 message = "Value not specified"
 
                 return ValidationResult(len(value) > 0, message)
+                
+class ValidateNominalWindSpeedDistribution(ValidateBase):
 
+        def __init__(self, master, powerCurveModeVariable):
+            
+            self.powerCurveModeVariable = powerCurveModeVariable
+            self.powerCurveModeVariable.trace("w", self.refreshValidation)
+
+            ValidateBase.__init__(self, master)
+
+        def refreshValidation(self, *args):
+            self.control.tk.call(self.control._w, 'validate')
+
+        def validate(self, value):
+
+                powerCurveMode = self.powerCurveModeVariable.get().lower()
+                message = "Value not specified"
+
+                if powerCurveMode == "specified":
+                        return ValidationResult(len(value) > 0, message)
+                else:
+                        return ValidationResult(True, message)
+                        
 class ValidateDatasetFilePath(ValidateBase):
 
         def validate(self, value):
@@ -1405,19 +1427,28 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = measurementShowHide)
 
-                self.timeStamp = self.addPickerEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide)
-                self.power = self.addPickerEntry(master, "Power:", None, self.config.power, width = 60, showHideCommand = measurementShowHide)
-                self.referenceWindSpeed = self.addPickerEntry(master, "Reference Wind Speed:", None, self.config.referenceWindSpeed, width = 60, showHideCommand = measurementShowHide)
-                self.referenceWindSpeedStdDev = self.addPickerEntry(master, "Reference Wind Speed: Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60, showHideCommand = measurementShowHide)
-                self.referenceWindDirection = self.addPickerEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60, showHideCommand = measurementShowHide)
-                self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset, showHideCommand = measurementShowHide)
-                self.turbineLocationWindSpeed = self.addPickerEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60, showHideCommand = measurementShowHide)
+                self.timeStamp = self.addPickerEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide) 
+                self.turbineLocationWindSpeed = self.addPickerEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60, showHideCommand = measurementShowHide) #Should this be with reference wind speed?
                 self.hubWindSpeed = self.addPickerEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60, showHideCommand = measurementShowHide)
                 self.hubTurbulence = self.addPickerEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60, showHideCommand = measurementShowHide)
                 self.temperature = self.addPickerEntry(master, "Temperature:", None, self.config.temperature, width = 60, showHideCommand = measurementShowHide)
                 self.pressure = self.addPickerEntry(master, "Pressure:", None, self.config.pressure, width = 60, showHideCommand = measurementShowHide)
                 self.density = self.addPickerEntry(master, "Density:", None, self.config.density, width = 60, showHideCommand = measurementShowHide)
-
+                             
+                powerShowHide = ShowHideCommand(master)  
+                self.addTitleRow(master, "Power Settings:", showHideCommand = powerShowHide)
+                self.power = self.addPickerEntry(master, "Power:", None, self.config.power, width = 60, showHideCommand = powerShowHide)
+                self.powerMin = self.addPickerEntry(master, "Power Min:", None, self.config.powerMin, width = 60, showHideCommand = powerShowHide)
+                self.powerMax = self.addPickerEntry(master, "Power Max:", None, self.config.powerMax, width = 60, showHideCommand = powerShowHide)
+                self.powerSD = self.addPickerEntry(master, "Power Std Dev:", None, self.config.powerSD, width = 60, showHideCommand = powerShowHide)
+                
+                referenceWindSpeedShowHide = ShowHideCommand(master)  
+                self.addTitleRow(master, "Reference Wind Speed Settings:", showHideCommand = referenceWindSpeedShowHide)                
+                self.referenceWindSpeed = self.addPickerEntry(master, "Reference Wind Speed:", None, self.config.referenceWindSpeed, width = 60, showHideCommand = referenceWindSpeedShowHide)
+                self.referenceWindSpeedStdDev = self.addPickerEntry(master, "Reference Wind Speed Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60, showHideCommand = referenceWindSpeedShowHide)
+                self.referenceWindDirection = self.addPickerEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60, showHideCommand = referenceWindSpeedShowHide)
+                self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset, showHideCommand = referenceWindSpeedShowHide)
+                
                 shearShowHide = ShowHideCommand(master)
                 label = Label(master, text="Shear Measurements:")
                 label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
@@ -1515,8 +1546,39 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 active = self.config.calibrationActives[direction]
                                 text = encodeCalibrationDirectionValuesAsText(direction, slope, offset, active)
                                 self.calibrationDirectionsListBox.insert(END, text)
+                               
+                self.addTitleRow(master, "Calibration Filters:", showHideCommand = calibrationShowHide)
+                self.calibrationFiltersScrollBar = Scrollbar(master, orient=VERTICAL)
+                calibrationShowHide.addControl(self.calibrationFiltersScrollBar)
+                
+                self.calibrationFiltersListBox = Listbox(master, yscrollcommand=self.calibrationFiltersScrollBar.set, selectmode=EXTENDED, height=3)
+                calibrationShowHide.addControl(self.calibrationFiltersListBox)
+                self.calibrationFiltersListBox.insert(END, "Column,Value,FilterType,Inclusive,Active")
+                                
+                self.calibrationFiltersListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
+                self.calibrationFiltersScrollBar.configure(command=self.calibrationFiltersListBox.yview)
+                self.calibrationFiltersScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
 
-                #Exclusions
+                self.newCalibrationFilterButton = Button(master, text="New", command = self.NewFilter, width=5, height=1)
+                self.newCalibrationFilterButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
+                calibrationShowHide.addControl(self.newCalibrationFilterButton)
+                
+                self.editCalibrationFilterButton = Button(master, text="Edit", command = self.EditFilter, width=5, height=1)
+                self.editCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
+                calibrationShowHide.addControl(self.editCalibrationFilterButton)
+                self.calibrationFiltersListBox.bind("<Double-Button-1>", self.EditFilter)
+                
+                self.deleteCalibrationFilterButton = Button(master, text="Delete", command = self.RemoveFilter, width=5, height=1)
+                self.deleteCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+                calibrationShowHide.addControl(self.deleteCalibrationFilterButton)
+                self.row +=1
+
+                if not self.isNew:
+                        for calibrationFilterItem in sorted(self.config.calibrationFilters):
+                                text = encodeFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
+                                self.calibrationFiltersListBox.insert(END, text)
+               
+               #Exclusions
                 exclusionsShowHide = ShowHideCommand(master)
     
                 self.addTitleRow(master, "Exclusions:", showHideCommand = exclusionsShowHide)
@@ -1596,6 +1658,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 calibrationShowHide.hide()
                 exclusionsShowHide.hide()
                 filtersShowHide.hide()
+                powerShowHide.hide()
+                referenceWindSpeedShowHide.hide()
 
                 self.calibrationMethodChange()
                 self.densityMethodChange()
@@ -1958,6 +2022,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
 
                 self.config.power = self.power.get()
+                self.config.powerMin = self.powerMin.get()
+                self.config.powerMax = self.powerMax.get()
+                self.config.powerSD = self.powerSD.get()
                 self.config.referenceWindSpeed = self.referenceWindSpeed.get()
                 self.config.referenceWindSpeedStdDev = self.referenceWindSpeedStdDev.get()
                 self.config.referenceWindDirection = self.referenceWindDirection.get()
@@ -2010,7 +2077,14 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                         self.config.calibrationActives[direction] = active
                                 else:
                                         raise Exception("Duplicate calibration direction: %f" % direction)
+                
+                self.config.calibrationFilters = []
+                
+                for i in range(self.calibrationFiltersListBox.size()):
 
+                        if i > 0:
+                                calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractCalibrationFilterValuesFromText(self.calibrationFiltersListBox.get(i))
+                                self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibationFilterColumn, calibationFilterType, calibraionFilterInclusive, calibrationFilterValue))
                 #exclusions
 
                 self.config.exclusions = []
@@ -2157,13 +2231,15 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.powerCurveMode = self.addOption(master, "Power Curve Mode:", powerCurveModes, self.config.powerCurveMode, showHideCommand = self.generalShowHide)
 
                 self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Linear", "Observed", "Specified", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
-
+                
+                self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominalWindSpeedDistribution, self.filePath, showHideCommand = self.generalShowHide)
+                
                 powerCurveShowHide = ShowHideCommand(master)  
                 self.addTitleRow(master, "Power Curve Bins:", powerCurveShowHide)
                 self.powerCurveFirstBin = self.addEntry(master, "First Bin Centre:", ValidateNonNegativeFloat(master), self.config.powerCurveFirstBin, showHideCommand = powerCurveShowHide)
                 self.powerCurveLastBin = self.addEntry(master, "Last Bin Centre:", ValidateNonNegativeFloat(master), self.config.powerCurveLastBin, showHideCommand = powerCurveShowHide)
                 self.powerCurveBinSize = self.addEntry(master, "Bin Size:", ValidatePositiveFloat(master), self.config.powerCurveBinSize, showHideCommand = powerCurveShowHide)
-
+                
                 datasetsShowHide = ShowHideCommand(master)  
                 Label(master, text="Datasets:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 datasetsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
@@ -2350,6 +2426,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.baseLineMode = self.baseLineMode.get()
                 self.config.powerCurveMode = self.powerCurveMode.get()
                 self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
+                self.config.nominalWindSpeedDistribution = self.nominalWindSpeedDistribution.get()
                 self.config.powerCurveFirstBin = self.powerCurveFirstBin.get()
                 self.config.powerCurveLastBin = self.powerCurveLastBin.get()
                 self.config.powerCurveBinSize = self.powerCurveBinSize.get()
