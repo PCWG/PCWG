@@ -264,16 +264,16 @@ class Dataset:
 
             if dataFrame[config.referenceWindSpeed].count() < 1:
                 raise Exception("Reference wind speed column is empty: cannot apply calibration")
-            
+
             if dataFrame[config.referenceWindDirection].count() < 1:
                 raise Exception("Reference wind direction column is empty: cannot apply calibration")
-            
+
             self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
             dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
 
             if dataFrame[self.hubWindSpeed].count() < 1:
                 raise Exception("Hub wind speed column is empty after application of calibration")
-            
+
             if (config.hubTurbulence != ''):
                 dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             else:
@@ -379,7 +379,7 @@ class Dataset:
         dataFrame[self.referenceDirectionBin] = np.round(dataFrame[self.referenceDirectionBin], 0) * siteCalibrationBinWidth + config.siteCalibrationCenterOfFirstSector
         dataFrame[self.referenceDirectionBin] = (dataFrame[self.referenceDirectionBin] + 360) % 360
         #dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
-        
+
         if config.calibrationMethod == "Specified":
             if all([dir in config.calibrationSlopes.keys() for dir in config.calibrationActives.keys()]):
                 print "Applying Specified calibration"
@@ -396,7 +396,7 @@ class Dataset:
         else:
 
             df = dataFrame.copy()
-        
+
             calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, timeStepInSeconds, dataFrame)
 
             if config.calibrationStartDate != None and config.calibrationEndDate != None:
@@ -406,13 +406,13 @@ class Dataset:
             self.filteredCalibrationDataframe = dataFrame.copy()
 
             dataFrame = dataFrame[calibration.requiredColumns + [self.referenceDirectionBin, config.referenceWindDirection]].dropna()
-            
+
             if len(dataFrame) < 1:
                 raise Exception("No data are available to carry out calibration.")
 
             siteCalibCalc = self.createSiteCalibrationCalculator(dataFrame,config.referenceWindSpeed, calibration)
             dataFrame = df
-            
+
             return siteCalibCalc
 
     def getCalibrationMethod(self,calibrationMethod,referenceColumn, turbineLocationColumn, timeStepInSeconds, dataFrame):
@@ -427,7 +427,7 @@ class Dataset:
         return calibration
 
     def createSiteCalibrationCalculator(self,dataFrame, valueColumn, calibration ):
-        
+
         groups = dataFrame[calibration.requiredColumns].groupby(dataFrame[self.referenceDirectionBin])
 
         slopes = {}
@@ -443,7 +443,7 @@ class Dataset:
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
-            
+
             if valueColumn == self.hubWindSpeedForTurbulence:
                 belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
 
@@ -506,17 +506,17 @@ class Dataset:
 
         if self.hasActualPower:
             requiredCols.append(self.actualPower)
-        
+
         for col in self.sensitivityDataColumns:
             if col not in requiredCols:
                 requiredCols.append(col)
-        
+
         if len(dataFrame[requiredCols].dropna()[requiredCols[0]]) > 0:
 
             return dataFrame[requiredCols]
 
         else:
-            
+
             print "Number of null columns:"
             print dataFrame[requiredCols].isnull().sum()
 
@@ -524,10 +524,10 @@ class Dataset:
 
             for col in requiredCols:
                 text += "- %s: %d\n" % (col, dataFrame[col].dropna().count())
-                
+
             raise Exception(text)
 
-        
+
     def createDerivedColumn(self,df,cols):
         d = df.copy()
         d['Derived'] = 1
@@ -555,9 +555,7 @@ class Dataset:
         filterInclusive = componentFilter.inclusive
 
         if not componentFilter.derived:
-            filterValue = [float(filVal) for filVal in componentFilter.value.split(",")] # split by comma and cast as float so that 'between' filter is possible
-            if len(filterValue) == 1:
-                filterValue = filterValue[0]
+            filterValue = componentFilter.value
         else:
             filterValue = self.createDerivedColumn(dataFrame,componentFilter.value)
         #print (filterColumn, filterType, filterInclusive, filterValue)
@@ -571,11 +569,6 @@ class Dataset:
         elif filterType.lower() == "aboveorbelow" or filterType.lower() == "notequal":
             mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
             mask = self.addFilterAbove(dataFrame, mask, filterColumn, filterValue, filterInclusive)
-
-        elif filterType.lower() == "between":
-            if len(filterValue) != 2:
-                raise Exception("Filter mode is between, but a comma separated list has not been provided as FilterValue")
-            mask = self.addFilterBetween(dataFrame, mask, filterColumn, filterValue, filterInclusive)
 
         else:
             raise Exception("Filter type not recognised: %s" % filterType)
@@ -664,14 +657,6 @@ class Dataset:
             return mask | (dataFrame[filterColumn] >= filterValue)
         else:
             return mask | (dataFrame[filterColumn] > filterValue)
-
-    def addFilterBetween(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
-
-        if filterInclusive:
-            return mask | ( (dataFrame[filterColumn] >= min(filterValue)) & (dataFrame[filterColumn] <= max(filterValue)) )
-        else:
-            return mask | ( (dataFrame[filterColumn] >  min(filterValue)) & (dataFrame[filterColumn] <  max(filterValue)) )
-
 
     def defineREWS(self, dataFrame, config, rotorGeometry):
 

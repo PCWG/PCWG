@@ -17,6 +17,8 @@ def run(analysis,fileName, measuredPowerCurve):
         analysis.status.addMessage( "    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield/1000.0))
         analysis.status.addMessage( "    AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
         analysis.status.addMessage( "    AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
+        analysis.status.addMessage( "    Number of Hours in test: {hrs} \n".format(hrs =analysis.hours) )
+
     return aepCalc,aepCalcLCB
 
 class AEPCalculator:

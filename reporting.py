@@ -164,7 +164,7 @@ class report:
                         sh.write(row, col+1, filt.filterType)
                         sh.write(row, col+2, filt.inclusive)
                         sh.write(row, col+3, str(filt))
-                        sh.write(row, col+4, "True") # always true if in list...
+                        sh.write(row, col+4, filt.active) # always true if in list...
                     row += 1
 
 
