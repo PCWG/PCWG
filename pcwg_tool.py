@@ -2170,7 +2170,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.referenceWindDirection = self.referenceWindDirection.get()
                 self.config.referenceWindDirectionOffset = floatSafe(self.referenceWindDirectionOffset.get())
                 self.config.turbineLocationWindSpeed = self.turbineLocationWindSpeed.get()
-                self.config.turbineAvailabilityCount = self.turbineAvailabilityCount.get()
+                #self.config.turbineAvailabilityCount = self.turbineAvailabilityCount.get()
                 
                 self.config.temperature = self.temperature.get()
                 self.config.pressure = self.pressure.get()
@@ -2225,7 +2225,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                         if i > 0:
                                 calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractCalibrationFilterValuesFromText(self.calibrationFiltersListBox.get(i))
-                                self.config.calibrationFilters.append(configuration.CalibrationFilter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
+                                self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
                 #exclusions
 
                 self.config.exclusions = []
