@@ -339,25 +339,12 @@ class ValidateAnalysisFilePath(ValidateBase):
                 
 class ValidateNominalWindSpeedDistribution(ValidateBase):
 
-        def __init__(self, master, powerCurveModeVariable):
-            
-            self.powerCurveModeVariable = powerCurveModeVariable
-            self.powerCurveModeVariable.trace("w", self.refreshValidation)
-
-            ValidateBase.__init__(self, master)
-
-        def refreshValidation(self, *args):
-            self.control.tk.call(self.control._w, 'validate')
-
+        
         def validate(self, value):
 
-                powerCurveMode = self.powerCurveModeVariable.get().lower()
-                message = "Value not specified"
-
-                if powerCurveMode == "specified":
-                        return ValidationResult(len(value) > 0, message)
-                else:
-                        return ValidationResult(True, message)
+                message = "Value not specified"                
+                
+                return ValidationResult(len(value) >= 0, message)
                         
 class ValidateDatasetFilePath(ValidateBase):
 
