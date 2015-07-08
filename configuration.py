@@ -171,7 +171,7 @@ class XmlBase:
             months = [int(a) for a  in months.split(",")]
         days = [int(a) for a  in days.split(",")]
         return TimeOfDayFilter(active,startTime,endTime,days,months)
-
+        
 class RelativePath:
 
         def __init__(self, basePath):
@@ -377,7 +377,8 @@ class AnalysisConfiguration(XmlBase):
         self.addTextNode(doc, root, "BaseLineMode", self.baseLineMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
-
+        self.addTextNode(doc, root, "NominalWindSpeedDistribution", self.nominalWindSpeedDistribution)
+        
         powerCurveBinsNode = self.addNode(doc, root, "PowerCurveBins")
 
         self.addFloatNode(doc, powerCurveBinsNode, "FirstBinCentre", self.powerCurveFirstBin)
@@ -641,7 +642,7 @@ class RelationshipFilter(XmlBase):
         self.filterType  = ", ".join([", ".join(str(f.filterType) for f in r.clauses) for r in self.relationships])
         self.inclusive  = ", ".join([", ".join(str(f.inclusive) for f in r.clauses) for r in self.relationships])
         self.value  = ", ".join([", ".join(str(f.value) for f in r.clauses) for r in self.relationships])
-
+        
 
 class DatasetConfiguration(XmlBase):
 
@@ -728,18 +729,22 @@ class DatasetConfiguration(XmlBase):
             self.referenceWindDirection = None
             self.referenceWindDirectionOffset = 0
             self.turbineLocationWindSpeed = ''
+            self.turbineAvailabilityCount = ''
             self.hubWindSpeed= ''
             self.hubTurbulence = ''
             self.temperature = ''
             self.pressure = ''
             self.power = ''
+            self.powerMin = ''
+            self.powerMax = ''
+            self.powerSD = ''
             self.density = ''
 
             self.shearMeasurements = {}
             self.shearMeasurements[50.0] = ''
             self.shearMeasurements[60.0] = ''
 
-            self.filters = {}
+            self.filters = []
             self.calibrationDirections = {}
             self.exclusions = []
 
@@ -809,9 +814,16 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "Density", self.density)
 
         self.addTextNode(doc, measurementsNode, "TurbineLocationWindSpeed", self.turbineLocationWindSpeed)
+        self.addTextNode(doc, measurementsNode, "TurbineAvailabilityCount", self.turbineAvailabilityCount)
 
         if self.power is not None:
             self.addTextNode(doc, measurementsNode, "Power", self.power)
+        if self.powerMin is not None:
+            self.addTextNode(doc, measurementsNode, "PowerMin", self.powerMin)
+        if self.powerMax is not None:
+            self.addTextNode(doc, measurementsNode, "PowerMax", self.powerMax)
+        if self.powerSD is not None:
+            self.addTextNode(doc, measurementsNode, "PowerSD", self.powerSD)
 
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
@@ -845,8 +857,8 @@ class DatasetConfiguration(XmlBase):
 
         calibrationFiltersNode = self.addNode(doc, calibrationNode, "CalibrationFilters")
 
-        for calibrationFilter in self.calibrationFilters:
-            self.writeFilter(doc, calibrationFiltersNode, calibrationFilter, "CalibrationFilter")
+        for calibrationFilterItem in self.calibrationFilters:
+            self.writeFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
 
         calibrationDirectionsNode = self.addNode(doc, calibrationNode, "CalibrationDirections")
 
@@ -872,8 +884,8 @@ class DatasetConfiguration(XmlBase):
             exclusionNode = self.addNode(doc, exclusionsNode, "Exclusion")
         
             self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion[2])
-            self.addDateNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
-            self.addDateNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
+            self.addTextNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
+            self.addTextNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
 
         self.saveDocument(doc, self.path)
 
@@ -938,6 +950,7 @@ class DatasetConfiguration(XmlBase):
         self.separator = self.getNodeValueIfExists(measurementsNode, 'Separator', 'TAB')
 
         self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
+        self.turbineAvailabilityCount = self.getNodeValueIfExists(measurementsNode, 'TurbineAvailabilityCount', '')
 
         self.hubWindSpeed = self.getNodeValueIfExists(measurementsNode, 'HubWindSpeed', '')
         self.hubTurbulence = self.getNodeValueIfExists(measurementsNode, 'HubTurbulence', '')
@@ -1072,7 +1085,7 @@ class DatasetConfiguration(XmlBase):
                 filters.append(self.readSimpleFilter(node,active))
 
         return filters
-
+   
     def readExclusions(self, configurationNode):
 
         exclusionsNode = self.getNode(configurationNode, 'Exclusions')
