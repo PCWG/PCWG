@@ -814,7 +814,9 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "Density", self.density)
 
         self.addTextNode(doc, measurementsNode, "TurbineLocationWindSpeed", self.turbineLocationWindSpeed)
-        self.addTextNode(doc, measurementsNode, "TurbineAvailabilityCount", self.turbineAvailabilityCount)
+        
+        if self.turbineAvailabilityCount != '':
+            self.addTextNode(doc, measurementsNode, "TurbineAvailabilityCount", self.turbineAvailabilityCount)
 
         if self.power is not None:
             self.addTextNode(doc, measurementsNode, "Power", self.power)

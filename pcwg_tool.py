@@ -16,7 +16,7 @@ datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.7 (Release Candidate 3)"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
         
 def getDateFromEntry(entry):
         if len(entry.get()) > 0:
@@ -507,7 +507,33 @@ class VariableEntry:
 
         def bindPickButton(self, pickButton):
                 self.pickButton = pickButton
+  
+
+class ListBoxEntry(VariableEntry):
+    
+    def __init__(self, listbox, scrollbar, tip):
+                self.scrollbar = scrollbar
+                self.listbox = listbox
+                self.tip = tip
                 
+    def addToShowHide(self,showHide):
+        if showHide != None:
+            showHide.addControl(self.listbox )
+            showHide.addControl(self.tip)
+            showHide.addControl(self.scrollbar )        
+            
+    def error(self):
+        raise Exception("Not possible with listbox object")        
+    def get(self):
+            self.error()
+    def set(self, value):
+            self.error()
+    def configure(self, state):
+            self.error()
+    def bindPickButton(self, pickButton):
+            self.error()
+
+              
 class ShowHideCommand:
 
         def __init__(self, master):
@@ -595,6 +621,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 self.validations = []
 
                 self.row = 0
+                self.listboxEntries = {}
                 
                 tkSimpleDialog.Dialog.__init__(self, master)
         
@@ -662,6 +689,18 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 self.row += 1
 
                 return variable
+                
+        def addListBox(self, master, title, showHideCommand = None):
+                
+                scrollbar =  Scrollbar(master, orient=VERTICAL)
+                tipLabel = Label(master, text="")
+                tipLabel.grid(row = self.row, sticky=W, column=self.tipColumn)                
+                lb = Listbox(master, yscrollcommand=scrollbar, selectmode=EXTENDED, height=3)  
+                
+                self.listboxEntries[title] = ListBoxEntry(lb,scrollbar,tipLabel)
+                self.listboxEntries[title].addToShowHide(showHideCommand)
+                self.row += 1
+                return self.listboxEntries[title]
 
         def addCheckBox(self, master, title, value, showHideCommand = None):
 
@@ -995,6 +1034,43 @@ class CalibrationFilterDialog(BaseDialog):
                         self.callback(self.text)
                 else:
                         self.callback(self.text, self.index)
+
+class ShearMeasurementDialog(BaseDialog):
+    
+        def __init__(self, master, status, callback, text = None, index = None):
+
+                self.callback = callback
+                self.text = text
+                self.index = index
+                
+                self.callback = callback
+
+                self.isNew = (text == None)
+                
+                BaseDialog.__init__(self, master, status)
+        
+        def body(self, master):
+
+                self.prepareColumns(master)     
+
+                if not self.isNew:
+                        
+                        items = extractShearMeasurementValuesFromText(self.text)
+                        
+                        windSpeed = items[0]
+                        height = items[1]
+                      
+                else:
+                        windSpeed = 0.0
+                        height = 0.0
+                        
+                self.addTitleRow(master, "Shear measurement:")
+                
+                self.direction = self.addEntry(master, "Wind Speed:", ValidateFloat(master), direction)
+                self.slope = self.addEntry(master, "Height:", ValidateFloat(master), slope)
+
+                #dummy label to indent controls
+                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
 
 class ExclusionDialog(BaseDialog):
 
@@ -1439,6 +1515,42 @@ class ExportDataSetDialog(BaseDialog):
         def apply(self):
                 return self.getSelections()
 
+class ExportAnonReportPickerDialog(BaseDialog):
+
+        def __init__(self, master, status):
+                #self.callback = callback
+                self.scatter = True
+                self.deviationMatrix = True
+                BaseDialog.__init__(self, master, status)
+
+        def validate(self):
+
+                valid = any(self.getSelections())
+
+                if valid:
+                        return 1
+                else:
+                        return 0
+
+        def body(self, master):
+
+                spacer = Label(master, text=" " * 30)
+                spacer.grid(row=self.row, column=self.titleColumn, columnspan = 2)
+                spacer = Label(master, text=" " * 30)
+                spacer.grid(row=self.row, column=self.secondButtonColumn, columnspan = 2)
+
+                self.row += 1
+                scatter = self.scatter
+                deviationMatrix = self.deviationMatrix
+                
+                self.deviationMatrix = self.addCheckBox (master, "Power Deviation Matrix:", deviationMatrix, showHideCommand = None)
+                self.scatter = self.addCheckBox(master, "Scatter metric:", scatter, showHideCommand = None)
+
+        def getSelections(self):
+                return (bool(self.scatter.get()), bool(self.deviationMatrix.get()))
+
+        def apply(self):
+                return self.getSelections()
 
 class DatePicker:
 
@@ -1589,10 +1701,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 shearShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
                 self.row += 1
-                
+                                               
                 for i, key in enumerate(self.config.shearMeasurements.keys()):
-                        self.shearWindSpeeds.append( self.addPickerEntry(master, "Shear Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
-                        self.shearWindSpeedHeights.append(self.addEntry(master, "Shear Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
+                      self.shearWindSpeeds.append( self.addPickerEntry(master, "Shear Wind Speed {0}:".format(i+1), ValidateNotBlank(master), self.config.shearMeasurements[key], width = 60, showHideCommand = shearShowHide) )
+                      self.shearWindSpeedHeights.append(self.addEntry(master, "Shear Wind Speed {0} Height:".format(i+1), ValidateNonNegativeFloat(master), key, showHideCommand = shearShowHide) )
 
                 rewsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
@@ -1606,22 +1718,23 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 rewsProfileShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
                 self.row += 1
+                
+                self.rewsProfileLevelsListBox = self.addListBox(master, "REWS Listbox", showHideCommand = rewsProfileShowHide)
 
-                self.rewsProfileLevelsScrollBar = Scrollbar(master, orient=VERTICAL)
-                rewsProfileShowHide.addControl(self.rewsProfileLevelsScrollBar)
-                
-                self.rewsProfileLevelsListBox = Listbox(master, yscrollcommand=self.rewsProfileLevelsScrollBar.set, selectmode=EXTENDED, height=3)
-                rewsProfileShowHide.addControl(self.rewsProfileLevelsListBox)
-                
+                for targetListBoxEntry in self.listboxEntries.keys():
+                    self.listboxEntries[targetListBoxEntry].scrollbar.configure(command=self.listboxEntries[targetListBoxEntry].listbox.yview)
+                    self.listboxEntries[targetListBoxEntry].scrollbar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
+                    
+                               
                 if not self.isNew:
                         for height in sorted(self.config.windSpeedLevels):
                                 windSpeed = self.config.windSpeedLevels[height]
                                 direction = self.config.windDirectionLevels[height]
                                 self.rewsProfileLevelsListBox.insert(END, encodeREWSLevelValuesAsText(height, windSpeed, direction))
                                 
-                self.rewsProfileLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.rewsProfileLevelsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
-                self.rewsProfileLevelsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
+                self.rewsProfileLevelsListBox.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
+                #self.rewsProfileLevelsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
+                #self.rewsProfileLevelsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
                 #self.validatedREWSProfileLevels = ValidateREWSProfileLevels(master, self.rewsProfileLevelsListBox)
                 #self.validations.append(self.validatedREWSProfileLevels)
                 #self.validatedREWSProfileLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
@@ -1833,6 +1946,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 if self.hubWindSpeedMode.get() == "Calculated":
 
                         hubWindSpeedModeCalculatedComment = "Not required for calculated hub wind speed mode"
+                        specifiedCalibrationMethodComment = "Not required for Specified Calibration Method"
+                        leastSquaresCalibrationMethodComment = "Not required for Least Squares Calibration Method"
 
                         self.hubWindSpeed.setTip(hubWindSpeedModeCalculatedComment)
                         self.hubTurbulence.setTip(hubWindSpeedModeCalculatedComment)
@@ -1848,10 +1963,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 self.turbineLocationWindSpeed.clearTip()
                                 self.calibrationStartDate.clearTip()
                                 self.calibrationEndDate.clearTip()
+                                #self.calibrationDirectionsListBox.setTip(leastSquaresCalibrationMethodComment)  
+                                
                         elif self.calibrationMethod.get() == "Specified":
                                 self.turbineLocationWindSpeed.setTipNotRequired()
                                 self.calibrationStartDate.setTipNotRequired()
                                 self.calibrationEndDate.setTipNotRequired()
+                                #self.calibrationDirectionsListBox.setTipNotRequired()  
                         else:
                                 raise Exception("Unknown calibration methods: %s" % self.calibrationMethod.get())
      
@@ -2877,6 +2995,9 @@ class UserInterface:
         def ExportAnonymousReport(self):
                 scatter = True
                 deviationMatrix = True
+                
+                selections = ExportAnonReportPickerDialog(self.root, None)                    
+                scatter, deviationMatrix  = selections.getSelections() 
 
                 if self.analysis == None:
                         self.addMessage("ERROR: Analysis not yet calculated", red = True)
@@ -2904,8 +3025,10 @@ class UserInterface:
 
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
+                        
                         selections = ExportDataSetDialog(self.root, None)
                         clean, full, calibration = selections.getSelections()
+                        
                         self.analysis.export(fileName, clean, full, calibration)
                         if clean:
                                 self.addMessage("Time series written to %s" % fileName)
