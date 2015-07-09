@@ -1976,13 +1976,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 self.calibrationStartDate.clearTip()
                                 self.calibrationEndDate.clearTip()
                                 self.calibrationDirectionsListBoxEntry.setTip(leastSquaresCalibrationMethodComment)
-                                self.calibrationFiltersListBoxEntry.setTipNotRequired()
+                                self.calibrationFiltersListBoxEntry.clearTip()
                                 
                         elif self.calibrationMethod.get() == "Specified":
                                 self.turbineLocationWindSpeed.setTipNotRequired()
                                 self.calibrationStartDate.setTipNotRequired()
                                 self.calibrationEndDate.setTipNotRequired()
-                                self.calibrationDirectionsListBoxEntry.setTipNotRequired()
+                                self.calibrationDirectionsListBoxEntry.clearTip()
                                 self.calibrationFiltersListBoxEntry.setTip(specifiedCalibrationMethodComment)
                         else:
                                 raise Exception("Unknown calibration methods: %s" % self.calibrationMethod.get())
