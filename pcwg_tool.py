@@ -56,7 +56,17 @@ def extractREWSLevelValuesFromText(text):
         return (height, windSpeed, windDirection)
 
 def encodeREWSLevelValuesAsText(height, windSpeed, windDirection):
-        return "%0.4f%s%s%s%s" % (height, columnSeparator, windSpeed, columnSeparator, windDirection)
+        return "{hight:.0.4}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
+
+def extractShearMeasurementValuesFromText(text):
+        items = text.split(columnSeparator)
+        height = float(items[0])
+        windSpeed = items[1].strip()
+        return (height, windSpeed)
+
+def encodeShearMeasurementValuesAsText(height, windSpeed):
+        return "{hight:.0.4}{sep}{windspeed}{sep}".format(hight = height, sep = columnSeparator, windspeed = windSpeed,)
+
 
 def extractCalibrationDirectionValuesFromText(text):
         
