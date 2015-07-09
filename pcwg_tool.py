@@ -93,7 +93,8 @@ def extractExclusionValuesFromText(text):
 
 def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
 
-        return "%s%s%f%s%s%s%s%s%s" % (column, columnSeparator, value, columnSeparator, filterType, columnSeparator, inclusive, columnSeparator, active)
+        return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
+
 
 def extractFilterValuesFromText(text):
 
@@ -113,7 +114,7 @@ def extractFilterValuesFromText(text):
                 
 def encodeCalibrationFilterValuesAsText(column, value, calibrationFilterType, inclusive, active):
 
-        return "%s%s%f%s%s%s%s%s%s" % (column, columnSeparator, value, columnSeparator, calibrationFilterType, columnSeparator, inclusive, columnSeparator, active)
+        return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = calibrationFilterType, inclusive =inclusive, active = active)
 
 def extractCalibrationFilterValuesFromText(text):
 
@@ -488,35 +489,35 @@ class ValidateDatasets:
 
 class VariableEntry:
 
-        def __init__(self, variable, entry, tip):
-                self.variable = variable
-                self.entry = entry
-                self.pickButton = None
-                self.tip = tip
-
-        def clearTip(self):
-            self.setTip("")
-
-        def setTipNotRequired(self):
-            self.setTip("Not Required")
-
-        def setTip(self, text):
-            if self.tip != None:
-                self.tip['text'] = text
-
-        def get(self):
-                return self.variable.get()
-
-        def set(self, value):
-                return self.variable.set(value)
-
-        def configure(self, state):
-                self.entry.configure(state = state)
-                if self.pickButton != None:
-                        self.pickButton.configure(state = state)
-
-        def bindPickButton(self, pickButton):
-                self.pickButton = pickButton
+    def __init__(self, variable, entry, tip):
+            self.variable = variable
+            self.entry = entry
+            self.pickButton = None
+            self.tip = tip
+    
+    def clearTip(self):
+        self.setTip("")
+    
+    def setTipNotRequired(self):
+        self.setTip("Not Required")
+    
+    def setTip(self, text):
+        if self.tip != None:
+            self.tip['text'] = text
+    
+    def get(self):
+            return self.variable.get()
+    
+    def set(self, value):
+            return self.variable.set(value)
+    
+    def configure(self, state):
+            self.entry.configure(state = state)
+            if self.pickButton != None:
+                    self.pickButton.configure(state = state)
+    
+    def bindPickButton(self, pickButton):
+            self.pickButton = pickButton
   
 
 class ListBoxEntry(VariableEntry):
@@ -1981,7 +1982,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.referenceWindDirection.clearTip()
                         self.referenceWindDirectionOffset.clearTip()
                                 
-                        if self.calibrationMethod.get() == "LeastSquares":
+                        if self.calibrationMethod.get() in ("LeastSquares", "York"):
                                 self.turbineLocationWindSpeed.clearTip()
                                 self.calibrationStartDate.clearTip()
                                 self.calibrationEndDate.clearTip()
@@ -3046,11 +3047,11 @@ class UserInterface:
                         return
 
                 try:
-                        fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
                         
                         selections = ExportDataSetDialog(self.root, None)
                         clean, full, calibration = selections.getSelections()
-                        
+
+                        fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
                         self.analysis.export(fileName, clean, full, calibration)
                         if clean:
                                 self.addMessage("Time series written to %s" % fileName)
