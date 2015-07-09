@@ -1213,7 +1213,7 @@ class ShearMeasurementDialog(BaseDialog):
                         
                 self.addTitleRow(master, "Shear measurement:")
                 
-                self.height = self.addEntry(master, "Height:", ValidateFloat(master), height)                
+                self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), height)                
                 self.windSpeed = self.addPickerEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
                 
                 #dummy label to indent controls
