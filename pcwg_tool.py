@@ -1045,42 +1045,6 @@ class CalibrationFilterDialog(BaseDialog):
                 else:
                         self.callback(self.text, self.index)
 
-class ShearMeasurementDialog(BaseDialog):
-    
-        def __init__(self, master, status, callback, text = None, index = None):
-
-                self.callback = callback
-                self.text = text
-                self.index = index
-                
-                self.callback = callback
-
-                self.isNew = (text == None)
-                
-                BaseDialog.__init__(self, master, status)
-        
-        def body(self, master):
-
-                self.prepareColumns(master)     
-
-                if not self.isNew:
-                        
-                        items = extractShearMeasurementValuesFromText(self.text)
-                        
-                        windSpeed = items[0]
-                        height = items[1]
-                      
-                else:
-                        windSpeed = 0.0
-                        height = 0.0
-                        
-                self.addTitleRow(master, "Shear measurement:")
-                
-                self.direction = self.addEntry(master, "Wind Speed:", ValidateFloat(master), direction)
-                self.slope = self.addEntry(master, "Height:", ValidateFloat(master), slope)
-
-                #dummy label to indent controls
-                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
 
 class ExclusionDialog(BaseDialog):
 
@@ -1209,6 +1173,60 @@ class CalibrationDirectionDialog(BaseDialog):
                         self.status.addMessage("Calibration direction created")
                 else:
                         self.status.addMessage("Calibration direction updated")
+
+                if self.index== None:
+                        self.callback(self.text)
+                else:
+                        self.callback(self.text, self.index)
+
+class ShearMeasurementDialog(BaseDialog):
+    
+        def __init__(self, master, status, callback, text = None, index = None):
+
+                self.callback = callback
+                self.text = text
+                self.index = index
+                
+                self.callback = callback
+
+                self.isNew = (text == None)
+                
+                BaseDialog.__init__(self, master, status)
+        
+        def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
+                return self.parent.ShowColumnPicker(parentDialog, pick, selectedColumn)        
+        
+        def body(self, master):
+
+                self.prepareColumns(master)     
+
+                if not self.isNew:
+                        
+                        items = extractShearMeasurementValuesFromText(self.text)
+                        
+                        windSpeed = items[0]
+                        height = items[1]
+                      
+                else:
+                        windSpeed = ""
+                        height = 0.0
+                        
+                self.addTitleRow(master, "Shear measurement:")
+                
+                self.height = self.addEntry(master, "Height:", ValidateFloat(master), height)                
+                self.windSpeed = self.addPickerEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
+                
+                #dummy label to indent controls
+                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
+
+        def apply(self):
+                        
+                self.text = encodeShearMeasurementValuesAsText(float(self.height.get()), self.windSpeed.get().strip())
+
+                if self.isNew:
+                        self.status.addMessage("Shear measurement created")
+                else:
+                        self.status.addMessage("Shear measurement updated")
 
                 if self.index== None:
                         self.callback(self.text)
