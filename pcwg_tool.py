@@ -1820,18 +1820,15 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 self.calibrationDirectionsListBoxEntry.listbox.insert(END, text)
                  
                 calibrationFiltersShowHide = ShowHideCommand(master)
-                self.addTitleRow(master, "Calibration Filters:", showHideCommand = calibrationFiltersShowHide)
-                self.calibrationFiltersScrollBar = Scrollbar(master, orient=VERTICAL)
-                calibrationFiltersShowHide.addControl(self.calibrationFiltersScrollBar)
+                label = Label(master, text="Calibration Filters:")
+                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                calibrationFiltersShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
+                self.row += 1     
                 
-                self.calibrationFiltersListBox = Listbox(master, yscrollcommand=self.calibrationFiltersScrollBar.set, selectmode=EXTENDED, height=3)
-                calibrationFiltersShowHide.addControl(self.calibrationFiltersListBox)
-                self.calibrationFiltersListBox.insert(END, "Column,Value,FilterType,Inclusive,Active")
-                                
-                self.calibrationFiltersListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.calibrationFiltersScrollBar.configure(command=self.calibrationFiltersListBox.yview)
-                self.calibrationFiltersScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
-
+                self.calibrationFiltersListBoxEntry = self.addListBox(master, "Calibration Filters ListBox", showHideCommand = calibrationFiltersShowHide)                
+                self.calibrationFiltersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active")
+                self.calibrationFiltersListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                               
+               
                 self.newCalibrationFilterButton = Button(master, text="New", command = self.NewCalibrationFilter, width=5, height=1)
                 self.newCalibrationFilterButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 calibrationFiltersShowHide.addControl(self.newCalibrationFilterButton)
@@ -1839,7 +1836,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.editCalibrationFilterButton = Button(master, text="Edit", command = self.EditCalibrationFilter, width=5, height=1)
                 self.editCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 calibrationFiltersShowHide.addControl(self.editCalibrationFilterButton)
-                self.calibrationFiltersListBox.bind("<Double-Button-1>", self.EditCalibrationFilter)
+                self.calibrationFiltersListBoxEntry.listbox.bind("<Double-Button-1>", self.EditCalibrationFilter)
                 
                 self.deleteCalibrationFilterButton = Button(master, text="Delete", command = self.RemoveCalibrationFilter, width=5, height=1)
                 self.deleteCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
@@ -1849,23 +1846,19 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 if not self.isNew:
                         for calibrationFilterItem in sorted(self.config.calibrationFilters):
                                 text = encodeCalibrationFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
-                                self.calibrationFiltersListBox.insert(END, text)
+                                self.calibrationFiltersListBoxEntry.listbox.insert(END, text)
 
                
                #Exclusions
                 exclusionsShowHide = ShowHideCommand(master)
-    
-                self.addTitleRow(master, "Exclusions:", showHideCommand = exclusionsShowHide)
-                self.exclusionsScrollBar = Scrollbar(master, orient=VERTICAL)
-                exclusionsShowHide.addControl(self.exclusionsScrollBar)
+                label = Label(master, text="Exclusions:")
+                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                exclusionsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
+                self.row += 1     
                 
-                self.exclusionsListBox = Listbox(master, yscrollcommand=self.exclusionsScrollBar.set, selectmode=EXTENDED, height=3)
-                exclusionsShowHide.addControl(self.exclusionsListBox)
-                self.exclusionsListBox.insert(END, "StartDate,EndDate,Active")
-                                
-                self.exclusionsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.exclusionsScrollBar.configure(command=self.exclusionsListBox.yview)
-                self.exclusionsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
+                self.exclusionsListBoxEntry = self.addListBox(master, "Exclusions ListBox", showHideCommand = exclusionsShowHide)                          
+                self.exclusionsListBoxEntry.listbox.insert(END, "StartDate,EndDate,Active")                               
+                self.exclusionsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
 
                 self.newExclusionButton = Button(master, text="New", command = self.NewExclusion, width=5, height=1)
                 self.newExclusionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
@@ -1874,7 +1867,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.editExclusionButton = Button(master, text="Edit", command = self.EditExclusion, width=5, height=1)
                 self.editExclusionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 exclusionsShowHide.addControl(self.editExclusionButton)
-                self.exclusionsListBox.bind("<Double-Button-1>", self.EditExclusion)
+                self.exclusionsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditExclusion)
                 
                 self.deleteExclusionButton = Button(master, text="Delete", command = self.RemoveExclusion, width=5, height=1)
                 self.deleteExclusionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
@@ -1887,7 +1880,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 endDate = exclusion[1]
                                 active = exclusion[2]
                                 text = encodeExclusionValuesAsText(startDate, endDate, active)
-                                self.exclusionsListBox.insert(END, text)
+                                self.exclusionsListBoxEntry.listbox.insert(END, text)
 
                 #Filters
                 filtersShowHide = ShowHideCommand(master)
@@ -2082,7 +2075,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def EditCalibrationFilter(self, event = None):
 
-            items = self.calibrationFiltersListBox.curselection()
+            items = self.calibrationFiltersListBoxEntry.listbox.curselection()
 
             if len(items) == 1:
 
@@ -2090,7 +2083,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                     if idx > 0:
 
-                        text = self.calibrationFiltersListBox.get(items[0])                        
+                        text = self.calibrationFiltersListBoxEntry.listbox.get(items[0])                        
                         
                         try:
                             dialog = CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText, text, idx)                                
@@ -2100,7 +2093,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def RemoveCalibrationFilter(self):
 
-            items = self.calibrationFiltersListBox.curselection()
+            items = self.calibrationFiltersListBoxEntry.listbox.curselection()
             pos = 0
             
             for i in items:
@@ -2108,17 +2101,17 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 idx = int(i) - pos
                 
                 if idx > 0:
-                    self.calibrationFiltersListBox.delete(idx, idx)
+                    self.calibrationFiltersListBoxEntry.listbox.delete(idx, idx)
 
                 pos += 1
             
         def addCalibrationFilterFromText(self, text, index = None):
 
                 if index != None:
-                        self.calibrationFiltersListBox.delete(index, index)
-                        self.calibrationFiltersListBox.insert(index, text)
+                        self.calibrationFiltersListBoxEntry.listbox.delete(index, index)
+                        self.calibrationFiltersListBoxEntry.listbox.insert(index, text)
                 else:
-                        self.calibrationFiltersListBox.insert(END, text)     
+                        self.calibrationFiltersListBoxEntry.listbox.insert(END, text)     
 
 
 
@@ -2128,7 +2121,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def EditExclusion(self, event = None):
 
-            items = self.exclusionsListBox.curselection()
+            items = self.exclusionsListBoxEntry.listbox.curselection()
 
             if len(items) == 1:
 
@@ -2136,7 +2129,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                     if idx > 0:
 
-                        text = self.exclusionsListBox.get(items[0])                        
+                        text = self.exclusionsListBoxEntry.listbox.get(items[0])                        
                         
                         try:
                             dialog = ExclusionDialog(self, self.status, self.addExclusionFromText, text, idx)                                
@@ -2146,7 +2139,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def RemoveExclusion(self):
 
-            items = self.exclusionsListBox.curselection()
+            items = self.exclusionsListBoxEntry.listbox.curselection()
             pos = 0
             
             for i in items:
@@ -2154,17 +2147,17 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 idx = int(i) - pos
                 
                 if idx > 0:
-                    self.exclusionsListBox.delete(idx, idx)
+                    self.exclusionsListBoxEntry.listbox.delete(idx, idx)
 
                 pos += 1
             
         def addExclusionFromText(self, text, index = None):
 
                 if index != None:
-                        self.exclusionsListBox.delete(index, index)
-                        self.exclusionsListBox.insert(index, text)
+                        self.exclusionsListBoxEntry.listbox.delete(index, index)
+                        self.exclusionsListBoxEntry.listbox.insert(index, text)
                 else:
-                        self.exclusionsListBox.insert(END, text)     
+                        self.exclusionsListBoxEntry.listbox.insert(END, text)     
 
 
         def NewCalibrationDirection(self):
@@ -2407,20 +2400,20 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 self.config.calibrationFilters = []
                 
-                for i in range(self.calibrationFiltersListBox.size()):
+                for i in range(self.calibrationFiltersListBoxEntry.listbox.size()):
 
                         if i > 0:
-                                calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractCalibrationFilterValuesFromText(self.calibrationFiltersListBox.get(i))
+                                calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractCalibrationFilterValuesFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
                                 self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
                 #exclusions
 
                 self.config.exclusions = []
                 
-                for i in range(self.exclusionsListBox.size()):
+                for i in range(self.exclusionsListBoxEntry.listbox.size()):
 
                         if i > 0:
                                 
-                                self.config.exclusions.append(extractExclusionValuesFromText(self.exclusionsListBox.get(i)))
+                                self.config.exclusions.append(extractExclusionValuesFromText(self.exclusionsListBoxEntry.listbox.get(i)))
 
                 #filters
 
