@@ -2438,18 +2438,15 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
                 Label(master, text="Power Curve Levels:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 self.row += 1
-
-                self.powerCurveLevelsScrollBar = Scrollbar(master, orient=VERTICAL)
-                self.powerCurveLevelsListBox = Listbox(master, yscrollcommand=self.powerCurveLevelsScrollBar.set, selectmode=EXTENDED, height=10)
+                self.powerCurveLevelsListBoxEntry = self.addListBox(master, "Power Curve Levels ListBox")                
                 
                 for windSpeed in self.config.powerCurveDictionary:
                         power = self.config.powerCurveDictionary[windSpeed]
-                        self.powerCurveLevelsListBox.insert(END, encodePowerLevelValueAsText(windSpeed, power))
+                        self.powerCurveLevelsListBoxEntry.listbox.insert(END, encodePowerLevelValueAsText(windSpeed, power))
                                 
-                self.powerCurveLevelsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.powerCurveLevelsScrollBar.configure(command=self.powerCurveLevelsListBox.yview)
-                self.powerCurveLevelsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
-                self.validatedPowerCurveLevels = ValidatePowerCurveLevels(master, self.powerCurveLevelsListBox)
+                self.powerCurveLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
+                
+                self.validatedPowerCurveLevels = ValidatePowerCurveLevels(master, self.powerCurveLevelsListBoxEntry.listbox)
                 self.validations.append(self.validatedPowerCurveLevels)
                 self.validatedPowerCurveLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
 
@@ -2464,12 +2461,12 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
         def EditPowerCurveLevel(self):
 
-                items = self.powerCurveLevelsListBox.curselection()
+                items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
 
                 if len(items) == 1:
 
                         idx = items[0]
-                        text = self.powerCurveLevelsListBox.get(items[0])                        
+                        text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])                        
                         
                         try:                                
                                 dialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText, text, idx)
@@ -2483,39 +2480,39 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
         def addPowerCurveLevelFromText(self, text, index = None):
 
                 if index != None:
-                        self.powerCurveLevelsListBox.delete(index, index)
-                        self.powerCurveLevelsListBox.insert(index, text)
+                        self.powerCurveLevelsListBoxEntry.listbox.delete(index, index)
+                        self.powerCurveLevelsListBoxEntry.listbox.insert(index, text)
                 else:
-                        self.powerCurveLevelsListBox.insert(END, text)
+                        self.powerCurveLevelsListBoxEntry.listbox.insert(END, text)
 
                 self.sortLevels()
                 self.validatedPowerCurveLevels.validate()               
 
         def removePowerCurveLevels(self):
                 
-                items = self.powerCurveLevelsListBox.curselection()
+                items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
                 pos = 0
                 
                 for i in items:
                     idx = int(i) - pos
-                    self.powerCurveLevelsListBox.delete(idx, idx)
+                    self.powerCurveLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
             
-                self.validatedPowerCurveLevels.validate()
+                self.powerCurveLevelsListBoxEntry.listbox.validate()
 
         def sortLevels(self):
 
                 levels = {}
 
-                for i in range(self.powerCurveLevelsListBox.size()):
-                        text = self.powerCurveLevelsListBox.get(i)
+                for i in range(self.powerCurveLevelsListBoxEntry.listbox.size()):
+                        text = self.powerCurveLevelsListBoxEntry.listbox.get(i)
                         windSpeed, power = extractPowerLevelValuesFromText(text)
                         levels[windSpeed] = power
 
-                self.powerCurveLevelsListBox.delete(0, END)
+                self.powerCurveLevelsListBoxEntry.listbox.delete(0, END)
 
                 for windSpeed in sorted(levels):
-                        self.powerCurveLevelsListBox.insert(END, encodePowerLevelValueAsText(windSpeed, levels[windSpeed]))
+                        self.powerCurveLevelsListBoxEntry.listbox.insert(END, encodePowerLevelValueAsText(windSpeed, levels[windSpeed]))
                         
         def setConfigValues(self):
 
@@ -2526,8 +2523,8 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
                 powerCurveDictionary = {}
 
-                for i in range(self.powerCurveLevelsListBox.size()):
-                        windSpeed, power = extractPowerLevelValuesFromText(self.powerCurveLevelsListBox.get(i))
+                for i in range(self.powerCurveLevelsListBoxEntry.listbox.size()):
+                        windSpeed, power = extractPowerLevelValuesFromText(self.powerCurveLevelsListBoxEntry.listbox.get(i))
                         powerCurveDictionary[windSpeed] = power
                                 
                 self.config.setPowerCurve(powerCurveDictionary)
