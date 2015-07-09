@@ -56,7 +56,7 @@ def extractREWSLevelValuesFromText(text):
         return (height, windSpeed, windDirection)
 
 def encodeREWSLevelValuesAsText(height, windSpeed, windDirection):
-        return "{hight:.0.4}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
+        return "{hight:.04}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
 
 def extractShearMeasurementValuesFromText(text):
         items = text.split(columnSeparator)
@@ -1723,6 +1723,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.referenceWindSpeedStdDev = self.addPickerEntry(master, "Reference Wind Speed Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60, showHideCommand = referenceWindSpeedShowHide)
                 self.referenceWindDirection = self.addPickerEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60, showHideCommand = referenceWindSpeedShowHide)
                 self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset, showHideCommand = referenceWindSpeedShowHide)
+
+                for targetListBoxEntry in self.listboxEntries.keys():
+                    self.listboxEntries[targetListBoxEntry].scrollbar.configure(command=self.listboxEntries[targetListBoxEntry].listbox.yview)
+                    self.listboxEntries[targetListBoxEntry].scrollbar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
                 
                 shearShowHide = ShowHideCommand(master)
                 label = Label(master, text="Shear Measurements:")
@@ -1747,20 +1751,15 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 rewsProfileShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
                 self.row += 1
                 
-                self.rewsProfileLevelsListBox = self.addListBox(master, "REWS Listbox", showHideCommand = rewsProfileShowHide)
-
-                for targetListBoxEntry in self.listboxEntries.keys():
-                    self.listboxEntries[targetListBoxEntry].scrollbar.configure(command=self.listboxEntries[targetListBoxEntry].listbox.yview)
-                    self.listboxEntries[targetListBoxEntry].scrollbar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
-                    
+                self.rewsProfileLevelsListBoxEntry = self.addListBox(master, "REWS Listbox", showHideCommand = rewsProfileShowHide)               
                                
                 if not self.isNew:
                         for height in sorted(self.config.windSpeedLevels):
                                 windSpeed = self.config.windSpeedLevels[height]
                                 direction = self.config.windDirectionLevels[height]
-                                self.rewsProfileLevelsListBox.insert(END, encodeREWSLevelValuesAsText(height, windSpeed, direction))
+                                self.rewsProfileLevelsListBoxEntry.listbox.insert(END, encodeREWSLevelValuesAsText(height, windSpeed, direction))
                                 
-                self.rewsProfileLevelsListBox.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
+                self.rewsProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 #self.rewsProfileLevelsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
                 #self.rewsProfileLevelsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
                 #self.validatedREWSProfileLevels = ValidateREWSProfileLevels(master, self.rewsProfileLevelsListBox)
@@ -2218,12 +2217,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def EditREWSProfileLevel(self):
 
-                items = self.rewsProfileLevelsListBox.curselection()
+                items = self.rewsProfileLevelsListBoxEntry.listbox.curselection()
 
                 if len(items) == 1:
 
                         idx = items[0]
-                        text = self.rewsProfileLevelsListBox.get(items[0])                        
+                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(items[0])                        
                         
                         try:                                
                                 dialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
@@ -2237,22 +2236,22 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
         def addREWSProfileLevelFromText(self, text, index = None):
 
                 if index != None:
-                        self.rewsProfileLevelsListBox.delete(index, index)
-                        self.rewsProfileLevelsListBox.insert(index, text)
+                        self.rewsProfileLevelsListBoxEntry.listbox.delete(index, index)
+                        self.rewsProfileLevelsListBoxEntry.listbox.insert(index, text)
                 else:
-                        self.rewsProfileLevelsListBox.insert(END, text)
+                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, text)
                         
                 self.sortLevels()
                 #self.validatedREWSProfileLevels.validate()               
 
         def removeREWSProfileLevels(self):
                 
-                items = self.rewsProfileLevelsListBox.curselection()
+                items = self.rewsProfileLevelsListBoxEntry.listbox.curselection()
                 pos = 0
                 
                 for i in items:
                     idx = int(i) - pos
-                    self.rewsProfileLevelsListBox.delete(idx, idx)
+                    self.rewsProfileLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
             
                 #self.validatedREWSProfileLevels.validate()
@@ -2261,14 +2260,14 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 levels = {}
 
-                for i in range(self.rewsProfileLevelsListBox.size()):
-                        text = self.rewsProfileLevelsListBox.get(i)
+                for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
+                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)
                         levels[extractREWSLevelValuesFromText(text)[0]] = text
 
-                self.rewsProfileLevelsListBox.delete(0, END)
+                self.rewsProfileLevelsListBoxEntry.listbox.delete(0, END)
 
                 for height in sorted(levels):
-                        self.rewsProfileLevelsListBox.insert(END, levels[height])
+                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, levels[height])
 
         def getInputTimeSeriesRelativePath(self):
 
@@ -2373,8 +2372,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.windDirectionLevels = {}
                 self.config.windSpeedLevels = {}
 
-                for i in range(self.rewsProfileLevelsListBox.size()):
-                        items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBox.get(i))
+                for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
+                        items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBoxEntry.listbox.get(i))
                         self.config.windSpeedLevels[items[0]] = items[1]
                         self.config.windDirectionLevels[items[0]] = items[2]
 
