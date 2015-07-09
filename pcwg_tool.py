@@ -1883,20 +1883,16 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 self.exclusionsListBoxEntry.listbox.insert(END, text)
 
                 #Filters
-                filtersShowHide = ShowHideCommand(master)
-    
-                self.addTitleRow(master, "Filters:", showHideCommand = filtersShowHide)
-                self.filtersScrollBar = Scrollbar(master, orient=VERTICAL)
-                filtersShowHide.addControl(self.filtersScrollBar)
+                filtersShowHide = ShowHideCommand(master)                
+                label = Label(master, text="Filters:")
+                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+                filtersShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
+                self.row += 1     
                 
-                self.filtersListBox = Listbox(master, yscrollcommand=self.filtersScrollBar.set, selectmode=EXTENDED, height=3)
-                filtersShowHide.addControl(self.filtersListBox)
-                self.filtersListBox.insert(END, "Column,Value,FilterType,Inclusive,Active")
-                                
-                self.filtersListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.filtersScrollBar.configure(command=self.filtersListBox.yview)
-                self.filtersScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
-
+                self.filtersListBoxEntry = self.addListBox(master, "Filters ListBox", showHideCommand = filtersShowHide)                          
+                self.filtersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active")                             
+                self.filtersListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
+ 
                 self.newFilterButton = Button(master, text="New", command = self.NewFilter, width=5, height=1)
                 self.newFilterButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 filtersShowHide.addControl(self.newFilterButton)
@@ -1904,7 +1900,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.editFilterButton = Button(master, text="Edit", command = self.EditFilter, width=5, height=1)
                 self.editFilterButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 filtersShowHide.addControl(self.editFilterButton)
-                self.filtersListBox.bind("<Double-Button-1>", self.EditFilter)
+                self.filtersListBoxEntry.listbox.bind("<Double-Button-1>", self.EditFilter)
                 
                 self.deleteFilterButton = Button(master, text="Delete", command = self.RemoveFilter, width=5, height=1)
                 self.deleteFilterButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
@@ -1914,7 +1910,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 if not self.isNew:
                         for filterItem in sorted(self.config.filters):
                                 text = encodeFilterValuesAsText(filterItem.column, filterItem.value, filterItem.filterType, filterItem.inclusive, filterItem.active)
-                                self.filtersListBox.insert(END, text)
+                                self.filtersListBoxEntry.listbox.insert(END, text)
 
                 #set initial visibility
                 self.generalShowHide.show()
@@ -2031,7 +2027,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def EditFilter(self, event = None):
 
-            items = self.filtersListBox.curselection()
+            items = self.filtersListBoxEntry.listbox.curselection()
 
             if len(items) == 1:
 
@@ -2039,7 +2035,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                     if idx > 0:
 
-                        text = self.filtersListBox.get(items[0])                        
+                        text = self.filtersListBoxEntry.listbox.get(items[0])                        
                         
                         try:
                             dialog = FilterDialog(self, self.status, self.addFilterFromText, text, idx)                                
@@ -2049,7 +2045,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def RemoveFilter(self):
 
-            items = self.filtersListBox.curselection()
+            items = self.filtersListBoxEntry.listbox.curselection()
             pos = 0
             
             for i in items:
@@ -2057,17 +2053,17 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 idx = int(i) - pos
                 
                 if idx > 0:
-                    self.filtersListBox.delete(idx, idx)
+                    self.filtersListBoxEntry.listbox.delete(idx, idx)
 
                 pos += 1
             
         def addFilterFromText(self, text, index = None):
 
                 if index != None:
-                        self.filtersListBox.delete(index, index)
-                        self.filtersListBox.insert(index, text)
+                        self.filtersListBoxEntry.listbox.delete(index, index)
+                        self.filtersListBoxEntry.listbox.insert(index, text)
                 else:
-                        self.filtersListBox.insert(END, text)    
+                        self.filtersListBoxEntry.listbox.insert(END, text)    
                         
         def NewCalibrationFilter(self):
 
@@ -2419,10 +2415,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.config.filters = []
                 
-                for i in range(self.filtersListBox.size()):
+                for i in range(self.filtersListBoxEntry.listbox.size()):
 
                         if i > 0:
-                                filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBox.get(i))
+                                filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBoxEntry.listbox.get(i))
                                 self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
 
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
