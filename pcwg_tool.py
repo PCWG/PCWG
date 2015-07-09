@@ -1975,13 +1975,15 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 self.turbineLocationWindSpeed.clearTip()
                                 self.calibrationStartDate.clearTip()
                                 self.calibrationEndDate.clearTip()
-                                #self.calibrationDirectionsListBoxEntry.listbox..setTip(leastSquaresCalibrationMethodComment)  
+                                self.calibrationDirectionsListBoxEntry.setTip(leastSquaresCalibrationMethodComment)
+                                self.calibrationFiltersListBoxEntry.setTipNotRequired()
                                 
                         elif self.calibrationMethod.get() == "Specified":
                                 self.turbineLocationWindSpeed.setTipNotRequired()
                                 self.calibrationStartDate.setTipNotRequired()
                                 self.calibrationEndDate.setTipNotRequired()
-                                #self.calibrationDirectionsListBoxEntry.listbox..setTipNotRequired()  
+                                self.calibrationDirectionsListBoxEntry.setTipNotRequired()
+                                self.calibrationFiltersListBoxEntry.setTip(specifiedCalibrationMethodComment)
                         else:
                                 raise Exception("Unknown calibration methods: %s" % self.calibrationMethod.get())
      
@@ -2558,21 +2560,15 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 Label(master, text="Dataset Configuration XMLs:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
                 datasetsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
                 self.row += 1
-
-                self.datasetsScrollBar = Scrollbar(master, orient=VERTICAL)
-                datasetsShowHide.addControl(self.datasetsScrollBar)
-                
-                self.datasetsListBox = Listbox(master, yscrollcommand=self.datasetsScrollBar.set, selectmode=EXTENDED, height=3)
-                datasetsShowHide.addControl(self.datasetsListBox)
-                
+                                
+                self.datasetsListBoxEntry = self.addListBox(master, "DataSets ListBox", showHideCommand = datasetsShowHide )
+                                
                 if not self.isNew:
                         for dataset in self.config.datasets:
-                                self.datasetsListBox.insert(END, dataset)
+                                self.datasetsListBoxEntry.listbox.insert(END, dataset)
                                 
-                self.datasetsListBox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.datasetsScrollBar.configure(command=self.datasetsListBox.yview)
-                self.datasetsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
-                self.validateDatasets = ValidateDatasets(master, self.datasetsListBox)
+                self.datasetsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                
+                self.validateDatasets = ValidateDatasets(master, self.datasetsListBoxEntry.listbox)
                 self.validations.append(self.validateDatasets)
                 self.validateDatasets.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
                 datasetsShowHide.addControl(self.validateDatasets.messageLabel)
@@ -2582,7 +2578,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 datasetsShowHide.addControl(self.newDatasetButton)
                 
                 self.editDatasetButton = Button(master, text="Edit", command = self.EditDataset, width=5, height=1)
-                self.datasetsListBox.bind("<Double-Button-1>", self.EditDataset)
+                self.datasetsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditDataset)
                 self.editDatasetButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 datasetsShowHide.addControl(self.editDatasetButton)
                 
@@ -2666,12 +2662,12 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
         def EditDataset(self, event = None):
 
-                items = self.datasetsListBox.curselection()
+                items = self.datasetsListBoxEntry.listbox.curselection()
 
                 if len(items) == 1:
 
                         index = items[0]
-                        path = self.datasetsListBox.get(index)
+                        path = self.datasetsListBoxEntry.listbox.get(index)
 
                         try:
                                 relativePath = configuration.RelativePath(self.filePath.get()) 
@@ -2713,21 +2709,21 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 path = relativePath.convertToRelativePath(path)
 
                 if index != None:
-                        self.datasetsListBox.delete(index, index)
-                        self.datasetsListBox.insert(index, path)
+                        self.datasetsListBoxEntry.listbox.delete(index, index)
+                        self.datasetsListBoxEntry.listbox.insert(index, path)
                 else:
-                        self.datasetsListBox.insert(END, path)
+                        self.datasetsListBoxEntry.listbox.insert(END, path)
 
                 self.validateDatasets.validate()               
 
         def removeDatasets(self):
                 
-                items = self.datasetsListBox.curselection()
+                items = self.datasetsListBoxEntry.listbox.curselection()
                 pos = 0
                 
                 for i in items:
                     idx = int(i) - pos
-                    self.datasetsListBox.delete(idx, idx)
+                    self.datasetsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
             
                 self.validateDatasets.validate()
@@ -2766,8 +2762,8 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 self.config.datasets = []
 
-                for i in range(self.datasetsListBox.size()):
-                        dataset = relativePath.convertToRelativePath(self.datasetsListBox.get(i))
+                for i in range(self.datasetsListBoxEntry.listbox.size()):
+                        dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
                         self.config.datasets.append(dataset)
 
 class UserInterface:
