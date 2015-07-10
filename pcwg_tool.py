@@ -1501,7 +1501,9 @@ class ParseClipBoard:
                                         
                 except Exception as e:
                         print "Can't parse clipboard (%s)" % e.message
-
+                        
+            
+    
 class ExportDataSetDialog(BaseDialog):
 
         def __init__(self, master, status):
@@ -1748,7 +1750,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=5, height=1)
                 self.deleteShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 shearShowHide.addControl(self.deleteShearProfileLevelButton)
-                self.row +=1              
+                self.row +=1 
+                
+                #self.copyToREWSShearProileLevelButton = Button(master, text="Copy to REWS", command = self.copyToREWSShearProileLevels, width=5, height=1)
+                #self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+                #shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
+                #self.row +=1 
                
                 rewsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
@@ -2256,6 +2263,19 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                     idx = int(i) - pos
                     self.shearProfileLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
+                    
+        #def copyToREWSShearProileLevels(self):
+            
+                #items = self.shearProfileLevelsListBoxEntry.listbox.curselection()
+                
+                #for i in items:
+                    #shearProfileLevelsListBoxEntry.listbox.append(listbox.get(i))
+                #listbox.quit()
+                
+                #REWSitems = self.rewsProfileLevelsListBoxEntry.listbox.curseselection()
+                
+                #for item in REWSitems:
+                    #rewsProfileLevelsListBoxEntry.listbox.insert(End, item)
             
                 #self.validatedShearProfileLevels.validate()
 
