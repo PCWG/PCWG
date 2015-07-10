@@ -657,10 +657,10 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 entry.entry.config(state=DISABLED)
                 
                 pickButton = Button(master, text=".", command = DatePicker(self, entry, datePickerFormat), width=3, height=1)
-                pickButton.grid(row=(self.row-1), sticky=N, column=self.inputColumn)
+                pickButton.grid(row=(self.row-1), sticky=N, column=self.inputColumn, padx = 160)
 
                 clearButton = Button(master, text="x", command = ClearEntry(entry), width=3, height=1)
-                clearButton.grid(row=(self.row-1), sticky=W, column=self.inputColumn, padx = 135)
+                clearButton.grid(row=(self.row-1), sticky=W, column=self.inputColumn, padx = 133)
 
                 if showHideCommand != None:
                         showHideCommand.addControl(pickButton)
