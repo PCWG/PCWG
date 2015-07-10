@@ -9,7 +9,7 @@ import binning
 def getSeparatorValue(separator):
 
         separator = separator.upper()
-        
+
         if separator == "TAB":
                 return "\t"
         elif separator == "SPACE":
@@ -125,7 +125,8 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None, belowAbove = {}):
+    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None,
+                       belowAbove = {}, sigA={}, sigB={}, cov={}):
 
         self.belowAbove = belowAbove
         self.valueColumn = valueColumn
@@ -136,11 +137,22 @@ class SiteCalibrationCalculator:
             self.slopes = {}
             self.offsets = {}
             self.counts = {}
+            if sigA.keys() == count.keys():
+                uncertaintyInfo = True
+                self.sigA = {}
+                self.sigB = {}
+                self.cov = {}
+            else:
+                uncertaintyInfo = True
 
             for direction in actives:
 
                 self.slopes[direction] = slopes[direction]
                 self.offsets[direction] = offsets[direction]
+                if uncertaintyInfo:
+                    self.sigA[direction] = sigA[direction]
+                    self.sigB[direction] = sigB[direction]
+                    self.cov[direction] = cov[direction]
 
                 if direction in counts:
                     #self.counts = counts[direction]
@@ -151,6 +163,9 @@ class SiteCalibrationCalculator:
             self.slopes = slopes
             self.offsets = offsets
             self.counts = counts
+            self.sigA = sigA
+            self.sigB = sigB
+            self.cov = cov
 
     def turbineValue(self, row):
 
@@ -434,6 +449,9 @@ class Dataset:
         intercepts = {}
         counts = {}
         belowAbove = {}
+        sigA = {}
+        sigB = {}
+        cov  = {}
 
         for group in groups:
 
@@ -443,13 +461,17 @@ class Dataset:
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+            sigA[directionBinCenter] = sectorDataFrame[self.actualPower].stddev() #scatter related uncertainty
+            sigB[directionBinCenter] = 0.5 # TODO: instrument related uncertainties
+            cov[directionBinCenter]  = calibration.covariance(sectorDataFrame, "a","b" )
+
 
             if valueColumn == self.hubWindSpeedForTurbulence:
                 belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
 
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove)
+        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove, sigA, sigB, cov)
 
     def isValidText(self, text):
         if text == None: return False
