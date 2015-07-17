@@ -9,7 +9,7 @@ import binning
 def getSeparatorValue(separator):
 
         separator = separator.upper()
-        
+
         if separator == "TAB":
                 return "\t"
         elif separator == "SPACE":
