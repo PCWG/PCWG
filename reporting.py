@@ -648,9 +648,8 @@ class report:
         sh.write(row,6, "TRUE" if timeCovered  > 180 else "FALSE")
         sh.write(row,7, "({0} Hours)".format(round(timeCovered,2)) , self.two_dp_style)
         row+=1
-        windSpeedAt85pct = analysis.specifiedPowerCurve.getThresholdWindSpeed()
-        sh.write_merge(row,row,2,5, "Largest WindSpeed > {0}:".format(round(windSpeedAt85pct*1.5,2)), self.bold_style)
-        sh.write(row,6, "TRUE" if analysis.aepCalcLCB.lcb > windSpeedAt85pct*1.5 else "FALSE")
+        sh.write_merge(row,row,2,5, "Largest WindSpeed > {0}:".format(round(analysis.windSpeedAt85pctX1pnt5,2)), self.bold_style)
+        sh.write(row,6, "TRUE" if analysis.aepCalcLCB.lcb > analysis.windSpeedAt85pctX1pnt5 else "FALSE")
         sh.write(row,7, "Threshold is 1.5*(WindSpeed@0.85*RatedPower)")
         row+=1
         sh.write_merge(row,row,2,5, "AEP Extrap. within 1% of AEP LCB:",self.bold_style)

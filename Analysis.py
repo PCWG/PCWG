@@ -259,13 +259,15 @@ class Analysis:
         if self.config.nominalWindSpeedDistribution is not None:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
+            self.windSpeedAt85pctX1pnt5 = self.specifiedPowerCurve.getThresholdWindSpeed()
+            self.analysedDirectionSectors = self.datasetConfigs[0].data.analysedDirections # assume a single for now.
             if len(self.specifiedPowerCurve.powerCurveLevels) != 0:
                 self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredPowerCurve)
                 if self.turbRenormActive:
                     self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredTurbCorrectedPowerCurve)
-            else:
-                self.status.addMessage("A specified power curve is required for AEP calculation. No specified curve defined.")
-        
+                else:
+                    self.status.addMessage("A specified power curve is required for AEP calculation. No specified curve defined.")
+
         if len(self.sensitivityDataColumns) > 0:
             sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
             sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
