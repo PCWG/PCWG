@@ -631,7 +631,7 @@ class report:
             if ws <= analysis.aepCalcLCB.lcb and analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws] > 0:
                 row+=1
                 sh.write(row,2, binNo+1, self.no_dp_style)
-                sh.write(row,3, ws, self.two_dp_style)
+                sh.write(row,3, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.inputHubWindSpeed][ws], self.two_dp_style)
                 sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.actualPower][ws], self.two_dp_style)
                 if analysis.powerCoeff in analysis.allMeasuredPowerCurve.powerCurveLevels.columns:
                     sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
