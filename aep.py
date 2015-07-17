@@ -40,12 +40,14 @@ class AEPCalculator:
             for col in ['Upper','Lower','Freq','Power','Energy']:
                 energyCols.append("{0}_{1}".format(curveType, col))
         self.energy_distribution = pd.DataFrame(index = self.distribution.keys, columns = energyCols)
+        self.uncertainty_distribution = pd.DataFrame(index = self.distribution.keys, columns = ['TypeA','TypeB'])
 
 
     def calculate_AEP(self):
         self.refYield = self.calculate_ideal_yield('Reference')
         self.measuredYield = self.calculate_ideal_yield('Measured')
         self.AEP = self.measuredYield/self.refYield
+        self.totalUncertainty = 0.06789 # todo: update with caluclated value - this is a place holder
         return self.AEP
 
     def getCurve(self,curveType):
@@ -67,6 +69,8 @@ class AEPCalculator:
                 power=(upper+lower)/2.0
                 freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-self.distribution.rebin_width)
                 self.energy_distribution.loc[bin, energyColumns] = [float(upper),lower,freq,power,freq*power]
+                if 'Measured' == 'Measured':
+                    self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Std Dev"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.cumulativeFunction(bin)
                 energySum += freq*power
         return energySum
 
