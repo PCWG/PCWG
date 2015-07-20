@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<Name>PCWG Round Robin</Name>
+	<Tolerance>0.0001</Tolerance>
+	<Benchmarks>
+		<Benchmark>
+			<AnalysisConfigPath>Data\Dataset 1 Analysis.xml</AnalysisConfigPath>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>hubDelta</Field>
+					<Value>0.000000</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>rewsDelta</Field>
+					<Value>0.005083</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>turbulenceDelta</Field>
+					<Value>0.000072</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>combinedDelta</Field>
+					<Value>0.005271</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+		<Benchmark>
+			<AnalysisConfigPath>Data\Dataset 2 Analysis.xml</AnalysisConfigPath>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>hubDelta</Field>
+					<Value>0.000000</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>rewsDelta</Field>
+					<Value>-0.002431</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>turbulenceDelta</Field>
+					<Value>0.005831</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>combinedDelta</Field>
+					<Value>0.003464</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+		<Benchmark>
+			<AnalysisConfigPath>Data\Dataset 3 Analysis.xml</AnalysisConfigPath>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>hubDelta</Field>
+					<Value>0.000000</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>rewsDelta</Field>
+					<Value>-0.003406</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>turbulenceDelta</Field>
+					<Value>-0.012374</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>combinedDelta</Field>
+					<Value>-0.015835</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+	</Benchmarks>
+</Configuration>
