@@ -158,7 +158,7 @@ class SiteCalibrationCalculator:
                 self.cov = {}
                 self.corr = {}
             else:
-                uncertaintyInfo = True
+                uncertaintyInfo = False
 
             for direction in actives:
 
@@ -374,7 +374,8 @@ class Dataset:
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
-        self.analysedDirections = (self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset, self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset)
+        if self.windDirection in self.dataFrame.columns:
+            self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
 
     def createShearCalibration(self, dataFrame, config, timeStepInSeconds):
         df = dataFrame.copy()

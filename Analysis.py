@@ -181,8 +181,10 @@ class Analysis:
 
         self.applyRemainingFilters()
 
-        if self.hasDensity and self.densityCorrectionActive:
-            self.dataFrame[self.powerCoeff] = self.calculateCp()
+        if self.hasDensity:
+            if self.densityCorrectionActive:
+                self.dataFrame[self.powerCoeff] = self.calculateCp()
+            self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()
 
         if self.hasActualPower:
 
