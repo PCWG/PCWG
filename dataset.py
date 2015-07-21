@@ -621,29 +621,29 @@ class Dataset:
         return mask.copy()
 
     def applyRelationshipFilter(self, mask, componentFilter, dataFrame):
-        for relationship in componentFilter.relationships:
-            filterConjunction = relationship.conjunction
 
-            if filterConjunction not in ("AND","OR"):
-                raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
+        filterConjunction = componentFilter.conjunction
 
-            filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
+        if filterConjunction not in ("AND","OR"):
+            raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
 
-            masks = []
-            newMask = pd.Series([False]*len(mask),index=mask.index)
+        filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
 
-            if len(relationship.clauses) < 2:
-                raise Exception("Number of clauses in a relationship must be > 1")
+        masks = []
+        newMask = pd.Series([False]*len(mask),index=mask.index)
 
-            for componentFilter in relationship.clauses:
-                filterMask = self.applySimpleFilter(newMask,componentFilter,dataFrame,printMsg=False)
-                masks.append(filterMask)
+        if len(componentFilter.clauses) < 2:
+            raise Exception("Number of clauses in a relationship must be > 1")
 
-            baseMask = masks[0]
-            for filterMask in masks[1:]:
-                baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)
+        for filter in componentFilter.clauses:
+            filterMask = self.applySimpleFilter(newMask,filter,dataFrame,printMsg=False)
+            masks.append(filterMask)
 
-            mask = np.logical_or(mask,baseMask)
+        baseMask = masks[0]
+        for filterMask in masks[1:]:
+            baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)
+
+        mask = np.logical_or(mask,baseMask)
         print "Applied Relationship (AND/OR) Filter:\n\tData set length:{leng}".format(leng=len(mask[~mask]))
         return mask.copy()
 
@@ -674,7 +674,7 @@ class Dataset:
                     try:
                         if hasattr(componentFilter,"startTime"):
                             mask = self.applyToDFilter(mask,componentFilter,dataFrame)
-                        elif hasattr(componentFilter, "relationships"):
+                        elif hasattr(componentFilter, "clauses"):
                             mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
                         else:
                             mask = self.applySimpleFilter(mask,componentFilter,dataFrame)

@@ -11,6 +11,7 @@ import pandas as pd
 import dateutil
 
 columnSeparator = "|"
+filterSeparator = "#"
 datePickerFormat = "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
@@ -92,47 +93,50 @@ def extractExclusionValuesFromText(text):
         return (startDate, endDate, active)
 
 def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
-
         return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
 
+def encodeRelationshipFilterValuesAsText(relationshipFilter):
+        text = ""
+        if len(relationshipFilter.relationships) > 1:
+                raise NotImplementedError # this hasn't really been thought of yet
+        for relation in relationshipFilter.relationships:
+                for clause in relation.clauses:
+                        text += encodeFilterValuesAsText(clause.column,clause.value, clause.filterType, clause.inclusive, "" )
+                        text += " #" + relation.conjunction + "# "
+        return text[:-5]
+
+def extractRelationshipFilterFromText(text):
+        try:
+            clauses = []
+            for i, subFilt in enumerate(text.split(filterSeparator)):
+                if i%2 == 0:
+                        items = subFilt.split(columnSeparator)
+                        column = items[0].strip()
+                        value = float(items[1].strip())
+                        filterType = items[2].strip()
+                        inclusive = getBoolFromText(items[3].strip())
+                        clauses.append(configuration.Filter(True,column,filterType,inclusive,value))
+                else:
+                        conjunction = subFilt
+            return configuration.RelationshipFilter(true,clauses)
+
+        except Exception as ex:
+                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
 
 def extractFilterValuesFromText(text):
 
         try:
-        
                 items = text.split(columnSeparator)
                 column = items[0].strip()
                 value = float(items[1].strip())
                 filterType = items[2].strip()
                 inclusive = getBoolFromText(items[3].strip())
                 active = getBoolFromText(items[4].strip())
-
                 return (column, value, filterType, inclusive, active)
 
         except Exception as ex:
                 raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
-                
-def encodeCalibrationFilterValuesAsText(column, value, calibrationFilterType, inclusive, active):
 
-        return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = calibrationFilterType, inclusive =inclusive, active = active)
-
-def extractCalibrationFilterValuesFromText(text):
-
-        try:
-        
-                items = text.split(columnSeparator)
-                column = items[0].strip()
-                value = float(items[1].strip())
-                calibrationFilterType = items[2].strip()
-                inclusive = getBoolFromText(items[3].strip())
-                active = getBoolFromText(items[4].strip())
-
-                return (column, value, calibrationFilterType, inclusive, active)
-
-        except Exception as ex:
-                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
-        
-        
 def encodeExclusionValuesAsText(startDate, endDate, active):
 
         return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
@@ -154,7 +158,6 @@ class WindowStatus:
                 return True
         def __init__(self, gui):
             self.gui = gui
-
         def addMessage(self, message):
             self.gui.addMessage(message)
 
@@ -170,7 +173,6 @@ class ValidateBase:
         def __init__(self, master, createMessageLabel = True):
 
                 self.title = ''
-                
                 self.CMD = (master.register(self.validationHandler),
                         '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
 
@@ -185,12 +187,10 @@ class ValidateBase:
             self.control = control
 
         def setMessage(self, message):
-
                 if self.messageLabel != None:  
                         self.messageLabel['text'] = message
 
         def validationHandler(self, action, index, value_if_allowed, prior_value, text, validation_type, trigger_type, widget_name):
-
                 return self.executeValidation(text, value_if_allowed, prior_value)
 
         def executeValidation(self, text, value_if_allowed, prior_value):
@@ -649,7 +649,10 @@ class BaseDialog(tkSimpleDialog.Dialog):
         def addDatePickerEntry(self, master, title, validation, value, width = None, showHideCommand = None):
 
                 if value != None:
-                        textValue = value.strftime(datePickerFormat)
+                        if type(value) == str:
+                                textValue = value
+                        else:
+                                textValue = value.strftime(datePickerFormat)
                 else:
                         textValue = None
                         
@@ -990,7 +993,7 @@ class CalibrationFilterDialog(BaseDialog):
 
                 if not self.isNew:
                         
-                        items = extractCalibrationFilterValuesFromText(self.text)
+                        items = extractFilterValuesFromText(self.text)
                         
                         column = items[0]
                         value = items[1]
@@ -1868,7 +1871,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 if not self.isNew:
                         for calibrationFilterItem in sorted(self.config.calibrationFilters):
-                                text = encodeCalibrationFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
+                                if isinstance(calibrationFilterItem, configuration.RelationshipFilter):
+                                        text = encodeRelationshipFilterValuesAsText(calibrationFilterItem)
+                                else:
+                                        text = encodeFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
                                 self.calibrationFiltersListBoxEntry.listbox.insert(END, text)
 
                
@@ -1932,7 +1938,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 if not self.isNew:
                         for filterItem in sorted(self.config.filters):
-                                text = encodeFilterValuesAsText(filterItem.column, filterItem.value, filterItem.filterType, filterItem.inclusive, filterItem.active)
+                                if isinstance(filterItem, configuration.RelationshipFilter):
+                                        text = encodeRelationshipFilterValuesAsText(filterItem)
+                                else:
+                                        text = encodeFilterValuesAsText(filterItem.column, filterItem.value, filterItem.filterType, filterItem.inclusive, filterItem.active)
                                 self.filtersListBoxEntry.listbox.insert(END, text)
 
                 #set initial visibility
@@ -2450,14 +2459,16 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.windSpeedLevels = {}
 
                 for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
-                        items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBoxEntry.listbox.get(i))
-                        self.config.windSpeedLevels[items[0]] = items[1]
-                        self.config.windDirectionLevels[items[0]] = items[2]
+                        if i > 0:
+                                items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBoxEntry.listbox.get(i))
+                                self.config.windSpeedLevels[items[0]] = items[1]
+                                self.config.windDirectionLevels[items[0]] = items[2]
 
                 self.config.shearMeasurements = {}
                 for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
-                        items = extractShearMeasurementValuesFromText(self.shearProfileLevelsListBoxEntry.listbox.get(i))
-                        self.config.shearMeasurements[items[0]] = items[1]
+                        if i > 0:
+                                items = extractShearMeasurementValuesFromText(self.shearProfileLevelsListBoxEntry.listbox.get(i))
+                                self.config.shearMeasurements[items[0]] = items[1]
 
                 #for i in range(len(self.shearWindSpeedHeights)):
                 #        shearHeight = self.shearWindSpeedHeights[i].get()
@@ -2476,11 +2487,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 #calbirations
                 for i in range(self.calibrationDirectionsListBoxEntry.listbox.size()):
-
                         if i > 0:
-                                
                                 direction, slope, offset, active = extractCalibrationDirectionValuesFromText(self.calibrationDirectionsListBoxEntry.listbox.get(i))
-                                
                                 if not direction in self.config.calibrationDirections:
                                         self.config.calibrationDirections[direction] = direction
                                         self.config.calibrationSlopes[direction] = slope
@@ -2492,12 +2500,15 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.calibrationFilters = []
                 
                 for i in range(self.calibrationFiltersListBoxEntry.listbox.size()):
-
                         if i > 0:
-                                calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractCalibrationFilterValuesFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
-                                self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
-                #exclusions
+                                try: # try simple Filter, if fails assume realtionship filter
+                                        calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractFilterValuesFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
+                                        self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
+                                except:
+                                        calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractRelationshipFilterFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
+                                        self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
 
+                #exclusions
                 self.config.exclusions = []
                 
                 for i in range(self.exclusionsListBoxEntry.listbox.size()):
@@ -2511,15 +2522,17 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.filters = []
                 
                 for i in range(self.filtersListBoxEntry.listbox.size()):
-
                         if i > 0:
-                                filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBoxEntry.listbox.get(i))
-                                self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
+                                try:
+                                        filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBoxEntry.listbox.get(i))
+                                        self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
+                                except:
+                                        filterColumn, filterValue, filterType, filterInclusive, filterActive = extractRelationshipFilterFromText(self.filtersListBoxEntry.listbox.get(i))
+                                        self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
 
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
-
                 return "PowerCurve"
                 
         def addFormElements(self, master):
@@ -2557,17 +2570,14 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
 
                 if len(items) == 1:
-
                         idx = items[0]
-                        text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])                        
-                        
+                        text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])
                         try:                                
                                 dialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText, text, idx)
                         except ExceptionType as e:
                                self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewPowerCurveLevel(self):
-                
                 configDialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText)
                 
         def addPowerCurveLevelFromText(self, text, index = None):
@@ -2625,7 +2635,6 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
-
                 return "Analysis"
         
         def addFormElements(self, master):                
@@ -2738,7 +2747,6 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 path = os.path.join(folder, specifiedPowerCurve)
                 
                 if len(specifiedPowerCurve) > 0:
-
                         try:
                                 config = configuration.PowerCurveConfiguration(path)
                                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
@@ -2746,25 +2754,18 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 self.status.addMessage("ERROR loading config (%s): %s" % (specifiedPowerCurve, e))
                                         
         def NewPowerCurve(self):
-
                 config = configuration.PowerCurveConfiguration()
                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
 
         def EditDataset(self, event = None):
-
                 items = self.datasetsListBoxEntry.listbox.curselection()
-
                 if len(items) == 1:
-
                         index = items[0]
                         path = self.datasetsListBoxEntry.listbox.get(index)
-
                         try:
                                 relativePath = configuration.RelativePath(self.filePath.get()) 
                                 datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
-
                                 configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
-                                
                         except ExceptionType as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
                                         
@@ -2773,9 +2774,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 try:
                         config = configuration.DatasetConfiguration()
                         configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
-
                 except ExceptionType as e:
-                        
                         self.status.addMessage("ERROR creating dataset config: %s" % e)
                         
         def setAnalysisFilePath(self):

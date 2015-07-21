@@ -175,7 +175,14 @@ class XmlBase:
             months = [int(a) for a  in months.split(",")]
         days = [int(a) for a  in days.split(",")]
         return TimeOfDayFilter(active,startTime,endTime,days,months)
-        
+
+    def readRelationshipFilter(self, active, node):
+        conjunction = self.getNodeValue(node,"Conjunction")
+        clauses = []
+        for clause in self.getNodes(node,"Clause"):
+            clauses.append(self.readSimpleFilter(clause))
+        return RelationshipFilter(active, conjunction, clauses)
+
 class RelativePath:
 
         def __init__(self, basePath):
@@ -617,35 +624,30 @@ class Filter(XmlBase):
             return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])
 
 class RelationshipFilter(XmlBase):
-    class FilterRelationship(XmlBase):
-        def __init__(self,conjunction,clauseNodes):
-            self.conjunction = conjunction
-            self.clauses = []
-            for node in clauseNodes:
-                self.clauses.append(self.readSimpleFilter(node, True))
     def __str__(self):
-        return " - ".join([" {0} ".format(r.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in r.clauses])  for r in self.relationships])
+        return " - ".join([" {0} ".format(self.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in self.clauses])])
     def printSummary(self):
-        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev="\t",
-                                                            col=   self.column,
+        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}\t{conj}".format (dev="\t",
+                                                            col= self.column,
                                                             typ=self.filterType,
                                                             incl=self.inclusive,
-                                                            desc=self.__str__())
+                                                            desc=self.__str__(),
+                                                            conj=self.conjunction)
         return self.__str__()
-    def __init__(self, active,  node):
+
+    def __init__(self, active,  conjunction, filters):
         self.active = active
         self.applied = False
-        self.relationships = []
-        self.sortRelationships(self.getNode(node,'Relationship'))
-    def sortRelationships(self,node):
+        self.conjunction = conjunction
+        self.clauses = filters
+        self.sortClauses()
 
-        self.relationships.append(self.FilterRelationship(self.getNodeValue(node,'Conjunction'),
-                                                         self.getNodes(node,'Clause')))
+    def sortClauses(self):
         # for excel reporting
-        self.column  = ", ".join([", ".join(str(f.column) for f in r.clauses) for r in self.relationships])
-        self.filterType  = ", ".join([", ".join(str(f.filterType) for f in r.clauses) for r in self.relationships])
-        self.inclusive  = ", ".join([", ".join(str(f.inclusive) for f in r.clauses) for r in self.relationships])
-        self.value  = ", ".join([", ".join(str(f.value) for f in r.clauses) for r in self.relationships])
+        self.column  = ", ".join([", ".join(str(f.column) for f in self.clauses)])
+        self.filterType  = ", ".join([", ".join(str(f.filterType) for f in self.clauses)])
+        self.inclusive  = ", ".join([", ".join(str(f.inclusive) for f in self.clauses)])
+        self.value  = ", ".join([", ".join(str(f.value) for f in self.clauses)])
         
 
 class DatasetConfiguration(XmlBase):
@@ -684,8 +686,9 @@ class DatasetConfiguration(XmlBase):
             self.turbulenceWSsource = self.getNodeValueIfExists(collectorNode, 'TurbulenceWindSpeedSource', 'Reference')
             self.referenceWindDirection = self.getNodeValueIfExists(configurationNode, 'ReferenceWindDirection', None)
 
-            rewsNode = self.getNode(configurationNode, 'ProfileLevels') if self.nodeExists(configurationNode, 'ProfileLevels') else configurationNode
-            self.readREWS(rewsNode)
+            profileNode = self.getNode(configurationNode, 'ProfileLevels') if self.nodeExists(configurationNode, 'ProfileLevels') else configurationNode
+            self.readProfileLevels(profileNode)
+            self.readREWS(configurationNode) # duplicate?
 
             self.readMeasurements(configurationNode)
             measNode = self.getNode(configurationNode, 'Measurements')
@@ -783,14 +786,14 @@ class DatasetConfiguration(XmlBase):
         doc = self.createDocument()
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")
 
-        self.addTextNode(doc, root, "Name", self.name)
+        genSettingsNode = self.addNode(doc, root, "GeneralSettings")
 
-        if self.startDate != None: self.addDateNode(doc, root, "StartDate", self.startDate)
-        if self.endDate != None: self.addDateNode(doc, root, "EndDate", self.endDate)
-        
-        self.addTextNode(doc, root, "HubWindSpeedMode", self.hubWindSpeedMode)
-        self.addTextNode(doc, root, "CalibrationMethod", self.calibrationMethod)
-        self.addTextNode(doc, root, "DensityMode", self.densityMode)
+        self.addTextNode(doc, genSettingsNode, "Name", self.name)
+        if self.startDate != None: self.addDateNode(doc, genSettingsNode, "StartDate", self.startDate)
+        if self.endDate != None: self.addDateNode(doc, genSettingsNode, "EndDate", self.endDate)
+        self.addTextNode(doc, genSettingsNode, "HubWindSpeedMode", self.hubWindSpeedMode)
+        self.addTextNode(doc, genSettingsNode, "CalibrationMethod", self.calibrationMethod)
+        self.addTextNode(doc, genSettingsNode, "DensityMode", self.densityMode)
 
         if self.rewsDefined:
             rewsNode = self.addNode(doc, root, "RotorEquivalentWindSpeed")
@@ -834,17 +837,17 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "HubWindSpeed", self.hubWindSpeed)
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
-        # to do - chaneg for ref and turbine shears.
+        # todo - change for ref and turbine shears.
         if 'ReferenceLocation' in self.shearMeasurements.keys() and 'TurbineLocation' in self.shearMeasurements.keys():
             raise NotImplementedError
         else:
-            shearMeasurementsNode = self.addNode(doc, measurementsNode, "ShearMeasurements")
+            shearMeasurementsNode = self.addNode(doc, root, "ShearMeasurements")
             for shearMeas in self.shearMeasurements.iteritems():
                 measNode = self.addNode(doc, shearMeasurementsNode, "ShearMeasurement")
                 self.addFloatNode(doc, measNode, "Height", shearMeas[0])
                 self.addTextNode(doc, measNode, "WindSpeed", shearMeas[1])
 
-        levelsNode = self.addNode(doc, measurementsNode, "ProfileLevels")
+        levelsNode = self.addNode(doc, root, "ProfileLevels")
 
         for height in self.windSpeedLevels:
             levelNode = self.addNode(doc, levelsNode, "ProfileLevel")
@@ -854,12 +857,14 @@ class DatasetConfiguration(XmlBase):
 
         #write clibrations
         calibrationNode = self.addNode(doc, root, "Calibration")
+        calibrationParamsNode = self.addNode(doc, root, "CalibrationParameters")
 
-        if self.calibrationStartDate != None: self.addDateNode(doc, calibrationNode, "CalibrationStartDate", self.calibrationStartDate)
-        if self.calibrationEndDate != None: self.addDateNode(doc, calibrationNode, "CalibrationEndDate", self.calibrationEndDate)
 
-        self.addIntNode(doc, calibrationNode, "NumberOfSectors", self.siteCalibrationNumberOfSectors)
-        self.addIntNode(doc, calibrationNode, "CenterOfFirstSector", self.siteCalibrationCenterOfFirstSector)
+        if self.calibrationStartDate != None: self.addDateNode(doc, calibrationParamsNode, "CalibrationStartDate", self.calibrationStartDate)
+        if self.calibrationEndDate != None: self.addDateNode(doc, calibrationParamsNode, "CalibrationEndDate", self.calibrationEndDate)
+
+        self.addIntNode(doc, calibrationParamsNode, "NumberOfSectors", self.siteCalibrationNumberOfSectors)
+        self.addIntNode(doc, calibrationParamsNode, "CenterOfFirstSector", self.siteCalibrationCenterOfFirstSector)
 
         calibrationFiltersNode = self.addNode(doc, calibrationNode, "CalibrationFilters")
 
@@ -985,9 +990,6 @@ class DatasetConfiguration(XmlBase):
         self.powerMax = self.getNodeValueIfExists(measurementsNode, 'PowerMax',None)
         self.powerSD  = self.getNodeValueIfExists(measurementsNode, 'PowerSD',None)
 
-        self.windSpeedLevels = {}
-        self.windDirectionLevels = {}
-
     def setUpShearMeasurements(self, measurementsNode):
         self.shearMeasurements = {}
 
@@ -1029,6 +1031,9 @@ class DatasetConfiguration(XmlBase):
 
     def readProfileLevels(self, profileNode):
 
+        self.windSpeedLevels = {}
+        self.windDirectionLevels = {}
+
         for node in self.getNodes(profileNode, 'ProfileLevel'):
             height = self.getNodeFloat(node, 'Height')
             self.windSpeedLevels[height] = self.getNodeValue(node, 'ProfileWindSpeed')
@@ -1062,15 +1067,14 @@ class DatasetConfiguration(XmlBase):
         filterNode = self.addNode(doc, filtersNode, nodeName)
         filterInfoNode = self.addNode(doc, filterNode, "FilterInfo")
 
-        clausesNode = self.addNode(doc, filterNode, "Clauses")
-
         self.addIntNode(doc,filterInfoNode,"Active",filterItem.active)
 
         for relation in filterItem.realtionships:
             relationshipNode = self.addNode(doc, filterNode, "Relationship")
+            clausesNode = self.addNode(doc, relationshipNode, "Clauses")
             self.addTextNode(doc,relationshipNode,"Conjunction",relation.conjunction)
             for clause in relation.clauses:
-                self.writeFilter(doc,relationshipNode,clause,"Clause")
+                self.writeFilter(doc,clausesNode,clause,"Clause")
 
     def writeFilter(self, doc, filtersNode, filterItem, nodeName):
 
@@ -1111,7 +1115,7 @@ class DatasetConfiguration(XmlBase):
             if node.localName == 'TimeOfDayFilter':
                 filters.append(self.readToDFilter(active,node))
             elif self.nodeExists(node,'Relationship'):
-                filters.append(RelationshipFilter(active,node))
+                filters.append(self.readRelationshipFilter(active, node))
             else:
                 filters.append(self.readSimpleFilter(node,active))
 
