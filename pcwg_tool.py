@@ -97,12 +97,9 @@ def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
 
 def encodeRelationshipFilterValuesAsText(relationshipFilter):
         text = ""
-        if len(relationshipFilter.relationships) > 1:
-                raise NotImplementedError # this hasn't really been thought of yet
-        for relation in relationshipFilter.relationships:
-                for clause in relation.clauses:
-                        text += encodeFilterValuesAsText(clause.column,clause.value, clause.filterType, clause.inclusive, "" )
-                        text += " #" + relation.conjunction + "# "
+        for clause in relationshipFilter.clauses:
+                text += encodeFilterValuesAsText(clause.column,clause.value, clause.filterType, clause.inclusive, "" )
+                text += " #" + relationshipFilter.conjunction + "# "
         return text[:-5]
 
 def extractRelationshipFilterFromText(text):
@@ -118,7 +115,7 @@ def extractRelationshipFilterFromText(text):
                         clauses.append(configuration.Filter(True,column,filterType,inclusive,value))
                 else:
                         conjunction = subFilt
-            return configuration.RelationshipFilter(true,clauses)
+            return configuration.RelationshipFilter(True,conjunction,clauses)
 
         except Exception as ex:
                 raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
@@ -2505,8 +2502,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                         calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractFilterValuesFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
                                         self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
                                 except:
-                                        calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractRelationshipFilterFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
-                                        self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
+                                        filter = extractRelationshipFilterFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
+                                        self.config.calibrationFilters.append(filter)
 
                 #exclusions
                 self.config.exclusions = []
@@ -2527,8 +2524,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                         filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBoxEntry.listbox.get(i))
                                         self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
                                 except:
-                                        filterColumn, filterValue, filterType, filterInclusive, filterActive = extractRelationshipFilterFromText(self.filtersListBoxEntry.listbox.get(i))
-                                        self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
+                                        filter = extractRelationshipFilterFromText(self.filtersListBoxEntry.listbox.get(i))
+                                        self.config.filters.append(filter)
 
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 

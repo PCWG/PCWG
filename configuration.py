@@ -857,8 +857,7 @@ class DatasetConfiguration(XmlBase):
 
         #write clibrations
         calibrationNode = self.addNode(doc, root, "Calibration")
-        calibrationParamsNode = self.addNode(doc, root, "CalibrationParameters")
-
+        calibrationParamsNode = self.addNode(doc, calibrationNode, "CalibrationParameters")
 
         if self.calibrationStartDate != None: self.addDateNode(doc, calibrationParamsNode, "CalibrationStartDate", self.calibrationStartDate)
         if self.calibrationEndDate != None: self.addDateNode(doc, calibrationParamsNode, "CalibrationEndDate", self.calibrationEndDate)
@@ -869,7 +868,10 @@ class DatasetConfiguration(XmlBase):
         calibrationFiltersNode = self.addNode(doc, calibrationNode, "CalibrationFilters")
 
         for calibrationFilterItem in self.calibrationFilters:
-            self.writeFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
+            if isinstance(calibrationFilterItem, RelationshipFilter):
+                self.writeRelationshipFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
+            else:
+                self.writeFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
 
         calibrationDirectionsNode = self.addNode(doc, calibrationNode, "CalibrationDirections")
 
@@ -1068,13 +1070,11 @@ class DatasetConfiguration(XmlBase):
         filterInfoNode = self.addNode(doc, filterNode, "FilterInfo")
 
         self.addIntNode(doc,filterInfoNode,"Active",filterItem.active)
+        self.addTextNode(doc,filterInfoNode,"Conjunction",filterItem.conjunction)
 
-        for relation in filterItem.realtionships:
-            relationshipNode = self.addNode(doc, filterNode, "Relationship")
-            clausesNode = self.addNode(doc, relationshipNode, "Clauses")
-            self.addTextNode(doc,relationshipNode,"Conjunction",relation.conjunction)
-            for clause in relation.clauses:
-                self.writeFilter(doc,clausesNode,clause,"Clause")
+        clausesNode = self.addNode(doc, filterNode, "Clauses")
+        for clause in filterItem.clauses:
+            self.writeFilter(doc,clausesNode,clause,"Clause")
 
     def writeFilter(self, doc, filtersNode, filterItem, nodeName):
 
@@ -1156,7 +1156,7 @@ class DatasetConfiguration(XmlBase):
         self.hasCalibration = True
 
         calibrationNode = self.getNode(configurationNode, 'Calibration')
-        paramNode = self.getNode(calibrationNode, 'CalibrationParameters') if self.nodeExists(calibrationNode,'CalibrationParameters') else calibrationNode
+        paramNode = self.getNode(calibrationNode, 'CalibrationParameters') if self.nodeExists(calibrationNode,'CalibrationParameters') else configurationNode
 
         if self.nodeExists(paramNode, 'CalibrationStartDate') and self.nodeExists(paramNode, 'CalibrationEndDate'):
             self.calibrationStartDate = self.getNodeDate(paramNode, 'CalibrationStartDate')
