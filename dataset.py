@@ -9,7 +9,7 @@ import binning
 def getSeparatorValue(separator):
 
         separator = separator.upper()
-        
+
         if separator == "TAB":
                 return "\t"
         elif separator == "SPACE":
@@ -39,7 +39,19 @@ class CalibrationBase:
         return ((df[col].mean() - df[col]) ** 2.0).sum()
 
     def covariance(self, df, colA, colB):
-        return ((df[colA].mean() - df[colA]) * (df[colB].mean() - df[colB])).sum()
+        return df[[colA,colB]].cov()[colA][colB] # assumes unbiased estimator (normalises with N-1)
+
+    def sigA(self,df,slope, intercept, count):
+        sumPredYfromX = sum((df[self.y] - (intercept + df[self.x]*slope ))**2)
+        sumX = (df[self.x]).sum()
+        sumXX = (df[self.x]**2).sum()
+        return ((sumPredYfromX/(count-2))*(sumXX/(count*sumXX - sumX**2)))**0.5
+
+    def sigB(self,df,slope, intercept, count):
+        sumPredYfromX = sum((df[self.y] - (intercept + df[self.x]*slope ))**2)
+        sumX = (df[self.x]).sum()
+        sumXX = (df[self.x]**2).sum()
+        return ((sumPredYfromX/(count-2))/(count*sumXX - sumX**2))**0.5
 
     def mean(self, df, col):
         return df[col].mean()
@@ -48,6 +60,8 @@ class CalibrationBase:
         return self.mean(df, self.y) - slope * self.mean(df, self.x)
 
 class York(CalibrationBase):
+    def covariance(self, df, colA, colB):
+        return ((df[colA].mean() - df[colA]) * (df[colB].mean() - df[colB])).sum()
 
     def __init__(self, x, y, timeStepInSeconds, df):
 
@@ -125,7 +139,8 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None, belowAbove = {}):
+    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None,
+                       belowAbove = {}, sigA={}, sigB={}, cov={}, corr={}):
 
         self.belowAbove = belowAbove
         self.valueColumn = valueColumn
@@ -136,11 +151,24 @@ class SiteCalibrationCalculator:
             self.slopes = {}
             self.offsets = {}
             self.counts = {}
+            if sigA.keys() == slopes.keys():
+                uncertaintyInfo = True
+                self.sigA = {}
+                self.sigB = {}
+                self.cov = {}
+                self.corr = {}
+            else:
+                uncertaintyInfo = False
 
             for direction in actives:
 
                 self.slopes[direction] = slopes[direction]
                 self.offsets[direction] = offsets[direction]
+                if uncertaintyInfo:
+                    self.sigA[direction] = sigA[direction]
+                    self.sigB[direction] = sigB[direction]
+                    self.cov[direction] = cov[direction]
+                    self.corr[direction] = corr[direction]
 
                 if direction in counts:
                     #self.counts = counts[direction]
@@ -151,6 +179,10 @@ class SiteCalibrationCalculator:
             self.slopes = slopes
             self.offsets = offsets
             self.counts = counts
+            self.sigA = sigA
+            self.sigB = sigB
+            self.cov = cov
+            self.corr = corr
 
     def turbineValue(self, row):
 
@@ -342,6 +374,8 @@ class Dataset:
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
+        if self.windDirection in self.dataFrame.columns:
+            self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
 
     def createShearCalibration(self, dataFrame, config, timeStepInSeconds):
         df = dataFrame.copy()
@@ -434,6 +468,10 @@ class Dataset:
         intercepts = {}
         counts = {}
         belowAbove = {}
+        sigA = {}
+        sigB = {}
+        cov  = {}
+        corr  = {}
 
         for group in groups:
 
@@ -443,13 +481,18 @@ class Dataset:
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+            sigA[directionBinCenter] = calibration.sigA(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInGradient'
+            sigB[directionBinCenter] = calibration.sigB(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInIntercept'
+            #cov[directionBinCenter]  = calibration.covariance(sectorDataFrame, calibration.x,calibration.y )
+            cov[directionBinCenter]  = sigA[directionBinCenter]*sigB[directionBinCenter]*(-1.0 * sectorDataFrame[calibration.x].sum())/((counts[directionBinCenter] * (sectorDataFrame[calibration.x]**2).sum())**0.5)
+            corr[directionBinCenter]  =sectorDataFrame[[calibration.x, calibration.y]].corr()[calibration.x][calibration.y]
 
             if valueColumn == self.hubWindSpeedForTurbulence:
                 belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
 
             print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
 
-        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove)
+        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove, sigA=sigA, sigB=sigB, cov=cov, corr=corr)
 
     def isValidText(self, text):
         if text == None: return False
@@ -578,29 +621,29 @@ class Dataset:
         return mask.copy()
 
     def applyRelationshipFilter(self, mask, componentFilter, dataFrame):
-        for relationship in componentFilter.relationships:
-            filterConjunction = relationship.conjunction
 
-            if filterConjunction not in ("AND","OR"):
-                raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
+        filterConjunction = componentFilter.conjunction
 
-            filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
+        if filterConjunction not in ("AND","OR"):
+            raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
 
-            masks = []
-            newMask = pd.Series([False]*len(mask),index=mask.index)
+        filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
 
-            if len(relationship.clauses) < 2:
-                raise Exception("Number of clauses in a relationship must be > 1")
+        masks = []
+        newMask = pd.Series([False]*len(mask),index=mask.index)
 
-            for componentFilter in relationship.clauses:
-                filterMask = self.applySimpleFilter(newMask,componentFilter,dataFrame,printMsg=False)
-                masks.append(filterMask)
+        if len(componentFilter.clauses) < 2:
+            raise Exception("Number of clauses in a relationship must be > 1")
 
-            baseMask = masks[0]
-            for filterMask in masks[1:]:
-                baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)
+        for filter in componentFilter.clauses:
+            filterMask = self.applySimpleFilter(newMask,filter,dataFrame,printMsg=False)
+            masks.append(filterMask)
 
-            mask = np.logical_or(mask,baseMask)
+        baseMask = masks[0]
+        for filterMask in masks[1:]:
+            baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)
+
+        mask = np.logical_or(mask,baseMask)
         print "Applied Relationship (AND/OR) Filter:\n\tData set length:{leng}".format(leng=len(mask[~mask]))
         return mask.copy()
 
@@ -631,7 +674,7 @@ class Dataset:
                     try:
                         if hasattr(componentFilter,"startTime"):
                             mask = self.applyToDFilter(mask,componentFilter,dataFrame)
-                        elif hasattr(componentFilter, "relationships"):
+                        elif hasattr(componentFilter, "clauses"):
                             mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
                         else:
                             mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
