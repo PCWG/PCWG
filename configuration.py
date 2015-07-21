@@ -659,28 +659,37 @@ class DatasetConfiguration(XmlBase):
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
 
-            self.name = self.getNodeValue(configurationNode, 'Name')
+            if self.nodeExists(configurationNode, 'GeneralSettings'):
+                collectorNode = self.getNode(configurationNode, 'GeneralSettings')
+            else:
+                collectorNode = configurationNode
 
-            self.referenceWindDirection = self.getNodeValueIfExists(configurationNode, 'ReferenceWindDirection', None)
-            self.hubWindSpeedMode = self.getNodeValue(configurationNode, 'HubWindSpeedMode')
+            self.name = self.getNodeValue(collectorNode, 'Name')
+            self.startDate = self.getNodeDate(collectorNode, 'StartDate') if self.nodeValueExists(collectorNode, 'StartDate') else None
+            self.endDate   = self.getNodeDate(collectorNode, 'EndDate')   if self.nodeValueExists(collectorNode, 'EndDate')   else None
+
+            self.hubWindSpeedMode = self.getNodeValue(collectorNode, 'HubWindSpeedMode')
             self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
-
-            self.densityMode = self.getNodeValue(configurationNode, 'DensityMode')
+            self.densityMode = self.getNodeValue(collectorNode, 'DensityMode')
             self.calculateDensity = self.getCalculateMode(self.densityMode)
-            self.turbulenceWSsource = self.getNodeValueIfExists(configurationNode, 'TurbulenceWindSpeedSource', 'Reference')
+            if self.nodeExists(collectorNode, 'CalibrationMethod'):
+                try:
+                    self.calibrationMethod = self.getNodeValue(collectorNode, 'CalibrationMethod')
+                except:
+                    self.calibrationMethod = ""
+            else:
+                self.calibrationMethod = ""
 
-            self.readREWS(configurationNode)
+            self.turbulenceWSsource = self.getNodeValueIfExists(collectorNode, 'TurbulenceWindSpeedSource', 'Reference')
+            self.referenceWindDirection = self.getNodeValueIfExists(configurationNode, 'ReferenceWindDirection', None)
+
+            rewsNode = self.getNode(configurationNode, 'ProfileLevels') if self.nodeExists(configurationNode, 'ProfileLevels') else configurationNode
+            self.readREWS(rewsNode)
+
             self.readMeasurements(configurationNode)
-
-            if self.nodeValueExists(configurationNode, 'StartDate'):
-                self.startDate = self.parseDate(self.getNodeValue(configurationNode, 'StartDate'))
-            else:
-                self.startDate = None
-
-            if self.nodeValueExists(configurationNode, 'EndDate'):
-                self.endDate = self.getNodeDate(configurationNode, 'EndDate')
-            else:
-                self.endDate = None
+            measNode = self.getNode(configurationNode, 'Measurements')
+            shearNode = measNode if self.nodeExists(measNode, 'ShearMeasurements') else configurationNode
+            self.setUpShearMeasurements(shearNode)
 
             if self.nodeExists(configurationNode,"Filters"):
                 self.filters = self.readFilters([n for n in self.getNode(configurationNode,"Filters").childNodes if not n.nodeType in (n.TEXT_NODE,n.COMMENT_NODE)])
@@ -688,15 +697,6 @@ class DatasetConfiguration(XmlBase):
             self.hasFilters = (len(self.filters) > 0)
 
             self.readExclusions(configurationNode)
-
-            if self.nodeExists(configurationNode, 'CalibrationMethod'):
-                try:
-                    self.calibrationMethod = self.getNodeValue(configurationNode, 'CalibrationMethod')
-                except:
-                    self.calibrationMethod = ""
-            else:
-                self.calibrationMethod = ""
-
             self.readCalibration(configurationNode)
 
             if self.nodeExists(configurationNode, 'SensitivityAnalysis'):
@@ -976,7 +976,17 @@ class DatasetConfiguration(XmlBase):
             else:
                 self.density = None
 
+        self.power = self.getNodeValueIfExists(measurementsNode, 'Power',None)
+        self.powerMin = self.getNodeValueIfExists(measurementsNode, 'PowerMin',None)
+        self.powerMax = self.getNodeValueIfExists(measurementsNode, 'PowerMax',None)
+        self.powerSD  = self.getNodeValueIfExists(measurementsNode, 'PowerSD',None)
+
+        self.windSpeedLevels = {}
+        self.windDirectionLevels = {}
+
+    def setUpShearMeasurements(self, measurementsNode):
         self.shearMeasurements = {}
+
         if not self.nodeExists(measurementsNode,"ShearMeasurements"):
             # backwards compatability
             if self.nodeExists(measurementsNode, 'LowerWindSpeed'):
@@ -996,29 +1006,26 @@ class DatasetConfiguration(XmlBase):
         else:
             allShearMeasurementsNode = self.getNode(measurementsNode,"ShearMeasurements")
             try:
-                self.shearCalibrationMethod = self.getNodeValue(measurementsNode, "ShearCalibrationMethod")
+                shearMeasurementsSettingsNode = self.getNode(measurementsNode, "ShearMeasurementsSettings")
+                self.shearCalibrationMethod = self.getNodeValue(shearMeasurementsSettingsNode, "ShearCalibrationMethod")
                 if self.shearCalibrationMethod.lower() == 'none':
                     self.shearCalibrationMethod = 'Reference'
             except:
                 self.shearCalibrationMethod = 'Reference'
 
-            if self.nodeExists(allShearMeasurementsNode,"TurbineShearMeasurements") and self.nodeExists(allShearMeasurementsNode,"ReferenceShearMeasurements"):
+            if not(self.nodeExists(allShearMeasurementsNode,"TurbineShearMeasurements") and self.nodeExists(allShearMeasurementsNode,"ReferenceShearMeasurements")):
+                self.shearMeasurements = self.readShearMeasurements(measurementsNode)
+            elif len(self.getNodes(allShearMeasurementsNode,"TurbineShearMeasurements")) < 1:
+                self.shearMeasurements = self.readShearMeasurements(measurementsNode)
+            else:
                 turbineShearMeasurementsNode = self.getNode(allShearMeasurementsNode, "TurbineShearMeasurements")
                 self.shearMeasurements['TurbineLocation'] = self.readShearMeasurements(turbineShearMeasurementsNode)
                 referenceShearMeasurementsNode = self.getNode(allShearMeasurementsNode, "ReferenceShearMeasurements")
                 self.shearMeasurements['ReferenceLocation'] = self.readShearMeasurements(referenceShearMeasurementsNode)
-            else:
-                self.shearMeasurements = self.readShearMeasurements(measurementsNode)
 
-        self.power = self.getNodeValueIfExists(measurementsNode, 'Power',None)
-        self.powerMin = self.getNodeValueIfExists(measurementsNode, 'PowerMin',None)
-        self.powerMax = self.getNodeValueIfExists(measurementsNode, 'PowerMax',None)
-        self.powerSD  = self.getNodeValueIfExists(measurementsNode, 'PowerSD',None)
+    def readProfileLevels(self, profileNode):
 
-        self.windSpeedLevels = {}
-        self.windDirectionLevels = {}
-
-        for node in self.getNodes(measurementsNode, 'ProfileLevel'):
+        for node in self.getNodes(profileNode, 'ProfileLevel'):
             height = self.getNodeFloat(node, 'Height')
             self.windSpeedLevels[height] = self.getNodeValue(node, 'ProfileWindSpeed')
             self.windDirectionLevels[height] = self.getNodeValue(node, 'ProfileWindDirection')
@@ -1126,18 +1133,19 @@ class DatasetConfiguration(XmlBase):
         self.hasCalibration = True
 
         calibrationNode = self.getNode(configurationNode, 'Calibration')
+        paramNode = self.getNode(calibrationNode, 'CalibrationParameters') if self.nodeExists(calibrationNode,'CalibrationParameters') else calibrationNode
 
-        if self.nodeExists(calibrationNode, 'CalibrationStartDate') and self.nodeExists(calibrationNode, 'CalibrationEndDate'):
-            self.calibrationStartDate = self.getNodeDate(configurationNode, 'CalibrationStartDate')
-            self.calibrationEndDate = self.getNodeDate(configurationNode, 'CalibrationEndDate')
+        if self.nodeExists(paramNode, 'CalibrationStartDate') and self.nodeExists(paramNode, 'CalibrationEndDate'):
+            self.calibrationStartDate = self.getNodeDate(paramNode, 'CalibrationStartDate')
+            self.calibrationEndDate = self.getNodeDate(paramNode, 'CalibrationEndDate')
         else:
             self.calibrationStartDate = None
             self.calibrationEndDate = None
 
-        self.siteCalibrationNumberOfSectors = self.getNodeInt(calibrationNode, 'NumberOfSectors')
+        self.siteCalibrationNumberOfSectors = self.getNodeInt(paramNode, 'NumberOfSectors')
 
         if self.nodeExists(calibrationNode, 'CenterOfFirstSector'):
-            self.siteCalibrationCenterOfFirstSector = self.getNodeInt(calibrationNode, 'CenterOfFirstSector')
+            self.siteCalibrationCenterOfFirstSector = self.getNodeInt(paramNode, 'CenterOfFirstSector')
         else:
             self.siteCalibrationCenterOfFirstSector = 0.0
 
