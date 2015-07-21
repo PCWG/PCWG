@@ -69,12 +69,12 @@ class XmlBase:
 
         return(len(self.getNodes(node, query)) > 0)
 
-        if exists:
+        if exists: #? unreachable code here?
             return len(self.getNodeValue(node, query)) > 0
         else:
             return False
 
-    def nodeValueExists(self, node, query):
+    def nodeValueExists(self, node, query): #seems to be defined above
 
         if self.nodeExists(node, query):
             subNode = self.getNode(node, query)
@@ -156,7 +156,8 @@ class XmlBase:
         else:
             valueNode = self.getNode(node, 'FilterValue')
             columnFactors = []
-            for columnFactor in self.getNodes(valueNode,'ColumnFactor'):
+            factorNodes = self.getNode(valueNode,'ColumnFactors') if self.nodeExists(valueNode,'ColumnFactors') else valueNode
+            for columnFactor in self.getNodes(factorNodes,'ColumnFactor'):
                 columnFactors.append((
                     self.getNodeValueIfExists(columnFactor, 'ColumnName', 'Actual Power'),
                     self.getNodeValueIfExists(columnFactor, 'A', 1),
@@ -879,7 +880,10 @@ class DatasetConfiguration(XmlBase):
         filtersNode = self.addNode(doc, root, "Filters")
 
         for filterItem in self.filters:
-            self.writeFilter(doc, filtersNode, filterItem, "Filter")
+            if isinstance(filterItem, RelationshipFilter):
+                self.writeRelationshipFilter(doc, filtersNode, filterItem, "Filter")
+            else:
+                self.writeFilter(doc, filtersNode, filterItem, "Filter")
 
         #write exclusions
         exclusionsNode = self.addNode(doc, root, "Exclusions")
@@ -1054,6 +1058,20 @@ class DatasetConfiguration(XmlBase):
         else:
             raise Exception("Unrecognised calculation mode: %s" % mode)
 
+    def writeRelationshipFilter(self, doc, filtersNode, filterItem, nodeName):
+        filterNode = self.addNode(doc, filtersNode, nodeName)
+        filterInfoNode = self.addNode(doc, filterNode, "FilterInfo")
+
+        clausesNode = self.addNode(doc, filterNode, "Clauses")
+
+        self.addIntNode(doc,filterInfoNode,"Active",filterItem.active)
+
+        for relation in filterItem.realtionships:
+            relationshipNode = self.addNode(doc, filterNode, "Relationship")
+            self.addTextNode(doc,relationshipNode,"Conjunction",relation.conjunction)
+            for clause in relation.clauses:
+                self.writeFilter(doc,relationshipNode,clause,"Clause")
+
     def writeFilter(self, doc, filtersNode, filterItem, nodeName):
 
         filterNode = self.addNode(doc, filtersNode, nodeName)
@@ -1079,7 +1097,8 @@ class DatasetConfiguration(XmlBase):
                 self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
                 self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
 
-        self.addBoolNode(doc, filterNode, "Active", filterItem.active)
+        if hasattr(filterItem,"active"):
+            self.addBoolNode(doc, filterNode, "Active", filterItem.active)
 
     def readFilters(self, filtersNode):
 
