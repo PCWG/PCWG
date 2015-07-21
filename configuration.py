@@ -908,8 +908,8 @@ class DatasetConfiguration(XmlBase):
             exclusionNode = self.addNode(doc, exclusionsNode, "Exclusion")
         
             self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion[2])
-            self.addTextNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
-            self.addTextNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
+            self.addDateNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
+            self.addDateNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
 
 
     def readREWS(self, configurationNode):
@@ -1157,6 +1157,7 @@ class DatasetConfiguration(XmlBase):
             self.calibrationSlopes = {}
             self.calibrationOffsets = {}
             self.calibrationActives = {}
+            self.calibrationDirections = {}
 
             return
 
@@ -1187,9 +1188,11 @@ class DatasetConfiguration(XmlBase):
         self.calibrationSlopes = {}
         self.calibrationOffsets = {}
         self.calibrationActives = {}
+        self.calibrationDirections = {}
 
         for node in self.getNodes(calibrationNode, 'CalibrationDirection'):
             direction = self.getNodeFloat(node, 'Direction')
+            self.calibrationDirections[direction] = direction
             self.calibrationActives[direction] = self.getNodeBool(node, 'Active')
             self.calibrationSlopes[direction] = self.getNodeFloat(node, 'Slope')
             self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset')

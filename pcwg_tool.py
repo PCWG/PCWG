@@ -86,8 +86,8 @@ def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
 def extractExclusionValuesFromText(text):
         
         items = text.split(columnSeparator)
-        startDate = items[0].strip()
-        endDate = items[1].strip()
+        startDate = datetime.datetime.strptime(items[0].strip() , datePickerFormat)
+        endDate = datetime.datetime.strptime(items[1].strip() , datePickerFormat)
         active = getBoolFromText(items[2].strip())
 
         return (startDate, endDate, active)
