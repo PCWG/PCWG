@@ -381,6 +381,10 @@ class AnalysisConfiguration(XmlBase):
         self.isNew = False
         doc = self.createDocument()
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")
+        self.writeSettings(doc, root)
+        self.saveDocument(doc, self.path)
+
+    def writeSettings(self, doc, root):
 
         self.addIntNode(doc, root, "PowerCurveMinimumCount", self.powerCurveMinimumCount)
 
@@ -430,7 +434,7 @@ class AnalysisConfiguration(XmlBase):
         self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specifiedPowerDeviationMatrix)
         self.addBoolNode(doc, powerDeviationMatrixNode, "Active", self.powerDeviationMatrixActive)
 
-        self.saveDocument(doc, self.path)
+
 
     def readDatasets(self, configurationNode):
 
@@ -785,6 +789,10 @@ class DatasetConfiguration(XmlBase):
 
         doc = self.createDocument()
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")
+        self.writeSettings(doc, root)
+        self.saveDocument(doc, self.path)
+
+    def writeSettings(self, doc, root):
 
         genSettingsNode = self.addNode(doc, root, "GeneralSettings")
 
@@ -903,7 +911,6 @@ class DatasetConfiguration(XmlBase):
             self.addTextNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
             self.addTextNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
 
-        self.saveDocument(doc, self.path)
 
     def readREWS(self, configurationNode):
 
