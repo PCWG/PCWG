@@ -1101,7 +1101,7 @@ class DatasetConfiguration(XmlBase):
                 self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
                 self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
 
-        if hasattr(filterItem,"active"):
+        if not nodeName.lower() == 'clause':
             self.addBoolNode(doc, filterNode, "Active", filterItem.active)
 
     def readFilters(self, filtersNode):
@@ -1114,7 +1114,7 @@ class DatasetConfiguration(XmlBase):
 
             if node.localName == 'TimeOfDayFilter':
                 filters.append(self.readToDFilter(active,node))
-            elif self.nodeExists(node,'Relationship'):
+            elif self.nodeExists(node,'Clauses') or self.nodeExists(node,'Relationship'):
                 filters.append(self.readRelationshipFilter(active, node))
             else:
                 filters.append(self.readSimpleFilter(node,active))

@@ -26,13 +26,13 @@ def getDateFromEntry(entry):
                 return None
    
 def getBoolFromText(text):
-        
         if text == "True":
             active = True
         elif text == "False":
             active = False
         else:
             raise Exception("Cannot convert Text to Boolean: %s" % text)
+        return active
         
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
@@ -114,7 +114,8 @@ def extractRelationshipFilterFromText(text):
                         inclusive = getBoolFromText(items[3].strip())
                         clauses.append(configuration.Filter(True,column,filterType,inclusive,value))
                 else:
-                        conjunction = subFilt
+                        if len(subFilt.strip()) > 1:
+                                conjunction = subFilt.strip()
             return configuration.RelationshipFilter(True,conjunction,clauses)
 
         except Exception as ex:
