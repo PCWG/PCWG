@@ -1740,23 +1740,24 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.shearProfileLevelsListBoxEntry.listbox.insert(END, "Height,Wind Speed")
                 
-                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=5, height=1)
+                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=10, height=1)
                 self.newShearProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.newShearProfileLevelButton)
                 
-                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=5, height=1)
+                self.copyToREWSShearProileLevelButton = Button(master, text="CopyToREWS", command = self.copyToREWSShearProileLevels, width=10, height=1)
+                self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
+                shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
+                                
+                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=10, height=1)
                 self.editShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.editShearProfileLevelButton)
                 
-                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=5, height=1)
+                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=10, height=1)
                 self.deleteShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 shearShowHide.addControl(self.deleteShearProfileLevelButton)
                 self.row +=1 
                 
-                #self.copyToREWSShearProileLevelButton = Button(master, text="Copy to REWS", command = self.copyToREWSShearProileLevels, width=5, height=1)
-                #self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                #shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
-                #self.row +=1 
+                
                
                 rewsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
@@ -2271,8 +2272,19 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                     self.shearProfileLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
                     
-        #def copyToREWSShearProileLevels(self):
+        def copyToREWSShearProileLevels(self):            
             
+            shears = {}            
+            for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
+                    if i > 0:                        
+                        text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
+                        shears[extractShearMeasurementValuesFromText(text)[0]] = text
+           
+            for height in sorted(shears):
+                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, shears[height])
+           
+           
+                         
                 #items = self.shearProfileLevelsListBoxEntry.listbox.curselection()
                 
                 #for i in items:
@@ -2292,7 +2304,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
                         text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
-                        levels[extractShearLevelValuesFromText(text)[0]] = text
+                        levels[extractShearMeasurementValuesFromText(text)[0]] = text
 
                 self.shearProfileLevelsListBoxEntry.listbox.delete(0, END)
 
