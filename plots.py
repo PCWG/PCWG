@@ -207,7 +207,7 @@ class MatplotlibPlotter(object):
                 plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
                 file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - All Sectors {nm}.png'.format(nm=datasetConf.name)
                 plt.savefig(file_out)
-                df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-5.0 , df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+5.0),:]
+                df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-5.0 , df.index < datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+5.0),:]
                 df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
                 plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
                 file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors {nm}.png'.format(nm=datasetConf.name)
