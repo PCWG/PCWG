@@ -164,10 +164,11 @@ class SiteCalibrationCalculator:
 
     def IECLimitCalculator(self):
         if len(self.calibrationSectorDataframe.index) == 36:
+            self.calibrationSectorDataframe['pctSpeedUp'] = (self.calibrationSectorDataframe['vRatio']-1)*100
             self.calibrationSectorDataframe['LowerLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)-2.0,1),index=self.calibrationSectorDataframe.index)
             self.calibrationSectorDataframe['UpperLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)+2.0,1),index=self.calibrationSectorDataframe.index)
             self.calibrationSectorDataframe['IECValid'] = np.logical_and(self.calibrationSectorDataframe['vRatio'] >  self.calibrationSectorDataframe['LowerLimit'], self.calibrationSectorDataframe['vRatio'] >  self.calibrationSectorDataframe['UpperLimit'])
-            print self.calibrationSectorDataframe[['LowerLimit','UpperLimit','IECValid']]
+            print self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']]
         return True
 
 class ShearExponentCalculator:
@@ -462,7 +463,7 @@ class Dataset:
             #cov[directionBinCenter]  = calibration.covariance(sectorDataFrame, calibration.x,calibration.y )
             cov[directionBinCenter]  = sigA[directionBinCenter]*sigB[directionBinCenter]*(-1.0 * sectorDataFrame[calibration.x].sum())/((counts[directionBinCenter] * (sectorDataFrame[calibration.x]**2).sum())**0.5)
             corr[directionBinCenter]  =sectorDataFrame[[calibration.x, calibration.y]].corr()[calibration.x][calibration.y]
-            vRatio[directionBinCenter] = (sectorDataFrame[calibration.x]/sectorDataFrame[calibration.y]).mean()# T_A1/R_A1
+            vRatio[directionBinCenter] = (sectorDataFrame[calibration.y]/sectorDataFrame[calibration.x]).mean()# T_A1/R_A1 - this is currently mean of all data
 
             if valueColumn == self.hubWindSpeedForTurbulence:
                 belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
