@@ -2289,7 +2289,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                     if i > 0:                        
                         text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
                         referenceWindDirection = self.config.referenceWindDirection
-                        shears[extractShearMeasurementValuesFromText(text)[0], referenceWindDirection] = text
+                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + referenceWindDirection
            
             for height in sorted(shears):
                         self.rewsProfileLevelsListBoxEntry.listbox.insert(END, shears[height])
@@ -2370,7 +2370,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
             for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
                     if i > 0:                        
                         text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)                        
-                        profiles[extractREWSLevelValuesForShearValuesFromText(text)[0]] = text
+                        profiles[extractREWSLevelValuesForShearValuesFromText(text)[0]] = extractREWSLevelValuesForShearValuesFromText(text)
            
             for height in sorted(profiles):
                         self.shearProfileLevelsListBoxEntry.listbox.insert(END, profiles[height])
