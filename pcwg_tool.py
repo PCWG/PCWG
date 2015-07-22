@@ -1740,19 +1740,19 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.shearProfileLevelsListBoxEntry.listbox.insert(END, "Height,Wind Speed")
                 
-                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=10, height=1)
+                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=12, height=1)
                 self.newShearProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.newShearProfileLevelButton)
                 
-                self.copyToREWSShearProileLevelButton = Button(master, text="CopyToREWS", command = self.copyToREWSShearProileLevels, width=10, height=1)
+                self.copyToREWSShearProileLevelButton = Button(master, text="Copy To REWS", command = self.copyToREWSShearProileLevels, width=12, height=1)
                 self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
                 shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
                                 
-                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=10, height=1)
+                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=12, height=1)
                 self.editShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.editShearProfileLevelButton)
                 
-                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=10, height=1)
+                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=12, height=1)
                 self.deleteShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 shearShowHide.addControl(self.deleteShearProfileLevelButton)
                 self.row +=1 
@@ -1790,19 +1790,19 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 #self.validations.append(self.validatedREWSProfileLevels)
                 #self.validatedREWSProfileLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
 
-                self.newREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=10, height=1)
+                self.newREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=12, height=1)
                 self.newREWSProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 rewsProfileShowHide.addControl(self.newREWSProfileLevelButton)
                 
-                self.copyToShearREWSProileLevelButton = Button(master, text="CopyToshear", command = self.copyToShearREWSProileLevels, width=10, height=1)
+                self.copyToShearREWSProileLevelButton = Button(master, text="Copy To Shear", command = self.copyToShearREWSProileLevels, width=12, height=1)
                 self.copyToShearREWSProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
                 rewsProfileShowHide.addControl(self.copyToShearREWSProileLevelButton)                
                 
-                self.editREWSProfileLevelButton = Button(master, text="Edit", command = self.EditREWSProfileLevel, width=10, height=1)
+                self.editREWSProfileLevelButton = Button(master, text="Edit", command = self.EditREWSProfileLevel, width=12, height=1)
                 self.editREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 rewsProfileShowHide.addControl(self.editREWSProfileLevelButton)
                 
-                self.deleteREWSProfileLevelButton = Button(master, text="Delete", command = self.removeREWSProfileLevels, width=10, height=1)
+                self.deleteREWSProfileLevelButton = Button(master, text="Delete", command = self.removeREWSProfileLevels, width=12, height=1)
                 self.deleteREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 rewsProfileShowHide.addControl(self.deleteREWSProfileLevelButton)
                 self.row +=1
