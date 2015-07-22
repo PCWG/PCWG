@@ -50,7 +50,7 @@ def extractPowerLevelValuesFromText(text):
         return (windSpeed, power)
 
 def extractREWSLevelValuesFromText(text):
-        items = text.split(columnSeparator)
+        items = text.split(columnSeparator)        
         height = float(items[0])
         windSpeed = items[1].strip()
         windDirection = items[2].strip()
@@ -66,7 +66,7 @@ def extractShearMeasurementValuesFromText(text):
         return (height, windSpeed)
 
 def encodeShearMeasurementValuesAsText(height, windSpeed):
-        return "{hight:.04}{sep}{windspeed}{sep}".format(hight = height, sep = columnSeparator, windspeed = windSpeed)
+        return "{hight:.04}{sep}{windspeed}".format(hight = height, sep = columnSeparator, windspeed = windSpeed)
 
 
 def extractCalibrationDirectionValuesFromText(text):
@@ -1740,23 +1740,24 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.shearProfileLevelsListBoxEntry.listbox.insert(END, "Height,Wind Speed")
                 
-                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=5, height=1)
+                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=12, height=1)
                 self.newShearProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.newShearProfileLevelButton)
                 
-                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=5, height=1)
+                self.copyToREWSShearProileLevelButton = Button(master, text="Copy To REWS", command = self.copyToREWSShearProileLevels, width=12, height=1)
+                self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
+                shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
+                                
+                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=12, height=1)
                 self.editShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.editShearProfileLevelButton)
                 
-                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=5, height=1)
+                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=12, height=1)
                 self.deleteShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 shearShowHide.addControl(self.deleteShearProfileLevelButton)
                 self.row +=1 
                 
-                #self.copyToREWSShearProileLevelButton = Button(master, text="Copy to REWS", command = self.copyToREWSShearProileLevels, width=5, height=1)
-                #self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                #shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
-                #self.row +=1 
+                
                
                 rewsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
@@ -1789,15 +1790,19 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 #self.validations.append(self.validatedREWSProfileLevels)
                 #self.validatedREWSProfileLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
 
-                self.newREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=5, height=1)
+                self.newREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=12, height=1)
                 self.newREWSProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 rewsProfileShowHide.addControl(self.newREWSProfileLevelButton)
                 
-                self.editREWSProfileLevelButton = Button(master, text="Edit", command = self.EditREWSProfileLevel, width=5, height=1)
+                self.copyToShearREWSProileLevelButton = Button(master, text="Copy To Shear", command = self.copyToShearREWSProileLevels, width=12, height=1)
+                self.copyToShearREWSProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
+                rewsProfileShowHide.addControl(self.copyToShearREWSProileLevelButton)                
+                
+                self.editREWSProfileLevelButton = Button(master, text="Edit", command = self.EditREWSProfileLevel, width=12, height=1)
                 self.editREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 rewsProfileShowHide.addControl(self.editREWSProfileLevelButton)
                 
-                self.deleteREWSProfileLevelButton = Button(master, text="Delete", command = self.removeREWSProfileLevels, width=5, height=1)
+                self.deleteREWSProfileLevelButton = Button(master, text="Delete", command = self.removeREWSProfileLevels, width=12, height=1)
                 self.deleteREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 rewsProfileShowHide.addControl(self.deleteREWSProfileLevelButton)
                 self.row +=1
@@ -2239,13 +2244,14 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 if len(items) == 1:
 
                         idx = items[0]
-                        text = self.shearProfileLevelsListBoxEntry.listbox.get(items[0])                        
+                        if idx > 0:
+                            text = self.shearProfileLevelsListBoxEntry.listbox.get(items[0])                        
                         
-                        try:                                
-                                dialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText, text, idx)
-                        except ExceptionType as e:
-                               self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-                                        
+                            try:                                
+                                    dialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText, text, idx)
+                            except ExceptionType as e:
+                                   self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+                                            
         def NewShearProfileLevel(self):
                 
                 configDialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText)
@@ -2258,7 +2264,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 else:
                         self.shearProfileLevelsListBoxEntry.listbox.insert(END, text)
                         
-                self.sortLevels()
+                self.sortLevelsShear()
                 #self.validatedShearProfileLevels.validate()               
 
         def removeShearProfileLevels(self):
@@ -2268,34 +2274,35 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 for i in items:
                     idx = int(i) - pos
-                    self.shearProfileLevelsListBoxEntry.listbox.delete(idx, idx)
+                    if idx > 0:
+                        self.shearProfileLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
                     
-        #def copyToREWSShearProileLevels(self):
+        def copyToREWSShearProileLevels(self):            
             
-                #items = self.shearProfileLevelsListBoxEntry.listbox.curselection()
-                
-                #for i in items:
-                    #shearProfileLevelsListBoxEntry.listbox.append(listbox.get(i))
-                #listbox.quit()
-                
-                #REWSitems = self.rewsProfileLevelsListBoxEntry.listbox.curseselection()
-                
-                #for item in REWSitems:
-                    #rewsProfileLevelsListBoxEntry.listbox.insert(End, item)
-            
-                #self.validatedShearProfileLevels.validate()
+            shears = {}            
+            for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
+                    if i > 0:                        
+                        text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
+                        referenceWindDirection = self.config.referenceWindDirection
+                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + referenceWindDirection
+           
+            for height in sorted(shears):
+                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, shears[height])
+            self.sortLevels()
 
         def sortLevelsShear(self):
 
                 levels = {}
-
-                for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
-                        text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
-                        levels[extractShearLevelValuesFromText(text)[0]] = text
+                startText = self.shearProfileLevelsListBoxEntry.listbox.get(0)                
+                
+                for i in range(1, self.shearProfileLevelsListBoxEntry.listbox.size()):
+                    text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
+                    levels[extractShearMeasurementValuesFromText(text)[0]] = text
 
                 self.shearProfileLevelsListBoxEntry.listbox.delete(0, END)
-
+                self.shearProfileLevelsListBoxEntry.listbox.insert(END, startText)
+                        
                 for height in sorted(levels):
                         self.shearProfileLevelsListBoxEntry.listbox.insert(END, levels[height])
                         
@@ -2306,12 +2313,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 if len(items) == 1:
 
                         idx = items[0]
-                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(items[0])                        
-                        
-                        try:                                
-                                dialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
-                        except ExceptionType as e:
-                               self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+                        if idx > 0:
+                            text = self.rewsProfileLevelsListBoxEntry.listbox.get(items[0])                        
+                            
+                            try:                                
+                                    dialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
+                            except ExceptionType as e:
+                                   self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewREWSProfileLevel(self):
                 
@@ -2335,21 +2343,35 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 for i in items:
                     idx = int(i) - pos
-                    self.rewsProfileLevelsListBoxEntry.listbox.delete(idx, idx)
+                    if idx > 0:
+                        self.rewsProfileLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
             
                 #self.validatedREWSProfileLevels.validate()
+            
+        def copyToShearREWSProileLevels(self):            
+            
+            profiles = {}            
+            for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
+                    if i > 0:                        
+                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)          
+                        height, ws , wd = extractREWSLevelValuesFromText(text)
+                        profiles[height] = encodeShearMeasurementValuesAsText(height, ws )
+           
+            for height in sorted(profiles):
+                        self.shearProfileLevelsListBoxEntry.listbox.insert(END, profiles[height])
+            self.sortLevelsShear()
 
         def sortLevels(self):
 
                 levels = {}
-
-                for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
-                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)
-                        levels[extractREWSLevelValuesFromText(text)[0]] = text
+                startText = self.rewsProfileLevelsListBoxEntry.listbox.get(0)    
+                for i in range(1,self.rewsProfileLevelsListBoxEntry.listbox.size()):
+                    text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)
+                    levels[extractREWSLevelValuesFromText(text)[0]] = text
 
                 self.rewsProfileLevelsListBoxEntry.listbox.delete(0, END)
-
+                self.rewsProfileLevelsListBoxEntry.listbox.insert(END,startText)
                 for height in sorted(levels):
                         self.rewsProfileLevelsListBoxEntry.listbox.insert(END, levels[height])
 

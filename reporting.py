@@ -140,7 +140,8 @@ class report:
                     ba = calib.calibrationSectorDataframe.loc[key,'belowAbove']
                     sh.write(row,col+4,ba[0], self.no_dp_style)
                     sh.write(row,col+5,ba[1], self.no_dp_style)
-                    sh.write(row,col+6, "TRUE" if ba[0]*(analysis.timeStepInSeconds/3600.0) > 6.0 and  ba[1]*(analysis.timeStepInSeconds/3600.0) > 6.0 else "FALSE" , self.bold_style)
+                    valid = calib.getSectorValidity(key, analysis.timeStepInSeconds)
+                    sh.write(row,col+6, "TRUE" if valid else "FALSE" , self.bold_style)
                 row += 1
 
             if len(conf.calibrationFilters) > 0:
