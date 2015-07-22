@@ -139,62 +139,37 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None,
-                       belowAbove = {}, sigA={}, sigB={}, cov={}, corr={}):
+    def __init__(self, directionBinColumn, valueColumn, calibrationSectorDataframe, actives = None):
 
-        self.belowAbove = belowAbove
+        self.calibrationSectorDataframe = calibrationSectorDataframe
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
 
         if actives != None:
+            self.calibrationSectorDataframe = self.calibrationSectorDataframe.loc[actives,:]
 
-            self.slopes = {}
-            self.offsets = {}
-            self.counts = {}
-            if sigA.keys() == slopes.keys():
-                uncertaintyInfo = True
-                self.sigA = {}
-                self.sigB = {}
-                self.cov = {}
-                self.corr = {}
-            else:
-                uncertaintyInfo = False
-
-            for direction in actives:
-
-                self.slopes[direction] = slopes[direction]
-                self.offsets[direction] = offsets[direction]
-                if uncertaintyInfo:
-                    self.sigA[direction] = sigA[direction]
-                    self.sigB[direction] = sigB[direction]
-                    self.cov[direction] = cov[direction]
-                    self.corr[direction] = corr[direction]
-
-                if direction in counts:
-                    #self.counts = counts[direction]
-                    self.counts[direction] = counts[direction]
-
-        else:
-
-            self.slopes = slopes
-            self.offsets = offsets
-            self.counts = counts
-            self.sigA = sigA
-            self.sigB = sigB
-            self.cov = cov
-            self.corr = corr
+        self.IECLimitCalculator()
 
     def turbineValue(self, row):
 
         directionBin = row[self.directionBinColumn]
 
-        if directionBin in self.slopes:
+        if directionBin in self.calibrationSectorDataframe.index:
             return self.calibrate(directionBin, row[self.valueColumn])
         else:
             return np.nan
 
     def calibrate(self, directionBin, value):
-        return self.offsets[directionBin] + self.slopes[directionBin] * value
+        return self.calibrationSectorDataframe['Offset'][directionBin] + self.calibrationSectorDataframe['Slope'][directionBin] * value
+
+    def IECLimitCalculator(self):
+        if len(self.calibrationSectorDataframe.index) == 36 and 'vRatio' in self.calibrationSectorDataframe.columns:
+            self.calibrationSectorDataframe['pctSpeedUp'] = (self.calibrationSectorDataframe['vRatio']-1)*100
+            self.calibrationSectorDataframe['LowerLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)-2.0,1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['UpperLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)+2.0,1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['IECValid'] = np.logical_and(self.calibrationSectorDataframe['vRatio'] >  self.calibrationSectorDataframe['LowerLimit'], self.calibrationSectorDataframe['vRatio'] >  self.calibrationSectorDataframe['UpperLimit'])
+            print self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']]
+        return True
 
 class ShearExponentCalculator:
 
@@ -423,8 +398,8 @@ class Dataset:
                         mask = (dataFrame[self.referenceDirectionBin] == direction)
                         dataCount = dataFrame[mask][self.referenceDirectionBin].count()
                         print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
-
-                return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
+                df = pd.DataFrame([config.calibrationSlopes, config.calibrationOffsets], index=['Slope','Offset']).T
+                return SiteCalibrationCalculator( self.referenceDirectionBin, config.referenceWindSpeed,df, actives = config.calibrationActives)
             else:
                 raise Exception("The specified slopes have different bin centres to that specified by siteCalibrationCenterOfFirstSector which is: {0}".format(config.siteCalibrationCenterOfFirstSector))
         else:
@@ -472,12 +447,14 @@ class Dataset:
         sigB = {}
         cov  = {}
         corr  = {}
+        vRatio= {}
 
         for group in groups:
 
             directionBinCenter = group[0]
             sectorDataFrame = group[1].dropna()
 
+            # this would eb better as a dataframe!
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
@@ -486,13 +463,17 @@ class Dataset:
             #cov[directionBinCenter]  = calibration.covariance(sectorDataFrame, calibration.x,calibration.y )
             cov[directionBinCenter]  = sigA[directionBinCenter]*sigB[directionBinCenter]*(-1.0 * sectorDataFrame[calibration.x].sum())/((counts[directionBinCenter] * (sectorDataFrame[calibration.x]**2).sum())**0.5)
             corr[directionBinCenter]  =sectorDataFrame[[calibration.x, calibration.y]].corr()[calibration.x][calibration.y]
+            vRatio[directionBinCenter] = (sectorDataFrame[calibration.y]/sectorDataFrame[calibration.x]).mean()# T_A1/R_A1 - this is currently mean of all data
 
             if valueColumn == self.hubWindSpeedForTurbulence:
                 belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
 
-            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
+        calibrationSectorDataframe = pd.DataFrame([slopes,intercepts,counts, sigA, sigB, cov, corr, vRatio], ["Slope","Offset","Count","SigA","SigB","Cov","Corr","vRatio"] ).T
+        if len(belowAbove.keys()):
+            calibrationSectorDataframe['belowAbove'] = belowAbove.values()
+        print calibrationSectorDataframe
 
-        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove, sigA=sigA, sigB=sigB, cov=cov, corr=corr)
+        return SiteCalibrationCalculator(self.referenceDirectionBin, valueColumn, calibrationSectorDataframe)
 
     def isValidText(self, text):
         if text == None: return False

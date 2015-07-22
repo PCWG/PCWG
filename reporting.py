@@ -109,7 +109,7 @@ class report:
         startRow = 2
         col = -5
         for conf,calib in analysis.calibrations:
-            if calib.belowAbove != {}:
+            if 'belowAbove' in calib.calibrationSectorDataframe.columns :
                 belowAbove = True
             else:
                 belowAbove = False
@@ -130,15 +130,17 @@ class report:
 
 
             row+=1
-            for key in sorted(calib.slopes):
+            for key in sorted(calib.calibrationSectorDataframe.index):
                 sh.write(row,col,key, self.bold_style)
-                sh.write(row,col+1,calib.slopes[key], self.four_dp_style)
-                sh.write(row,col+2,calib.offsets[key], self.four_dp_style)
-                if key in calib.counts: sh.write(row,col+3,calib.counts[key], self.no_dp_style)
+                sh.write(row,col+1,calib.calibrationSectorDataframe['Slope'][key], self.four_dp_style)
+                sh.write(row,col+2,calib.calibrationSectorDataframe['Offset'][key], self.four_dp_style)
+                if 'Count' in calib.calibrationSectorDataframe.columns:
+                    sh.write(row,col+3,calib.calibrationSectorDataframe['Count'][key], self.no_dp_style)
                 if belowAbove:
-                    sh.write(row,col+4,calib.belowAbove[key][0], self.no_dp_style)
-                    sh.write(row,col+5,calib.belowAbove[key][1], self.no_dp_style)
-                    sh.write(row,col+6, "TRUE" if calib.belowAbove[key][0]*(analysis.timeStepInSeconds/3600.0) > 6.0 and  calib.belowAbove[key][1]*(analysis.timeStepInSeconds/3600.0) > 6.0 else "FALSE" , self.bold_style)
+                    ba = calib.calibrationSectorDataframe.loc[key,'belowAbove']
+                    sh.write(row,col+4,ba[0], self.no_dp_style)
+                    sh.write(row,col+5,ba[1], self.no_dp_style)
+                    sh.write(row,col+6, "TRUE" if ba[0]*(analysis.timeStepInSeconds/3600.0) > 6.0 and  ba[1]*(analysis.timeStepInSeconds/3600.0) > 6.0 else "FALSE" , self.bold_style)
                 row += 1
 
             if len(conf.calibrationFilters) > 0:
