@@ -163,7 +163,7 @@ class SiteCalibrationCalculator:
         return self.calibrationSectorDataframe['Offset'][directionBin] + self.calibrationSectorDataframe['Slope'][directionBin] * value
 
     def IECLimitCalculator(self):
-        if len(self.calibrationSectorDataframe.index) == 36:
+        if len(self.calibrationSectorDataframe.index) == 36 and 'vRatio' in self.calibrationSectorDataframe.columns:
             self.calibrationSectorDataframe['pctSpeedUp'] = (self.calibrationSectorDataframe['vRatio']-1)*100
             self.calibrationSectorDataframe['LowerLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)-2.0,1),index=self.calibrationSectorDataframe.index)
             self.calibrationSectorDataframe['UpperLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)+2.0,1),index=self.calibrationSectorDataframe.index)
@@ -398,8 +398,8 @@ class Dataset:
                         mask = (dataFrame[self.referenceDirectionBin] == direction)
                         dataCount = dataFrame[mask][self.referenceDirectionBin].count()
                         print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
-
-                return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
+                df = pd.DataFrame([config.calibrationSlopes, config.calibrationOffsets], index=['Slope','Offset']).T
+                return SiteCalibrationCalculator( self.referenceDirectionBin, config.referenceWindSpeed,df, actives = config.calibrationActives)
             else:
                 raise Exception("The specified slopes have different bin centres to that specified by siteCalibrationCenterOfFirstSector which is: {0}".format(config.siteCalibrationCenterOfFirstSector))
         else:
