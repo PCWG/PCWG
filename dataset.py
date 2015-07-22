@@ -6,6 +6,9 @@ import configuration
 import rews
 import binning
 
+import warnings
+warnings.simplefilter('ignore', np.RankWarning)
+
 def getSeparatorValue(separator):
 
         separator = separator.upper()
@@ -172,15 +175,13 @@ class SiteCalibrationCalculator:
         return True
     
     def getSectorValidity(self, key, timeStep):
-        ba = self.calibrationSectorDataframe['belowAbove']
-        return ba[0]*(timeStep/3600.0) > 6.0 and  ba[1]*(timeStep/3600.0) > 6.0
+        ba = self.calibrationSectorDataframe.loc[key,'belowAbove']
+        return ba[0]*(timeStep/3600.0) > 6.0 and ba[1]*(timeStep/3600.0) > 6.0
 
 class ShearExponentCalculator:
 
     def __init__(self, shearMeasurements):
         self.shearMeasurements = shearMeasurements
-        import warnings
-        warnings.simplefilter('ignore', np.RankWarning)
 
     def calculateMultiPointShear(self, row):
 
