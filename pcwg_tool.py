@@ -12,7 +12,7 @@ import dateutil
 
 columnSeparator = "|"
 filterSeparator = "#"
-datePickerFormat = "%d-%m-%Y %H:%M"
+datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.7 (Release Candidate 3)"
@@ -86,8 +86,8 @@ def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
 def extractExclusionValuesFromText(text):
         
         items = text.split(columnSeparator)
-        startDate = datetime.datetime.strptime(items[0].strip() , datePickerFormat)
-        endDate = datetime.datetime.strptime(items[1].strip() , datePickerFormat)
+        startDate = pd.to_datetime(items[0].strip(),dayfirst =True)
+        endDate = pd.to_datetime(items[1].strip(),dayfirst =True)
         active = getBoolFromText(items[2].strip())
 
         return (startDate, endDate, active)
@@ -2522,10 +2522,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.exclusions = []
                 
                 for i in range(self.exclusionsListBoxEntry.listbox.size()):
-
-                        if i > 0:
-                                
-                                self.config.exclusions.append(extractExclusionValuesFromText(self.exclusionsListBoxEntry.listbox.get(i)))
+                    if i > 0:
+                        self.config.exclusions.append(extractExclusionValuesFromText(self.exclusionsListBoxEntry.listbox.get(i)))
 
                 #filters
 
