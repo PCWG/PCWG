@@ -170,6 +170,10 @@ class SiteCalibrationCalculator:
             self.calibrationSectorDataframe['IECValid'] = np.logical_and(self.calibrationSectorDataframe['vRatio'] >  self.calibrationSectorDataframe['LowerLimit'], self.calibrationSectorDataframe['vRatio'] >  self.calibrationSectorDataframe['UpperLimit'])
             print self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']]
         return True
+    
+    def getSectorValidity(self, key, timeStep):
+        ba = self.calibrationSectorDataframe['belowAbove']
+        return ba[0]*(timeStep/3600.0) > 6.0 and  ba[1]*(timeStep/3600.0) > 6.0
 
 class ShearExponentCalculator:
 
