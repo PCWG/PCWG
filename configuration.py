@@ -111,7 +111,10 @@ class XmlBase:
         
     def addFloatNode2DP(self, doc, parentNode, nodeName, value):
         self.addTextNode(doc, parentNode, nodeName, "{0:.2f}".format(float(value)))
-        
+
+    def addFloatNode3DP(self, doc, parentNode, nodeName, value):
+        self.addTextNode(doc, parentNode, nodeName, "{0:.3f}".format(float(value)))    
+    
     def createDocument(self):
         return xml.dom.minidom.Document()
 
