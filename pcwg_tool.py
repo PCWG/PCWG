@@ -2726,7 +2726,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", ValidateSpecifiedPowerCurve(master, self.powerCurveMode), self.config.specifiedPowerCurve, self.filePath, showHideCommand = turbineSettingsShowHide)
 
                 self.addPowerCurveButton = Button(master, text="New", command = self.NewPowerCurve, width=5, height=1)
-                self.addPowerCurveButton.grid(row=(self.row-1), sticky=E+N, column=self.secondButtonColumn)
+                self.addPowerCurveButton.grid(row=(self.row-2), sticky=E+N, column=self.secondButtonColumn)
                 turbineSettingsShowHide.addControl(self.addPowerCurveButton)
                 
                 self.editPowerCurveButton = Button(master, text="Edit", command = self.EditPowerCurve, width=5, height=1)
