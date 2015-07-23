@@ -80,7 +80,7 @@ class York(CalibrationBase):
         df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = 1)
 
         df[self.xDiffSq] = ((df[x] - df[self.xRolling])** 2.0)
-        df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0)
+        df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0) # this needed in uncertainty?
 
         CalibrationBase.__init__(self, x, y)
 
@@ -151,6 +151,7 @@ class SiteCalibrationCalculator:
         if actives != None:
             self.calibrationSectorDataframe = self.calibrationSectorDataframe.loc[actives,:]
 
+        self.calibrationSectorDataframe['SpeedUpAt10'] = (10*self.calibrationSectorDataframe['Slope'] + self.calibrationSectorDataframe['Intercept'])/10.0
         self.IECLimitCalculator()
 
     def turbineValue(self, row):
@@ -459,16 +460,18 @@ class Dataset:
             directionBinCenter = group[0]
             sectorDataFrame = group[1].dropna()
 
-            # this would eb better as a dataframe!
             slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
             intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
             counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
-            sigA[directionBinCenter] = calibration.sigA(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInGradient'
-            sigB[directionBinCenter] = calibration.sigB(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInIntercept'
-            #cov[directionBinCenter]  = calibration.covariance(sectorDataFrame, calibration.x,calibration.y )
-            cov[directionBinCenter]  = sigA[directionBinCenter]*sigB[directionBinCenter]*(-1.0 * sectorDataFrame[calibration.x].sum())/((counts[directionBinCenter] * (sectorDataFrame[calibration.x]**2).sum())**0.5)
-            corr[directionBinCenter]  =sectorDataFrame[[calibration.x, calibration.y]].corr()[calibration.x][calibration.y]
-            vRatio[directionBinCenter] = (sectorDataFrame[calibration.y]/sectorDataFrame[calibration.x]).mean()# T_A1/R_A1 - this is currently mean of all data
+            try:
+                sigA[directionBinCenter] = calibration.sigA(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInGradient'
+                sigB[directionBinCenter] = calibration.sigB(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInIntercept'
+                #cov[directionBinCenter]  = calibration.covariance(sectorDataFrame, calibration.x,calibration.y )
+                cov[directionBinCenter]  = sigA[directionBinCenter]*sigB[directionBinCenter]*(-1.0 * sectorDataFrame[calibration.x].sum())/((counts[directionBinCenter] * (sectorDataFrame[calibration.x]**2).sum())**0.5)
+                corr[directionBinCenter]  =sectorDataFrame[[calibration.x, calibration.y]].corr()[calibration.x][calibration.y]
+                vRatio[directionBinCenter] = (sectorDataFrame[calibration.y]/sectorDataFrame[calibration.x]).mean()# T_A1/R_A1 - this is currently mean of all data
+            except:
+                pass
 
             if valueColumn == self.hubWindSpeedForTurbulence:
                 belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
