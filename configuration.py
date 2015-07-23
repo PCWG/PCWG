@@ -888,7 +888,7 @@ class DatasetConfiguration(XmlBase):
 
         for direction in self.calibrationDirections:
             calibrationDirectionNode = self.addNode(doc, calibrationDirectionsNode, "CalibrationDirection")
-            self.addFloatNode(doc, calibrationDirectionNode, "Direction", direction)
+            self.addFloatNode(doc, calibrationDirectionNode, "DirectionCentre", direction)
             self.addFloatNode(doc, calibrationDirectionNode, "Slope", self.calibrationSlopes[direction])
             self.addFloatNode(doc, calibrationDirectionNode, "Offset", self.calibrationOffsets[direction])
             self.addBoolNode(doc, calibrationDirectionNode, "Active", self.calibrationActives[direction])
@@ -1194,7 +1194,10 @@ class DatasetConfiguration(XmlBase):
         self.calibrationDirections = {}
 
         for node in self.getNodes(calibrationNode, 'CalibrationDirection'):
-            direction = self.getNodeFloat(node, 'Direction')
+            if self.nodeExists(node, 'DirectionCentre'):
+                direction = self.getNodeFloat(node, 'DirectionCentre')
+            else:
+                direction = self.getNodeFloat(node, 'Direction')
             self.calibrationDirections[direction] = direction
             self.calibrationActives[direction] = self.getNodeBool(node, 'Active')
             self.calibrationSlopes[direction] = self.getNodeFloat(node, 'Slope')
