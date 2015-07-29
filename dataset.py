@@ -151,7 +151,7 @@ class SiteCalibrationCalculator:
         if actives != None:
             self.calibrationSectorDataframe = self.calibrationSectorDataframe.loc[actives,:]
 
-        self.calibrationSectorDataframe['SpeedUpAt10'] = (10*self.calibrationSectorDataframe['Slope'] + self.calibrationSectorDataframe['Intercept'])/10.0
+        #self.calibrationSectorDataframe['SpeedUpAt10'] = (10*self.calibrationSectorDataframe['Slope'] + self.calibrationSectorDataframe['Offset'])/10.0
         self.IECLimitCalculator()
 
     def turbineValue(self, row):
