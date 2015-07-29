@@ -181,8 +181,10 @@ class Analysis:
 
         self.applyRemainingFilters()
 
-        if self.hasDensity and self.densityCorrectionActive:
-            self.dataFrame[self.powerCoeff] = self.calculateCp()
+        if self.hasDensity:
+            if self.densityCorrectionActive:
+                self.dataFrame[self.powerCoeff] = self.calculateCp()
+            self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()
 
         if self.hasActualPower:
 
@@ -870,6 +872,7 @@ class Analysis:
         plotter.plotBy(self.hubWindSpeed,self.powerCoeff,self.dataFrame)
         plotter.plotBy('Input Hub Wind Speed',self.powerCoeff,self.allMeasuredPowerCurve)
         #self.plotBy(self.windDirection,self.inflowAngle)
+        plotter.plotCalibrationSectors()
         if len(self.powerCurveSensitivityResults.keys()) > 0:
             for sensCol in self.powerCurveSensitivityResults.keys():
                 plotter.plotPowerCurveSensitivity(sensCol)
