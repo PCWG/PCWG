@@ -11,7 +11,8 @@ import pandas as pd
 import dateutil
 
 columnSeparator = "|"
-datePickerFormat = "%d-%m-%Y %H:%M"
+filterSeparator = "#"
+datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.7 (Release Candidate 3)"
@@ -25,13 +26,13 @@ def getDateFromEntry(entry):
                 return None
    
 def getBoolFromText(text):
-        
         if text == "True":
             active = True
         elif text == "False":
             active = False
         else:
             raise Exception("Cannot convert Text to Boolean: %s" % text)
+        return active
         
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
@@ -49,7 +50,7 @@ def extractPowerLevelValuesFromText(text):
         return (windSpeed, power)
 
 def extractREWSLevelValuesFromText(text):
-        items = text.split(columnSeparator)
+        items = text.split(columnSeparator)        
         height = float(items[0])
         windSpeed = items[1].strip()
         windDirection = items[2].strip()
@@ -65,7 +66,7 @@ def extractShearMeasurementValuesFromText(text):
         return (height, windSpeed)
 
 def encodeShearMeasurementValuesAsText(height, windSpeed):
-        return "{hight:.04}{sep}{windspeed}{sep}".format(hight = height, sep = columnSeparator, windspeed = windSpeed)
+        return "{hight:.04}{sep}{windspeed}".format(hight = height, sep = columnSeparator, windspeed = windSpeed)
 
 
 def extractCalibrationDirectionValuesFromText(text):
@@ -85,54 +86,55 @@ def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
 def extractExclusionValuesFromText(text):
         
         items = text.split(columnSeparator)
-        startDate = items[0].strip()
-        endDate = items[1].strip()
+        startDate = pd.to_datetime(items[0].strip(),dayfirst =True)
+        endDate = pd.to_datetime(items[1].strip(),dayfirst =True)
         active = getBoolFromText(items[2].strip())
 
         return (startDate, endDate, active)
 
 def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
-
         return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
 
+def encodeRelationshipFilterValuesAsText(relationshipFilter):
+        text = ""
+        for clause in relationshipFilter.clauses:
+                text += encodeFilterValuesAsText(clause.column,clause.value, clause.filterType, clause.inclusive, "" )
+                text += " #" + relationshipFilter.conjunction + "# "
+        return text[:-5]
+
+def extractRelationshipFilterFromText(text):
+        try:
+            clauses = []
+            for i, subFilt in enumerate(text.split(filterSeparator)):
+                if i%2 == 0:
+                        items = subFilt.split(columnSeparator)
+                        column = items[0].strip()
+                        value = float(items[1].strip())
+                        filterType = items[2].strip()
+                        inclusive = getBoolFromText(items[3].strip())
+                        clauses.append(configuration.Filter(True,column,filterType,inclusive,value))
+                else:
+                        if len(subFilt.strip()) > 1:
+                                conjunction = subFilt.strip()
+            return configuration.RelationshipFilter(True,conjunction,clauses)
+
+        except Exception as ex:
+                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
 
 def extractFilterValuesFromText(text):
 
         try:
-        
                 items = text.split(columnSeparator)
                 column = items[0].strip()
                 value = float(items[1].strip())
                 filterType = items[2].strip()
                 inclusive = getBoolFromText(items[3].strip())
                 active = getBoolFromText(items[4].strip())
-
                 return (column, value, filterType, inclusive, active)
 
         except Exception as ex:
                 raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
-                
-def encodeCalibrationFilterValuesAsText(column, value, calibrationFilterType, inclusive, active):
 
-        return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = calibrationFilterType, inclusive =inclusive, active = active)
-
-def extractCalibrationFilterValuesFromText(text):
-
-        try:
-        
-                items = text.split(columnSeparator)
-                column = items[0].strip()
-                value = float(items[1].strip())
-                calibrationFilterType = items[2].strip()
-                inclusive = getBoolFromText(items[3].strip())
-                active = getBoolFromText(items[4].strip())
-
-                return (column, value, calibrationFilterType, inclusive, active)
-
-        except Exception as ex:
-                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
-        
-        
 def encodeExclusionValuesAsText(startDate, endDate, active):
 
         return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
@@ -154,7 +156,6 @@ class WindowStatus:
                 return True
         def __init__(self, gui):
             self.gui = gui
-
         def addMessage(self, message):
             self.gui.addMessage(message)
 
@@ -170,7 +171,6 @@ class ValidateBase:
         def __init__(self, master, createMessageLabel = True):
 
                 self.title = ''
-                
                 self.CMD = (master.register(self.validationHandler),
                         '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
 
@@ -185,12 +185,10 @@ class ValidateBase:
             self.control = control
 
         def setMessage(self, message):
-
                 if self.messageLabel != None:  
                         self.messageLabel['text'] = message
 
         def validationHandler(self, action, index, value_if_allowed, prior_value, text, validation_type, trigger_type, widget_name):
-
                 return self.executeValidation(text, value_if_allowed, prior_value)
 
         def executeValidation(self, text, value_if_allowed, prior_value):
@@ -649,7 +647,10 @@ class BaseDialog(tkSimpleDialog.Dialog):
         def addDatePickerEntry(self, master, title, validation, value, width = None, showHideCommand = None):
 
                 if value != None:
-                        textValue = value.strftime(datePickerFormat)
+                        if type(value) == str:
+                                textValue = value
+                        else:
+                                textValue = value.strftime(datePickerFormat)
                 else:
                         textValue = None
                         
@@ -990,7 +991,7 @@ class CalibrationFilterDialog(BaseDialog):
 
                 if not self.isNew:
                         
-                        items = extractCalibrationFilterValuesFromText(self.text)
+                        items = extractFilterValuesFromText(self.text)
                         
                         column = items[0]
                         value = items[1]
@@ -1739,23 +1740,24 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
                 self.shearProfileLevelsListBoxEntry.listbox.insert(END, "Height,Wind Speed")
                 
-                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=5, height=1)
+                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=12, height=1)
                 self.newShearProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.newShearProfileLevelButton)
                 
-                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=5, height=1)
+                self.copyToREWSShearProileLevelButton = Button(master, text="Copy To REWS", command = self.copyToREWSShearProileLevels, width=12, height=1)
+                self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
+                shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
+                                
+                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=12, height=1)
                 self.editShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 shearShowHide.addControl(self.editShearProfileLevelButton)
                 
-                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=5, height=1)
+                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=12, height=1)
                 self.deleteShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 shearShowHide.addControl(self.deleteShearProfileLevelButton)
                 self.row +=1 
                 
-                #self.copyToREWSShearProileLevelButton = Button(master, text="Copy to REWS", command = self.copyToREWSShearProileLevels, width=5, height=1)
-                #self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                #shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
-                #self.row +=1 
+                
                
                 rewsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
@@ -1788,15 +1790,19 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 #self.validations.append(self.validatedREWSProfileLevels)
                 #self.validatedREWSProfileLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
 
-                self.newREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=5, height=1)
+                self.newREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=12, height=1)
                 self.newREWSProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
                 rewsProfileShowHide.addControl(self.newREWSProfileLevelButton)
                 
-                self.editREWSProfileLevelButton = Button(master, text="Edit", command = self.EditREWSProfileLevel, width=5, height=1)
+                self.copyToShearREWSProileLevelButton = Button(master, text="Copy To Shear", command = self.copyToShearREWSProileLevels, width=12, height=1)
+                self.copyToShearREWSProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
+                rewsProfileShowHide.addControl(self.copyToShearREWSProileLevelButton)                
+                
+                self.editREWSProfileLevelButton = Button(master, text="Edit", command = self.EditREWSProfileLevel, width=12, height=1)
                 self.editREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
                 rewsProfileShowHide.addControl(self.editREWSProfileLevelButton)
                 
-                self.deleteREWSProfileLevelButton = Button(master, text="Delete", command = self.removeREWSProfileLevels, width=5, height=1)
+                self.deleteREWSProfileLevelButton = Button(master, text="Delete", command = self.removeREWSProfileLevels, width=12, height=1)
                 self.deleteREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
                 rewsProfileShowHide.addControl(self.deleteREWSProfileLevelButton)
                 self.row +=1
@@ -1868,7 +1874,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 if not self.isNew:
                         for calibrationFilterItem in sorted(self.config.calibrationFilters):
-                                text = encodeCalibrationFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
+                                if isinstance(calibrationFilterItem, configuration.RelationshipFilter):
+                                        text = encodeRelationshipFilterValuesAsText(calibrationFilterItem)
+                                else:
+                                        text = encodeFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
                                 self.calibrationFiltersListBoxEntry.listbox.insert(END, text)
 
                
@@ -1932,7 +1941,10 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 if not self.isNew:
                         for filterItem in sorted(self.config.filters):
-                                text = encodeFilterValuesAsText(filterItem.column, filterItem.value, filterItem.filterType, filterItem.inclusive, filterItem.active)
+                                if isinstance(filterItem, configuration.RelationshipFilter):
+                                        text = encodeRelationshipFilterValuesAsText(filterItem)
+                                else:
+                                        text = encodeFilterValuesAsText(filterItem.column, filterItem.value, filterItem.filterType, filterItem.inclusive, filterItem.active)
                                 self.filtersListBoxEntry.listbox.insert(END, text)
 
                 #set initial visibility
@@ -2232,13 +2244,14 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 if len(items) == 1:
 
                         idx = items[0]
-                        text = self.shearProfileLevelsListBoxEntry.listbox.get(items[0])                        
+                        if idx > 0:
+                            text = self.shearProfileLevelsListBoxEntry.listbox.get(items[0])                        
                         
-                        try:                                
-                                dialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText, text, idx)
-                        except ExceptionType as e:
-                               self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-                                        
+                            try:                                
+                                    dialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText, text, idx)
+                            except ExceptionType as e:
+                                   self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+                                            
         def NewShearProfileLevel(self):
                 
                 configDialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText)
@@ -2251,7 +2264,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 else:
                         self.shearProfileLevelsListBoxEntry.listbox.insert(END, text)
                         
-                self.sortLevels()
+                self.sortLevelsShear()
                 #self.validatedShearProfileLevels.validate()               
 
         def removeShearProfileLevels(self):
@@ -2261,34 +2274,35 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 for i in items:
                     idx = int(i) - pos
-                    self.shearProfileLevelsListBoxEntry.listbox.delete(idx, idx)
+                    if idx > 0:
+                        self.shearProfileLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
                     
-        #def copyToREWSShearProileLevels(self):
+        def copyToREWSShearProileLevels(self):            
             
-                #items = self.shearProfileLevelsListBoxEntry.listbox.curselection()
-                
-                #for i in items:
-                    #shearProfileLevelsListBoxEntry.listbox.append(listbox.get(i))
-                #listbox.quit()
-                
-                #REWSitems = self.rewsProfileLevelsListBoxEntry.listbox.curseselection()
-                
-                #for item in REWSitems:
-                    #rewsProfileLevelsListBoxEntry.listbox.insert(End, item)
-            
-                #self.validatedShearProfileLevels.validate()
+            shears = {}            
+            for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
+                    if i > 0:                        
+                        text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
+                        referenceWindDirection = self.config.referenceWindDirection
+                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + referenceWindDirection
+           
+            for height in sorted(shears):
+                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, shears[height])
+            self.sortLevels()
 
         def sortLevelsShear(self):
 
                 levels = {}
-
-                for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
-                        text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
-                        levels[extractShearLevelValuesFromText(text)[0]] = text
+                startText = self.shearProfileLevelsListBoxEntry.listbox.get(0)                
+                
+                for i in range(1, self.shearProfileLevelsListBoxEntry.listbox.size()):
+                    text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
+                    levels[extractShearMeasurementValuesFromText(text)[0]] = text
 
                 self.shearProfileLevelsListBoxEntry.listbox.delete(0, END)
-
+                self.shearProfileLevelsListBoxEntry.listbox.insert(END, startText)
+                        
                 for height in sorted(levels):
                         self.shearProfileLevelsListBoxEntry.listbox.insert(END, levels[height])
                         
@@ -2299,12 +2313,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 if len(items) == 1:
 
                         idx = items[0]
-                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(items[0])                        
-                        
-                        try:                                
-                                dialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
-                        except ExceptionType as e:
-                               self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+                        if idx > 0:
+                            text = self.rewsProfileLevelsListBoxEntry.listbox.get(items[0])                        
+                            
+                            try:                                
+                                    dialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
+                            except ExceptionType as e:
+                                   self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewREWSProfileLevel(self):
                 
@@ -2328,21 +2343,35 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 for i in items:
                     idx = int(i) - pos
-                    self.rewsProfileLevelsListBoxEntry.listbox.delete(idx, idx)
+                    if idx > 0:
+                        self.rewsProfileLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
             
                 #self.validatedREWSProfileLevels.validate()
+            
+        def copyToShearREWSProileLevels(self):            
+            
+            profiles = {}            
+            for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
+                    if i > 0:                        
+                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)          
+                        height, ws , wd = extractREWSLevelValuesFromText(text)
+                        profiles[height] = encodeShearMeasurementValuesAsText(height, ws )
+           
+            for height in sorted(profiles):
+                        self.shearProfileLevelsListBoxEntry.listbox.insert(END, profiles[height])
+            self.sortLevelsShear()
 
         def sortLevels(self):
 
                 levels = {}
-
-                for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
-                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)
-                        levels[extractREWSLevelValuesFromText(text)[0]] = text
+                startText = self.rewsProfileLevelsListBoxEntry.listbox.get(0)    
+                for i in range(1,self.rewsProfileLevelsListBoxEntry.listbox.size()):
+                    text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)
+                    levels[extractREWSLevelValuesFromText(text)[0]] = text
 
                 self.rewsProfileLevelsListBoxEntry.listbox.delete(0, END)
-
+                self.rewsProfileLevelsListBoxEntry.listbox.insert(END,startText)
                 for height in sorted(levels):
                         self.rewsProfileLevelsListBoxEntry.listbox.insert(END, levels[height])
 
@@ -2450,14 +2479,16 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.windSpeedLevels = {}
 
                 for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
-                        items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBoxEntry.listbox.get(i))
-                        self.config.windSpeedLevels[items[0]] = items[1]
-                        self.config.windDirectionLevels[items[0]] = items[2]
+                        if i > 0:
+                                items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBoxEntry.listbox.get(i))
+                                self.config.windSpeedLevels[items[0]] = items[1]
+                                self.config.windDirectionLevels[items[0]] = items[2]
 
                 self.config.shearMeasurements = {}
                 for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
-                        items = extractShearMeasurementValuesFromText(self.shearProfileLevelsListBoxEntry.listbox.get(i))
-                        self.config.shearMeasurements[items[0]] = items[1]
+                        if i > 0:
+                                items = extractShearMeasurementValuesFromText(self.shearProfileLevelsListBoxEntry.listbox.get(i))
+                                self.config.shearMeasurements[items[0]] = items[1]
 
                 #for i in range(len(self.shearWindSpeedHeights)):
                 #        shearHeight = self.shearWindSpeedHeights[i].get()
@@ -2476,11 +2507,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 #calbirations
                 for i in range(self.calibrationDirectionsListBoxEntry.listbox.size()):
-
                         if i > 0:
-                                
                                 direction, slope, offset, active = extractCalibrationDirectionValuesFromText(self.calibrationDirectionsListBoxEntry.listbox.get(i))
-                                
                                 if not direction in self.config.calibrationDirections:
                                         self.config.calibrationDirections[direction] = direction
                                         self.config.calibrationSlopes[direction] = slope
@@ -2492,34 +2520,37 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.calibrationFilters = []
                 
                 for i in range(self.calibrationFiltersListBoxEntry.listbox.size()):
-
                         if i > 0:
-                                calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractCalibrationFilterValuesFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
-                                self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
-                #exclusions
+                                try: # try simple Filter, if fails assume realtionship filter
+                                        calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractFilterValuesFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
+                                        self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
+                                except:
+                                        filter = extractRelationshipFilterFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
+                                        self.config.calibrationFilters.append(filter)
 
+                #exclusions
                 self.config.exclusions = []
                 
                 for i in range(self.exclusionsListBoxEntry.listbox.size()):
-
-                        if i > 0:
-                                
-                                self.config.exclusions.append(extractExclusionValuesFromText(self.exclusionsListBoxEntry.listbox.get(i)))
+                    if i > 0:
+                        self.config.exclusions.append(extractExclusionValuesFromText(self.exclusionsListBoxEntry.listbox.get(i)))
 
                 #filters
 
                 self.config.filters = []
                 
                 for i in range(self.filtersListBoxEntry.listbox.size()):
-
                         if i > 0:
-                                filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBoxEntry.listbox.get(i))
-                                self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
+                                try:
+                                        filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBoxEntry.listbox.get(i))
+                                        self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
+                                except:
+                                        filter = extractRelationshipFilterFromText(self.filtersListBoxEntry.listbox.get(i))
+                                        self.config.filters.append(filter)
 
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
-
                 return "PowerCurve"
                 
         def addFormElements(self, master):
@@ -2557,17 +2588,14 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                 items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
 
                 if len(items) == 1:
-
                         idx = items[0]
-                        text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])                        
-                        
+                        text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])
                         try:                                
                                 dialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText, text, idx)
                         except ExceptionType as e:
                                self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewPowerCurveLevel(self):
-                
                 configDialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText)
                 
         def addPowerCurveLevelFromText(self, text, index = None):
@@ -2625,7 +2653,6 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
-
                 return "Analysis"
         
         def addFormElements(self, master):                
@@ -2699,7 +2726,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", ValidateSpecifiedPowerCurve(master, self.powerCurveMode), self.config.specifiedPowerCurve, self.filePath, showHideCommand = turbineSettingsShowHide)
 
                 self.addPowerCurveButton = Button(master, text="New", command = self.NewPowerCurve, width=5, height=1)
-                self.addPowerCurveButton.grid(row=(self.row-1), sticky=E+N, column=self.secondButtonColumn)
+                self.addPowerCurveButton.grid(row=(self.row-2), sticky=E+N, column=self.secondButtonColumn)
                 turbineSettingsShowHide.addControl(self.addPowerCurveButton)
                 
                 self.editPowerCurveButton = Button(master, text="Edit", command = self.EditPowerCurve, width=5, height=1)
@@ -2738,7 +2765,6 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 path = os.path.join(folder, specifiedPowerCurve)
                 
                 if len(specifiedPowerCurve) > 0:
-
                         try:
                                 config = configuration.PowerCurveConfiguration(path)
                                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
@@ -2746,25 +2772,18 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 self.status.addMessage("ERROR loading config (%s): %s" % (specifiedPowerCurve, e))
                                         
         def NewPowerCurve(self):
-
                 config = configuration.PowerCurveConfiguration()
                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
 
         def EditDataset(self, event = None):
-
                 items = self.datasetsListBoxEntry.listbox.curselection()
-
                 if len(items) == 1:
-
                         index = items[0]
                         path = self.datasetsListBoxEntry.listbox.get(index)
-
                         try:
                                 relativePath = configuration.RelativePath(self.filePath.get()) 
                                 datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
-
                                 configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
-                                
                         except ExceptionType as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
                                         
@@ -2773,9 +2792,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 try:
                         config = configuration.DatasetConfiguration()
                         configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
-
                 except ExceptionType as e:
-                        
                         self.status.addMessage("ERROR creating dataset config: %s" % e)
                         
         def setAnalysisFilePath(self):

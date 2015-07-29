@@ -181,8 +181,10 @@ class Analysis:
 
         self.applyRemainingFilters()
 
-        if self.hasDensity and self.densityCorrectionActive:
-            self.dataFrame[self.powerCoeff] = self.calculateCp()
+        if self.hasDensity:
+            if self.densityCorrectionActive:
+                self.dataFrame[self.powerCoeff] = self.calculateCp()
+            self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()
 
         if self.hasActualPower:
 
@@ -259,13 +261,14 @@ class Analysis:
         if self.config.nominalWindSpeedDistribution is not None:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
+            self.windSpeedAt85pctX1pnt5 = self.specifiedPowerCurve.getThresholdWindSpeed()
+            self.analysedDirectionSectors = self.datasetConfigs[0].data.analysedDirections # assume a single for now.
             if len(self.specifiedPowerCurve.powerCurveLevels) != 0:
                 self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredPowerCurve)
                 if self.turbRenormActive:
                     self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredTurbCorrectedPowerCurve)
             else:
                 self.status.addMessage("A specified power curve is required for AEP calculation. No specified curve defined.")
-        
         if len(self.sensitivityDataColumns) > 0:
             sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
             sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
@@ -619,10 +622,13 @@ class Analysis:
 
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[powerColumn, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
+        powerStdDev = filteredDataFrame[[powerColumn, self.inputHubWindSpeed]].groupby(filteredDataFrame[self.windSpeedBin]).std().rename(columns={powerColumn:"Power Std Dev"})["Power Std Dev"]
+
         dfDataCount = filteredDataFrame[powerColumn].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.dataCount:'count'})
         if not all(dfPowerLevels.index == dfDataCount.index):
             raise Exception("Index of aggregated data count and mean quantities for measured power curve do not match.")
         dfPowerLevels = dfPowerLevels.join(dfDataCount, how = 'inner')
+        dfPowerLevels = dfPowerLevels.join(powerStdDev, how = 'inner')
         dfPowerLevels.dropna(inplace = True)
         if self.powerCoeff in filteredDataFrame.columns:
             dfPowerCoeff = filteredDataFrame[self.powerCoeff].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
@@ -866,6 +872,7 @@ class Analysis:
         plotter.plotBy(self.hubWindSpeed,self.powerCoeff,self.dataFrame)
         plotter.plotBy('Input Hub Wind Speed',self.powerCoeff,self.allMeasuredPowerCurve)
         #self.plotBy(self.windDirection,self.inflowAngle)
+        plotter.plotCalibrationSectors()
         if len(self.powerCurveSensitivityResults.keys()) > 0:
             for sensCol in self.powerCurveSensitivityResults.keys():
                 plotter.plotPowerCurveSensitivity(sensCol)

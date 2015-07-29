@@ -196,3 +196,22 @@ class MatplotlibPlotter(object):
             return file_out
         except:
             print "Tried to make a full power scatter chart. Couldn't."
+
+    def plotCalibrationSectors(self):
+        for datasetConf in self.analysis.datasetConfigs:
+            try:
+                from matplotlib import pyplot as plt
+                plt.ioff()
+                df = datasetConf.data.calibrationCalculator.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit']].rename(columns={'pctSpeedUp':'% Speed Up','LowerLimit':"IEC Lower",'UpperLimit':"IEC Upper"})
+                df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
+                plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
+                file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - All Sectors {nm}.png'.format(nm=datasetConf.name)
+                plt.savefig(file_out)
+                df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-5.0 , df.index < datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+5.0),:]
+                df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
+                plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
+                file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors {nm}.png'.format(nm=datasetConf.name)
+                plt.savefig(file_out)
+                plt.close('all')
+            except:
+                print "Tried to plot variation of wind speed ratio with direction. Couldn't."

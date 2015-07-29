@@ -13,11 +13,12 @@ def run(analysis,fileName, measuredPowerCurve):
     ansLCB = aepCalcLCB.calculate_AEP()
     if analysis.status:
         analysis.status.addMessage("Calculating AEP using %s power curve:" % measuredPowerCurve.name)
-        analysis.status.addMessage( "    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield/1000.0))
-        analysis.status.addMessage( "    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield/1000.0))
-        analysis.status.addMessage( "    AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
-        analysis.status.addMessage( "    AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
-        analysis.status.addMessage( "    Number of Hours in test: {hrs} \n".format(hrs =analysis.hours) )
+        analysis.status.addMessage("    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield/1000.0))
+        analysis.status.addMessage("    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield/1000.0))
+        analysis.status.addMessage("    AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
+        analysis.status.addMessage("    AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
+        analysis.status.addMessage("    Number of Hours in test: {hrs} \n".format(hrs =analysis.hours) )
+        analysis.status.addMessage("    [In test] Total Measured AEP Uncertainty: {unc:.02f}% \n".format(unc =aepCalc.totalUncertainty*100) )
 
     return aepCalc,aepCalcLCB
 
@@ -40,12 +41,21 @@ class AEPCalculator:
             for col in ['Upper','Lower','Freq','Power','Energy']:
                 energyCols.append("{0}_{1}".format(curveType, col))
         self.energy_distribution = pd.DataFrame(index = self.distribution.keys, columns = energyCols)
+        self.uncertainty_distribution = pd.DataFrame(index = self.distribution.keys, columns = ['TypeA','TypeB'])
 
 
     def calculate_AEP(self):
         self.refYield = self.calculate_ideal_yield('Reference')
         self.measuredYield = self.calculate_ideal_yield('Measured')
         self.AEP = self.measuredYield/self.refYield
+        typeAVariance = (self.uncertainty_distribution['TypeA'].dropna()**2).sum()
+        typeBVariance = (self.uncertainty_distribution['TypeB'].dropna()**2).sum()
+        self.uncertainty_distribution['Combined'] = (self.uncertainty_distribution['TypeA']**2 + self.uncertainty_distribution['TypeB']**2)**0.5
+
+        if typeAVariance+typeBVariance > 0:
+            self.totalUncertainty = ((typeAVariance+typeBVariance)**0.5)/self.measuredYield
+        else:
+            self.totalUncertainty = np.nan
         return self.AEP
 
     def getCurve(self,curveType):
@@ -68,6 +78,9 @@ class AEPCalculator:
                 freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-self.distribution.rebin_width)
                 self.energy_distribution.loc[bin, energyColumns] = [float(upper),lower,freq,power,freq*power]
                 energySum += freq*power
+                if 'Measured' == curveType and bin in curve.powerCurveLevels.index:
+                    self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Std Dev"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.cumulativeFunction(bin)
+                    self.uncertainty_distribution.loc[bin, 'TypeB'] =  50.0 # todo: calculate this properly
         return energySum
 
 class AEPCalculatorLCB(AEPCalculator):
