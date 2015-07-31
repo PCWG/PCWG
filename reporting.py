@@ -667,7 +667,30 @@ class report:
             sh.write(row,4, "Turbulence Corrected Extrapolated Pct of Warranted Annual Energy Yield (%)", self.bold_style)
             sh.write(row+1,3, analysis.turbCorrectedAepCalcLCB.AEP*100, self.two_dp_style)
             sh.write(row+1,4, analysis.turbCorrectedAepCalc.AEP*100, self.two_dp_style)
+        row+=2
 
+        sh.write_merge(row,row,8,8,"AEP Distribution",self.bold_style)
+        row+=1
+        sh.write_merge(row,row,3,5, "Reference", self.bold_style)
+        sh.write_merge(row,row,6,8, "Measured", self.bold_style)
+        row+=1
+        sh.write(row,2,"Wind Speed",self.bold_style)
+        sh.write(row,3,'Reference_Freq',self.bold_style)
+        sh.write(row,4,'Reference_Power',self.bold_style)
+        sh.write(row,5,"Reference_Energy",self.bold_style)
+        sh.write(row,6,'Measured_Freq',self.bold_style)
+        sh.write(row,7,'Measured_Power',self.bold_style)
+        sh.write(row,8,"Measured_Energy",self.bold_style)
+        for binNum in analysis.aepCalc.energy_distribution.index:
+            row+=1
+            sh.write(row,2,binNum,self.two_dp_style)
+            sh.write(row,3,analysis.aepCalc.energy_distribution.loc[binNum,"Reference_Freq"] ,self.four_dp_style)
+            sh.write(row,4,analysis.aepCalc.energy_distribution.loc[binNum,"Reference_Power"] ,self.four_dp_style)
+            sh.write(row,5,analysis.aepCalc.energy_distribution.loc[binNum,"Reference_Energy"] ,self.four_dp_style)
+            sh.write(row,6,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Freq"] ,self.four_dp_style)
+            sh.write(row,7,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Power"] ,self.four_dp_style)
+            sh.write(row,8,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Energy"] ,self.four_dp_style)
+        row+=3
 
     def printPowerCurves(self):
 
