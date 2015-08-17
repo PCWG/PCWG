@@ -568,7 +568,7 @@ class Analysis:
         filteredDataFrame['Hours From Noon'] = np.abs(filteredDataFrame[self.timeStamp].dt.hour - 12)
         filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame[self.timeStamp].dt.dayofyear - 182)
         
-        for col in self.sensitivityDataColumns:
+        for col in (self.sensitivityDataColumns + ['Days Elapsed In Test','Hours From Noon','Days From 182nd Day Of Year']):
         #for col in (filteredDataFrame.columns): # if we want to do the sensitivity analysis for all columns in the dataframe...
             print "\nAttempting to compute sensitivity of power curve to %s..." % col
             try:
