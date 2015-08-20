@@ -99,6 +99,7 @@ class Analysis:
         self.turbulenceBin = "Turbulence Bin"
         self.powerDeviation = "Power Deviation"
         self.dataCount = "Data Count"
+        self.powerStandDev = "Power Standard Deviation"
         self.windDirection = "Wind Direction"
         self.powerCoeff = "Power Coefficient"
         self.inputHubWindSpeedSource = 'Undefined'
@@ -189,6 +190,9 @@ class Analysis:
             self.status.addMessage("Calculating actual power curves...")
 
             self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'All Measured')
+            
+            self.dayTimePowerCurve = self.calculateMeasuredPowerCurve(11, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Day Time')
+            self.nightTimePowerCurve = self.calculateMeasuredPowerCurve(12, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Night Time')
 
             self.innerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Inner Turbulence')
             self.outerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Outer Turbulence')
@@ -274,11 +278,14 @@ class Analysis:
         
         if self.hasActualPower:
             self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index)
+            self.dayTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.dayTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(11)])
+            self.nightTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.nightTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(12)])
             if self.turbRenormActive:
                 self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index)
             self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByWindSpeed(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
+            self.iec_2005_cat_A_power_curve_uncertainty()
         self.status.addMessage("Complete")
 
     def applyRemainingFilters(self):
@@ -497,7 +504,7 @@ class Analysis:
                 else:
                     raise Exception("Unexpected filter mode")
 
-            else:
+            elif mode <= 10:
 
                 innerMask = innerTurbMask & innerShearMask
                 mask = mask & (~innerMask)
@@ -514,6 +521,16 @@ class Analysis:
                 elif mode == 10:
                     #HighShearLowTurbulence
                     mask = mask & (self.dataFrame[self.shearExponent] >= self.innerRangeCenterShear) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeCenterTurbulence)
+                else:
+                    raise Exception("Unexpected filter mode")
+            
+            else:
+                if mode == 11:
+                    #for day time power curve (between 7am and 8pm)
+                    mask = mask & (self.dataFrame[self.timeStamp].dt.hour >= 7) & (self.dataFrame[self.timeStamp].dt.hour <= 20)
+                elif mode == 12:
+                    #for night time power curve (between 8pm and 7am)
+                    mask = mask & ((self.dataFrame[self.timeStamp].dt.hour < 7) | (self.dataFrame[self.timeStamp].dt.hour > 20))
                 else:
                     raise Exception("Unexpected filter mode")
 
@@ -543,6 +560,10 @@ class Analysis:
             return 10
         elif self.filterMode == "All":
             return 0
+        elif self.filterMode == "Day":
+            return 11
+        elif self.filterMode == "Night":
+            return 12
         else:
             raise Exception("Unrecognised filter mode: %s" % self.filterMode)
 
@@ -613,17 +634,25 @@ class Analysis:
 
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name):
         
+        print "Calculating %s power curve." % name        
+        
         mask = (self.dataFrame[powerColumn] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
-
+        
         filteredDataFrame = self.dataFrame[mask]
+        
+        print "%s rows of data being used for %s power curve." % (len(filteredDataFrame), name)
 
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[powerColumn, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         dfDataCount = filteredDataFrame[powerColumn].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.dataCount:'count'})
+        dfPowerStDev = filteredDataFrame[powerColumn].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.powerStandDev:np.std})
+        
         if not all(dfPowerLevels.index == dfDataCount.index):
             raise Exception("Index of aggregated data count and mean quantities for measured power curve do not match.")
         dfPowerLevels = dfPowerLevels.join(dfDataCount, how = 'inner')
+        dfPowerLevels = dfPowerLevels.join(dfPowerStDev, how = 'inner')
         dfPowerLevels.dropna(inplace = True)
+        
         if self.powerCoeff in filteredDataFrame.columns:
             dfPowerCoeff = filteredDataFrame[self.powerCoeff].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         else:
@@ -701,6 +730,21 @@ class Analysis:
                 rows = self.dataFrame[self.inputHubWindSpeed] == ws
                 df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
         return df.dropna()
+
+    def iec_2005_cat_A_power_curve_uncertainty(self):
+        if self.turbRenormActive:
+            pc = self.allMeasuredTurbCorrectedPowerCurve.powerCurveLevels
+            pow_col = self.measuredTurbulencePower
+        else:
+            pc = self.allMeasuredPowerCurve.powerCurveLevels
+            pow_col = self.actualPower
+        #pc['frequency'] = pc[self.dataCount] / pc[self.dataCount].sum()
+        pc['s_i'] = pc[self.powerStandDev] / (pc[self.dataCount]**0.5) #from IEC 2005
+        unc_MWh = (np.abs(pc['s_i']) * (pc[self.dataCount] / 6.)).sum()
+        test_MWh = (np.abs(pc[pow_col]) * (pc[self.dataCount] / 6.)).sum()
+        self.categoryAUncertainty = unc_MWh / test_MWh
+        self.status.addMessage("Power curve category A uncertainty: %.4f%%" % (self.categoryAUncertainty * 100.0))
+
 
     def report(self, path,version="unknown"):
 

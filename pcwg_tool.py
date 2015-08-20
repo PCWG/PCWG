@@ -20,19 +20,19 @@ ExceptionType = Exception
 ExceptionType = None #comment this line before release
         
 def getDateFromEntry(entry):
-        if len(entry.get()) > 0:
-                return datetime.datetime.strptime(entry.get(), datePickerFormat)
-        else:
-                return None
+    if len(entry.get()) > 0:
+        return datetime.datetime.strptime(entry.get(), datePickerFormat)
+    else:
+        return None
    
 def getBoolFromText(text):
         
-        if text == "True":
-            active = True
-        elif text == "False":
-            active = False
-        else:
-            raise Exception("Cannot convert Text to Boolean: %s" % text)
+    if text == "True":
+        return True
+    elif text == "False":
+        return False
+    else:
+        raise Exception("Cannot convert Text to Boolean: %s" % text)
         
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
@@ -41,102 +41,101 @@ def SelectFile(parent, defaultextension=None):
                 return askopenfilename(parent=parent, defaultextension=defaultextension)
 
 def encodePowerLevelValueAsText(windSpeed, power):
-        return "%f%s%f" % (windSpeed, columnSeparator, power)
+    return "%f%s%f" % (windSpeed, columnSeparator, power)
 
 def extractPowerLevelValuesFromText(text):
-        items = text.split(columnSeparator)
-        windSpeed = float(items[0])
-        power = float(items[1])
-        return (windSpeed, power)
+    items = text.split(columnSeparator)
+    windSpeed = float(items[0])
+    power = float(items[1])
+    return (windSpeed, power)
 
 def extractREWSLevelValuesFromText(text):
-        items = text.split(columnSeparator)
-        height = float(items[0])
-        windSpeed = items[1].strip()
-        windDirection = items[2].strip()
-        return (height, windSpeed, windDirection)
+    items = text.split(columnSeparator)
+    height = float(items[0])
+    windSpeed = items[1].strip()
+    windDirection = items[2].strip()
+    return (height, windSpeed, windDirection)
 
 def encodeREWSLevelValuesAsText(height, windSpeed, windDirection):
-        return "{hight:.04}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
+    return "{hight:.04}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
 
 def extractShearMeasurementValuesFromText(text):
-        items = text.split(columnSeparator)
-        height = float(items[0])
-        windSpeed = items[1].strip()
-        return (height, windSpeed)
+    items = text.split(columnSeparator)
+    height = float(items[0])
+    windSpeed = items[1].strip()
+    return (height, windSpeed)
 
 def encodeShearMeasurementValuesAsText(height, windSpeed):
-        return "{hight:.04}{sep}{windspeed}{sep}".format(hight = height, sep = columnSeparator, windspeed = windSpeed)
+    return "{hight:.04}{sep}{windspeed}{sep}".format(hight = height, sep = columnSeparator, windspeed = windSpeed)
 
 
 def extractCalibrationDirectionValuesFromText(text):
         
-        items = text.split(columnSeparator)
-        direction = float(items[0])
-        slope = float(items[1].strip())
-        offset = float(items[2].strip())
-        active = getBoolFromText(items[3].strip())
+    items = text.split(columnSeparator)
+    direction = float(items[0])
+    slope = float(items[1].strip())
+    offset = float(items[2].strip())
+    active = getBoolFromText(items[3].strip())
 
-        return (direction, slope, offset, active)
+    return (direction, slope, offset, active)
 
 def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
 
-        return "%0.4f%s%0.4f%s%0.4f%s%s" % (direction, columnSeparator, slope, columnSeparator, offset, columnSeparator, active)
+    return "%0.4f%s%0.4f%s%0.4f%s%s" % (direction, columnSeparator, slope, columnSeparator, offset, columnSeparator, active)
 
 def extractExclusionValuesFromText(text):
-        
-        items = text.split(columnSeparator)
-        startDate = items[0].strip()
-        endDate = items[1].strip()
-        active = getBoolFromText(items[2].strip())
+    
+    items = text.split(columnSeparator)
+    startDate = items[0].strip()
+    endDate = items[1].strip()
+    active = getBoolFromText(items[2].strip())
 
-        return (startDate, endDate, active)
+    return (startDate, endDate, active)
 
 def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
 
-        return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
+    return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
 
 
 def extractFilterValuesFromText(text):
 
-        try:
-        
-                items = text.split(columnSeparator)
-                column = items[0].strip()
-                value = float(items[1].strip())
-                filterType = items[2].strip()
-                inclusive = getBoolFromText(items[3].strip())
-                active = getBoolFromText(items[4].strip())
+    try:
+    
+        items = text.split(columnSeparator)
+        column = items[0].strip()
+        value = float(items[1].strip())
+        filterType = items[2].strip()
+        inclusive = getBoolFromText(items[3].strip())
+        active = getBoolFromText(items[4].strip())
 
-                return (column, value, filterType, inclusive, active)
+        return (column, value, filterType, inclusive, active)
 
-        except Exception as ex:
-                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
+    except Exception as ex:
+        raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
                 
 def encodeCalibrationFilterValuesAsText(column, value, calibrationFilterType, inclusive, active):
 
-        return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = calibrationFilterType, inclusive =inclusive, active = active)
+    return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = calibrationFilterType, inclusive =inclusive, active = active)
 
 def extractCalibrationFilterValuesFromText(text):
 
-        try:
-        
-                items = text.split(columnSeparator)
-                column = items[0].strip()
-                value = float(items[1].strip())
-                calibrationFilterType = items[2].strip()
-                inclusive = getBoolFromText(items[3].strip())
-                active = getBoolFromText(items[4].strip())
+    try:
+        items = text.split(columnSeparator)
+        column = items[0].strip()
+        value = float(items[1].strip())
+        calibrationFilterType = items[2].strip()
+        inclusive = getBoolFromText(items[3].strip())
+        active = getBoolFromText(items[4].strip())
 
-                return (column, value, calibrationFilterType, inclusive, active)
+        return (column, value, calibrationFilterType, inclusive, active)
 
-        except Exception as ex:
-                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
-        
+    except Exception as ex:
+        raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
+    
         
 def encodeExclusionValuesAsText(startDate, endDate, active):
 
-        return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
+    return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
 
 def intSafe(text, valueIfBlank = 0):
     try:
