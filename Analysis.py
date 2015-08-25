@@ -104,6 +104,8 @@ class Analysis:
         self.powerCoeff = "Power Coefficient"
         self.inputHubWindSpeedSource = 'Undefined'
         self.measuredTurbulencePower = 'Measured TI Corrected Power'
+        self.measuredTurbPowerCurveInterp = 'Measured TI Corrected Power Curve Interp'
+        self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
 
@@ -273,8 +275,10 @@ class Analysis:
         if len(self.sensitivityDataColumns) > 0:
             sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
             sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
+            sens_pow_interp_column = self.measuredTurbPowerCurveInterp if self.turbRenormActive else self.measuredPowerCurveInterp
+            self.interpolatePowerCurve(sens_pow_curve, self.inputHubWindSpeedSource, sens_pow_interp_column)
             self.status.addMessage("Attempting power curve sensitivty analysis for %s power curve..." % sens_pow_curve.name)
-            self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column)
+            self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column, sens_pow_interp_column)
         
         if self.hasActualPower:
             self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index)
@@ -567,7 +571,10 @@ class Analysis:
         else:
             raise Exception("Unrecognised filter mode: %s" % self.filterMode)
 
-    def performSensitivityAnalysis(self, power_curve, power_column, n_random_tests = 20):
+    def interpolatePowerCurve(self, powerCurveLevels, ws_col, interp_power_col):
+        self.dataFrame[interp_power_col] = self.dataFrame[ws_col].apply(powerCurveLevels.power)
+
+    def performSensitivityAnalysis(self, power_curve, power_column, interp_pow_column, n_random_tests = 20):
 
         mask = self.getFilter()
         filteredDataFrame = self.dataFrame[mask]
@@ -578,7 +585,7 @@ class Analysis:
             rand_columns.append('Random ' + str(i + 1))
         filteredDataFrame[rand_columns] = pd.DataFrame(np.random.rand(len(filteredDataFrame),n_random_tests), columns=rand_columns, index = filteredDataFrame.index)
         for col in rand_columns:
-            variation_metric = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)[1]
+            variation_metric = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column, interp_pow_column)[1]
             rand_sensitivity_results.append(variation_metric)
         self.sensitivityAnalysisThreshold = np.mean(rand_sensitivity_results)
         print "\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.)
@@ -593,7 +600,7 @@ class Analysis:
         #for col in (filteredDataFrame.columns): # if we want to do the sensitivity analysis for all columns in the dataframe...
             print "\nAttempting to compute sensitivity of power curve to %s..." % col
             try:
-                self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)
+                self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column, interp_pow_column)
                 print "Variation of power curve with respect to %s is %.2f%%." % (col, self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] * 100.)
                 if self.powerCurveSensitivityVariationMetrics.loc[col,'Power Curve Variation Metric'] == 0:
                     self.powerCurveSensitivityVariationMetrics.drop(col, axis = 1, inplace = True)
@@ -601,7 +608,7 @@ class Analysis:
                 print "Could not run sensitivity analysis for %s." % col
         self.powerCurveSensitivityVariationMetrics.sort('Power Curve Variation Metric', ascending = False, inplace = True)
             
-    def calculatePowerCurveSensitivity(self, dataFrame, power_curve, dataColumn, power_column):
+    def calculatePowerCurveSensitivity(self, dataFrame, power_curve, dataColumn, power_column, interp_pow_column):
         
         dataFrame['Energy MWh'] = (dataFrame[power_column] * (float(self.timeStepInSeconds) / 3600.)).astype('float')
         
@@ -615,6 +622,8 @@ class Analysis:
         validWsBins = wsBinnedCount.index[wsBinnedCount[dataColumn] > minCount] #ws bins that have enough data for the sensitivity analysis
 
         dataFrame['Bin'] = np.nan #pre-allocating
+        dataFrame['Power Delta kW'] = dataFrame[power_column] - dataFrame[interp_pow_column]
+        dataFrame['Energy Delta MWh'] = dataFrame['Power Delta kW'] * (float(self.timeStepInSeconds) / 3600.)
         
         for wsBin in dataFrame['Wind Speed Bin'].unique(): #within each wind speed bin, bin again by the categorising by sensCol
             if wsBin in validWsBins:
@@ -624,11 +633,11 @@ class Analysis:
                 except:
                     print "\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin)
         
-        sensitivityResults = dataFrame[[power_column, 'Energy MWh', 'Wind Speed Bin','Bin']].groupby(['Wind Speed Bin','Bin']).agg({power_column: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len})
-        sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
-        for i in sensitivityResults.index:
-            sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, power_column] - power_curve.powerCurveLevels.loc[i[0], power_column]
-            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * power_curve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
+        sensitivityResults = dataFrame[[power_column, 'Energy MWh', 'Wind Speed Bin','Bin', 'Power Delta kW', 'Energy Delta MWh']].groupby(['Wind Speed Bin','Bin']).agg({power_column: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len, 'Power Delta kW': np.mean, 'Energy Delta MWh': np.sum})
+#        sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
+#        for i in sensitivityResults.index:
+#            #sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, power_column] - power_curve.powerCurveLevels.loc[i[0], power_column]
+#            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * power_curve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
         
         return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'}), np.abs(sensitivityResults['Energy Delta MWh']).sum() / (power_curve.powerCurveLevels[power_column] * power_curve.powerCurveLevels['Data Count'] * (float(self.timeStepInSeconds) / 3600.)).sum()
 
