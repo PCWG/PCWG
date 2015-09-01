@@ -56,6 +56,7 @@ class AEPCalculator:
             self.totalUncertainty = ((typeAVariance+typeBVariance)**0.5)/self.measuredYield
         else:
             self.totalUncertainty = np.nan
+        print self.energy_distribution
         return self.AEP
 
     def getCurve(self,curveType):
@@ -70,12 +71,12 @@ class AEPCalculator:
         curve = self.getCurve(curveType)
         energySum = 0
         energyColumns = ["{0}_{1}".format(curveType, col) for col in ['Upper','Lower','Freq','Power','Energy']]
-        for bin in self.distribution.keys:
+        for bin in self.distribution.df_rebinned.index:
             if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
                 upper = curve.power(bin)
                 lower = 0.0 if bin-self.distribution.rebin_width < min(curve.powerCurveLevels.index) else curve.power(bin-self.distribution.rebin_width)
                 power=(upper+lower)/2.0
-                freq = self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-self.distribution.rebin_width)
+                freq = max(0,self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-self.distribution.rebin_width))
                 self.energy_distribution.loc[bin, energyColumns] = [float(upper),lower,freq,power,freq*power]
                 energySum += freq*power
                 if 'Measured' == curveType and bin in curve.powerCurveLevels.index:

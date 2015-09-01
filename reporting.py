@@ -603,7 +603,8 @@ class report:
         sh.write(row,8, "NOT YET CALCULATED")
 
         row += 3
-        sh.write_merge(row,row,2,6, "Measured Power Curve\n Reference Air Density = {ref} kg/m^3".format(ref=analysis.specifiedPowerCurve.referenceDensity), self.bold_style)
+        if hasattr(analysis.specifiedPowerCurve,"referenceDensity"):
+            sh.write_merge(row,row,2,6, "Measured Power Curve\n Reference Air Density = {ref} kg/m^3".format(ref=analysis.specifiedPowerCurve.referenceDensity), self.bold_style)
         sh.write(row,7, "Category A Uncertainty", self.bold_style)
         sh.write(row,8, "Category B Uncertainty", self.bold_style)
         sh.write(row,9, "Category C Uncertainty", self.bold_style)
@@ -651,10 +652,11 @@ class report:
         sh.write(row,6, "TRUE" if timeCovered  > 180 else "FALSE")
         sh.write(row,7, "({0} Hours)".format(round(timeCovered,2)) , self.two_dp_style)
         row+=1
-        sh.write_merge(row,row,2,5, "Largest WindSpeed > {0}:".format(round(analysis.windSpeedAt85pctX1pnt5,2)), self.bold_style)
-        sh.write(row,6, "TRUE" if analysis.aepCalcLCB.lcb > analysis.windSpeedAt85pctX1pnt5 else "FALSE")
-        sh.write(row,7, "Threshold is 1.5*(WindSpeed@0.85*RatedPower)")
-        row+=1
+        if hasattr(analysis,"windSpeedAt85pctX1pnt5"):
+            sh.write_merge(row,row,2,5, "Largest WindSpeed > {0}:".format(round(analysis.windSpeedAt85pctX1pnt5,2)), self.bold_style)
+            sh.write(row,6, "TRUE" if analysis.aepCalcLCB.lcb > analysis.windSpeedAt85pctX1pnt5 else "FALSE")
+            sh.write(row,7, "Threshold is 1.5*(WindSpeed@0.85*RatedPower)")
+            row+=1
         sh.write_merge(row,row,2,5, "AEP Extrap. within 1% of AEP LCB:",self.bold_style)
         ans = abs(1-(analysis.aepCalc.AEP/analysis.aepCalcLCB.AEP)) < 0.01
         sh.write(row,6, "TRUE" if ans else "FALSE")
@@ -667,7 +669,34 @@ class report:
             sh.write(row,4, "Turbulence Corrected Extrapolated Pct of Warranted Annual Energy Yield (%)", self.bold_style)
             sh.write(row+1,3, analysis.turbCorrectedAepCalcLCB.AEP*100, self.two_dp_style)
             sh.write(row+1,4, analysis.turbCorrectedAepCalc.AEP*100, self.two_dp_style)
+        row+=2
 
+        sh.write_merge(row,row,3,10,"AEP Distribution",self.bold_style)
+        row+=1
+        sh.write_merge(row,row,3,6, "Reference", self.bold_style)
+        sh.write_merge(row,row,7,10, "Measured", self.bold_style)
+        row+=1
+        sh.write(row,2,"Wind Speed",self.bold_style)
+        sh.write(row,3,'Reference Freq',self.bold_style)
+        sh.write(row,4,'Reference Power',self.bold_style)
+        sh.write(row,5,'Reference Power (Resampled)',self.bold_style)
+        sh.write(row,6,"Reference Energy",self.bold_style)
+        sh.write(row,7,'Measured Freq',self.bold_style)
+        sh.write(row,8,'Measured Power',self.bold_style)
+        sh.write(row,9,'Measured Power (Resampled)',self.bold_style)
+        sh.write(row,10,"Measured Energy",self.bold_style)
+        for binNum in analysis.aepCalc.energy_distribution.index:
+            row+=1
+            sh.write(row,2,binNum,self.two_dp_style)
+            sh.write(row,3,analysis.aepCalc.energy_distribution.loc[binNum,"Reference_Freq"] ,self.four_dp_style)
+            sh.write(row,4,analysis.aepCalc.energy_distribution.loc[binNum,"Reference_Upper"] ,self.four_dp_style)
+            sh.write(row,5,analysis.aepCalc.energy_distribution.loc[binNum,"Reference_Power"] ,self.four_dp_style)
+            sh.write(row,6,analysis.aepCalc.energy_distribution.loc[binNum,"Reference_Energy"] ,self.four_dp_style)
+            sh.write(row,7,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Freq"] ,self.four_dp_style)
+            sh.write(row,8,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Upper"] ,self.four_dp_style)
+            sh.write(row,9,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Power"] ,self.four_dp_style)
+            sh.write(row,10,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Energy"] ,self.four_dp_style)
+        row+=3
 
     def printPowerCurves(self):
 
