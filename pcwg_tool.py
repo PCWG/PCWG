@@ -2416,7 +2416,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.availableColumns = []
                         
                         try:
-                                dataFrame = pd.read_csv(inputTimeSeriesPath, sep = '\t', skiprows = headerRows)
+                                dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.config.separator), skiprows = headerRows)
                                 for col in dataFrame:
                                         self.availableColumns.append(col)
                         except ExceptionType as e:
