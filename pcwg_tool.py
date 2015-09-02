@@ -2489,13 +2489,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         
         def setConfigValues(self):
 
-                self.config.name = self.name.get()
+                self.config.name = self.name.get()                
                 self.config.startDate = getDateFromEntry(self.startDate)
                 self.config.endDate = getDateFromEntry(self.endDate)
                 self.config.hubWindSpeedMode = self.hubWindSpeedMode.get()
                 self.config.calibrationMethod = self.calibrationMethod.get()
                 self.config.densityMode = self.densityMode.get()
-
+                
                 self.config.rewsDefined = bool(self.rewsDefined.get())
                 self.config.numberOfRotorLevels = intSafe(self.numberOfRotorLevels.get())
                 self.config.rotorMode = self.rotorMode.get()
@@ -2600,6 +2600,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 except:
                                         filter = extractRelationshipFilterFromText(self.filtersListBoxEntry.listbox.get(i))
                                         self.config.filters.append(filter)
+        def datasetReferenceNumber(self):
+            self.datasetReferenceNumber = int(str(len(self.config.name))+str(self.config.startDate.day+self.config.startDate.month+self.config.startDate.year)+str(self.config.endDate.day+self.config.endDate.month+self.config.endDate.year))
+            return self.datasetReferenceNumber
 
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
