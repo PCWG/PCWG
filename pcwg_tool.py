@@ -1718,6 +1718,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearWindSpeeds = []
 
                 self.name = self.addEntry(master, "Dataset Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
+                self.datRefNum = self.addTitleRow(master, self.datasetReferenceNumber, self.generalShowHide)                
                 self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = self.generalShowHide)
                                 
                 self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = self.generalShowHide)
@@ -1744,7 +1745,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
 
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
-                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', 'dd-mm-YY %H:%M', 'YY-mm-dd %H:%M', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S', 'dd/mm/YY %H:%M', 'YY/mm/dd %H:%M']), width=5, height=1)
+                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d-%m-%y %H:%M', '%y-%m-%d %H:%M', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S', '%d/%m/%y %H:%M', '%y/%m/%d %H:%M']), width=5, height=1)
                 pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 measurementShowHide.addControl(pickDateFormatButton)               
 
@@ -2711,8 +2712,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
         def getInitialFileName(self):
                 return "Analysis"
         
-        def addFormElements(self, master):                
-
+        def addFormElements(self, master):            
                 self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", ValidatePositiveInteger(master), self.config.powerCurveMinimumCount, showHideCommand = self.generalShowHide)
 
                 filterModeOptions = ["All", "Inner", "Outer"]
@@ -2840,6 +2840,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 relativePath = configuration.RelativePath(self.filePath.get()) 
                                 datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
                                 configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
+                                                                 
                         except ExceptionType as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
                                         
@@ -2848,6 +2849,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 try:
                         config = configuration.DatasetConfiguration()
                         configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
+                         
                 except ExceptionType as e:
                         self.status.addMessage("ERROR creating dataset config: %s" % e)
                         
@@ -2927,7 +2929,8 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 for i in range(self.datasetsListBoxEntry.listbox.size()):
                         dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
-                        self.config.datasets.append(dataset)
+                        self.config.datasets.append(dataset)                        
+                
 
 class UserInterface:
 
