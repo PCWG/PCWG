@@ -2,6 +2,7 @@ from Tkinter import *
 from tkFileDialog import *
 import tkSimpleDialog
 import tkMessageBox
+from dataset import getSeparatorValue
 import Analysis
 import configuration
 import datetime
@@ -1661,7 +1662,45 @@ class DateFormatPicker:
                 
                 if len(column) > 0:
                         self.entry.set(column)
+class ColumnSeparatorDialog(BaseDialog):
 
+        def __init__(self, master, status, callback, availableSeparators, selectedSeparator):
+
+                self.callback = callback
+                self.availableSeparators = availableSeparators
+                self.selectedSeparator = selectedSeparator
+                
+                BaseDialog.__init__(self, master, status)
+                        
+        def body(self, master):
+
+                self.prepareColumns(master)     
+                        
+                self.separator = self.addOption(master, "Select Column Separator:", self.availableSeparators, self.selectedSeparator)
+
+        def apply(self):
+                        
+                self.callback(self.separator.get())
+                
+class ColumnSeparatorPicker:
+
+        def __init__(self, parentDialog, entry, availableSeparators):
+
+                self.parentDialog = parentDialog
+                self.entry = entry
+                self.availableSeparators = availableSeparators
+
+        def __call__(self):
+                        
+                try:                                
+                        dialog = ColumnSeparatorDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableSeparators, self.entry.get())
+                except ExceptionType as e:
+                        self.status.addMessage("ERROR picking separator: %s" % e)
+
+        def pick(self, column):
+                
+                if len(column) > 0:
+                        self.entry.set(column)
                        
 class DatasetConfigurationDialog(BaseConfigurationDialog):
 
@@ -1680,6 +1719,11 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 self.name = self.addEntry(master, "Dataset Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
                 self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = self.generalShowHide)
+                                
+                self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = self.generalShowHide)
+                self.separator.trace("w", self.columnSeparatorChange)
+                
+                self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = self.generalShowHide)
 
                 self.startDate = self.addDatePickerEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
                 self.endDate = self.addDatePickerEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
@@ -1695,17 +1739,14 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 measurementShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Measurement Settings:", showHideCommand = measurementShowHide)
+                
                 self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds, showHideCommand = measurementShowHide)
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
 
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
                 pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S']), width=5, height=1)
                 pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
-                measurementShowHide.addControl(pickDateFormatButton)
-
-                self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = measurementShowHide)
-
-                self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = measurementShowHide)
+                measurementShowHide.addControl(pickDateFormatButton)               
 
                 self.timeStamp = self.addPickerEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide) 
                 #self.turbineAvailabilityCount = self.addPickerEntry(master, "Turbine Availability Count:", None, self.config.turbineAvailabilityCount, width = 60, showHideCommand = measurementShowHide) #Could be taken out? Doesn't have to be used.
@@ -1984,6 +2025,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 else:
                         raise Exception("Unknown density methods: %s" % self.densityMode.get())
 
+        def columnSeparatorChange(self, *args):
+            print 'reading separator'            
+            sep = getSeparatorValue(self.separator.get())
+            self.read_dataset()
+            return sep
+            
         def hubWindSpeedModeChange(self, *args):
                 
                 self.calibrationMethodChange()
@@ -2413,12 +2460,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 
                 if self.columnsFileHeaderRows != headerRows or self.availableColumnsFile != inputTimeSeriesPath:
 
-                        self.availableColumns = []
-                        
+                                                
                         try:
-                                dataFrame = pd.read_csv(inputTimeSeriesPath, sep = '\t', skiprows = headerRows)
-                                for col in dataFrame:
-                                        self.availableColumns.append(col)
+                              dataFrame = self.read_dataset()                              
                         except ExceptionType as e:
                                 tkMessageBox.showwarning(
                                 "Column header error",
@@ -2433,6 +2477,15 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         dialog = ColumnPickerDialog(parentDialog, self.status, pick, self.availableColumns, selectedColumn)
                 except ExceptionType as e:
                         self.status.addMessage("ERROR picking column: %s" % e)
+        
+        def read_dataset(self):
+             print 'reading dataSet'
+             inputTimeSeriesPath = self.getInputTimeSeriesAbsolutePath()
+             headerRows = self.getHeaderRows()    
+             dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows)               
+             self.availableColumns = []
+             for col in dataFrame:
+                self.availableColumns.append(col)                 
                         
         def setConfigValues(self):
 

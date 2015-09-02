@@ -11,7 +11,7 @@ warnings.simplefilter('ignore', np.RankWarning)
 
 def getSeparatorValue(separator):
 
-        separator = separator.upper()
+        #separator = separator.upper()
 
         if separator == "TAB":
                 return "\t"
