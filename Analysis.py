@@ -114,7 +114,9 @@ class Analysis:
 
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
-
+        
+        self.uniqueAnalysisId = self.generateUniqueId()        
+        
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
         self.turbRenormActive = config.turbRenormActive
@@ -285,6 +287,11 @@ class Analysis:
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
         self.status.addMessage("Complete")
+
+    def generateUniqueId(self):
+        iD = hash(self.relativePath)
+        self.status.addMessage("Unique ID:" + str(iD))
+        return iD
 
     def applyRemainingFilters(self):
 

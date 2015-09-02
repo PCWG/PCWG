@@ -34,6 +34,7 @@ class report:
         self.reportSettings(settingsSheet, analysis)
 
         rowsAfterCurves = []
+        rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.uniqueAnalysisId, analysis))
         if analysis.specifiedPowerCurve is not None:
             if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
                 rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
