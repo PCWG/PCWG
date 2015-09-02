@@ -1744,7 +1744,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
 
                 self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
-                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S']), width=5, height=1)
+                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', 'dd-mm-YY %H:%M', 'YY-mm-dd %H:%M', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S', 'dd/mm/YY %H:%M', 'YY/mm/dd %H:%M']), width=5, height=1)
                 pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
                 measurementShowHide.addControl(pickDateFormatButton)               
 
