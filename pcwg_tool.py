@@ -1038,7 +1038,7 @@ class CalibrationFilterDialog(BaseDialog):
                 else:
                     inclusive = False
                         
-                self.text = encodeCalibrationFilterValuesAsText(self.column.get(), float(self.value.get()), self.calibrationFilterType.get(), inclusive, active)
+                self.text = encodeFilterValuesAsText(self.column.get(), float(self.value.get()), self.calibrationFilterType.get(), inclusive, active)
 
                 if self.isNew:
                         self.status.addMessage("Calibration Filter created")
@@ -2333,7 +2333,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                     if i > 0:                        
                         text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
                         referenceWindDirection = self.config.referenceWindDirection
-                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + referenceWindDirection
+                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + str(referenceWindDirection)
            
             for height in sorted(shears):
                         self.rewsProfileLevelsListBoxEntry.listbox.insert(END, shears[height])
@@ -3154,7 +3154,9 @@ class UserInterface:
                 if self.analysis == None:            
                         self.addMessage("ERROR: Analysis not yet calculated", red = True)
                         return
-
+                if not self.analysis.hasActualPower:
+                        self.addMessage("ERROR: No Power Signal in Dataset", red = True)
+                        return
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
                         self.analysis.report(fileName, version)
@@ -3176,6 +3178,7 @@ class UserInterface:
                 if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
                         self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
                         deviationMatrix = False
+                        return
                 
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.workSpaceFolder)

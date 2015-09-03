@@ -5,6 +5,7 @@
 	<BaseLineMode>Hub</BaseLineMode>
 	<PowerCurveMode>Specified</PowerCurveMode>
 	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
+	<NominalWindSpeedDistribution></NominalWindSpeedDistribution>
 	<PowerCurveBins>
 		<FirstBinCentre>1.000000</FirstBinCentre>
 		<LastBinCentre>30.000000</LastBinCentre>
