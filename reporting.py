@@ -21,7 +21,7 @@ class report:
     def report(self, path, analysis):
     
         book = xlwt.Workbook()
-
+        
         plotsDir = analysis.config.path.replace(".xml","_PPAnalysisPlots")
         analysis.png_plots(plotsDir)
 
@@ -34,6 +34,7 @@ class report:
         self.reportSettings(settingsSheet, analysis)
 
         rowsAfterCurves = []
+        #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specifiedPowerCurve, analysis)) #needs fixing + move to settings sheet
         if analysis.specifiedPowerCurve is not None:
             if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
                 rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))

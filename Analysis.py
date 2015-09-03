@@ -114,7 +114,9 @@ class Analysis:
 
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
-
+        
+        self.uniqueAnalysisId = self.generateUniqueId()        
+        
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
         self.turbRenormActive = config.turbRenormActive
@@ -184,8 +186,8 @@ class Analysis:
         if self.hasDensity:
             if self.densityCorrectionActive:
                 self.dataFrame[self.powerCoeff] = self.calculateCp()
-            self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()
-
+            self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()            
+               
         if self.hasActualPower:
 
             self.status.addMessage("Calculating actual power curves...")
@@ -278,13 +280,18 @@ class Analysis:
             self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column)
         
         if self.hasActualPower:
-            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index)
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
             if self.turbRenormActive:
-                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index)
+                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index, print_to_console = True)
             self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByWindSpeed(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
         self.status.addMessage("Complete")
+
+    def generateUniqueId(self):
+        iD = hash(self.config.path) #TODO: need to change this to a checksum of the input file contents
+        #self.status.addMessage("Unique ID:" + str(iD)) # reinstate once feature is complete
+        return iD
 
     def applyRemainingFilters(self):
 
@@ -687,14 +694,15 @@ class Analysis:
 
         return rewsMatrix
 
-    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows): #this calculates a metric for the scatter of the all measured PC
+    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows, print_to_console = False): #this calculates a metric for the scatter of the all measured PC
         
         try:
             energyDiffMWh = np.abs((self.dataFrame.loc[rows, powerColumn] - self.dataFrame.loc[rows, self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame.loc[rows, powerColumn] * (float(self.timeStepInSeconds) / 3600.)
             powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
             print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
-            self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
+            if print_to_console:
+                self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
             return powerCurveScatterMetric
         except:
             print "Could not calculate power curve scatter metric."
@@ -710,9 +718,9 @@ class Analysis:
                 df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
         return df.dropna()
 
-    def report(self, path,version="unknown"):
+    def report(self, path, version="unknown"):
 
-        report = reporting.report(self.windSpeedBins, self.turbulenceBins,version)
+        report = reporting.report(self.windSpeedBins, self.turbulenceBins, version)
         report.report(path, self)
 
     def anonym_report(self, path, version="unknown", scatter = False, deviationMatrix = True):

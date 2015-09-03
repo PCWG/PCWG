@@ -1038,7 +1038,7 @@ class CalibrationFilterDialog(BaseDialog):
                 else:
                     inclusive = False
                         
-                self.text = encodeCalibrationFilterValuesAsText(self.column.get(), float(self.value.get()), self.calibrationFilterType.get(), inclusive, active)
+                self.text = encodeFilterValuesAsText(self.column.get(), float(self.value.get()), self.calibrationFilterType.get(), inclusive, active)
 
                 if self.isNew:
                         self.status.addMessage("Calibration Filter created")
@@ -1718,7 +1718,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearWindSpeeds = []
 
                 self.name = self.addEntry(master, "Dataset Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
-                self.datRefNum = self.addTitleRow(master, self.datasetReferenceNumber, self.generalShowHide)                
+                      
                 self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = self.generalShowHide)
                                 
                 self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = self.generalShowHide)
@@ -2333,7 +2333,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                     if i > 0:                        
                         text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
                         referenceWindDirection = self.config.referenceWindDirection
-                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + referenceWindDirection
+                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + str(referenceWindDirection)
            
             for height in sorted(shears):
                         self.rewsProfileLevelsListBoxEntry.listbox.insert(END, shears[height])
@@ -2601,9 +2601,6 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                                 except:
                                         filter = extractRelationshipFilterFromText(self.filtersListBoxEntry.listbox.get(i))
                                         self.config.filters.append(filter)
-        def datasetReferenceNumber(self):
-            self.datasetReferenceNumber = int(str(len(self.config.name))+str(self.config.startDate.day+self.config.startDate.month+self.config.startDate.year)+str(self.config.endDate.day+self.config.endDate.month+self.config.endDate.year))
-            return self.datasetReferenceNumber
 
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
@@ -2830,6 +2827,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
         def NewPowerCurve(self):
                 config = configuration.PowerCurveConfiguration()
                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
+                
 
         def EditDataset(self, event = None):
                 items = self.datasetsListBoxEntry.listbox.curselection()
@@ -2840,7 +2838,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 relativePath = configuration.RelativePath(self.filePath.get()) 
                                 datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
                                 configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
-                                                                 
+                                                                                                 
                         except ExceptionType as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
                                         
@@ -2849,7 +2847,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 try:
                         config = configuration.DatasetConfiguration()
                         configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
-                         
+                                                 
                 except ExceptionType as e:
                         self.status.addMessage("ERROR creating dataset config: %s" % e)
                         
@@ -2929,9 +2927,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
 
                 for i in range(self.datasetsListBoxEntry.listbox.size()):
                         dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
-                        self.config.datasets.append(dataset)                        
-                
-
+                        self.config.datasets.append(dataset) 
 class UserInterface:
 
         def __init__(self):
@@ -3158,7 +3154,9 @@ class UserInterface:
                 if self.analysis == None:            
                         self.addMessage("ERROR: Analysis not yet calculated", red = True)
                         return
-
+                if not self.analysis.hasActualPower:
+                        self.addMessage("ERROR: No Power Signal in Dataset", red = True)
+                        return
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
                         self.analysis.report(fileName, version)
@@ -3180,6 +3178,7 @@ class UserInterface:
                 if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
                         self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
                         deviationMatrix = False
+                        return
                 
                 try:
                         fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.workSpaceFolder)
