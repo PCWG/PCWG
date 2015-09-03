@@ -187,7 +187,10 @@ class Analysis:
             if self.densityCorrectionActive:
                 self.dataFrame[self.powerCoeff] = self.calculateCp()
             self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()
-
+            
+        print "debug"
+        print self.hasActualPower
+        
         if self.hasActualPower:
 
             self.status.addMessage("Calculating actual power curves...")
@@ -289,8 +292,8 @@ class Analysis:
         self.status.addMessage("Complete")
 
     def generateUniqueId(self):
-        iD = hash(self.relativePath)
-        self.status.addMessage("Unique ID:" + str(iD))
+        iD = hash(self.config.path) #TODO: need to change this to a checksum of the input file contents
+        #self.status.addMessage("Unique ID:" + str(iD)) # reinstate once feature is complete
         return iD
 
     def applyRemainingFilters(self):
@@ -717,9 +720,9 @@ class Analysis:
                 df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
         return df.dropna()
 
-    def report(self, path,version="unknown"):
+    def report(self, path, version="unknown"):
 
-        report = reporting.report(self.windSpeedBins, self.turbulenceBins,version)
+        report = reporting.report(self.windSpeedBins, self.turbulenceBins, version)
         report.report(path, self)
 
     def anonym_report(self, path, version="unknown", scatter = False, deviationMatrix = True):
