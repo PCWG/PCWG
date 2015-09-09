@@ -6,6 +6,9 @@ import configuration
 import rews
 import binning
 
+import warnings
+warnings.simplefilter('ignore', np.RankWarning)
+
 
 def getSeparatorValue(separator):
     try:
@@ -15,7 +18,7 @@ def getSeparatorValue(separator):
                 "SEMI-COLON":";"}[separator.upper()]
     except:
         raise Exception("Unkown separator: '%s'" % separator)
-
+        
 
 class DeviationMatrix(object):
     def __init__(self,deviationMatrix,countMatrix):
@@ -36,7 +39,19 @@ class CalibrationBase:
         return ((df[col].mean() - df[col]) ** 2.0).sum()
 
     def covariance(self, df, colA, colB):
-        return ((df[colA].mean() - df[colA]) * (df[colB].mean() - df[colB])).sum()
+        return df[[colA,colB]].cov()[colA][colB] # assumes unbiased estimator (normalises with N-1)
+
+    def sigA(self,df,slope, intercept, count):
+        sumPredYfromX = sum((df[self.y] - (intercept + df[self.x]*slope ))**2)
+        sumX = (df[self.x]).sum()
+        sumXX = (df[self.x]**2).sum()
+        return ((sumPredYfromX/(count-2))*(sumXX/(count*sumXX - sumX**2)))**0.5
+
+    def sigB(self,df,slope, intercept, count):
+        sumPredYfromX = sum((df[self.y] - (intercept + df[self.x]*slope ))**2)
+        sumX = (df[self.x]).sum()
+        sumXX = (df[self.x]**2).sum()
+        return ((sumPredYfromX/(count-2))/(count*sumXX - sumX**2))**0.5
 
     def mean(self, df, col):
         return df[col].mean()
@@ -45,6 +60,8 @@ class CalibrationBase:
         return self.mean(df, self.y) - slope * self.mean(df, self.x)
 
 class York(CalibrationBase):
+    def covariance(self, df, colA, colB):
+        return ((df[colA].mean() - df[colA]) * (df[colB].mean() - df[colB])).sum()
 
     def __init__(self, x, y, timeStepInSeconds, df):
 
@@ -60,7 +77,7 @@ class York(CalibrationBase):
         df[self.yRolling] = pd.rolling_mean(df[y], window = movingAverageWindow, min_periods = 1)
 
         df[self.xDiffSq] = ((df[x] - df[self.xRolling])** 2.0)
-        df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0)
+        df[self.yDiffSq] = ((df[y] - df[self.yRolling])** 2.0) # this needed in uncertainty?
 
         CalibrationBase.__init__(self, x, y)
 
@@ -101,6 +118,7 @@ class York(CalibrationBase):
         covarianceXY = self.covariance(df, self.x, self.y)
         varianceX = self.variance(df, self.x)
 
+        print covarianceXY,varianceX,xYorkVariance
         return math.atan2(covarianceXY ** 2.0 / varianceX ** 2.0 * xYorkVariance, yYorkVariance)
 
 class RatioOfMeans(CalibrationBase):
@@ -122,51 +140,47 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, slopes, offsets, directionBinColumn, valueColumn, counts = {}, actives = None, belowAbove = {}):
+    def __init__(self, directionBinColumn, valueColumn, calibrationSectorDataframe, actives = None):
 
-        self.belowAbove = belowAbove
+        self.calibrationSectorDataframe = calibrationSectorDataframe
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
 
         if actives != None:
+            self.calibrationSectorDataframe = self.calibrationSectorDataframe.loc[actives,:]
 
-            self.slopes = {}
-            self.offsets = {}
-            self.counts = {}
-
-            for direction in actives:
-
-                self.slopes[direction] = slopes[direction]
-                self.offsets[direction] = offsets[direction]
-
-                if direction in counts:
-                    #self.counts = counts[direction]
-                    self.counts[direction] = counts[direction]
-
-        else:
-
-            self.slopes = slopes
-            self.offsets = offsets
-            self.counts = counts
+        self.calibrationSectorDataframe['SpeedUpAt10'] = (10*self.calibrationSectorDataframe['Slope'] + self.calibrationSectorDataframe['Offset'])/10.0
+        self.IECLimitCalculator()
 
     def turbineValue(self, row):
 
         directionBin = row[self.directionBinColumn]
 
-        if directionBin in self.slopes:
+        if directionBin in self.calibrationSectorDataframe.index:
             return self.calibrate(directionBin, row[self.valueColumn])
         else:
             return np.nan
 
     def calibrate(self, directionBin, value):
-        return self.offsets[directionBin] + self.slopes[directionBin] * value
+        return self.calibrationSectorDataframe['Offset'][directionBin] + self.calibrationSectorDataframe['Slope'][directionBin] * value
+
+    def IECLimitCalculator(self):
+        if len(self.calibrationSectorDataframe.index) == 36 and 'vRatio' in self.calibrationSectorDataframe.columns:
+            self.calibrationSectorDataframe['pctSpeedUp'] = (self.calibrationSectorDataframe['vRatio']-1)*100
+            self.calibrationSectorDataframe['LowerLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)-2.0,1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['UpperLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)+2.0,1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['IECValid'] = np.logical_and(self.calibrationSectorDataframe['pctSpeedUp'] >  self.calibrationSectorDataframe['LowerLimit'], self.calibrationSectorDataframe['pctSpeedUp'] <  self.calibrationSectorDataframe['UpperLimit'])
+            print self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']]
+        return True
+    
+    def getSectorValidity(self, key, timeStep):
+        ba = self.calibrationSectorDataframe.loc[key,'belowAbove']
+        return ba[0]*(timeStep/3600.0) > 6.0 and ba[1]*(timeStep/3600.0) > 6.0
 
 class ShearExponentCalculator:
 
     def __init__(self, shearMeasurements):
         self.shearMeasurements = shearMeasurements
-        import warnings
-        warnings.simplefilter('ignore', np.RankWarning)
 
     def calculateMultiPointShear(self, row):
 
@@ -339,6 +353,8 @@ class Dataset:
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
+        if self.windDirection in self.dataFrame.columns:
+            self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
 
     def createShearCalibration(self, dataFrame, config, timeStepInSeconds):
         df = dataFrame.copy()
@@ -386,8 +402,8 @@ class Dataset:
                         mask = (dataFrame[self.referenceDirectionBin] == direction)
                         dataCount = dataFrame[mask][self.referenceDirectionBin].count()
                         print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
-
-                return SiteCalibrationCalculator(config.calibrationSlopes, config.calibrationOffsets, self.referenceDirectionBin, config.referenceWindSpeed, actives = config.calibrationActives)
+                df = pd.DataFrame([config.calibrationSlopes, config.calibrationOffsets], index=['Slope','Offset']).T
+                return SiteCalibrationCalculator( self.referenceDirectionBin, config.referenceWindSpeed,df, actives = config.calibrationActives)
             else:
                 raise Exception("The specified slopes have different bin centres to that specified by siteCalibrationCenterOfFirstSector which is: {0}".format(config.siteCalibrationCenterOfFirstSector))
         else:
@@ -431,21 +447,39 @@ class Dataset:
         intercepts = {}
         counts = {}
         belowAbove = {}
+        sigA = {}
+        sigB = {}
+        cov  = {}
+        corr  = {}
+        vRatio= {}
 
         for group in groups:
 
             directionBinCenter = group[0]
             sectorDataFrame = group[1].dropna()
-            slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
-            intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
-            counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+            if len(sectorDataFrame.index)>1:
+                slopes[directionBinCenter] = calibration.slope(sectorDataFrame)
+                intercepts[directionBinCenter] = calibration.intercept(sectorDataFrame, slopes[directionBinCenter])
+                counts[directionBinCenter] = sectorDataFrame[valueColumn].count()
+                try:
+                    sigA[directionBinCenter] = calibration.sigA(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInGradient'
+                    sigB[directionBinCenter] = calibration.sigB(sectorDataFrame,slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter]) # 'ErrInIntercept'
+                    #cov[directionBinCenter]  = calibration.covariance(sectorDataFrame, calibration.x,calibration.y )
+                    cov[directionBinCenter]  = sigA[directionBinCenter]*sigB[directionBinCenter]*(-1.0 * sectorDataFrame[calibration.x].sum())/((counts[directionBinCenter] * (sectorDataFrame[calibration.x]**2).sum())**0.5)
+                    corr[directionBinCenter]  =sectorDataFrame[[calibration.x, calibration.y]].corr()[calibration.x][calibration.y]
+                    vRatio[directionBinCenter] = (sectorDataFrame[calibration.y]/sectorDataFrame[calibration.x]).mean()# T_A1/R_A1 - this is currently mean of all data
+                except:
+                    pass
 
-            if valueColumn == self.hubWindSpeedForTurbulence:
-                belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
+                if valueColumn == self.hubWindSpeedForTurbulence:
+                    belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
 
-            print "{0}\t{1}\t{2}\t{3}".format(directionBinCenter, slopes[directionBinCenter], intercepts[directionBinCenter], counts[directionBinCenter])
+        calibrationSectorDataframe = pd.DataFrame([slopes,intercepts,counts, sigA, sigB, cov, corr, vRatio], ["Slope","Offset","Count","SigA","SigB","Cov","Corr","vRatio"] ).T
+        if len(belowAbove.keys()):
+            calibrationSectorDataframe['belowAbove'] = belowAbove.values()
+        print calibrationSectorDataframe
 
-        return SiteCalibrationCalculator(slopes, intercepts, self.referenceDirectionBin, valueColumn, counts = counts, belowAbove=belowAbove)
+        return SiteCalibrationCalculator(self.referenceDirectionBin, valueColumn, calibrationSectorDataframe)
 
     def isValidText(self, text):
         if text == None: return False
@@ -574,29 +608,29 @@ class Dataset:
         return mask.copy()
 
     def applyRelationshipFilter(self, mask, componentFilter, dataFrame):
-        for relationship in componentFilter.relationships:
-            filterConjunction = relationship.conjunction
 
-            if filterConjunction not in ("AND","OR"):
-                raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
+        filterConjunction = componentFilter.conjunction
 
-            filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
+        if filterConjunction not in ("AND","OR"):
+            raise NotImplementedError("Filter conjunction not implemented, please use AND or OR...")
 
-            masks = []
-            newMask = pd.Series([False]*len(mask),index=mask.index)
+        filterConjuction = np.logical_or if filterConjunction == "OR" else np.logical_and
 
-            if len(relationship.clauses) < 2:
-                raise Exception("Number of clauses in a relationship must be > 1")
+        masks = []
+        newMask = pd.Series([False]*len(mask),index=mask.index)
 
-            for componentFilter in relationship.clauses:
-                filterMask = self.applySimpleFilter(newMask,componentFilter,dataFrame,printMsg=False)
-                masks.append(filterMask)
+        if len(componentFilter.clauses) < 2:
+            raise Exception("Number of clauses in a relationship must be > 1")
 
-            baseMask = masks[0]
-            for filterMask in masks[1:]:
-                baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)
+        for filter in componentFilter.clauses:
+            filterMask = self.applySimpleFilter(newMask,filter,dataFrame,printMsg=False)
+            masks.append(filterMask)
 
-            mask = np.logical_or(mask,baseMask)
+        baseMask = masks[0]
+        for filterMask in masks[1:]:
+            baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)
+
+        mask = np.logical_or(mask,baseMask)
         print "Applied Relationship (AND/OR) Filter:\n\tData set length:{leng}".format(leng=len(mask[~mask]))
         return mask.copy()
 
@@ -627,7 +661,7 @@ class Dataset:
                     try:
                         if hasattr(componentFilter,"startTime"):
                             mask = self.applyToDFilter(mask,componentFilter,dataFrame)
-                        elif hasattr(componentFilter, "relationships"):
+                        elif hasattr(componentFilter, "clauses"):
                             mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
                         else:
                             mask = self.applySimpleFilter(mask,componentFilter,dataFrame)

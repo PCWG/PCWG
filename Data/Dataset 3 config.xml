@@ -1,87 +1,107 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	
-	<ns1:Name>Dataset 3</ns1:Name>
-
-	<ns1:StartDate>2012-12-06T14:20:00</ns1:StartDate>
-	<ns1:EndDate>2013-02-03T05:00:00</ns1:EndDate>
-
-	<ns1:HubWindSpeedMode>Specified</ns1:HubWindSpeedMode>
-	<ns1:DensityMode>None</ns1:DensityMode>	
-
-	<ns1:RotorEquivalentWindSpeed>
-		<ns1:NumberOfRotorLevels>9</ns1:NumberOfRotorLevels>		
-		<ns1:RotorMode>ProfileLevels</ns1:RotorMode>
-		<ns1:HubMode>PiecewiseExponent</ns1:HubMode>
-	</ns1:RotorEquivalentWindSpeed>
-
-	<ns1:Measurements>		
-		<ns1:InputTimeSeriesPath>Dataset 3.dat</ns1:InputTimeSeriesPath>
-		<ns1:BadDataValue>-99.9</ns1:BadDataValue>
-		<ns1:DateFormat>%d/%m/%Y %H:%M</ns1:DateFormat>
-		<ns1:HeaderRows>0</ns1:HeaderRows>
-		<ns1:TimeStepInSeconds>600</ns1:TimeStepInSeconds>	
-		<ns1:TimeStamp>TimeStamp</ns1:TimeStamp>	
-		<ns1:HubWindSpeed>Mast_WindSpeed_96m_Mean</ns1:HubWindSpeed>
-		<ns1:HubTurbulence>Mast_WindSpeed_96m_Turbulence_Intensity</ns1:HubTurbulence>
-		<ns1:ProfileLevels>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_40m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_40m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>40</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_50m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_50m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>50</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_60m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_60m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>60</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_70m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_70m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>70</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_80m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_80m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>80</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_90m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_90m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>90</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_100m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_100m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>100</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_110m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_110m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>110</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_120m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_120m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>120</ns1:Height>
-			</ns1:ProfileLevel>
-			<ns1:ProfileLevel>
-				<ns1:ProfileWindSpeed>LiDAR_WindSpeed_140m_Mean</ns1:ProfileWindSpeed>
-				<ns1:ProfileWindDirection>LiDAR_WindDirection_140m_Mean</ns1:ProfileWindDirection>
-				<ns1:Height>140</ns1:Height>
-			</ns1:ProfileLevel>
-		</ns1:ProfileLevels>		
-	</ns1:Measurements>		
-	
-	<ns1:Filters>
-	</ns1:Filters>
-	
-	<ns1:Exclusions>
-	</ns1:Exclusions>
-	
-</ns1:Configuration>
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<GeneralSettings>
+		<Name>Dataset 3</Name>
+		<StartDate>2012-12-06T14:20:00</StartDate>
+		<EndDate>2013-02-03T05:00:00</EndDate>
+		<HubWindSpeedMode>Specified</HubWindSpeedMode>
+		<CalibrationMethod></CalibrationMethod>
+		<DensityMode>None</DensityMode>
+	</GeneralSettings>
+	<RotorEquivalentWindSpeed>
+		<NumberOfRotorLevels>9</NumberOfRotorLevels>
+		<RotorMode>ProfileLevels</RotorMode>
+		<HubMode>PiecewiseExponent</HubMode>
+	</RotorEquivalentWindSpeed>
+	<Measurements>
+		<InputTimeSeriesPath>Dataset 3.dat</InputTimeSeriesPath>
+		<BadDataValue>-99.900000</BadDataValue>
+		<DateFormat>%d/%m/%Y %H:%M</DateFormat>
+		<Separator>TAB</Separator>
+		<HeaderRows>0</HeaderRows>
+		<TimeStamp>TimeStamp</TimeStamp>
+		<TimeStepInSeconds>600</TimeStepInSeconds>
+		<ReferenceWindSpeed></ReferenceWindSpeed>
+		<ReferenceWindSpeedStdDev></ReferenceWindSpeedStdDev>
+		<ReferenceWindDirection></ReferenceWindDirection>
+		<ReferenceWindDirectionOffset>0.000000</ReferenceWindDirectionOffset>
+		<Temperature></Temperature>
+		<Pressure></Pressure>
+		<Density></Density>
+		<TurbineLocationWindSpeed></TurbineLocationWindSpeed>
+		<Power></Power>
+		<PowerMin></PowerMin>
+		<PowerMax></PowerMax>
+		<PowerSD></PowerSD>
+		<HubWindSpeed>Mast_WindSpeed_96m_Mean</HubWindSpeed>
+		<HubTurbulence>Mast_WindSpeed_96m_Turbulence_Intensity</HubTurbulence>
+	</Measurements>
+	<ShearMeasurements>
+		<ShearMeasurement>
+			<Height>0.000000</Height>
+			<WindSpeed></WindSpeed>
+		</ShearMeasurement>
+	</ShearMeasurements>
+	<ProfileLevels>
+		<ProfileLevel>
+			<Height>100.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_100m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_100m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>70.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_70m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_70m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>40.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_40m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_40m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>140.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_140m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_140m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>110.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_110m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_110m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>80.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_80m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_80m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>50.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_50m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_50m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>120.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_120m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_120m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>90.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_90m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_90m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>60.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_60m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR_WindDirection_60m_Mean</ProfileWindDirection>
+		</ProfileLevel>
+	</ProfileLevels>
+	<Calibration>
+		<CalibrationParameters>
+			<NumberOfSectors>0</NumberOfSectors>
+			<CenterOfFirstSector>0</CenterOfFirstSector>
+		</CalibrationParameters>
+		<CalibrationFilters/>
+		<CalibrationDirections/>
+	</Calibration>
+	<Filters/>
+	<Exclusions/>
+</Configuration>

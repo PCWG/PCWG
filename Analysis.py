@@ -117,7 +117,9 @@ class Analysis:
 
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
-
+        
+        self.uniqueAnalysisId = self.generateUniqueId()        
+        
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
         self.turbRenormActive = config.turbRenormActive
@@ -184,9 +186,11 @@ class Analysis:
 
         self.applyRemainingFilters()
 
-        if self.hasDensity and self.densityCorrectionActive:
-            self.dataFrame[self.powerCoeff] = self.calculateCp()
-
+        if self.hasDensity:
+            if self.densityCorrectionActive:
+                self.dataFrame[self.powerCoeff] = self.calculateCp()
+            self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()            
+               
         if self.hasActualPower:
 
             self.status.addMessage("Calculating actual power curves...")
@@ -265,13 +269,16 @@ class Analysis:
         if self.config.nominalWindSpeedDistribution is not None:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
-            if len(self.specifiedPowerCurve.powerCurveLevels) != 0:
+            if self.powerCurve is self.specifiedPowerCurve:
+                self.windSpeedAt85pctX1pnt5 = self.specifiedPowerCurve.getThresholdWindSpeed()
+            if hasattr(self.datasetConfigs[0].data,"analysedDirections"):
+                self.analysedDirectionSectors = self.datasetConfigs[0].data.analysedDirections # assume a single for now.
+            if len(self.powerCurve.powerCurveLevels) != 0:
                 self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredPowerCurve)
                 if self.turbRenormActive:
                     self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredTurbCorrectedPowerCurve)
             else:
                 self.status.addMessage("A specified power curve is required for AEP calculation. No specified curve defined.")
-        
         if len(self.sensitivityDataColumns) > 0:
             sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
             sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
@@ -281,16 +288,22 @@ class Analysis:
             self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column, sens_pow_interp_column)
         
         if self.hasActualPower:
-            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index)
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
             self.dayTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.dayTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(11)])
             self.nightTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.nightTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(12)])
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
             if self.turbRenormActive:
-                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index)
+                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index, print_to_console = True)
             self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByWindSpeed(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
         self.status.addMessage("Complete")
+
+    def generateUniqueId(self):
+        iD = hash(self.config.path) #TODO: need to change this to a checksum of the input file contents
+        #self.status.addMessage("Unique ID:" + str(iD)) # reinstate once feature is complete
+        return iD
 
     def applyRemainingFilters(self):
 
@@ -653,13 +666,13 @@ class Analysis:
 
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[powerColumn, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
+        powerStdDev = filteredDataFrame[[powerColumn, self.inputHubWindSpeed]].groupby(filteredDataFrame[self.windSpeedBin]).std().rename(columns={powerColumn:"Power Std Dev"})["Power Std Dev"]
+
         dfDataCount = filteredDataFrame[powerColumn].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.dataCount:'count'})
-        dfPowerStDev = filteredDataFrame[powerColumn].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.powerStandDev:np.std})
-        
         if not all(dfPowerLevels.index == dfDataCount.index):
             raise Exception("Index of aggregated data count and mean quantities for measured power curve do not match.")
         dfPowerLevels = dfPowerLevels.join(dfDataCount, how = 'inner')
-        dfPowerLevels = dfPowerLevels.join(dfPowerStDev, how = 'inner')
+        dfPowerLevels = dfPowerLevels.join(powerStdDev, how = 'inner')
         dfPowerLevels.dropna(inplace = True)
         
         if self.powerCoeff in filteredDataFrame.columns:
@@ -717,14 +730,15 @@ class Analysis:
 
         return rewsMatrix
 
-    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows): #this calculates a metric for the scatter of the all measured PC
+    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows, print_to_console = False): #this calculates a metric for the scatter of the all measured PC
         
         try:
             energyDiffMWh = np.abs((self.dataFrame.loc[rows, powerColumn] - self.dataFrame.loc[rows, self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame.loc[rows, powerColumn] * (float(self.timeStepInSeconds) / 3600.)
             powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
             print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
-            self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
+            if print_to_console:
+                self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
             return powerCurveScatterMetric
         except:
             print "Could not calculate power curve scatter metric."
@@ -754,10 +768,9 @@ class Analysis:
         self.categoryAUncertainty = unc_MWh / test_MWh
         self.status.addMessage("Power curve category A uncertainty: %.4f%%" % (self.categoryAUncertainty * 100.0))
 
-
     def report(self, path,version="unknown"):
 
-        report = reporting.report(self.windSpeedBins, self.turbulenceBins,version)
+        report = reporting.report(self.windSpeedBins, self.turbulenceBins, version)
         report.report(path, self)
 
     def anonym_report(self, path, version="unknown", scatter = False, deviationMatrix = True):
@@ -919,6 +932,7 @@ class Analysis:
         plotter.plotBy(self.hubWindSpeed,self.powerCoeff,self.dataFrame)
         plotter.plotBy('Input Hub Wind Speed',self.powerCoeff,self.allMeasuredPowerCurve)
         #self.plotBy(self.windDirection,self.inflowAngle)
+        plotter.plotCalibrationSectors()
         if len(self.powerCurveSensitivityResults.keys()) > 0:
             for sensCol in self.powerCurveSensitivityResults.keys():
                 plotter.plotPowerCurveSensitivity(sensCol)
