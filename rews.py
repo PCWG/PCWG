@@ -71,7 +71,7 @@ class EvenlySpacedRotor(RotorBase):
             raise Exception("Number of levels must be odd") 
         
         step = self.rotorGeometry.diameter / numberOfRotorLevels
-        level = selfrotorGeometry.hubHeight - self.rotorGeometry.radius + step / 2
+        level = self.rotorGeometry.hubHeight - self.rotorGeometry.radius + step / 2
         
         for i in range(numberOfRotorLevels):
 
