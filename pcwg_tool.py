@@ -10,6 +10,7 @@ import os
 import os.path
 import pandas as pd
 import dateutil
+from dataset import getSeparatorValue
 
 columnSeparator = "|"
 filterSeparator = "#"
@@ -21,19 +22,18 @@ ExceptionType = Exception
 #ExceptionType = None #comment this line before release
         
 def getDateFromEntry(entry):
-        if len(entry.get()) > 0:
-                return datetime.datetime.strptime(entry.get(), datePickerFormat)
-        else:
-                return None
+    if len(entry.get()) > 0:
+        return datetime.datetime.strptime(entry.get(), datePickerFormat)
+    else:
+        return None
    
 def getBoolFromText(text):
-        if text == "True":
-            active = True
-        elif text == "False":
-            active = False
-        else:
-            raise Exception("Cannot convert Text to Boolean: %s" % text)
-        return active
+    if text == "True":
+        return True
+    elif text == "False":
+        return False
+    else:
+        raise Exception("Cannot convert Text to Boolean: %s" % text)
         
 def SelectFile(parent, defaultextension=None):
         if len(preferences.workSpaceFolder) > 0:
@@ -42,59 +42,56 @@ def SelectFile(parent, defaultextension=None):
                 return askopenfilename(parent=parent, defaultextension=defaultextension)
 
 def encodePowerLevelValueAsText(windSpeed, power):
-        return "%f%s%f" % (windSpeed, columnSeparator, power)
+    return "%f%s%f" % (windSpeed, columnSeparator, power)
 
 def extractPowerLevelValuesFromText(text):
-        items = text.split(columnSeparator)
-        windSpeed = float(items[0])
-        power = float(items[1])
-        return (windSpeed, power)
+    items = text.split(columnSeparator)
+    windSpeed = float(items[0])
+    power = float(items[1])
+    return (windSpeed, power)
 
 def extractREWSLevelValuesFromText(text):
-        items = text.split(columnSeparator)        
-        height = float(items[0])
-        windSpeed = items[1].strip()
-        windDirection = items[2].strip()
-        return (height, windSpeed, windDirection)
+    items = text.split(columnSeparator)
+    height = float(items[0])
+    windSpeed = items[1].strip()
+    windDirection = items[2].strip()
+    return (height, windSpeed, windDirection)
 
 def encodeREWSLevelValuesAsText(height, windSpeed, windDirection):
-        return "{hight:.04}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
+    return "{hight:.04}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
 
 def extractShearMeasurementValuesFromText(text):
-        items = text.split(columnSeparator)
-        height = float(items[0])
-        windSpeed = items[1].strip()
-        return (height, windSpeed)
+    items = text.split(columnSeparator)
+    height = float(items[0])
+    windSpeed = items[1].strip()
+    return (height, windSpeed)
 
 def encodeShearMeasurementValuesAsText(height, windSpeed):
-        return "{hight:.04}{sep}{windspeed}".format(hight = height, sep = columnSeparator, windspeed = windSpeed)
-
+    return "{height:.04}{sep}{windspeed}{sep}".format(height = height, sep = columnSeparator, windspeed = windSpeed)
 
 def extractCalibrationDirectionValuesFromText(text):
         
-        items = text.split(columnSeparator)
-        direction = float(items[0])
-        slope = float(items[1].strip())
-        offset = float(items[2].strip())
-        active = getBoolFromText(items[3].strip())
+    items = text.split(columnSeparator)
+    direction = float(items[0])
+    slope = float(items[1].strip())
+    offset = float(items[2].strip())
+    active = getBoolFromText(items[3].strip())
 
-        return (direction, slope, offset, active)
+    return (direction, slope, offset, active)
 
 def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
 
-        return "%0.4f%s%0.4f%s%0.4f%s%s" % (direction, columnSeparator, slope, columnSeparator, offset, columnSeparator, active)
+    return "%0.4f%s%0.4f%s%0.4f%s%s" % (direction, columnSeparator, slope, columnSeparator, offset, columnSeparator, active)
 
 def extractExclusionValuesFromText(text):
-        
-        items = text.split(columnSeparator)
-        startDate = pd.to_datetime(items[0].strip(),dayfirst =True)
-        endDate = pd.to_datetime(items[1].strip(),dayfirst =True)
-        active = getBoolFromText(items[2].strip())
-
-        return (startDate, endDate, active)
+    items = text.split(columnSeparator)
+    startDate = pd.to_datetime(items[0].strip(), dayfirst =True)
+    endDate = pd.to_datetime(items[1].strip(), dayfirst =True)
+    active = getBoolFromText(items[2].strip())
+    return (startDate, endDate, active)
 
 def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
-        return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
+    return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
 
 def encodeRelationshipFilterValuesAsText(relationshipFilter):
         text = ""
@@ -138,7 +135,7 @@ def extractFilterValuesFromText(text):
 
 def encodeExclusionValuesAsText(startDate, endDate, active):
 
-        return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
+    return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
 
 def intSafe(text, valueIfBlank = 0):
     try:
@@ -153,19 +150,19 @@ def floatSafe(text, valueIfBlank = 0.):
         return valueIfBlank
 
 class WindowStatus:
-        def __nonzero__(self):
-                return True
-        def __init__(self, gui):
-            self.gui = gui
-        def addMessage(self, message):
-            self.gui.addMessage(message)
+    def __nonzero__(self):
+        return True
+    def __init__(self, gui):
+        self.gui = gui
+    def addMessage(self, message):
+        self.gui.addMessage(message)
 
 class ValidationResult:
 
-        def __init__(self, valid, message = "", permitInput = True):
-                self.valid = valid
-                self.message = message
-                self.permitInput = permitInput
+    def __init__(self, valid, message = "", permitInput = True):
+        self.valid = valid
+        self.message = message
+        self.permitInput = permitInput
                 
 class ValidateBase:
 
@@ -278,7 +275,7 @@ class ValidateNonNegativeFloat(ValidateBase):
                         return ValidationResult(False, message)
 
         def mask(self, text, value):
-                return (text in '0123456789.')               
+                return (text in '0123456789.')
 
 class ValidatePositiveFloat(ValidateBase):
 
@@ -349,7 +346,6 @@ class ValidateAnalysisFilePath(ValidateBase):
                 
 class ValidateNominalWindSpeedDistribution(ValidateBase):
 
-        
         def validate(self, value):
 
                 message = "Value not specified"                
@@ -522,9 +518,9 @@ class VariableEntry:
 class ListBoxEntry(VariableEntry):
     
     def __init__(self, listbox, scrollbar, tip):
-                self.scrollbar = scrollbar
-                self.listbox = listbox
-                self.tip = tip
+        self.scrollbar = scrollbar
+        self.listbox = listbox
+        self.tip = tip
                 
     def addToShowHide(self,showHide):
         if showHide != None:
@@ -535,13 +531,13 @@ class ListBoxEntry(VariableEntry):
     def error(self):
         raise Exception("Not possible with listbox object")        
     def get(self):
-            self.error()
+        self.error()
     def set(self, value):
-            self.error()
+        self.error()
     def configure(self, state):
-            self.error()
+        self.error()
     def bindPickButton(self, pickButton):
-            self.error()
+        self.error()
 
               
 class ShowHideCommand:
@@ -988,7 +984,7 @@ class CalibrationFilterDialog(BaseDialog):
 
         def body(self, master):
 
-                self.prepareColumns(master)     
+                self.prepareColumns(master)
 
                 if not self.isNew:
                         
@@ -1472,7 +1468,7 @@ class DatePickerDialog(BaseDialog):
                 return datetime.datetime(int(self.year.get()), int(self.month.get()), int(self.day.get()), int(self.hour.get()), int(self.minute.get()))
         
         def apply(self):
-                    self.callback(self.getDate())
+                self.callback(self.getDate())
 
 class ParseClipBoard:
 
@@ -1662,6 +1658,8 @@ class DateFormatPicker:
                 
                 if len(column) > 0:
                         self.entry.set(column)
+                        
+                        
 class ColumnSeparatorDialog(BaseDialog):
 
         def __init__(self, master, status, callback, availableSeparators, selectedSeparator):
@@ -1701,7 +1699,8 @@ class ColumnSeparatorPicker:
                 
                 if len(column) > 0:
                         self.entry.set(column)
-                       
+              
+              
 class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
@@ -3246,4 +3245,3 @@ gui = UserInterface()
 preferences.save()
 
 print "Done"
-

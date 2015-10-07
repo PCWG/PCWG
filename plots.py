@@ -117,7 +117,8 @@ class MatplotlibPlotter(object):
             if has_spec_pc:
                 ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
             if self.analysis.specifiedPowerCurve != self.analysis.powerCurve:
-                ax = self.analysis.powerCurve.powerCurveLevels.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.analysis.powerCurve.name)
+                if self.analysis.powerCurve.name != 'All Measured':
+                    ax = self.analysis.powerCurve.powerCurveLevels.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.analysis.powerCurve.name)
             meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
             ax = meanPowerCurve[powerCol].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
                                   label='Mean Power Curve')
@@ -161,6 +162,10 @@ class MatplotlibPlotter(object):
             else:
                 ax.set_xlim([min(self.analysis.dataFrame[windSpeedCol].min(),meanPowerCurve.index.min()), max(self.analysis.dataFrame[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
                 ax2.set_xlim([min(self.analysis.dataFrame[windSpeedCol].min(),meanPowerCurve.index.min()), max(self.analysis.dataFrame[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
+            
+            #hacked temp code
+            ax.set_ylim([-500., 4000.])
+            
             ax.set_xlabel(self.analysis.inputHubWindSpeedSource + ' (m/s)')
             ax.set_ylabel(powerCol + ' (kW)')
             refTurbCol = 'Specified Turbulence' if self.analysis.powerCurveMode == 'Specified' else self.analysis.hubTurbulence
