@@ -800,6 +800,13 @@ class Analysis:
             NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorPdm)
             self.overall_pcwg_err_metrics['PDM NME'] = NME
             self.overall_pcwg_err_metrics['PDM NMAE'] = NMAE
+            
+    def _calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name):
+        grouped = self.dataFrame.groupby(bin_col_name)
+        agg = grouped.agg({candidate_error: ['sum', 'count']}) #using sum so we get NME, need to also sum abs to get NMAE
+        agg.loc[:, (bin_col_name, 'binned metric')] = agg.loc[:, (bin_col_name, 'sum')] / agg.loc[:, (bin_col_name, 'count')]
+        
+        #return
     
     def _calculate_pcwg_error_metric(self, candidate_error):
         data_count = len(self.dataFrame[candidate_error].dropna())
