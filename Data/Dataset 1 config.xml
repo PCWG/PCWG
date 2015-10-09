@@ -29,7 +29,7 @@
 		<Pressure></Pressure>
 		<Density></Density>
 		<TurbineLocationWindSpeed></TurbineLocationWindSpeed>
-		<Power>Turbine Power</Power>
+		<Power></Power>
 		<PowerMin></PowerMin>
 		<PowerMax></PowerMax>
 		<PowerSD></PowerSD>
