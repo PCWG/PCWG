@@ -298,9 +298,12 @@ class Analysis:
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
-
-            self.calculate_pcwg_error_fields()
-            self.calculate_overall_metrics()
+            
+            if self.powerCurveMode == "Specified":
+                self.status.addMessage("Cannot calculate PCWG error metrics when power curve mode is Specified.")
+            else:
+                self.calculate_pcwg_error_fields()
+                self.calculate_overall_metrics()
             
         self.status.addMessage("Complete")
 
