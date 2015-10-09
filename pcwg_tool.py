@@ -10,7 +10,6 @@ import os
 import os.path
 import pandas as pd
 import dateutil
-from dataset import getSeparatorValue
 
 columnSeparator = "|"
 filterSeparator = "#"
@@ -19,7 +18,7 @@ datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.7"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
         
 def getDateFromEntry(entry):
     if len(entry.get()) > 0:

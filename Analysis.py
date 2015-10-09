@@ -298,6 +298,10 @@ class Analysis:
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
+
+            self.calculate_pcwg_error_fields()
+            self.calculate_overall_metrics()
+            
         self.status.addMessage("Complete")
 
     def generateUniqueId(self):
@@ -754,6 +758,52 @@ class Analysis:
                 df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
         return df.dropna()
 
+    def calculate_pcwg_error_fields(self):
+        self.calculate_anonymous_values()
+        self.pcwgErrorBaseline = 'Baseline Error'
+        self.dataFrame[self.pcwgErrorBaseline] = self.dataFrame[self.hubPower] - self.dataFrame[self.actualPower]
+        if self.turbRenormActive:
+            self.pcwgErrorTurbRenor = 'TI Renormalisation Error'
+            self.dataFrame[self.pcwgErrorTurbRenor] = self.dataFrame[self.turbulencePower] - self.dataFrame[self.actualPower]
+        if self.rewsActive:
+            self.pcwgErrorRews = 'REWS Error'
+            self.dataFrame[self.pcwgErrorRews] = self.dataFrame[self.rewsPower] - self.dataFrame[self.actualPower]
+        if (self.turbRenormActive and self.rewsActive):
+            self.pcwgErrorTiRewsCombined = 'Combined TI Renorm and REWS Error'
+            self.dataFrame[self.pcwgErrorTiRewsCombined] = self.dataFrame[self.combinedPower] - self.dataFrame[self.actualPower]
+        if self.powerDeviationMatrixActive:
+            self.pcwgErrorPdm = 'PDM Error'
+            self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]
+    
+    def calculate_overall_metrics(self):
+        self.overall_pcwg_err_metrics = {}
+        NME, NMAE, data_count = self._calculate_pcwg_error_metric(self.pcwgErrorBaseline)
+        self.overall_pcwg_err_metrics['Data Count'] = data_count
+        self.overall_pcwg_err_metrics['Baseline NME'] = NME
+        self.overall_pcwg_err_metrics['Baseline NMAE'] = NMAE
+        if self.turbRenormActive:
+            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTurbRenor)
+            self.overall_pcwg_err_metrics['TI Renorm NME'] = NME
+            self.overall_pcwg_err_metrics['TI Renorm NMAE'] = NMAE
+        if self.rewsActive:
+            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorRews)
+            self.overall_pcwg_err_metrics['REWS NME'] = NME
+            self.overall_pcwg_err_metrics['REWS NMAE'] = NMAE
+        if (self.turbRenormActive and self.rewsActive):
+            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTiRewsCombined)
+            self.overall_pcwg_err_metrics['REWS and TI NME'] = NME
+            self.overall_pcwg_err_metrics['REWS and TI NMAE'] = NMAE
+        if self.powerDeviationMatrixActive:
+            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorPdm)
+            self.overall_pcwg_err_metrics['PDM NME'] = NME
+            self.overall_pcwg_err_metrics['PDM NMAE'] = NMAE
+    
+    def _calculate_pcwg_error_metric(self, candidate_error):
+        data_count = len(self.dataFrame[candidate_error].dropna())
+        NME = (self.dataFrame[candidate_error].sum() / self.dataFrame[self.actualPower]) * (1. / data_count)
+        NMAE = (np.abs(self.dataFrame[candidate_error]).sum() / self.dataFrame[self.actualPower]) * (1. / data_count)
+        return NME, NMAE, data_count
+
     def iec_2005_cat_A_power_curve_uncertainty(self):
         if self.turbRenormActive:
             pc = self.allMeasuredTurbCorrectedPowerCurve.powerCurveLevels
@@ -773,7 +823,7 @@ class Analysis:
         report = reporting.report(self.windSpeedBins, self.turbulenceBins, version)
         report.report(path, self)
 
-    def anonym_report(self, path, version="unknown", scatter = False, deviationMatrix = True):
+    def anonym_report(self, path, version="Unknown", scatter = False, deviationMatrix = True):
 
         if not self.hasActualPower:
             raise Exception("Anonymous report can only be generated if analysis has actual power data")
@@ -790,6 +840,10 @@ class Analysis:
 
         report.report(path, self, powerDeviationMatrix = deviationMatrix, scatterMetric= scatter)
 
+    def pcwg_data_share_report(self, version = 'Unknown'):
+        from data_sharing_reports import pcwg_share1_rpt
+        rpt = pcwg_share1_rpt(self, version)
+
     def calculate_anonymous_values(self):
 
         self.observedRatedPower = self.powerCurve.zeroTurbulencePowerCurve.maxPower
@@ -800,7 +854,7 @@ class Analysis:
         normalisedWSBin = 'Normalised WS Bin'
         firstNormWSbin = 0.30
         lastNormWSbin = 3.0
-        normWSstep = 0.05
+        normWSstep = 0.1
 
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
 
