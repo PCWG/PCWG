@@ -303,7 +303,8 @@ class Analysis:
                 self.status.addMessage("Cannot calculate PCWG error metrics when power curve mode is Specified.")
             else:
                 self.calculate_pcwg_error_fields()
-                self.calculate_overall_metrics()
+                self.calculate_pcwg_overall_metrics()
+                self.calculate_pcwg_binned_metrics()
             
         self.status.addMessage("Complete")
 
@@ -776,9 +777,9 @@ class Analysis:
             self.dataFrame[self.pcwgErrorTiRewsCombined] = self.dataFrame[self.combinedPower] - self.dataFrame[self.actualPower]
         if self.powerDeviationMatrixActive:
             self.pcwgErrorPdm = 'PDM Error'
-            self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]
+            self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]        
     
-    def calculate_overall_metrics(self):
+    def calculate_pcwg_overall_metrics(self):
         self.overall_pcwg_err_metrics = {}
         NME, NMAE, data_count = self._calculate_pcwg_error_metric(self.pcwgErrorBaseline)
         self.overall_pcwg_err_metrics['Data Count'] = data_count
@@ -801,17 +802,34 @@ class Analysis:
             self.overall_pcwg_err_metrics['PDM NME'] = NME
             self.overall_pcwg_err_metrics['PDM NMAE'] = NMAE
             
+    def calculate_pcwg_binned_metrics(self):
+        reporting_bins = [self.normalisedWSBin]
+        self.binned_pcwg_err_metrics = {}
+        for bin_col_name in reporting_bins:
+            self.binned_pcwg_err_metrics[bin_col_name] = {}
+            self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorBaseline] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name)
+            if self.turbRenormActive:
+                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorTurbRenor] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTurbRenor, bin_col_name)
+            if self.rewsActive:
+                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorRews] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorRews, bin_col_name)
+            if (self.turbRenormActive and self.rewsActive):
+                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorTiRewsCombined] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTiRewsCombined, bin_col_name)
+            if self.powerDeviationMatrixActive:
+                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name)
+            
     def _calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name):
+        def sum_abs(x):
+            return x.abs().sum()
         grouped = self.dataFrame.groupby(bin_col_name)
-        agg = grouped.agg({candidate_error: ['sum', 'count']}) #using sum so we get NME, need to also sum abs to get NMAE
-        agg.loc[:, (bin_col_name, 'binned metric')] = agg.loc[:, (bin_col_name, 'sum')] / agg.loc[:, (bin_col_name, 'count')]
-        
-        #return
+        agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count']}) #using sum so we get NME, need to also sum abs to get NMAE
+        agg.loc[:, (candidate_error, 'NME')] = agg.loc[:, (candidate_error, 'sum')] / agg.loc[:, (candidate_error, 'count')]
+        agg.loc[:, (candidate_error, 'NMAE')] = agg.loc[:, (candidate_error, 'sum')] / agg.loc[:, (candidate_error, 'count')]
+        return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis = 1).rename(columns = {'count': self.dataCount})
     
     def _calculate_pcwg_error_metric(self, candidate_error):
         data_count = len(self.dataFrame[candidate_error].dropna())
-        NME = (self.dataFrame[candidate_error].sum() / self.dataFrame[self.actualPower]) * (1. / data_count)
-        NMAE = (np.abs(self.dataFrame[candidate_error]).sum() / self.dataFrame[self.actualPower]) * (1. / data_count)
+        NME = (self.dataFrame[candidate_error] / self.dataFrame[self.actualPower]).sum() * (1. / data_count)
+        NMAE = (np.abs(self.dataFrame[candidate_error]) / self.dataFrame[self.actualPower]).sum() * (1. / data_count)
         return NME, NMAE, data_count
 
     def iec_2005_cat_A_power_curve_uncertainty(self):
@@ -861,7 +879,7 @@ class Analysis:
 
         allFilterMode = 0
 
-        normalisedWSBin = 'Normalised WS Bin'
+        self.normalisedWSBin = 'Normalised WS Bin'
         firstNormWSbin = 0.30
         lastNormWSbin = 3.0
         normWSstep = 0.1
@@ -869,20 +887,20 @@ class Analysis:
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
 
         #commented oput solution dependent on discussion around anonymous wind speeds
-        #self.dataFrame[normalisedWSBin] = np.nan
+        #self.dataFrame[self.normalisedWSBin] = np.nan
         #mask = self.dataFrame[self.inputHubWindSpeed] < self.observedRatedWindSpeed
-        #self.dataFrame.loc[mask,normalisedWSBin] = ((self.dataFrame[mask][self.inputHubWindSpeed] - self.powerCurve.cutInWindSpeed) / (self.observedRatedWindSpeed - self.powerCurve.cutInWindSpeed))
-        #self.dataFrame.loc[~mask,normalisedWSBin] = 1 + ((self.dataFrame[~mask][self.inputHubWindSpeed] - self.observedRatedWindSpeed) / (self.powerCurve.cutOutWindSpeed - self.observedRatedWindSpeed  ) )
-        #self.dataFrame[normalisedWSBin] = self.dataFrame[normalisedWSBin].map(self.normalisedWindSpeedBins.binCenter)
-        self.dataFrame[normalisedWSBin] = (self.dataFrame[self.inputHubWindSpeed] / self.observedRatedWindSpeed).map(self.normalisedWindSpeedBins.binCenter)
+        #self.dataFrame.loc[mask,self.normalisedWSBin] = ((self.dataFrame[mask][self.inputHubWindSpeed] - self.powerCurve.cutInWindSpeed) / (self.observedRatedWindSpeed - self.powerCurve.cutInWindSpeed))
+        #self.dataFrame.loc[~mask,self.normalisedWSBin] = 1 + ((self.dataFrame[~mask][self.inputHubWindSpeed] - self.observedRatedWindSpeed) / (self.powerCurve.cutOutWindSpeed - self.observedRatedWindSpeed  ) )
+        #self.dataFrame[self.normalisedWSBin] = self.dataFrame[self.normalisedWSBin].map(self.normalisedWindSpeedBins.binCenter)
+        self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.inputHubWindSpeed] / self.observedRatedWindSpeed).map(self.normalisedWindSpeedBins.binCenter)
 
         self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
-                                                                               ,windBin = normalisedWSBin
+                                                                               ,windBin = self.normalisedWSBin
                                                                                ,turbBin = self.turbulenceBin)
 
         if self.config.turbRenormActive:
             self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, allFilterMode
-                                                                                   ,windBin = normalisedWSBin
+                                                                                   ,windBin = self.normalisedWSBin
                                                                                    ,turbBin = self.turbulenceBin)
         else:
             self.normalisedTurbPowerDeviations = None
