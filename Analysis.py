@@ -99,10 +99,13 @@ class Analysis:
         self.turbulenceBin = "Turbulence Bin"
         self.powerDeviation = "Power Deviation"
         self.dataCount = "Data Count"
+        self.powerStandDev = "Power Standard Deviation"
         self.windDirection = "Wind Direction"
         self.powerCoeff = "Power Coefficient"
         self.inputHubWindSpeedSource = 'Undefined'
         self.measuredTurbulencePower = 'Measured TI Corrected Power'
+        self.measuredTurbPowerCurveInterp = 'Measured TI Corrected Power Curve Interp'
+        self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
         self.relativePath = configuration.RelativePath(config.path)
         self.status = status
 
@@ -193,6 +196,9 @@ class Analysis:
             self.status.addMessage("Calculating actual power curves...")
 
             self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'All Measured')
+            
+            self.dayTimePowerCurve = self.calculateMeasuredPowerCurve(11, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Day Time')
+            self.nightTimePowerCurve = self.calculateMeasuredPowerCurve(12, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Night Time')
 
             self.innerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Inner Turbulence')
             self.outerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Outer Turbulence')
@@ -276,16 +282,22 @@ class Analysis:
         if len(self.sensitivityDataColumns) > 0:
             sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
             sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
+            sens_pow_interp_column = self.measuredTurbPowerCurveInterp if self.turbRenormActive else self.measuredPowerCurveInterp
+            self.interpolatePowerCurve(sens_pow_curve, self.inputHubWindSpeedSource, sens_pow_interp_column)
             self.status.addMessage("Attempting power curve sensitivty analysis for %s power curve..." % sens_pow_curve.name)
-            self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column)
+            self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column, sens_pow_interp_column)
         
         if self.hasActualPower:
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
+            self.dayTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.dayTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(11)])
+            self.nightTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.nightTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(12)])
             self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
             if self.turbRenormActive:
                 self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index, print_to_console = True)
             self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByWindSpeed(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
+            self.iec_2005_cat_A_power_curve_uncertainty()
         self.status.addMessage("Complete")
 
     def generateUniqueId(self):
@@ -509,7 +521,7 @@ class Analysis:
                 else:
                     raise Exception("Unexpected filter mode")
 
-            else:
+            elif mode <= 10:
 
                 innerMask = innerTurbMask & innerShearMask
                 mask = mask & (~innerMask)
@@ -526,6 +538,16 @@ class Analysis:
                 elif mode == 10:
                     #HighShearLowTurbulence
                     mask = mask & (self.dataFrame[self.shearExponent] >= self.innerRangeCenterShear) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeCenterTurbulence)
+                else:
+                    raise Exception("Unexpected filter mode")
+            
+            else:
+                if mode == 11:
+                    #for day time power curve (between 7am and 8pm)
+                    mask = mask & (self.dataFrame[self.timeStamp].dt.hour >= 7) & (self.dataFrame[self.timeStamp].dt.hour <= 20)
+                elif mode == 12:
+                    #for night time power curve (between 8pm and 7am)
+                    mask = mask & ((self.dataFrame[self.timeStamp].dt.hour < 7) | (self.dataFrame[self.timeStamp].dt.hour > 20))
                 else:
                     raise Exception("Unexpected filter mode")
 
@@ -555,10 +577,17 @@ class Analysis:
             return 10
         elif self.filterMode == "All":
             return 0
+        elif self.filterMode == "Day":
+            return 11
+        elif self.filterMode == "Night":
+            return 12
         else:
             raise Exception("Unrecognised filter mode: %s" % self.filterMode)
 
-    def performSensitivityAnalysis(self, power_curve, power_column, n_random_tests = 20):
+    def interpolatePowerCurve(self, powerCurveLevels, ws_col, interp_power_col):
+        self.dataFrame[interp_power_col] = self.dataFrame[ws_col].apply(powerCurveLevels.power)
+
+    def performSensitivityAnalysis(self, power_curve, power_column, interp_pow_column, n_random_tests = 20):
 
         mask = self.getFilter()
         filteredDataFrame = self.dataFrame[mask]
@@ -569,7 +598,7 @@ class Analysis:
             rand_columns.append('Random ' + str(i + 1))
         filteredDataFrame[rand_columns] = pd.DataFrame(np.random.rand(len(filteredDataFrame),n_random_tests), columns=rand_columns, index = filteredDataFrame.index)
         for col in rand_columns:
-            variation_metric = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)[1]
+            variation_metric = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column, interp_pow_column)[1]
             rand_sensitivity_results.append(variation_metric)
         self.sensitivityAnalysisThreshold = np.mean(rand_sensitivity_results)
         print "\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.)
@@ -580,11 +609,11 @@ class Analysis:
         filteredDataFrame['Hours From Noon'] = np.abs(filteredDataFrame[self.timeStamp].dt.hour - 12)
         filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame[self.timeStamp].dt.dayofyear - 182)
         
-        for col in self.sensitivityDataColumns:
-        #for col in (filteredDataFrame.columns): # if we want to do the sensitivity analysis for all columns in the dataframe...
+        #for col in (self.sensitivityDataColumns + ['Days Elapsed In Test','Hours From Noon','Days From 182nd Day Of Year']):
+        for col in (list(filteredDataFrame.columns) + ['Days Elapsed In Test','Hours From Noon','Days From 182nd Day Of Year']): # if we want to do the sensitivity analysis for all columns in the dataframe...
             print "\nAttempting to compute sensitivity of power curve to %s..." % col
             try:
-                self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column)
+                self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column, interp_pow_column)
                 print "Variation of power curve with respect to %s is %.2f%%." % (col, self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] * 100.)
                 if self.powerCurveSensitivityVariationMetrics.loc[col,'Power Curve Variation Metric'] == 0:
                     self.powerCurveSensitivityVariationMetrics.drop(col, axis = 1, inplace = True)
@@ -592,7 +621,7 @@ class Analysis:
                 print "Could not run sensitivity analysis for %s." % col
         self.powerCurveSensitivityVariationMetrics.sort('Power Curve Variation Metric', ascending = False, inplace = True)
             
-    def calculatePowerCurveSensitivity(self, dataFrame, power_curve, dataColumn, power_column):
+    def calculatePowerCurveSensitivity(self, dataFrame, power_curve, dataColumn, power_column, interp_pow_column):
         
         dataFrame['Energy MWh'] = (dataFrame[power_column] * (float(self.timeStepInSeconds) / 3600.)).astype('float')
         
@@ -606,6 +635,8 @@ class Analysis:
         validWsBins = wsBinnedCount.index[wsBinnedCount[dataColumn] > minCount] #ws bins that have enough data for the sensitivity analysis
 
         dataFrame['Bin'] = np.nan #pre-allocating
+        dataFrame['Power Delta kW'] = dataFrame[power_column] - dataFrame[interp_pow_column]
+        dataFrame['Energy Delta MWh'] = dataFrame['Power Delta kW'] * (float(self.timeStepInSeconds) / 3600.)
         
         for wsBin in dataFrame['Wind Speed Bin'].unique(): #within each wind speed bin, bin again by the categorising by sensCol
             if wsBin in validWsBins:
@@ -615,23 +646,27 @@ class Analysis:
                 except:
                     print "\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin)
         
-        sensitivityResults = dataFrame[[power_column, 'Energy MWh', 'Wind Speed Bin','Bin']].groupby(['Wind Speed Bin','Bin']).agg({power_column: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len})
-        sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
-        for i in sensitivityResults.index:
-            sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, power_column] - power_curve.powerCurveLevels.loc[i[0], power_column]
-            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * power_curve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
+        sensitivityResults = dataFrame[[power_column, 'Energy MWh', 'Wind Speed Bin','Bin', 'Power Delta kW', 'Energy Delta MWh']].groupby(['Wind Speed Bin','Bin']).agg({power_column: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len, 'Power Delta kW': np.mean, 'Energy Delta MWh': np.sum})
+#        sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
+#        for i in sensitivityResults.index:
+#            #sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, power_column] - power_curve.powerCurveLevels.loc[i[0], power_column]
+#            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * power_curve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
         
         return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'}), np.abs(sensitivityResults['Energy Delta MWh']).sum() / (power_curve.powerCurveLevels[power_column] * power_curve.powerCurveLevels['Data Count'] * (float(self.timeStepInSeconds) / 3600.)).sum()
 
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name):
         
+        print "Calculating %s power curve." % name        
+        
         mask = (self.dataFrame[powerColumn] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
-
+        
         filteredDataFrame = self.dataFrame[mask]
+        
+        print "%s rows of data being used for %s power curve." % (len(filteredDataFrame), name)
 
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[powerColumn, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
-        powerStdDev = filteredDataFrame[[powerColumn, self.inputHubWindSpeed]].groupby(filteredDataFrame[self.windSpeedBin]).std().rename(columns={powerColumn:"Power Std Dev"})["Power Std Dev"]
+        powerStdDev = filteredDataFrame[[powerColumn, self.inputHubWindSpeed]].groupby(filteredDataFrame[self.windSpeedBin]).std().rename(columns={powerColumn:self.powerStandDev})[self.powerStandDev]
 
         dfDataCount = filteredDataFrame[powerColumn].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.dataCount:'count'})
         if not all(dfPowerLevels.index == dfDataCount.index):
@@ -639,6 +674,7 @@ class Analysis:
         dfPowerLevels = dfPowerLevels.join(dfDataCount, how = 'inner')
         dfPowerLevels = dfPowerLevels.join(powerStdDev, how = 'inner')
         dfPowerLevels.dropna(inplace = True)
+        
         if self.powerCoeff in filteredDataFrame.columns:
             dfPowerCoeff = filteredDataFrame[self.powerCoeff].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         else:
@@ -718,7 +754,21 @@ class Analysis:
                 df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
         return df.dropna()
 
-    def report(self, path, version="unknown"):
+    def iec_2005_cat_A_power_curve_uncertainty(self):
+        if self.turbRenormActive:
+            pc = self.allMeasuredTurbCorrectedPowerCurve.powerCurveLevels
+            pow_col = self.measuredTurbulencePower
+        else:
+            pc = self.allMeasuredPowerCurve.powerCurveLevels
+            pow_col = self.actualPower
+        #pc['frequency'] = pc[self.dataCount] / pc[self.dataCount].sum()
+        pc['s_i'] = pc[self.powerStandDev] / (pc[self.dataCount]**0.5) #from IEC 2005
+        unc_MWh = (np.abs(pc['s_i']) * (pc[self.dataCount] / 6.)).sum()
+        test_MWh = (np.abs(pc[pow_col]) * (pc[self.dataCount] / 6.)).sum()
+        self.categoryAUncertainty = unc_MWh / test_MWh
+        self.status.addMessage("Power curve category A uncertainty: %.4f%%" % (self.categoryAUncertainty * 100.0))
+
+    def report(self, path,version="unknown"):
 
         report = reporting.report(self.windSpeedBins, self.turbulenceBins, version)
         report.report(path, self)

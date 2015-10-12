@@ -9,25 +9,22 @@ import binning
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
+
 def getSeparatorValue(separator):
-
-        #separator = separator.upper()
-
-        if separator == "TAB":
-                return "\t"
-        elif separator == "SPACE":
-                return " "
-        elif separator == "COMMA":
-                return ","
-        elif separator == "SEMI-COLON":
-                return ";"
-        else:
-                raise Exception("Unkown separator: '%s'" % separator)
+    try:
+        return {"TAB":"\t",
+                "SPACE":" ",
+                "COMMA": ",",
+                "SEMI-COLON":";"}[separator.upper()]
+    except:
+        raise Exception("Unkown separator: '%s'" % separator)
+        
 
 class DeviationMatrix(object):
     def __init__(self,deviationMatrix,countMatrix):
         self.matrix = deviationMatrix
         self.count  = countMatrix
+
 
 class CalibrationBase:
 
