@@ -881,9 +881,13 @@ class Analysis:
 
         allFilterMode = 0
 
+        self.normalisedWS = 'Normalised WS'
+        self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.config.cutInWindSpeed) / (self.observedRatedWindSpeed - self.config.cutInWindSpeed)
+
         self.normalisedWSBin = 'Normalised WS Bin'
-        firstNormWSbin = 0.30
-        lastNormWSbin = 3.0
+        
+        firstNormWSbin = 0.
+        lastNormWSbin = 3.
         normWSstep = 0.1
 
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
@@ -894,7 +898,7 @@ class Analysis:
         #self.dataFrame.loc[mask,self.normalisedWSBin] = ((self.dataFrame[mask][self.inputHubWindSpeed] - self.powerCurve.cutInWindSpeed) / (self.observedRatedWindSpeed - self.powerCurve.cutInWindSpeed))
         #self.dataFrame.loc[~mask,self.normalisedWSBin] = 1 + ((self.dataFrame[~mask][self.inputHubWindSpeed] - self.observedRatedWindSpeed) / (self.powerCurve.cutOutWindSpeed - self.observedRatedWindSpeed  ) )
         #self.dataFrame[self.normalisedWSBin] = self.dataFrame[self.normalisedWSBin].map(self.normalisedWindSpeedBins.binCenter)
-        self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.inputHubWindSpeed] / self.observedRatedWindSpeed).map(self.normalisedWindSpeedBins.binCenter)
+        self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
 
         self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
                                                                                ,windBin = self.normalisedWSBin
