@@ -305,6 +305,7 @@ class Analysis:
                 self.calculate_pcwg_error_fields()
                 self.calculate_pcwg_overall_metrics()
                 self.calculate_pcwg_binned_metrics()
+                self.pcwg_data_share_report()
             
         self.status.addMessage("Complete")
 
@@ -782,7 +783,7 @@ class Analysis:
     def calculate_pcwg_overall_metrics(self):
         self.overall_pcwg_err_metrics = {}
         NME, NMAE, data_count = self._calculate_pcwg_error_metric(self.pcwgErrorBaseline)
-        self.overall_pcwg_err_metrics['Data Count'] = data_count
+        self.overall_pcwg_err_metrics[self.dataCount] = data_count
         self.overall_pcwg_err_metrics['Baseline NME'] = NME
         self.overall_pcwg_err_metrics['Baseline NMAE'] = NMAE
         if self.turbRenormActive:
@@ -871,6 +872,7 @@ class Analysis:
     def pcwg_data_share_report(self, version = 'Unknown'):
         from data_sharing_reports import pcwg_share1_rpt
         rpt = pcwg_share1_rpt(self, version)
+        rpt.report()
 
     def calculate_anonymous_values(self):
 

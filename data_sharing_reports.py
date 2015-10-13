@@ -20,14 +20,15 @@ sheet_map = {'Submission': 0,
 
 class pcwg_share1_rpt(object):
     
-    def __init__(self, analysis, version, template = 'Intelligence Sharing Mock Up Report.xls'):
+    def __init__(self, analysis, version, template = 'Share_1_template.xls'):
         rb = xlrd.open_workbook(template, formatting_info=True)
         self.workbook = copy(rb)
         self.analysis = analysis
         self.no_of_datasets = len(analysis.datasetConfigs)
     
-    def report(version = 'Unknown'):
+    def report(self, version = 'Unknown'):
         self.write_submission_data(sheet_map['Submission'], version)
+        self.export()
     
     def write_meta_data(self):
         pass
@@ -68,7 +69,9 @@ class pcwg_share1_rpt(object):
     def insert_images(self):
         pass
     
-    def export(self, path = 'Data Sharing Initiative 1 Report.xsl'):
+    def export(self, output_fname = 'Data Sharing Initiative 1 Report.xsl'):
+        path = os.getcwd() + os.sep + output_fname
+        print "Exporting the PCWG Share 1 report to:\n\t%s" % (path)
         self.workbook.save(path)
 
 
