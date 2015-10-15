@@ -16,7 +16,7 @@
 		<TimeStepInSeconds>600</TimeStepInSeconds>
 		<ReferenceWindSpeed></ReferenceWindSpeed>
 		<ReferenceWindSpeedStdDev></ReferenceWindSpeedStdDev>
-		<ReferenceWindDirection></ReferenceWindDirection>
+		<ReferenceWindDirection>Mast - 92.1m Wind Direction Mean</ReferenceWindDirection>
 		<ReferenceWindDirectionOffset>0.000000</ReferenceWindDirectionOffset>
 		<Temperature></Temperature>
 		<Pressure></Pressure>

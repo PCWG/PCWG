@@ -123,7 +123,7 @@ class Analysis:
         self.calibrations = []
 
         self.uniqueAnalysisId = hash_file_contents(self.config.path)
-        self.status.addMessage("Unique Analysis ID is:\n%s\n" % self.uniqueAnalysisId)
+        self.status.addMessage("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
         self.status.addMessage("Calculating (please wait)...")
 
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
@@ -900,15 +900,11 @@ class Analysis:
 
         self.normalisedWS = 'Normalised WS'
         self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.config.cutInWindSpeed) / (self.observedRatedWindSpeed - self.config.cutInWindSpeed)
-
-        self.normalisedWSBin = 'Normalised WS Bin'
-        
+        self.normalisedWSBin = 'Normalised WS Bin Centre'
         firstNormWSbin = 0.05
-        lastNormWSbin = 3.
+        lastNormWSbin = 2.95
         normWSstep = 0.1
-
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
-
         #commented oput solution dependent on discussion around anonymous wind speeds
         #self.dataFrame[self.normalisedWSBin] = np.nan
         #mask = self.dataFrame[self.inputHubWindSpeed] < self.observedRatedWindSpeed
@@ -916,6 +912,29 @@ class Analysis:
         #self.dataFrame.loc[~mask,self.normalisedWSBin] = 1 + ((self.dataFrame[~mask][self.inputHubWindSpeed] - self.observedRatedWindSpeed) / (self.powerCurve.cutOutWindSpeed - self.observedRatedWindSpeed  ) )
         #self.dataFrame[self.normalisedWSBin] = self.dataFrame[self.normalisedWSBin].map(self.normalisedWindSpeedBins.binCenter)
         self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
+
+        self.pcwgDirectionBin = 'Wind Direction Bin Centre'
+        dir_bin_width = 10.
+        wdir_centre_first_bin = 0.
+        self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
+        self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
+        self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
+
+        self.pcwgFourCellMatrixGroup = 'PCWG Four Cell WS-TI Matrix Group'
+        self.dataFrame[self.pcwgFourCellMatrixGroup] = 'Unassigned'
+        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-HTI'
+        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-HTI'
+        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-LTI'
+        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-LTI'
+        
+        self.pcwgRange = 'PCWG Range (Inner or Outer)'
+        self.dataFrame[self.pcwgRange] = 'Unassigned'
+        self.dataFrame.loc[self.getFilter(1), self.pcwgRange] = 'Inner'
+        self.dataFrame.loc[self.getFilter(4), self.pcwgRange] = 'Outer'
 
         self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
                                                                                ,windBin = self.normalisedWSBin
