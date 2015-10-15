@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import scipy as sp
+import hashlib
 
 import os
 import datetime
@@ -19,12 +20,18 @@ def chckMake(path):
     if not os.path.exists(path):
         os.mkdir(path)
 
+def hash_file_contents(file_path):
+    with open(file_path, 'r') as f:
+        uid = hashlib.sha1(f.read()).hexdigest()
+    return uid
+
 class NullStatus:
     def __nonzero__(self):
         return False
 
     def addMessage(self, message):
         pass
+
 
 class DensityCorrectionCalculator:
 
@@ -38,6 +45,7 @@ class DensityCorrectionCalculator:
 
         return row[self.windSpeedColumn] * (row[self.densityColumn] / self.referenceDensity) ** (1.0 / 3.0)
 
+
 class PowerCalculator:
 
     def __init__(self, powerCurve, windSpeedColumn):
@@ -48,6 +56,7 @@ class PowerCalculator:
     def power(self, row):
 
         return self.powerCurve.power(row[self.windSpeedColumn])
+
 
 class TurbulencePowerCalculator:
 
@@ -60,6 +69,7 @@ class TurbulencePowerCalculator:
 
     def power(self, row):
         return self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn])
+
 
 class PowerDeviationMatrixPowerCalculator:
 
@@ -79,6 +89,7 @@ class PowerDeviationMatrixPowerCalculator:
             parameters[dimension.parameter] = value
 
         return self.powerDeviationMatrix[parameters]
+
 
 class Analysis:
 
@@ -111,14 +122,16 @@ class Analysis:
 
         self.calibrations = []
 
+        self.uniqueAnalysisId = hash_file_contents(self.config.path)
+        self.status.addMessage("Unique Analysis ID is:\n%s\n" % self.uniqueAnalysisId)
         self.status.addMessage("Calculating (please wait)...")
 
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
 
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
-        
-        self.uniqueAnalysisId = self.generateUniqueId()        
+        if len(self.datasetConfigs) > 0:
+            self.datasetUniqueIds = self.generate_unique_dset_ids()
         
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
@@ -309,11 +322,6 @@ class Analysis:
             
         self.status.addMessage("Complete")
 
-    def generateUniqueId(self):
-        iD = hash(self.config.path) #TODO: need to change this to a checksum of the input file contents
-        #self.status.addMessage("Unique ID:" + str(iD)) # reinstate once feature is complete
-        return iD
-
     def applyRemainingFilters(self):
 
         print "Apply derived filters (filters which depend on calculated columns)"
@@ -444,6 +452,15 @@ class Analysis:
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
 
         self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
+
+    def generate_unique_dset_ids(self):
+        dset_ids = {}
+        for conf in self.datasetConfigs:
+            ids = {}
+            ids['Configuration'] = hash_file_contents(conf.path)
+            ids['Time Series'] = hash_file_contents(conf.data.relativePath.convertToAbsolutePath(conf.inputTimeSeriesPath))
+            dset_ids[conf.name] = ids
+        return dset_ids
 
     def selectPowerCurve(self, powerCurveMode):
 

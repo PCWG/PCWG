@@ -21,10 +21,15 @@ sheet_map = {'Submission': 0,
              'PDM': 6}
 
 def wrt_cell_keep_style(value, sheet, row, col):
-    style = sheet._Worksheet__rows.get(row)._Row__cells.get(col).xf_idx
+    style = _get_cell_style(sheet, row, col)
     sheet.write(row, col, value)
+    _apply_cell_style(style, sheet, row, col)
+    
+def _get_cell_style(sheet, row, col):
+    return sheet._Worksheet__rows.get(row)._Row__cells.get(col).xf_idx
+    
+def _apply_cell_style(style, sheet, row, col):
     sheet._Worksheet__rows.get(row)._Row__cells.get(col).xf_idx = style
-
 
 class pcwg_share1_rpt(object):
     
@@ -43,10 +48,17 @@ class pcwg_share1_rpt(object):
     
     def write_submission_data(self, sheet_no, version):
         sh = self.workbook.get_sheet(sheet_no)
+        wrt_cell_keep_style(self.analysis.uniqueAnalysisId, sh, 5, 2)
         wrt_cell_keep_style(str(dt.now()), sh, 6, 2)
         wrt_cell_keep_style(str(version), sh, 7, 2)
-        #sh.write(6, 2, str(dt.now()))
-        #sh.write(7, 2, str(version))
+        conf_row, ts_row, col = 11, 12, 2
+        style = _get_cell_style(sh, conf_row, col)
+        for conf_name in self.analysis.datasetUniqueIds.keys():
+            sh.write(conf_row, col, self.analysis.datasetUniqueIds[conf_name]['Configuration'])
+            _apply_cell_style(style, sh, conf_row, col)
+            sh.write(ts_row, col, self.analysis.datasetUniqueIds[conf_name]['Time Series'])
+            _apply_cell_style(style, sh, ts_row, col)
+            col += 1
         
     def write_metrics(self):
         pass
@@ -76,10 +88,13 @@ class pcwg_share1_rpt(object):
     
     def export(self, output_fname = 'Data Sharing Initiative 1 Report.xls'):
         path = os.getcwd() + os.sep + output_fname
+        self._write_confirmation_of_export()
         print "Exporting the PCWG Share 1 report to:\n\t%s" % (path)
         self.workbook.save(path)
 
-
+    def _write_confirmation_of_export(self):
+        sh = self.workbook.get_sheet(sheet_map['Submission'])
+        wrt_cell_keep_style(True, sh, 8, 2)
 
 #        if self.hasActualPower:
 #            self.powerCurveScatterMetric, _ = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
