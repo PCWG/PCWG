@@ -15,7 +15,7 @@ template_name = 'Share_1_template.xls'
 sheet_map = {'Submission': 0,
              'Meta Data': 1,
              'Baseline': 2,
-             'RES': 3,
+             'REWS': 3,
              'TI Renorm': 4,
              'REWS and TI Renorm': 5,
              'PDM': 6}
@@ -31,6 +31,7 @@ def _get_cell_style(sheet, row, col):
 def _apply_cell_style(style, sheet, row, col):
     sheet._Worksheet__rows.get(row)._Row__cells.get(col).xf_idx = style
 
+
 class pcwg_share1_rpt(object):
     
     def __init__(self, analysis, version, template = template_name):
@@ -41,6 +42,7 @@ class pcwg_share1_rpt(object):
     
     def report(self, version = 'Unknown'):
         self.write_submission_data(sheet_map['Submission'], version)
+        self.write_metrics()
         self.export()
     
     def write_meta_data(self):
@@ -61,26 +63,36 @@ class pcwg_share1_rpt(object):
             col += 1
         
     def write_metrics(self):
+        self._write_metrics_sheet('Baseline')
+        if self.analysis.turbRenormActive:
+            self._write_metrics_sheet('TI Renorm')
+        if self.analysis.rewsActive:
+            self._write_metrics_sheet('REWS')
+        if (self.analysis.turbRenormActive and self.analysis.rewsActive):
+            self._write_metrics_sheet('REWS and TI Renorm')
+        if self.analysis.powerDeviationMatrixActive:
+            self._write_metrics_sheet('PDM')
+    
+    def _write_metrics_sheet(self, sh_name):
+        self.__write_overall_metric_sheet(sh_name)
+    
+    def __write_overall_metric_sheet(self, sh_name):
+        sh = self.workbook.get_sheet(sheet_map[sh_name])
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[self.analysis.dataCount], sh, 3, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NME'], sh, 4, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NMAE'], sh, 5, 3)
+    
+    def __write_by_ws_metric_sheet(self, sh):
+        for i in self.analysis.normalisedWindSpeedBins.centers:
+            pass
+    
+    def __write_by_dir_metric_sheet(self, sh):
         pass
     
-    def _write_metrics_sheet(self, sheet):
+    def __write_by_time_metric_sheet(self, sh):
         pass
     
-    def __write_overall_metric_sheet(self, sheet_no):
-        sh = self.workbook.get_sheet(sheet_no)
-        
-        sh.write(3, 3, self.analysis.overall_pcwg_err_metrics['Data Count'])
-    
-    def __write_by_ws_metric_sheet(self, sheet):
-        pass
-    
-    def __write_by_dir_metric_sheet(self, sheet):
-        pass
-    
-    def __write_by_time_metric_sheet(self, sheet):
-        pass
-    
-    def __write_by_range_metric_sheet(self, sheet):
+    def __write_by_range_metric_sheet(self, sh):
         pass
     
     def insert_images(self):

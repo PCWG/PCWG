@@ -813,8 +813,8 @@ class Analysis:
             self.overall_pcwg_err_metrics['REWS NMAE'] = NMAE
         if (self.turbRenormActive and self.rewsActive):
             NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTiRewsCombined)
-            self.overall_pcwg_err_metrics['REWS and TI NME'] = NME
-            self.overall_pcwg_err_metrics['REWS and TI NMAE'] = NMAE
+            self.overall_pcwg_err_metrics['REWS and TI Renorm NME'] = NME
+            self.overall_pcwg_err_metrics['REWS and TI Renorm NMAE'] = NMAE
         if self.powerDeviationMatrixActive:
             NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorPdm)
             self.overall_pcwg_err_metrics['PDM NME'] = NME
@@ -903,7 +903,7 @@ class Analysis:
 
         self.normalisedWSBin = 'Normalised WS Bin'
         
-        firstNormWSbin = 0.
+        firstNormWSbin = 0.05
         lastNormWSbin = 3.
         normWSstep = 0.1
 
