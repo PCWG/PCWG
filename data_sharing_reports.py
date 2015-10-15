@@ -10,6 +10,8 @@ import xlrd
 from xlutils.copy import copy
 from datetime import datetime as dt 
 
+template_name = 'Share_1_template.xls'
+
 sheet_map = {'Submission': 0,
              'Meta Data': 1,
              'Baseline': 2,
@@ -18,9 +20,15 @@ sheet_map = {'Submission': 0,
              'REWS and TI Renorm': 5,
              'PDM': 6}
 
+def wrt_cell_keep_style(value, sheet, row, col):
+    style = sheet._Worksheet__rows.get(row)._Row__cells.get(col).xf_idx
+    sheet.write(row, col, value)
+    sheet._Worksheet__rows.get(row)._Row__cells.get(col).xf_idx = style
+
+
 class pcwg_share1_rpt(object):
     
-    def __init__(self, analysis, version, template = 'Share_1_template.xls'):
+    def __init__(self, analysis, version, template = template_name):
         rb = xlrd.open_workbook(template, formatting_info=True)
         self.workbook = copy(rb)
         self.analysis = analysis
@@ -33,13 +41,12 @@ class pcwg_share1_rpt(object):
     def write_meta_data(self):
         pass
     
-    def write_submission_data(self, sheet, version):
-        sh = self.workbook.get_sheet(sheet)
-        
-        sh.write(6, 2, str(dt.now()))
-        sh.write(7, 2, str(version))
-        
-        
+    def write_submission_data(self, sheet_no, version):
+        sh = self.workbook.get_sheet(sheet_no)
+        wrt_cell_keep_style(str(dt.now()), sh, 6, 2)
+        wrt_cell_keep_style(str(version), sh, 7, 2)
+        #sh.write(6, 2, str(dt.now()))
+        #sh.write(7, 2, str(version))
         
     def write_metrics(self):
         pass
@@ -47,8 +54,8 @@ class pcwg_share1_rpt(object):
     def _write_metrics_sheet(self, sheet):
         pass
     
-    def __write_overall_metric_sheet(self, sheet):
-        sh = self.workbook.get_sheet(sheet)
+    def __write_overall_metric_sheet(self, sheet_no):
+        sh = self.workbook.get_sheet(sheet_no)
         
         sh.write(3, 3, self.analysis.overall_pcwg_err_metrics['Data Count'])
     
@@ -64,12 +71,10 @@ class pcwg_share1_rpt(object):
     def __write_by_range_metric_sheet(self, sheet):
         pass
     
-    
-        
     def insert_images(self):
         pass
     
-    def export(self, output_fname = 'Data Sharing Initiative 1 Report.xsl'):
+    def export(self, output_fname = 'Data Sharing Initiative 1 Report.xls'):
         path = os.getcwd() + os.sep + output_fname
         print "Exporting the PCWG Share 1 report to:\n\t%s" % (path)
         self.workbook.save(path)
