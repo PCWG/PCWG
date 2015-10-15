@@ -916,6 +916,7 @@ class Analysis:
         self.pcwgDirectionBin = 'Wind Direction Bin Centre'
         dir_bin_width = 10.
         wdir_centre_first_bin = 0.
+        self.pcwgWindDirBins = binning.Bins(0, dir_bin_width, wdir_centre_first_bin)
         self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
         self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
         self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
@@ -935,6 +936,11 @@ class Analysis:
         self.dataFrame[self.pcwgRange] = 'Unassigned'
         self.dataFrame.loc[self.getFilter(1), self.pcwgRange] = 'Inner'
         self.dataFrame.loc[self.getFilter(4), self.pcwgRange] = 'Outer'
+        
+        self.hourOfDay = 'Hour Of Day'
+        self.dataFrame[self.hourOfDay] = self.dataFrame[self.timeStamp].dt.hour
+        self.calendarMonth = 'Calendar Month'
+        self.dataFrame[self.calendarMonth] = self.dataFrame[self.timeStamp].dt.month
 
         self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
                                                                                ,windBin = self.normalisedWSBin
