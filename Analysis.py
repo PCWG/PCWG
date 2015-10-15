@@ -821,7 +821,7 @@ class Analysis:
             self.overall_pcwg_err_metrics['PDM NMAE'] = NMAE
             
     def calculate_pcwg_binned_metrics(self):
-        reporting_bins = [self.normalisedWSBin]
+        reporting_bins = [self.normalisedWSBin, self.pcwgDirectionBin, self.hourOfDay, self.calendarMonth, self.pcwgFourCellMatrixGroup, self.pcwgRange]
         self.binned_pcwg_err_metrics = {}
         for bin_col_name in reporting_bins:
             self.binned_pcwg_err_metrics[bin_col_name] = {}
@@ -922,7 +922,7 @@ class Analysis:
         self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
 
         self.pcwgFourCellMatrixGroup = 'PCWG Four Cell WS-TI Matrix Group'
-        self.dataFrame[self.pcwgFourCellMatrixGroup] = 'Unassigned'
+        self.dataFrame[self.pcwgFourCellMatrixGroup] = np.nan
         filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
         self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-HTI'
         filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
@@ -933,7 +933,7 @@ class Analysis:
         self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-LTI'
         
         self.pcwgRange = 'PCWG Range (Inner or Outer)'
-        self.dataFrame[self.pcwgRange] = 'Unassigned'
+        self.dataFrame[self.pcwgRange] = np.nan
         self.dataFrame.loc[self.getFilter(1), self.pcwgRange] = 'Inner'
         self.dataFrame.loc[self.getFilter(4), self.pcwgRange] = 'Outer'
         
