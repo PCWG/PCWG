@@ -2949,6 +2949,7 @@ class UserInterface:
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
+                pcwg_share1_report_button = Button(commandframe, text="PCWG Share 1", command = self.export_pcwg_share1_report)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
                 benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
@@ -2970,7 +2971,8 @@ class UserInterface:
                 
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
-                anonym_report_button.pack(side=LEFT, padx=5, pady=5)
+                #anonym_report_button.pack(side=LEFT, padx=5, pady=5)
+                pcwg_share1_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
                 benchmark_button.pack(side=LEFT, padx=5, pady=5)
                 clear_console_button.pack(side=LEFT, padx=5, pady=5)
@@ -3161,7 +3163,22 @@ class UserInterface:
                         self.addMessage("Report written to %s" % fileName)
                 except ExceptionType as e:
                         self.addMessage("ERROR Exporting Report: %s" % e, red = True)
-
+        
+        def export_pcwg_share1_report(self):
+            if self.analysis == None:            
+                self.addMessage("ERROR: Analysis not yet calculated", red = True)
+                return
+            if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+                self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+                deviationMatrix = False
+                return
+            try:
+                fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
+                self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
+                self.addMessage("Report written to %s" % fileName)
+            except ExceptionType as e:
+                self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+        
         def ExportAnonymousReport(self):
                 scatter = True
                 deviationMatrix = True

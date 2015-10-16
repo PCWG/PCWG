@@ -312,14 +312,6 @@ class Analysis:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
             
-            if self.powerCurveMode == "Specified":
-                self.status.addMessage("Cannot calculate PCWG error metrics when power curve mode is Specified.")
-            else:
-                self.calculate_pcwg_error_fields()
-                self.calculate_pcwg_overall_metrics()
-                self.calculate_pcwg_binned_metrics()
-                self.pcwg_data_share_report()
-            
         self.status.addMessage("Complete")
 
     def applyRemainingFilters(self):
@@ -886,9 +878,15 @@ class Analysis:
 
         report.report(path, self, powerDeviationMatrix = deviationMatrix, scatterMetric= scatter)
 
-    def pcwg_data_share_report(self, version = 'Unknown'):
+    def pcwg_data_share_report(self, version = 'Unknown', output_fname = (os.getcwd() + os.sep + 'Data Sharing Initiative 1 Report.xls')):
+        if self.powerCurveMode != "InnerMeasured":
+            raise Exception("Power Curve Mode must be set to Inner to export PCWG Sharing Initiative 1 Report.")
+        else:
+            self.calculate_pcwg_error_fields()
+            self.calculate_pcwg_overall_metrics()
+            self.calculate_pcwg_binned_metrics()        
         from data_sharing_reports import pcwg_share1_rpt
-        rpt = pcwg_share1_rpt(self, version)
+        rpt = pcwg_share1_rpt(self, version = version, output_fname = output_fname)
         rpt.report()
 
     def calculate_anonymous_values(self):
