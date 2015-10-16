@@ -46,6 +46,7 @@ class pcwg_share1_rpt(object):
         self.write_submission_data(sheet_map['Submission'])
         self.write_meta_data()
         self.write_metrics()
+        #self.insert_images()
         self.export()
     
     def write_meta_data(self):
@@ -204,8 +205,13 @@ class pcwg_share1_rpt(object):
                 col += 1
     
     def insert_images(self):
-        pass
-    
+        from plots import MatplotlibPlotter
+        pc = self.analysis.innerMeasuredPowerCurve
+        
+        #normalise the parts of pc that are actually used
+        plotter = MatplotlibPlotter('Temp', self.analysis)
+        plotter.plotPowerCurve(self.analysis.normalisedWS, self.analysis.normalisedPower, pc)
+        
     def export(self):
         self._write_confirmation_of_export()
         print "Exporting the PCWG Share 1 report to:\n\t%s" % (self.output_fname)

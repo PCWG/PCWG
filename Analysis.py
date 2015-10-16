@@ -897,7 +897,10 @@ class Analysis:
         self.observedRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(self.powerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
 
         allFilterMode = 0
-
+        
+        self.normalisedPower = 'Normalised Power'
+        self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.config.ratedPower
+        
         self.normalisedWS = 'Normalised WS'
         self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.config.cutInWindSpeed) / (self.observedRatedWindSpeed - self.config.cutInWindSpeed)
         self.normalisedWSBin = 'Normalised WS Bin Centre'
