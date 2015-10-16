@@ -63,6 +63,10 @@ class pcwg_share1_rpt(object):
             range_id = 'C'
         else:
             raise Exception('The inner range %s is not valid for use in the PCWG Sharing Initiative.' % used_inner_range)
+        manual_required_style = _get_cell_style(sh, 7, 2)
+        manual_optional_style = _get_cell_style(sh, 13, 2)
+        man_req_rows = [7, 11, 12, 18, 19, 21, 26, 29]
+        man_opt_rows = [13, 14, 15, 16, 17, 20, 22, 28]
         for conf in self.analysis.datasetConfigs:
             wrt_cell_keep_style(self.analysis.datasetUniqueIds[conf.name]['Configuration'], sh, 6, col)
             if self.analysis.rewsActive:
@@ -73,6 +77,12 @@ class pcwg_share1_rpt(object):
             wrt_cell_keep_style(self.analysis.config.hubHeight, sh, 24, col)
             wrt_cell_keep_style(self.analysis.config.ratedPower, sh, 25, col)
             wrt_cell_keep_style(int(min(self.analysis.dataFrame.loc[self.analysis.dataFrame[self.analysis.nameColumn] == conf.name, self.analysis.timeStamp].dt.year)), sh, 27, col)
+            for row in man_req_rows:
+                sh.write(row, col, None)
+                _apply_cell_style(manual_required_style, sh, row, col)
+            for row in man_opt_rows:
+                sh.write(row, col, None)
+                _apply_cell_style(manual_optional_style, sh, row, col)
             col += 1
     
     def write_submission_data(self, sheet_no):

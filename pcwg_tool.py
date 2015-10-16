@@ -3170,7 +3170,6 @@ class UserInterface:
                 return
             if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
                 self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
-                deviationMatrix = False
                 return
             try:
                 fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
