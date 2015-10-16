@@ -905,18 +905,12 @@ class Analysis:
         lastNormWSbin = 2.95
         normWSstep = 0.1
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
-        #commented oput solution dependent on discussion around anonymous wind speeds
-        #self.dataFrame[self.normalisedWSBin] = np.nan
-        #mask = self.dataFrame[self.inputHubWindSpeed] < self.observedRatedWindSpeed
-        #self.dataFrame.loc[mask,self.normalisedWSBin] = ((self.dataFrame[mask][self.inputHubWindSpeed] - self.powerCurve.cutInWindSpeed) / (self.observedRatedWindSpeed - self.powerCurve.cutInWindSpeed))
-        #self.dataFrame.loc[~mask,self.normalisedWSBin] = 1 + ((self.dataFrame[~mask][self.inputHubWindSpeed] - self.observedRatedWindSpeed) / (self.powerCurve.cutOutWindSpeed - self.observedRatedWindSpeed  ) )
-        #self.dataFrame[self.normalisedWSBin] = self.dataFrame[self.normalisedWSBin].map(self.normalisedWindSpeedBins.binCenter)
         self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
 
         self.pcwgDirectionBin = 'Wind Direction Bin Centre'
         dir_bin_width = 10.
         wdir_centre_first_bin = 0.
-        self.pcwgWindDirBins = binning.Bins(0, dir_bin_width, wdir_centre_first_bin)
+        self.pcwgWindDirBins = binning.Bins(wdir_centre_first_bin, dir_bin_width, 350.)
         self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
         self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
         self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360

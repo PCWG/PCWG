@@ -18,7 +18,7 @@
 		<InnerRangeLowerTurbulence>0.080000</InnerRangeLowerTurbulence>
 		<InnerRangeUpperTurbulence>0.120000</InnerRangeUpperTurbulence>
 		<InnerRangeLowerShear>0.050000</InnerRangeLowerShear>
-		<InnerRangeUpperShear>0.200000</InnerRangeUpperShear>
+		<InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
 	</InnerRange>
 	<Turbine>
 		<CutInWindSpeed>3.000000</CutInWindSpeed>
