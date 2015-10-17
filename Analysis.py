@@ -831,17 +831,15 @@ class Analysis:
         def sum_abs(x):
             return x.abs().sum()
         grouped = self.dataFrame.groupby(bin_col_name)
-        agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count'], self.actualPower: 'sum'}) #using sum so we get NME, need to also sum abs to get NMAE
+        agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count'], self.actualPower: 'sum'})
         agg.loc[:, (candidate_error, 'NME')] = agg.loc[:, (candidate_error, 'sum')] / agg.loc[:, (self.actualPower, 'sum')]
-        agg.loc[:, (candidate_error, 'NME')] = agg.loc[:, (candidate_error, 'NME')] / agg.loc[:, (candidate_error, 'count')]
         agg.loc[:, (candidate_error, 'NMAE')] = agg.loc[:, (candidate_error, 'sum_abs')] / agg.loc[:, (self.actualPower, 'sum')]
-        agg.loc[:, (candidate_error, 'NMAE')] = agg.loc[:, (candidate_error, 'NMAE')] / agg.loc[:, (candidate_error, 'count')]
         return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis = 1).rename(columns = {'count': self.dataCount})
     
     def _calculate_pcwg_error_metric(self, candidate_error):
         data_count = len(self.dataFrame[candidate_error].dropna())
-        NME = (self.dataFrame[candidate_error].sum() / self.dataFrame[self.actualPower].sum()) * (1. / data_count)
-        NMAE = (np.abs(self.dataFrame[candidate_error]).sum() / self.dataFrame[self.actualPower].sum()) * (1. / data_count)
+        NME = (self.dataFrame[candidate_error].sum() / self.dataFrame[self.actualPower].sum())
+        NMAE = (np.abs(self.dataFrame[candidate_error]).sum() / self.dataFrame[self.actualPower].sum())
         return NME, NMAE, data_count
 
     def iec_2005_cat_A_power_curve_uncertainty(self):
