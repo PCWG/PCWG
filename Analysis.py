@@ -304,7 +304,6 @@ class Analysis:
             self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
             self.dayTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.dayTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(11)])
             self.nightTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.nightTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(12)])
-            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
             if self.turbRenormActive:
                 self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index, print_to_console = True)
             self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByWindSpeed(self.allMeasuredPowerCurve, self.actualPower)
@@ -756,7 +755,7 @@ class Analysis:
             powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
             print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
             if print_to_console:
-                self.status.addMessage("\n%s scatter metric is %s%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
+                self.status.addMessage("\n%s scatter metric is %.3f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
             return powerCurveScatterMetric
         except:
             print "Could not calculate power curve scatter metric."
@@ -854,7 +853,7 @@ class Analysis:
         unc_MWh = (np.abs(pc['s_i']) * (pc[self.dataCount] / 6.)).sum()
         test_MWh = (np.abs(pc[pow_col]) * (pc[self.dataCount] / 6.)).sum()
         self.categoryAUncertainty = unc_MWh / test_MWh
-        self.status.addMessage("Power curve category A uncertainty: %.4f%%" % (self.categoryAUncertainty * 100.0))
+        self.status.addMessage("Power curve category A uncertainty: %.3f%%" % (self.categoryAUncertainty * 100.0))
 
     def report(self, path,version="unknown"):
 
@@ -979,7 +978,7 @@ class Analysis:
         self.hubYield = self.dataFrame[self.getFilter()][self.hubPower].sum() * self.timeStampHours
         self.hubYieldCount = self.dataFrame[self.getFilter()][self.hubPower].count()
         self.hubDelta = self.hubYield / self.baseYield - 1.0
-        self.status.addMessage("Hub Delta: %f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))
+        self.status.addMessage("Hub Delta: %.3f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))
 
     def calculateREWS(self):
         self.dataFrame[self.rotorEquivalentWindSpeed] = self.dataFrame[self.inputHubWindSpeed] * self.dataFrame[self.profileHubToRotorRatio]
@@ -987,7 +986,7 @@ class Analysis:
         self.rewsYield = self.dataFrame[self.getFilter()][self.rewsPower].sum() * self.timeStampHours
         self.rewsYieldCount = self.dataFrame[self.getFilter()][self.rewsPower].count()
         self.rewsDelta = self.rewsYield / self.baseYield - 1.0
-        self.status.addMessage("REWS Delta: %f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
+        self.status.addMessage("REWS Delta: %.3f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
 
     def calculateTurbRenorm(self):
         self.dataFrame[self.turbulencePower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.inputHubWindSpeed, self.hubTurbulence).power, axis=1)
@@ -996,14 +995,14 @@ class Analysis:
         self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
         if self.hasActualPower:
             self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]).astype('float')
-        self.status.addMessage("Turb Delta: %f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
+        self.status.addMessage("Turb Delta: %.3f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
 
     def calculationCombined(self):
         self.dataFrame[self.combinedPower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.rotorEquivalentWindSpeed, self.hubTurbulence).power, axis=1)
         self.combinedYield = self.dataFrame[self.getFilter()][self.combinedPower].sum() * self.timeStampHours
         self.combinedYieldCount = self.dataFrame[self.getFilter()][self.combinedPower].count()
         self.combinedDelta = self.combinedYield / self.baseYield - 1.0
-        self.status.addMessage("Comb Delta: %f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
+        self.status.addMessage("Comb Delta: %.3f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
 
     def calculatePowerDeviationMatrixCorrection(self):
 

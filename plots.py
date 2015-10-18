@@ -105,7 +105,7 @@ class MatplotlibPlotter(object):
         except:
             print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
 
-    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, anon = False, row_filt = None, fname = None, show_analysis_pc = True, mean_title = 'Mean Power Curve'):
+    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, anon = False, row_filt = None, fname = None, show_analysis_pc = True, mean_title = 'Mean Power Curve', mean_pc_color = '#00FF00'):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
@@ -125,7 +125,7 @@ class MatplotlibPlotter(object):
                 if ((self.analysis.powerCurve.name != 'All Measured') and show_analysis_pc):
                     ax = self.analysis.powerCurve.powerCurveLevels.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.analysis.powerCurve.name)
             meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels.loc[meanPowerCurveObj.powerCurveLevels.index, 'Data Count'] > 0].reset_index().set_index(windSpeedCol)
-            ax = meanPowerCurve[powerCol].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
+            ax = meanPowerCurve[powerCol].plot(ax = ax,color=mean_pc_color,alpha=0.95,linestyle='--',
                                   label=mean_title)
             ax.legend(loc=4, scatterpoints = 1)
             if has_spec_pc:

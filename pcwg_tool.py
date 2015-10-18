@@ -19,7 +19,7 @@ datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.8"
 ExceptionType = Exception
-ExceptionType = None #comment this line before release
+#ExceptionType = None #comment this line before release
         
 def getDateFromEntry(entry):
     if len(entry.get()) > 0:

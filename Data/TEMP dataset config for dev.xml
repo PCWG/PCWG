@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
 <Configuration xmlns="http://www.pcwg.org">
+	<InvariantRandomID>371986</InvariantRandomID>
 	<GeneralSettings>
 		<Name>demo</Name>
 		<HubWindSpeedMode>Specified</HubWindSpeedMode>
@@ -24,9 +25,6 @@
 		<Density>Turbine Density</Density>
 		<TurbineLocationWindSpeed></TurbineLocationWindSpeed>
 		<Power>Turbine Power</Power>
-		<PowerMin></PowerMin>
-		<PowerMax></PowerMax>
-		<PowerSD></PowerSD>
 		<HubWindSpeed>Turbine Wind Speed Mean</HubWindSpeed>
 		<HubTurbulence>Mast - 96.0m Turbulence Intensity</HubTurbulence>
 	</Measurements>
@@ -62,24 +60,19 @@
 			<ProfileWindDirection>LiDAR - 137.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
+			<Height>127.500000</Height>
+			<ProfileWindSpeed>LiDAR - 127.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 127.5m Wind Direction Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
 			<Height>97.500000</Height>
 			<ProfileWindSpeed>LiDAR - 97.5m Wind Speed Mean</ProfileWindSpeed>
 			<ProfileWindDirection>LiDAR - 97.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>87.500000</Height>
-			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 87.5m Wind Direction Mean</ProfileWindDirection>
-		</ProfileLevel>
-		<ProfileLevel>
 			<Height>142.500000</Height>
 			<ProfileWindSpeed>LiDAR - 142.5m Wind Speed Mean</ProfileWindSpeed>
 			<ProfileWindDirection>LiDAR - 142.5m Wind Direction Mean</ProfileWindDirection>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>127.500000</Height>
-			<ProfileWindSpeed>LiDAR - 127.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 127.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>117.500000</Height>
@@ -90,6 +83,11 @@
 			<Height>107.500000</Height>
 			<ProfileWindSpeed>LiDAR - 107.5m Wind Speed Mean</ProfileWindSpeed>
 			<ProfileWindDirection>LiDAR - 107.5m Wind Direction Mean</ProfileWindDirection>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>87.500000</Height>
+			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 87.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 	</ProfileLevels>
 	<Calibration>

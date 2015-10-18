@@ -668,7 +668,7 @@ class DatasetConfiguration(XmlBase):
 
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
-
+            
             if self.nodeExists(configurationNode, 'GeneralSettings'):
                 collectorNode = self.getNode(configurationNode, 'GeneralSettings')
             else:
@@ -714,6 +714,11 @@ class DatasetConfiguration(XmlBase):
                 self.readSensitivityAnalysis(configurationNode)
             else:
                 self.sensitivityDataColumns = []
+            
+            self.invariant_rand_id = self.getNodeValueIfExists(configurationNode, 'InvariantRandomID', None)
+            self.invariant_rand_id = int(self.invariant_rand_id) if self.invariant_rand_id is not None else None
+            
+            self.save()
 
         else:
 
@@ -772,6 +777,10 @@ class DatasetConfiguration(XmlBase):
             self.calibrationSlopes = {}
             self.calibrationOffsets = {}
             self.calibrationActives = {}
+            
+            self.invariant_rand_id = None
+            
+            self.save()
 
     def parseDate(self, dateText):
         
@@ -786,20 +795,24 @@ class DatasetConfiguration(XmlBase):
                     raise Exception("Cannot parse date: %s (%s)" % (dateText, e.message))
         else:
             return None
-
+                
     def save(self):
-
         self.isNew = False
-
         doc = self.createDocument()
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")
         self.writeSettings(doc, root)
         self.saveDocument(doc, self.path)
 
     def writeSettings(self, doc, root):
-
+        if self.invariant_rand_id is not None:
+            self.addIntNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
+        else:
+            inv_id = str(np.random.rand())[2:8]
+            while len(inv_id) != 6:
+                inv_id = str(np.random.rand())[2:8]
+            self.invariant_rand_id = int(inv_id)
+            self.addIntNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
         genSettingsNode = self.addNode(doc, root, "GeneralSettings")
-
         self.addTextNode(doc, genSettingsNode, "Name", self.name)
         if self.startDate != None: self.addDateNode(doc, genSettingsNode, "StartDate", self.startDate)
         if self.endDate != None: self.addDateNode(doc, genSettingsNode, "EndDate", self.endDate)

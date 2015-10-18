@@ -71,7 +71,7 @@ class pcwg_share1_rpt(object):
         man_req_rows = [7, 11, 12, 18, 19, 21, 26, 29]
         man_opt_rows = [13, 14, 15, 16, 17, 20, 22, 28]
         for conf in self.analysis.datasetConfigs:
-            wrt_cell_keep_style(self.analysis.datasetUniqueIds[conf.name]['Configuration'], sh, 6, col)
+            wrt_cell_keep_style(conf.invariant_rand_id, sh, 6, col)
             if self.analysis.rewsActive:
                 wrt_cell_keep_style(len(conf.windSpeedLevels), sh, 8, col)
                 wrt_cell_keep_style(len(conf.windDirectionLevels), sh, 9, col)
@@ -93,12 +93,14 @@ class pcwg_share1_rpt(object):
         wrt_cell_keep_style(self.analysis.uniqueAnalysisId, sh, 5, 2)
         wrt_cell_keep_style(str(dt.now()), sh, 6, 2)
         wrt_cell_keep_style(str(self.version), sh, 7, 2)
-        conf_row, ts_row, col = 11, 12, 2
+        conf_inv_row, conf_row, ts_row, col = 11, 12, 13, 2
         style = _get_cell_style(sh, conf_row, col)
-        for conf_name in self.analysis.datasetUniqueIds.keys():
-            sh.write(conf_row, col, self.analysis.datasetUniqueIds[conf_name]['Configuration'])
+        for conf in self.analysis.datasetConfigs:
+            sh.write(conf_inv_row, col, conf.invariant_rand_id)
+            _apply_cell_style(style, sh, conf_inv_row, col)
+            sh.write(conf_row, col, self.analysis.datasetUniqueIds[conf.name]['Configuration'])
             _apply_cell_style(style, sh, conf_row, col)
-            sh.write(ts_row, col, self.analysis.datasetUniqueIds[conf_name]['Time Series'])
+            sh.write(ts_row, col, self.analysis.datasetUniqueIds[conf.name]['Time Series'])
             _apply_cell_style(style, sh, ts_row, col)
             col += 1
         
@@ -211,20 +213,19 @@ class pcwg_share1_rpt(object):
         plt_path = 'Temp'
         plotter = MatplotlibPlotter(plt_path, self.analysis)
         for conf in self.analysis.datasetConfigs:
-            sh = self.workbook.add_sheet(conf.name)
+            sh = self.workbook.add_sheet(str(conf.invariant_rand_id))
             row_filt = (self.analysis.dataFrame[self.analysis.nameColumn] == conf.name)
-            fname = conf.name + ' Anonymous Power Curve Plot'
-            plotter.plotPowerCurve(self.analysis.inputHubWindSpeed, self.analysis.actualPower, self.analysis.innerMeasuredPowerCurve, anon = True, row_filt = row_filt, fname = fname + '.png', show_analysis_pc = False, mean_title = 'Inner Range Power Curve')
+            fname = str(conf.invariant_rand_id) + ' Anonymous Power Curve Plot'
+            plotter.plotPowerCurve(self.analysis.inputHubWindSpeed, self.analysis.actualPower, self.analysis.innerMeasuredPowerCurve, anon = True, row_filt = row_filt, fname = fname + '.png', show_analysis_pc = False, mean_title = 'Inner Range Power Curve', mean_pc_color = '#FF0000')
             im = Image.open(plt_path + os.sep + fname + '.png').convert('RGB')
             im.save(plt_path + os.sep + fname + '.bmp')
-            sh.write(0, 0, self.analysis.datasetUniqueIds[conf.name]['Configuration'])
+            sh.write(0, 0, 'Power curve scatter plot for dataset with invariant random ID ' + str(conf.invariant_rand_id) + '. The Inner Range Power Curve shown is derived using all datasets.')
             sh.insert_bitmap(plt_path + os.sep + fname + '.bmp' , 2, 1)
         try:
             rmtree(plt_path)
         except:
             print 'Could not delete folder %s' % (os.getcwd() + os.sep + plt_path)
             
-    
     def export(self):
         self._write_confirmation_of_export()
         print "Exporting the PCWG Share 1 report to:\n\t%s" % (self.output_fname)
