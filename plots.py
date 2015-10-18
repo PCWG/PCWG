@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from Analysis import chckMake
 np = pd.np
 
 class MatplotlibPlotter(object):
@@ -27,6 +28,7 @@ class MatplotlibPlotter(object):
             ax.set_xlabel(windSpeedCol + ' (m/s)')
             ax.set_ylabel(powerCol + ' (kW)')
             file_out = self.path + "/Multiple Dataset PowerCurve - " + powerCol + " vs " + windSpeedCol + ".png"
+            chckMake(self.path)
             plt.savefig(file_out)
             plt.close()
             return file_out
@@ -75,6 +77,7 @@ class MatplotlibPlotter(object):
             handles, labels = ax1.get_legend_handles_labels()
             fig.legend(handles, labels, loc='lower center', ncol = len(self.analysis.sensitivityLabels.keys()), fancybox = True, shadow = True)
             file_out = self.path + os.sep + 'Power Curve Sensitivity to %s.png' % sensCol
+            chckMake(self.path)
             fig.savefig(file_out)
             plt.close()
         except:
@@ -95,21 +98,23 @@ class MatplotlibPlotter(object):
             ax.set_xlabel(by)
             ax.set_ylabel(variable)
             file_out = self.path + "/"+variable.replace(" ","_")+"_By_"+by.replace(" ","_")+".png"
+            chckMake(self.path)
             plt.savefig(file_out)
             plt.close()
             return file_out
         except:
             print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
 
-    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj):
+    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, anon = False, row_filt = None, fname = None, show_analysis_pc = True, mean_title = 'Mean Power Curve'):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
+            df = self.analysis.dataFrame.loc[row_filt, :] if row_filt is not None else self.analysis.dataFrame
             if (windSpeedCol == self.analysis.densityCorrectedHubWindSpeed) or ((windSpeedCol == self.analysis.inputHubWindSpeed) and (self.analysis.densityCorrectionActive)):
                 plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.referenceDensity)
             else:
                 plotTitle = "Power Curve"
-            ax = self.analysis.dataFrame.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
+            ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
             if self.analysis.specifiedPowerCurve is not None:
                 has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
             else:
@@ -117,19 +122,24 @@ class MatplotlibPlotter(object):
             if has_spec_pc:
                 ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
             if self.analysis.specifiedPowerCurve != self.analysis.powerCurve:
-                if self.analysis.powerCurve.name != 'All Measured':
+                if ((self.analysis.powerCurve.name != 'All Measured') and show_analysis_pc):
                     ax = self.analysis.powerCurve.powerCurveLevels.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.analysis.powerCurve.name)
-            meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
+            meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels.loc[meanPowerCurveObj.powerCurveLevels.index, 'Data Count'] > 0].reset_index().set_index(windSpeedCol)
             ax = meanPowerCurve[powerCol].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
-                                  label='Mean Power Curve')
+                                  label=mean_title)
             ax.legend(loc=4, scatterpoints = 1)
             if has_spec_pc:
                 ax.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
             else:
-                ax.set_xlim([min(self.analysis.dataFrame[windSpeedCol].min(),meanPowerCurve.index.min()), max(self.analysis.dataFrame[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
+                ax.set_xlim([min(df[windSpeedCol].min(),meanPowerCurve.index.min()), max(df[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
             ax.set_xlabel(self.analysis.inputHubWindSpeedSource + ' (m/s)')
             ax.set_ylabel(powerCol + ' (kW)')
-            file_out = self.path + "/PowerCurve - " + powerCol + " vs " + windSpeedCol + ".png"
+            if anon:
+                ax.xaxis.set_ticklabels([])
+                ax.yaxis.set_ticklabels([])
+            fname = ("PowerCurve - " + powerCol + " vs " + windSpeedCol + ".png") if fname is None else fname
+            file_out = self.path + os.sep + fname
+            chckMake(self.path)
             plt.savefig(file_out)
             plt.close()
             return file_out
@@ -175,6 +185,7 @@ class MatplotlibPlotter(object):
             h2, l2 = ax2.get_legend_handles_labels()
             ax.legend(h1+h2, l1+l2, loc=4, scatterpoints = 1)
             file_out = self.path + "/PowerCurve TI Corrected - " + powerCol + " vs " + windSpeedCol + ".png"
+            chckMake(self.path)
             plt.savefig(file_out)
             plt.close()
             return file_out
@@ -196,6 +207,7 @@ class MatplotlibPlotter(object):
             ax.set_xlabel(windSpeedCol)
             ax.set_ylabel("Power [kW]")
             file_out = self.path + "/PowerValues.png"
+            chckMake(self.path)
             plt.savefig(file_out)
             plt.close()
             return file_out
@@ -216,6 +228,7 @@ class MatplotlibPlotter(object):
                 df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
                 plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
                 file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors {nm}.png'.format(nm=datasetConf.name)
+                chckMake(self.path)
                 plt.savefig(file_out)
                 plt.close('all')
             except:

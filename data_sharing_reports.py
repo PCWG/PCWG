@@ -8,7 +8,9 @@ Created on Wed Oct 07 17:31:39 2015
 import os
 import xlrd
 from xlutils.copy import copy
-from datetime import datetime as dt 
+from datetime import datetime as dt
+from PIL import Image
+from shutil import rmtree
 
 template_name = 'Share_1_template.xls'
 
@@ -46,7 +48,7 @@ class pcwg_share1_rpt(object):
         self.write_submission_data(sheet_map['Submission'])
         self.write_meta_data()
         self.write_metrics()
-        #self.insert_images()
+        self.insert_images()
         self.export()
     
     def write_meta_data(self):
@@ -72,8 +74,8 @@ class pcwg_share1_rpt(object):
             wrt_cell_keep_style(self.analysis.datasetUniqueIds[conf.name]['Configuration'], sh, 6, col)
             if self.analysis.rewsActive:
                 wrt_cell_keep_style(len(conf.windSpeedLevels), sh, 8, col)
-                wrt_cell_keep_style(len(conf.windDirectionLevels), sh, 10, col)
-            wrt_cell_keep_style(range_id, sh, 9, col)
+                wrt_cell_keep_style(len(conf.windDirectionLevels), sh, 9, col)
+            wrt_cell_keep_style(range_id, sh, 10, col)
             wrt_cell_keep_style(self.analysis.config.diameter, sh, 23, col)
             wrt_cell_keep_style(self.analysis.config.hubHeight, sh, 24, col)
             wrt_cell_keep_style(self.analysis.config.ratedPower, sh, 25, col)
@@ -206,12 +208,23 @@ class pcwg_share1_rpt(object):
     
     def insert_images(self):
         from plots import MatplotlibPlotter
-        pc = self.analysis.innerMeasuredPowerCurve
-        
-        #normalise the parts of pc that are actually used
-        plotter = MatplotlibPlotter('Temp', self.analysis)
-        plotter.plotPowerCurve(self.analysis.normalisedWS, self.analysis.normalisedPower, pc)
-        
+        plt_path = 'Temp'
+        plotter = MatplotlibPlotter(plt_path, self.analysis)
+        for conf in self.analysis.datasetConfigs:
+            sh = self.workbook.add_sheet(conf.name)
+            row_filt = (self.analysis.dataFrame[self.analysis.nameColumn] == conf.name)
+            fname = conf.name + ' Anonymous Power Curve Plot'
+            plotter.plotPowerCurve(self.analysis.inputHubWindSpeed, self.analysis.actualPower, self.analysis.innerMeasuredPowerCurve, anon = True, row_filt = row_filt, fname = fname + '.png', show_analysis_pc = False, mean_title = 'Inner Range Power Curve')
+            im = Image.open(plt_path + os.sep + fname + '.png').convert('RGB')
+            im.save(plt_path + os.sep + fname + '.bmp')
+            sh.write(0, 0, self.analysis.datasetUniqueIds[conf.name]['Configuration'])
+            sh.insert_bitmap(plt_path + os.sep + fname + '.bmp' , 2, 1)
+        try:
+            rmtree(plt_path)
+        except:
+            print 'Could not delete folder %s' % (os.getcwd() + os.sep + plt_path)
+            
+    
     def export(self):
         self._write_confirmation_of_export()
         print "Exporting the PCWG Share 1 report to:\n\t%s" % (self.output_fname)
@@ -220,25 +233,4 @@ class pcwg_share1_rpt(object):
     def _write_confirmation_of_export(self):
         sh = self.workbook.get_sheet(sheet_map['Submission'])
         wrt_cell_keep_style(True, sh, 8, 2)
-
-#        if self.hasActualPower:
-#            self.powerCurveScatterMetric, _ = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
-#            self.dayTimePowerCurveScatterMetric, _ = self.calculatePowerCurveScatterMetric(self.dayTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(11)])
-#            self.nightTimePowerCurveScatterMetric, _ = self.calculatePowerCurveScatterMetric(self.nightTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(12)])
-#            self.powerCurveScatterMetric, _ = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
-#            if self.turbRenormActive:
-#                self.powerCurveScatterMetricAfterTiRenorm, _ = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index, print_to_console = True)
-#            self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByBin(self.allMeasuredPowerCurve, self.actualPower)
-#            if self.turbRenormActive:
-#                self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByBin(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
-
-
-
-#template = xlrd.open_workbook('Copy of Intelligence Sharing Mock Up Report.xls', formatting_info=True)
-#x = template.sheet_by_index(0)
-#import xlwt
-#from xlutils.copy import copy
-#wb = copy(template)
-#s = wb.get_sheet(0)
-#s.write(0,0,'this is a test')
-#wb.save('this is a test.xls')
+        
