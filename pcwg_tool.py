@@ -2960,7 +2960,7 @@ class UserInterface:
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
-                pcwg_share1_report_button = Button(commandframe, text="PCWG Share 1", command = self.export_pcwg_share1_report)
+                pcwg_share1_report_button = Button(commandframe, text="PCWG Share 1 Report", command = self.export_pcwg_share1_report)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
                 benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
