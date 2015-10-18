@@ -21,7 +21,7 @@ def getSeparatorValue(separator):
         
 def getDecimalValue(decimal):
     try:
-        return {"FULL STOP":"",
+        return {"FULL STOP":".",
                 "COMMA":","}[decimal.upper()]
     except:
         raise Exception("Unkown decimal: '%s'" % decimal)
