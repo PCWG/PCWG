@@ -11,6 +11,7 @@
 		<BadDataValue>-99.990000</BadDataValue>
 		<DateFormat>%d/%m/%Y %H:%M</DateFormat>
 		<Separator>TAB</Separator>
+		<Decimal>FULL STOP</Decimal>
 		<HeaderRows>0</HeaderRows>
 		<TimeStamp>TimeStamp</TimeStamp>
 		<TimeStepInSeconds>600</TimeStepInSeconds>

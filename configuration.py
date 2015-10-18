@@ -736,6 +736,7 @@ class DatasetConfiguration(XmlBase):
             self.timeStepInSeconds = 600
             self.dateFormat = '%Y-%m-%d %H:%M:%S'
             self.separator = "TAB"
+            self.decimal = "FULL STOP"
             self.headerRows = 0
             self.timeStamp = ''
             self.referenceWindSpeed = ''
@@ -818,6 +819,7 @@ class DatasetConfiguration(XmlBase):
         self.addFloatNode(doc, measurementsNode, "BadDataValue", self.badData)
         self.addTextNode(doc, measurementsNode, "DateFormat", self.dateFormat)
         self.addTextNode(doc, measurementsNode, "Separator", self.separator)
+        self.addTextNode(doc, measurementsNode, "Decimal", self.decimal)
         self.addIntNode(doc, measurementsNode, "HeaderRows", self.headerRows)
         self.addTextNode(doc, measurementsNode, "TimeStamp", self.timeStamp)
         self.addIntNode(doc, measurementsNode, "TimeStepInSeconds", self.timeStepInSeconds)
@@ -974,6 +976,7 @@ class DatasetConfiguration(XmlBase):
         self.badData = self.getNodeValue(measurementsNode, 'BadDataValue')
         self.headerRows = self.getNodeInt(measurementsNode, 'HeaderRows')        
         self.separator = self.getNodeValueIfExists(measurementsNode, 'Separator', 'TAB')
+        self.decimal = self.getNodeValueIfExists(measurementsNode, 'Decimal', 'FULL STOP')
 
         self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
         self.turbineAvailabilityCount = self.getNodeValueIfExists(measurementsNode, 'TurbineAvailabilityCount', '')

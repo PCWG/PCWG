@@ -3,6 +3,7 @@ from tkFileDialog import *
 import tkSimpleDialog
 import tkMessageBox
 from dataset import getSeparatorValue
+from dataset import getDecimalValue
 import Analysis
 import configuration
 import datetime
@@ -1722,6 +1723,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = self.generalShowHide)
                 self.separator.trace("w", self.columnSeparatorChange)
                 
+                self.decimal = self.addOption(master, "Decimal:", ["FULL STOP", "COMMA"], self.config.decimal, showHideCommand = self.generalShowHide)
+                self.decimal.trace("w", self.decimalChange)
+                
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = self.generalShowHide)
 
                 self.startDate = self.addDatePickerEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
@@ -2029,6 +2033,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
             sep = getSeparatorValue(self.separator.get())
             self.read_dataset()
             return sep
+            
+        def decimalChange(self, *args):
+            print 'reading decimal'
+            decimal = getDecimalValue(self.decimal.get())
+            self.read_dataset()
+            return decimal
             
         def hubWindSpeedModeChange(self, *args):
                 
@@ -2481,7 +2491,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
              print 'reading dataSet'
              inputTimeSeriesPath = self.getInputTimeSeriesAbsolutePath()
              headerRows = self.getHeaderRows()    
-             dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows)               
+             dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows, decimal = getDecimalValue(self.decimal.get()))               
              self.availableColumns = []
              for col in dataFrame:
                 self.availableColumns.append(col)                 
@@ -2505,6 +2515,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.badData = float(self.badData.get())
                 self.config.dateFormat = self.dateFormat.get()
                 self.config.separator = self.separator.get()
+                self.config.decimal = self.decimal.get()
                 self.config.headerRows = self.getHeaderRows()
                 self.config.timeStamp = self.timeStamp.get()
 
