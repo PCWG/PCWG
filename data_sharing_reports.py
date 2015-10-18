@@ -68,18 +68,29 @@ class pcwg_share1_rpt(object):
             raise Exception('The inner range %s is not valid for use in the PCWG Sharing Initiative.' % used_inner_range)
         manual_required_style = _get_cell_style(sh, 7, 2)
         manual_optional_style = _get_cell_style(sh, 13, 2)
+        calculated_style = _get_cell_style(sh, 8, 2)
+        dset_header_style = _get_cell_style(sh, 6, 2)
         man_req_rows = [7, 11, 12, 18, 19, 21, 26, 29]
         man_opt_rows = [13, 14, 15, 16, 17, 20, 22, 28]
         for conf in self.analysis.datasetConfigs:
-            wrt_cell_keep_style(conf.invariant_rand_id, sh, 6, col)
-            if self.analysis.rewsActive:
-                wrt_cell_keep_style(len(conf.windSpeedLevels), sh, 8, col)
-                wrt_cell_keep_style(len(conf.windDirectionLevels), sh, 9, col)
-            wrt_cell_keep_style(range_id, sh, 10, col)
-            wrt_cell_keep_style(self.analysis.config.diameter, sh, 23, col)
-            wrt_cell_keep_style(self.analysis.config.hubHeight, sh, 24, col)
-            wrt_cell_keep_style(self.analysis.config.ratedPower, sh, 25, col)
-            wrt_cell_keep_style(int(min(self.analysis.dataFrame.loc[self.analysis.dataFrame[self.analysis.nameColumn] == conf.name, self.analysis.timeStamp].dt.year)), sh, 27, col)
+            sh.write(6, col, conf.invariant_rand_id)
+            _apply_cell_style(dset_header_style, sh, 6, col)
+            wsl = len(conf.windSpeedLevels) if self.analysis.rewsActive else None
+            wdr = len(conf.windDirectionLevels) if self.analysis.rewsActive else None
+            sh.write(8, col, wsl)
+            sh.write(9, col, wdr)
+            _apply_cell_style(calculated_style, sh, 8, col)
+            _apply_cell_style(calculated_style, sh, 9, col)
+            sh.write(10, col, range_id)
+            _apply_cell_style(calculated_style, sh, 10, col)
+            sh.write(23, col, self.analysis.config.diameter)
+            _apply_cell_style(calculated_style, sh, 23, col)
+            sh.write(24, col, self.analysis.config.hubHeight)
+            _apply_cell_style(calculated_style, sh, 24, col)
+            sh.write(25, col, self.analysis.config.ratedPower)
+            _apply_cell_style(calculated_style, sh, 25, col)
+            sh.write(27, col, int(min(self.analysis.dataFrame.loc[self.analysis.dataFrame[self.analysis.nameColumn] == conf.name, self.analysis.timeStamp].dt.year)))
+            _apply_cell_style(calculated_style, sh, 27, col)
             for row in man_req_rows:
                 sh.write(row, col, None)
                 _apply_cell_style(manual_required_style, sh, row, col)

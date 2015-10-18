@@ -463,8 +463,10 @@ class Analysis:
 
             if self.hasActualPower and self.hasShear:
                 return self.innerMeasuredPowerCurve
-            else:
+            elif not self.hasActualPower:
                 raise Exception("Cannot use inner measured power curvve: Power data not specified")
+            elif not self.hasShear:
+                raise Exception("Cannot use inner measured power curvve: Shear data not specified")
 
         elif powerCurveMode == "InnerTurbulenceMeasured":
 

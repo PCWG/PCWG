@@ -779,8 +779,6 @@ class DatasetConfiguration(XmlBase):
             self.calibrationActives = {}
             
             self.invariant_rand_id = None
-            
-            self.save()
 
     def parseDate(self, dateText):
         
