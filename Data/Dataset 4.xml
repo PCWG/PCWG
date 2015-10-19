@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	
+	<InvariantRandomID>000004</InvariantRandomID>
 	<ns1:Name>Dataset 4</ns1:Name>
 	
 	<ns1:StartDate>2005-10-09T00:05:00</ns1:StartDate>

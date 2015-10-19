@@ -3,6 +3,7 @@ from tkFileDialog import *
 import tkSimpleDialog
 import tkMessageBox
 from dataset import getSeparatorValue
+from dataset import getDecimalValue
 import Analysis
 import configuration
 import datetime
@@ -10,14 +11,13 @@ import os
 import os.path
 import pandas as pd
 import dateutil
-from dataset import getSeparatorValue
 
 columnSeparator = "|"
 filterSeparator = "#"
 datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
-version = "0.5.7"
+version = "0.5.8"
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
         
@@ -1723,6 +1723,9 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = self.generalShowHide)
                 self.separator.trace("w", self.columnSeparatorChange)
                 
+                self.decimal = self.addOption(master, "Decimal Mark:", ["FULL STOP", "COMMA"], self.config.decimal, showHideCommand = self.generalShowHide)
+                self.decimal.trace("w", self.decimalChange)
+                
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = self.generalShowHide)
 
                 self.startDate = self.addDatePickerEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
@@ -2030,6 +2033,12 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
             sep = getSeparatorValue(self.separator.get())
             self.read_dataset()
             return sep
+            
+        def decimalChange(self, *args):
+            print 'reading decimal'
+            decimal = getDecimalValue(self.decimal.get())
+            self.read_dataset()
+            return decimal
             
         def hubWindSpeedModeChange(self, *args):
                 
@@ -2482,7 +2491,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
              print 'reading dataSet'
              inputTimeSeriesPath = self.getInputTimeSeriesAbsolutePath()
              headerRows = self.getHeaderRows()    
-             dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows)               
+             dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows, decimal = getDecimalValue(self.decimal.get()))               
              self.availableColumns = []
              for col in dataFrame:
                 self.availableColumns.append(col)                 
@@ -2506,6 +2515,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.badData = float(self.badData.get())
                 self.config.dateFormat = self.dateFormat.get()
                 self.config.separator = self.separator.get()
+                self.config.decimal = self.decimal.get()
                 self.config.headerRows = self.getHeaderRows()
                 self.config.timeStamp = self.timeStamp.get()
 
@@ -2950,6 +2960,7 @@ class UserInterface:
                 calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
                 export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
                 anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
+                pcwg_share1_report_button = Button(commandframe, text="PCWG Share 1 Report", command = self.export_pcwg_share1_report)
                 export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
                 benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
                 clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
@@ -2971,7 +2982,8 @@ class UserInterface:
                 
                 calculate_button.pack(side=LEFT, padx=5, pady=5)
                 export_report_button.pack(side=LEFT, padx=5, pady=5)
-                anonym_report_button.pack(side=LEFT, padx=5, pady=5)
+                #anonym_report_button.pack(side=LEFT, padx=5, pady=5)
+                pcwg_share1_report_button.pack(side=LEFT, padx=5, pady=5)
                 export_time_series_button.pack(side=LEFT, padx=5, pady=5)
                 benchmark_button.pack(side=LEFT, padx=5, pady=5)
                 clear_console_button.pack(side=LEFT, padx=5, pady=5)
@@ -3162,7 +3174,21 @@ class UserInterface:
                         self.addMessage("Report written to %s" % fileName)
                 except ExceptionType as e:
                         self.addMessage("ERROR Exporting Report: %s" % e, red = True)
-
+        
+        def export_pcwg_share1_report(self):
+            if self.analysis == None:
+                self.addMessage("ERROR: Analysis not yet calculated", red = True)
+                return
+            if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+                self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+                return
+            try:
+                fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
+                self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
+                self.addMessage("Report written to %s" % fileName)
+            except ExceptionType as e:
+                self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+        
         def ExportAnonymousReport(self):
                 scatter = True
                 deviationMatrix = True
