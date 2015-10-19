@@ -19,7 +19,7 @@ datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.8"
 ExceptionType = Exception
-ExceptionType = None #comment this line before release
+#ExceptionType = None #comment this line before release
         
 def getDateFromEntry(entry):
     if len(entry.get()) > 0:
@@ -1723,7 +1723,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = self.generalShowHide)
                 self.separator.trace("w", self.columnSeparatorChange)
                 
-                self.decimal = self.addOption(master, "Decimal:", ["FULL STOP", "COMMA"], self.config.decimal, showHideCommand = self.generalShowHide)
+                self.decimal = self.addOption(master, "Decimal Mark:", ["FULL STOP", "COMMA"], self.config.decimal, showHideCommand = self.generalShowHide)
                 self.decimal.trace("w", self.decimalChange)
                 
                 self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = self.generalShowHide)

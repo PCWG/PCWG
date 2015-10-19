@@ -716,9 +716,8 @@ class DatasetConfiguration(XmlBase):
                 self.sensitivityDataColumns = []
             
             self.invariant_rand_id = self.getNodeValueIfExists(configurationNode, 'InvariantRandomID', None)
-            self.invariant_rand_id = int(self.invariant_rand_id) if self.invariant_rand_id is not None else None
-            
-            self.save()
+            if self.invariant_rand_id is None:
+                self.save()
 
         else:
 
@@ -803,13 +802,13 @@ class DatasetConfiguration(XmlBase):
 
     def writeSettings(self, doc, root):
         if self.invariant_rand_id is not None:
-            self.addIntNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
+            self.addTextNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
         else:
             inv_id = str(np.random.rand())[2:8]
             while len(inv_id) != 6:
                 inv_id = str(np.random.rand())[2:8]
-            self.invariant_rand_id = int(inv_id)
-            self.addIntNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
+            self.invariant_rand_id = "D%06d" % int(inv_id)
+            self.addTextNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
         genSettingsNode = self.addNode(doc, root, "GeneralSettings")
         self.addTextNode(doc, genSettingsNode, "Name", self.name)
         if self.startDate != None: self.addDateNode(doc, genSettingsNode, "StartDate", self.startDate)
