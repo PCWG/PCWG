@@ -65,9 +65,9 @@
 			<ProfileWindDirection>LiDAR - 127.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>97.500000</Height>
-			<ProfileWindSpeed>LiDAR - 97.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 97.5m Wind Direction Mean</ProfileWindDirection>
+			<Height>87.500000</Height>
+			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 87.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>142.500000</Height>
@@ -75,9 +75,9 @@
 			<ProfileWindDirection>LiDAR - 142.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>117.500000</Height>
-			<ProfileWindSpeed>LiDAR - 117.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 117.5m Wind Direction Mean</ProfileWindDirection>
+			<Height>97.500000</Height>
+			<ProfileWindSpeed>LiDAR - 97.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 97.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>107.500000</Height>
@@ -85,9 +85,9 @@
 			<ProfileWindDirection>LiDAR - 107.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>87.500000</Height>
-			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 87.5m Wind Direction Mean</ProfileWindDirection>
+			<Height>117.500000</Height>
+			<ProfileWindSpeed>LiDAR - 117.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 117.5m Wind Direction Mean</ProfileWindDirection>
 		</ProfileLevel>
 	</ProfileLevels>
 	<Calibration>

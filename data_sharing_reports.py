@@ -73,7 +73,7 @@ class pcwg_share1_rpt(object):
         man_req_rows = [7, 11, 12, 18, 19, 21, 26, 29]
         man_opt_rows = [13, 14, 15, 16, 17, 20, 22, 28]
         for conf in self.analysis.datasetConfigs:
-            sh.write(6, col, conf.invariant_rand_id)
+            sh.write(6, col, "%06d" % conf.invariant_rand_id)
             _apply_cell_style(dset_header_style, sh, 6, col)
             wsl = len(conf.windSpeedLevels) if self.analysis.rewsActive else None
             wdr = len(conf.windDirectionLevels) if self.analysis.rewsActive else None
@@ -107,13 +107,69 @@ class pcwg_share1_rpt(object):
         conf_inv_row, conf_row, ts_row, col = 11, 12, 13, 2
         style = _get_cell_style(sh, conf_row, col)
         for conf in self.analysis.datasetConfigs:
-            sh.write(conf_inv_row, col, conf.invariant_rand_id)
+            sh.write(conf_inv_row, col, "%06d" % conf.invariant_rand_id)
             _apply_cell_style(style, sh, conf_inv_row, col)
             sh.write(conf_row, col, self.analysis.datasetUniqueIds[conf.name]['Configuration'])
             _apply_cell_style(style, sh, conf_row, col)
             sh.write(ts_row, col, self.analysis.datasetUniqueIds[conf.name]['Time Series'])
             _apply_cell_style(style, sh, ts_row, col)
             col += 1
+        styles_dict = {True: _get_cell_style(sh, 17, 2),
+                       False: _get_cell_style(sh, 17, 3),
+                       'N/A': _get_cell_style(sh, 18, 2)}
+        sh.write(17, 2, self.analysis.densityCorrectionActive)
+        _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 17, 2)
+        for col in [3,4,5]:
+            sh.write(17, col, False)
+            _apply_cell_style(styles_dict[False], sh, 17, col)
+        if self.analysis.rewsActive:
+            sh.write(18, 2, self.analysis.densityCorrectionActive)
+            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 18, 2)
+            for col in [4,5]:
+                sh.write(18, col, False)
+                _apply_cell_style(styles_dict[False], sh, 18, col)
+            sh.write(18, 3, True)
+            _apply_cell_style(styles_dict[True], sh, 18, 3)
+        else:
+            for col in [2,3,4,5]:
+                sh.write(18, col, 'N/A')
+                _apply_cell_style(styles_dict['N/A'], sh, 18, col)
+        if self.analysis.turbRenormActive:
+            sh.write(19, 2, self.analysis.densityCorrectionActive)
+            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 19, 2)
+            for col in [3,5]:
+                sh.write(19, col, False)
+                _apply_cell_style(styles_dict[False], sh, 19, col)
+            sh.write(19, 4, True)
+            _apply_cell_style(styles_dict[True], sh, 19, 4)
+        else:
+            for col in [2,3,4,5]:
+                sh.write(19, col, 'N/A')
+                _apply_cell_style(styles_dict['N/A'], sh, 19, col)
+        if (self.analysis.turbRenormActive and self.analysis.rewsActive):
+            sh.write(20, 2, self.analysis.densityCorrectionActive)
+            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 20, 2)
+            sh.write(20, 5, False)
+            _apply_cell_style(styles_dict[False], sh, 20, 5)
+            for col in [3,4]:
+                sh.write(20, col, True)
+                _apply_cell_style(styles_dict[True], sh, 20, col)
+        else:
+            for col in [2,3,4,5]:
+                sh.write(20, col, 'N/A')
+                _apply_cell_style(styles_dict['N/A'], sh, 20, col)
+        if self.analysis.powerDeviationMatrixActive:
+            sh.write(21, 2, self.analysis.densityCorrectionActive)
+            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 21, 2)
+            for col in [3,4]:
+                sh.write(21, col, False)
+                _apply_cell_style(styles_dict[False], sh, 21, col)
+            sh.write(19, 5, True)
+            _apply_cell_style(styles_dict[True], sh, 21, 5)
+        else:
+            for col in [2,3,4,5]:
+                sh.write(21, col, 'N/A')
+                _apply_cell_style(styles_dict['N/A'], sh, 21, col)
         
     def write_metrics(self):
         self._write_metrics_sheet('Baseline', self.analysis.pcwgErrorBaseline)
@@ -224,13 +280,13 @@ class pcwg_share1_rpt(object):
         plt_path = 'Temp'
         plotter = MatplotlibPlotter(plt_path, self.analysis)
         for conf in self.analysis.datasetConfigs:
-            sh = self.workbook.add_sheet(str(conf.invariant_rand_id))
+            sh = self.workbook.add_sheet("%06d" % conf.invariant_rand_id)
             row_filt = (self.analysis.dataFrame[self.analysis.nameColumn] == conf.name)
-            fname = str(conf.invariant_rand_id) + ' Anonymous Power Curve Plot'
+            fname = ("%06d" % conf.invariant_rand_id) + ' Anonymous Power Curve Plot'
             plotter.plotPowerCurve(self.analysis.inputHubWindSpeed, self.analysis.actualPower, self.analysis.innerMeasuredPowerCurve, anon = True, row_filt = row_filt, fname = fname + '.png', show_analysis_pc = False, mean_title = 'Inner Range Power Curve', mean_pc_color = '#FF0000')
             im = Image.open(plt_path + os.sep + fname + '.png').convert('RGB')
             im.save(plt_path + os.sep + fname + '.bmp')
-            sh.write(0, 0, 'Power curve scatter plot for dataset with invariant random ID ' + str(conf.invariant_rand_id) + '. The Inner Range Power Curve shown is derived using all datasets.')
+            sh.write(0, 0, 'Power curve scatter plot for dataset with invariant random ID ' + ("%06d" % conf.invariant_rand_id) + '. The Inner Range Power Curve shown is derived using all datasets.')
             sh.insert_bitmap(plt_path + os.sep + fname + '.bmp' , 2, 1)
         try:
             rmtree(plt_path)
