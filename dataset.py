@@ -19,6 +19,13 @@ def getSeparatorValue(separator):
     except:
         raise Exception("Unkown separator: '%s'" % separator)
         
+def getDecimalValue(decimal):
+    try:
+        return {"FULL STOP":".",
+                "COMMA":","}[decimal.upper()]
+    except:
+        raise Exception("Unkown decimal: '%s'" % decimal)
+        
 
 class DeviationMatrix(object):
     def __init__(self,deviationMatrix,countMatrix):
@@ -246,7 +253,7 @@ class Dataset:
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
         dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, \
                                 parse_dates = True, date_parser = dateConverter, sep = getSeparatorValue(config.separator), \
-                                skiprows = config.headerRows).replace(config.badData, np.nan)
+                                skiprows = config.headerRows, decimal = getDecimalValue(config.decimal)).replace(config.badData, np.nan)
 
         if config.startDate != None and config.endDate != None:
             dataFrame = dataFrame[config.startDate : config.endDate]

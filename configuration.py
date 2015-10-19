@@ -88,7 +88,7 @@ class XmlBase:
         return node
 
     def addTextNode(self, doc, parentNode, nodeName, value):
-
+        value = '' if value is None else value
         node = self.addNode(doc, parentNode, nodeName)
         node.appendChild(doc.createTextNode(value.strip()))
         
@@ -668,7 +668,7 @@ class DatasetConfiguration(XmlBase):
 
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
-
+            
             if self.nodeExists(configurationNode, 'GeneralSettings'):
                 collectorNode = self.getNode(configurationNode, 'GeneralSettings')
             else:
@@ -714,6 +714,10 @@ class DatasetConfiguration(XmlBase):
                 self.readSensitivityAnalysis(configurationNode)
             else:
                 self.sensitivityDataColumns = []
+            
+            self.invariant_rand_id = self.getNodeValueIfExists(configurationNode, 'InvariantRandomID', None)
+            if self.invariant_rand_id is None:
+                self.save()
 
         else:
 
@@ -736,6 +740,7 @@ class DatasetConfiguration(XmlBase):
             self.timeStepInSeconds = 600
             self.dateFormat = '%Y-%m-%d %H:%M:%S'
             self.separator = "TAB"
+            self.decimal = "FULL STOP"
             self.headerRows = 0
             self.timeStamp = ''
             self.referenceWindSpeed = ''
@@ -771,6 +776,8 @@ class DatasetConfiguration(XmlBase):
             self.calibrationSlopes = {}
             self.calibrationOffsets = {}
             self.calibrationActives = {}
+            
+            self.invariant_rand_id = None
 
     def parseDate(self, dateText):
         
@@ -785,20 +792,24 @@ class DatasetConfiguration(XmlBase):
                     raise Exception("Cannot parse date: %s (%s)" % (dateText, e.message))
         else:
             return None
-
+                
     def save(self):
-
         self.isNew = False
-
         doc = self.createDocument()
         root = self.addRootNode(doc, "Configuration", "http://www.pcwg.org")
         self.writeSettings(doc, root)
         self.saveDocument(doc, self.path)
 
     def writeSettings(self, doc, root):
-
+        if self.invariant_rand_id is not None:
+            self.addTextNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
+        else:
+            inv_id = str(np.random.rand())[2:8]
+            while len(inv_id) != 6:
+                inv_id = str(np.random.rand())[2:8]
+            self.invariant_rand_id = "D%06d" % int(inv_id)
+            self.addTextNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
         genSettingsNode = self.addNode(doc, root, "GeneralSettings")
-
         self.addTextNode(doc, genSettingsNode, "Name", self.name)
         if self.startDate != None: self.addDateNode(doc, genSettingsNode, "StartDate", self.startDate)
         if self.endDate != None: self.addDateNode(doc, genSettingsNode, "EndDate", self.endDate)
@@ -815,9 +826,13 @@ class DatasetConfiguration(XmlBase):
         measurementsNode = self.addNode(doc, root, "Measurements")
 
         self.addTextNode(doc, measurementsNode, "InputTimeSeriesPath", self.inputTimeSeriesPath)
-        self.addFloatNode(doc, measurementsNode, "BadDataValue", self.badData)
+        try:
+            self.addFloatNode(doc, measurementsNode, "BadDataValue", self.badData)
+        except:
+            self.addTextNode(doc, measurementsNode, "BadDataValue", self.badData)
         self.addTextNode(doc, measurementsNode, "DateFormat", self.dateFormat)
         self.addTextNode(doc, measurementsNode, "Separator", self.separator)
+        self.addTextNode(doc, measurementsNode, "Decimal", self.decimal)
         self.addIntNode(doc, measurementsNode, "HeaderRows", self.headerRows)
         self.addTextNode(doc, measurementsNode, "TimeStamp", self.timeStamp)
         self.addIntNode(doc, measurementsNode, "TimeStepInSeconds", self.timeStepInSeconds)
@@ -872,26 +887,27 @@ class DatasetConfiguration(XmlBase):
 
         if self.calibrationStartDate != None: self.addDateNode(doc, calibrationParamsNode, "CalibrationStartDate", self.calibrationStartDate)
         if self.calibrationEndDate != None: self.addDateNode(doc, calibrationParamsNode, "CalibrationEndDate", self.calibrationEndDate)
+        
+        if self.siteCalibrationNumberOfSectors is not None:
+            self.addIntNode(doc, calibrationParamsNode, "NumberOfSectors", self.siteCalibrationNumberOfSectors)
+            self.addIntNode(doc, calibrationParamsNode, "CenterOfFirstSector", self.siteCalibrationCenterOfFirstSector)
 
-        self.addIntNode(doc, calibrationParamsNode, "NumberOfSectors", self.siteCalibrationNumberOfSectors)
-        self.addIntNode(doc, calibrationParamsNode, "CenterOfFirstSector", self.siteCalibrationCenterOfFirstSector)
+            calibrationFiltersNode = self.addNode(doc, calibrationNode, "CalibrationFilters")
 
-        calibrationFiltersNode = self.addNode(doc, calibrationNode, "CalibrationFilters")
+            for calibrationFilterItem in self.calibrationFilters:
+                if isinstance(calibrationFilterItem, RelationshipFilter):
+                    self.writeRelationshipFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
+                else:
+                    self.writeFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
+    
+            calibrationDirectionsNode = self.addNode(doc, calibrationNode, "CalibrationDirections")
 
-        for calibrationFilterItem in self.calibrationFilters:
-            if isinstance(calibrationFilterItem, RelationshipFilter):
-                self.writeRelationshipFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
-            else:
-                self.writeFilter(doc, calibrationFiltersNode, calibrationFilterItem, "CalibrationFilter")
-
-        calibrationDirectionsNode = self.addNode(doc, calibrationNode, "CalibrationDirections")
-
-        for direction in self.calibrationDirections:
-            calibrationDirectionNode = self.addNode(doc, calibrationDirectionsNode, "CalibrationDirection")
-            self.addFloatNode(doc, calibrationDirectionNode, "DirectionCentre", direction)
-            self.addFloatNode(doc, calibrationDirectionNode, "Slope", self.calibrationSlopes[direction])
-            self.addFloatNode(doc, calibrationDirectionNode, "Offset", self.calibrationOffsets[direction])
-            self.addBoolNode(doc, calibrationDirectionNode, "Active", self.calibrationActives[direction])
+            for direction in self.calibrationDirections:
+                calibrationDirectionNode = self.addNode(doc, calibrationDirectionsNode, "CalibrationDirection")
+                self.addFloatNode(doc, calibrationDirectionNode, "DirectionCentre", direction)
+                self.addFloatNode(doc, calibrationDirectionNode, "Slope", self.calibrationSlopes[direction])
+                self.addFloatNode(doc, calibrationDirectionNode, "Offset", self.calibrationOffsets[direction])
+                self.addBoolNode(doc, calibrationDirectionNode, "Active", self.calibrationActives[direction])
 
 
         #write filters
@@ -974,6 +990,7 @@ class DatasetConfiguration(XmlBase):
         self.badData = self.getNodeValue(measurementsNode, 'BadDataValue')
         self.headerRows = self.getNodeInt(measurementsNode, 'HeaderRows')        
         self.separator = self.getNodeValueIfExists(measurementsNode, 'Separator', 'TAB')
+        self.decimal = self.getNodeValueIfExists(measurementsNode, 'Decimal', 'FULL STOP')
 
         self.turbineLocationWindSpeed = self.getNodeValueIfExists(measurementsNode, 'TurbineLocationWindSpeed', '')
         self.turbineAvailabilityCount = self.getNodeValueIfExists(measurementsNode, 'TurbineAvailabilityCount', '')
@@ -1089,45 +1106,57 @@ class DatasetConfiguration(XmlBase):
     def writeFilter(self, doc, filtersNode, filterItem, nodeName):
 
         filterNode = self.addNode(doc, filtersNode, nodeName)
-
-        self.addTextNode(doc, filterNode, "DataColumn", filterItem.column)
-        self.addTextNode(doc, filterNode, "FilterType", filterItem.filterType)
-        self.addBoolNode(doc, filterNode, "Inclusive", filterItem.inclusive)
-
-        if not filterItem.derived:
-
-            self.addFloatNode(doc, filterNode, "FilterValue", filterItem.value)
-
+        if hasattr(filterItem, 'startTime'):
+            self._writeTimeOfDayFilter(doc, filterNode, filterItem, nodeName)
         else:
-
-            valueNode = self.addNode(doc, filterNode, "FilterValue")
-
-            for valueItem in filterItem.value:
-
-                columnFactorNode = self.addNode(doc, valueNode, "ColumnFactor")
-
-                self.addTextNode(doc, filterNode, "DataColumn", columnFactorNode.valueItem[0])
-                self.addFloatNode(doc, filterNode, "A", columnFactorNode.valueItem[1])
-                self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
-                self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
-
-        if not nodeName.lower() == 'clause':
-            self.addBoolNode(doc, filterNode, "Active", filterItem.active)
+            self.addTextNode(doc, filterNode, "DataColumn", filterItem.column)
+            self.addTextNode(doc, filterNode, "FilterType", filterItem.filterType)
+            self.addBoolNode(doc, filterNode, "Inclusive", filterItem.inclusive)
+    
+            if not filterItem.derived:
+                if filterItem.filterType == 'Between':
+                    self.addTextNode(doc, filterNode, "FilterValue", str(filterItem.value))
+                else:
+                    self.addFloatNode(doc, filterNode, "FilterValue", filterItem.value)
+    
+            else:
+    
+                valueNode = self.addNode(doc, filterNode, "FilterValue")
+    
+                for valueItem in filterItem.value:
+    
+                    columnFactorNode = self.addNode(doc, valueNode, "ColumnFactor")
+    
+                    self.addTextNode(doc, filterNode, "DataColumn", columnFactorNode.valueItem[0])
+                    self.addFloatNode(doc, filterNode, "A", columnFactorNode.valueItem[1])
+                    self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
+                    self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
+    
+            if not nodeName.lower() == 'clause':
+                self.addBoolNode(doc, filterNode, "Active", filterItem.active)
+            
+    def _writeTimeOfDayFilter(self, doc, filterNode, filterItem, nodeName):
+        self.addTextNode(doc, filterNode, 'StartTime', "%02d:%02d" % (filterItem.startTime.hour, filterItem.startTime.minute))
+        self.addTextNode(doc, filterNode, 'EndTime', "%02d:%02d" % (filterItem.endTime.hour, filterItem.endTime.minute))
+        self.addTextNode(doc, filterNode, 'DaysOfTheWeek', str(filterItem.daysOfTheWeek).replace('[','').replace(']','').replace(' ',''))
+        self.addIntNode(doc,filterNode,"Active",filterItem.active)
+        if filterItem.months != []:
+            self.addTextNode(doc, filterNode, 'DaysOfTheWeek', str(filterItem.months).replace('[','').replace(']','').replace(' ',''))
 
     def readFilters(self, filtersNode):
 
         filters = []
 
         for node in filtersNode:
-
-            active = self.getNodeBool(node, 'Active')
-
-            if node.localName == 'TimeOfDayFilter':
-                filters.append(self.readToDFilter(active,node))
-            elif self.nodeExists(node,'Clauses') or self.nodeExists(node,'Relationship'):
-                filters.append(self.readRelationshipFilter(active, node))
-            else:
-                filters.append(self.readSimpleFilter(node,active))
+            if len(node.childNodes) > 0:
+                active = self.getNodeBool(node, 'Active')
+    
+                if ((node.localName == 'TimeOfDayFilter') or (self.nodeExists(node,'StartTime'))):
+                    filters.append(self.readToDFilter(active,node))
+                elif self.nodeExists(node,'Clauses') or self.nodeExists(node,'Relationship'):
+                    filters.append(self.readRelationshipFilter(active, node))
+                else:
+                    filters.append(self.readSimpleFilter(node,active))
 
         return filters
    
@@ -1175,8 +1204,11 @@ class DatasetConfiguration(XmlBase):
         else:
             self.calibrationStartDate = None
             self.calibrationEndDate = None
-
-        self.siteCalibrationNumberOfSectors = self.getNodeInt(paramNode, 'NumberOfSectors')
+            
+        if self.nodeExists(paramNode, 'NumberOfSectors'):
+            self.siteCalibrationNumberOfSectors = self.getNodeInt(paramNode, 'NumberOfSectors')
+        else:
+            self.siteCalibrationNumberOfSectors = None
 
         if self.nodeExists(calibrationNode, 'CenterOfFirstSector'):
             self.siteCalibrationCenterOfFirstSector = self.getNodeInt(paramNode, 'CenterOfFirstSector')
