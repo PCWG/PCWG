@@ -47,13 +47,22 @@ class PowerCurve:
         self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
 
         if (turbulenceRenormalisation and has_pc):
+
             print "Calculating zero turbulence curve for {0} Power Curve".format(self.name)
+
             try:
+
                 self.calcZeroTurbulencePowerCurve()
                 print "Calculation of zero turbulence curve for {0} Power Curve successful".format(self.name)
-            except:
+
+            except Exception as error:
+
+                print error
                 print "Calculation of zero turbulence curve for {0} Power Curve unsuccessful".format(self.name)
 
+                self.zeroTurbulencePowerCurve = None
+                self.simulatedPower = None
+                
     def calcZeroTurbulencePowerCurve(self):
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
         integrationRange = IntegrationRange(0.0, 100.0, 0.1)
