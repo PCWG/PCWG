@@ -344,10 +344,11 @@ class ZeroTurbulencePowerCurve:
             #print "%f %f" % (self.windSpeeds[i], self.powers[i])
 
         self.powerFunction = scipy.interpolate.interp1d(self.windSpeeds, self.powers)
-
+        
         self.minWindSpeed = min(self.windSpeeds)
         self.maxWindSpeed = max(self.windSpeeds)
         self.maxPower = max(self.powers)
+        self.dfPowerLevels = pd.DataFrame(self.powers, index = self.windSpeeds, columns = ['Power'])
 
     def power(self, windSpeed):
         

@@ -502,9 +502,24 @@ class report:
                 if colname in styles.keys():
                     sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], powerCurveLevels[colname][windSpeed], styles[colname])
             countRow += 1
-
+        
+        if hasattr(powerCurve, 'zeroTurbulencePowerCurve'):
+            countRow += 3
+            sh.write(rowOffset + countRow, columnOffset + 2, name + ' Zero TI Power Curve', self.bold_style)
+            countRow += 1
+            sh.write(rowOffset + countRow, columnOffset + 1, 'Wind Speed', self.bold_style)
+            sh.write(rowOffset + countRow, columnOffset + 2, 'Power', self.bold_style)
+            pc = powerCurve.zeroTurbulencePowerCurve.dfPowerLevels
+            for ws in pc.index:
+                sh.write(rowOffset + countRow + 1, columnOffset + 1, ws, styles['Specified Wind Speed'])
+                sh.write(rowOffset + countRow + 1, columnOffset + 2, pc.loc[ws, 'Power'], styles['Specified Wind Speed'])
+                countRow += 1
+        else:
+            print "Not reporting zero TI power curve for %s as it is not defined." % (name)
+            
         return countRow
-
+                
+                
     def reportInterpolatedPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve, levels):
 
         sh.write(rowOffset, columnOffset + 2, name, self.bold_style)
