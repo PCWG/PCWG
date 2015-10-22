@@ -93,7 +93,7 @@ class PowerDeviationMatrixPowerCalculator:
 
 class Analysis:
 
-    def __init__(self, config, status = NullStatus()):
+    def __init__(self, config, status = NullStatus(), auto_activate_corrections = False):
 
         self.config = config
         self.nameColumn = "Dataset Name"
@@ -121,22 +121,24 @@ class Analysis:
         self.status = status
 
         self.calibrations = []
-
-        self.uniqueAnalysisId = hash_file_contents(self.config.path)
-        self.status.addMessage("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
-        self.status.addMessage("Calculating (please wait)...")
-
+        
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
 
         self.status.addMessage("Loading dataset...")
         self.loadData(config, self.rotorGeometry)
-        if len(self.datasetConfigs) > 0:
-            self.datasetUniqueIds = self.generate_unique_dset_ids()
-        
+
+        if auto_activate_corrections:            
+            self.auto_activate_corrections()
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
         self.turbRenormActive = config.turbRenormActive
         self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
+        
+        self.uniqueAnalysisId = hash_file_contents(self.config.path)
+        self.status.addMessage("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
+        self.status.addMessage("Calculating (please wait)...")
+        if len(self.datasetConfigs) > 0:
+            self.datasetUniqueIds = self.generate_unique_dset_ids()
 
         if self.powerDeviationMatrixActive:
             self.status.addMessage("Loading power deviation matrix...")
@@ -312,6 +314,28 @@ class Analysis:
             self.iec_2005_cat_A_power_curve_uncertainty()
             
         self.status.addMessage("Complete")
+
+    def auto_activate_corrections(self):
+        self.status.addMessage("Automatically activating corrections based on availabe data.")
+        save_conf = False
+        if self.hasDensity:
+            self.config.densityCorrectionActive = True
+            self.status.addMessage("Density Correction activated.")
+            save_conf = True
+        if self.hubTurbulence in self.dataFrame.columns:
+            self.config.turbRenormActive = True
+            self.status.addMessage("TI Renormalisation activated.")
+            save_conf = True
+        if self.rewsDefined:
+            self.config.rewsActive = True
+            self.status.addMessage("REWS activated.")
+            save_conf = True
+        if (type(self.config.specifiedPowerDeviationMatrix) in (str, unicode)) and (len(self.config.specifiedPowerDeviationMatrix) > 0):
+            self.config.powerDeviationMatrixActive = True
+            self.status.addMessage("PDM activated.")
+            save_conf = True
+        if save_conf:
+            self.config.save()
 
     def applyRemainingFilters(self):
 

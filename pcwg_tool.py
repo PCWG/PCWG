@@ -1371,6 +1371,7 @@ class BaseConfigurationDialog(BaseDialog):
                 else:
                         self.callback(self.config.path, self.index)
 
+
 class ColumnPickerDialog(BaseDialog):
 
         def __init__(self, master, status, callback, availableColumns, column):
@@ -2956,7 +2957,11 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.specifiedPowerCurve = None
         self.baseLineMode = "Hub"
         self.nominalWindSpeedDistribution = None
-        self.specifiedPowerDeviationMatrix = 'PCWG_Trial_PDM.xml'
+        self.specifiedPowerDeviationMatrix = None#'PCWG_Trial_PDM.xml'
+        self.densityCorrectionActive = False
+        self.turbulenceCorrectionActive = False
+        self.rewsCorrectionActive = False
+        self.powerDeviationMatrixActive = False
         
     def set_inner_range_values(self):
         self.innerRangeLowerTurbulence = self.pcwg_inner_ranges[self.inner_range_id]['LTI']
@@ -2965,7 +2970,38 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.innerRangeUpperShear = self.pcwg_inner_ranges[self.inner_range_id]['USh']
     
     def getInitialFileName(self):
-        return "Analysis"
+        return "PCWG Share 1 Analysis Configuration"
+
+    def body(self, master):
+
+        self.prepareColumns(master)
+
+        self.generalShowHide = ShowHideCommand(master)
+
+        #add spacer labels
+        spacer = " "
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.titleColumn)
+        Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.labelColumn)
+        Label(master, text=spacer * 80).grid(row = self.row, sticky=W, column=self.inputColumn)
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.buttonColumn)
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.secondButtonColumn)
+        Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.messageColumn)
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.showHideColumn)
+        self.row += 1
+        
+        #self.addTitleRow(master, "PCWG Share 1 Analysis Configuration")                
+        
+        self.row += 2
+
+        if self.config.isNew:
+                path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save PCWG 1 Analysis Configuration", initialdir=preferences.workSpaceFolder)
+        else:
+                path = self.config.path
+                
+        #self.filePath = path#
+        self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
+
+        self.addFormElements(master)
     
     def addFormElements(self, master):
         datasetsShowHide = ShowHideCommand(master)
@@ -2994,30 +3030,19 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.removeDatasetButton = Button(master, text="-", command = self.removeDatasets, width=2, height=1)
         self.removeDatasetButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
         datasetsShowHide.addControl(self.removeDatasetButton)
-        self.row += 1                
+        self.row += 2
 
         turbineSettingsShowHide = ShowHideCommand(master)
         self.addTitleRow(master, "Turbine Settings:", turbineSettingsShowHide)
-        self.cutInWindSpeed = self.addEntry(master, "Cut In Wind Speed:", ValidatePositiveFloat(master), self.config.cutInWindSpeed, showHideCommand = turbineSettingsShowHide)
-        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidatePositiveFloat(master), self.config.cutOutWindSpeed, showHideCommand = turbineSettingsShowHide)
-        self.ratedPower = self.addEntry(master, "Rated Power:", ValidatePositiveFloat(master), self.config.ratedPower, showHideCommand = turbineSettingsShowHide)
-        self.hubHeight = self.addEntry(master, "Hub Height:", ValidatePositiveFloat(master), self.config.hubHeight, showHideCommand = turbineSettingsShowHide)
-        self.diameter = self.addEntry(master, "Diameter:", ValidatePositiveFloat(master), self.config.diameter, showHideCommand = turbineSettingsShowHide)
+        self.cutInWindSpeed = self.addEntry(master, "Cut In Wind Speed:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.cutInWindSpeed
+        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.cutOutWindSpeed
+        self.ratedPower = self.addEntry(master, "Rated Power:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.ratedPower
+        self.hubHeight = self.addEntry(master, "Hub Height:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.hubHeight
+        self.diameter = self.addEntry(master, "Diameter:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.diameter
 
-        correctionSettingsShowHide = ShowHideCommand(master)
-        self.addTitleRow(master, "Correction Settings:", correctionSettingsShowHide)
-        self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive, showHideCommand = correctionSettingsShowHide)
-        self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive, showHideCommand = correctionSettingsShowHide)
-        self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive, showHideCommand = correctionSettingsShowHide)  
-        self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive, showHideCommand = correctionSettingsShowHide)               
-
-        self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specifiedPowerDeviationMatrix, self.filePath, showHideCommand = correctionSettingsShowHide)
-
-        #hide all initially
-        self.generalShowHide.show()
+        self.generalShowHide.hide()
         datasetsShowHide.show()
-        turbineSettingsShowHide.hide()
-        correctionSettingsShowHide.hide()
+        turbineSettingsShowHide.show()
 
     def EditDataset(self, event = None):
         items = self.datasetsListBoxEntry.listbox.curselection()
@@ -3066,9 +3091,11 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.validateDatasets.validate()
     
     def setConfigValues(self, inner_range_id = 'A'):
-
+        
+        self.config.path = self.filePath.get()
+        
         relativePath = configuration.RelativePath(self.config.path)
-
+        
         self.inner_range_id = inner_range_id
         self._pcwg_defaults()
 
@@ -3093,17 +3120,16 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.config.diameter = float(self.diameter.get())
         self.config.specifiedPowerCurve = self.specifiedPowerCurve
 
-        self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
-        self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
-        self.config.rewsActive = bool(self.rewsCorrectionActive.get())
-        self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
+        self.config.densityCorrectionActive = self.config.densityCorrectionActive
+        self.config.turbRenormActive = self.turbulenceCorrectionActive
+        self.config.rewsActive = self.rewsCorrectionActive
+        self.config.powerDeviationMatrixActive = self.powerDeviationMatrixActive
         
-        self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix)
+        if self.specifiedPowerDeviationMatrix is not None:
+            self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix)
 
         self.config.datasets = []
-        print inner_range_id
-        no_dset_confs = self.datasetsListBoxEntry.listbox.size()
-        for i in range(no_dset_confs):
+        for i in range(self.datasetsListBoxEntry.listbox.size()):
             dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
             self.config.datasets.append(dataset)
 
@@ -3352,42 +3378,27 @@ class UserInterface:
         inner_range_id = 'A'
         self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
         try:
-            self.Calculate()
-        except:
-            self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id)
-            
-        path = configDialog.config.path
-        # maybe i just need to edit the analysis config object and not the dialog
-        for inner_range_id in ['B','C']:
-            self.analysisConfiguration = configuration.AnalysisConfiguration(path)
-            self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
-            try:
-                self.Calculate()
-                return True, configDialog
-            except Exception as e:
-                print e
-                self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id)
-                return False, configDialog
-
-
-#    def short_apply(self, inner_range_id = 'A'):
-#        self.config.path = self.filePath.get()
-#        self.setConfigValues(inner_range_id = inner_range_id)
-#        self.config.save()
-#        self.isSaved = True
-#        if self.isNew:
-#            self.status.addMessage("Config created")
-#        else:
-#            self.status.addMessage("Config updated")
-#
-#        if self.index == None:
-#            self.callback(self.config.path)
-#        else:
-#            self.callback(self.config.path, self.index)
-
-            
-            if complete:
-                break        
+            self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
+        except Exception as e:
+            print e
+            self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
+            path = self.analysis.config.path
+            self.analysisConfiguration = self.analysis.config
+            for inner_range_id in ['B','C']:
+                self.analysisConfiguration = configuration.AnalysisConfiguration(path)
+                self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
+                configDialog.inner_range_id = inner_range_id
+                configDialog.set_inner_range_values()
+                self.analysisConfiguration.innerRangeLowerTurbulence = configDialog.innerRangeLowerTurbulence
+                self.analysisConfiguration.innerRangeUpperTurbulence = configDialog.innerRangeUpperTurbulence
+                self.analysisConfiguration.innerRangeLowerShear = configDialog.innerRangeLowerShear
+                self.analysisConfiguration.innerRangeUpperShear = configDialog.innerRangeUpperShear
+                self.analysisConfiguration.save()
+                try:
+                    self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
+                    break
+                except:
+                    self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id)
         if self.analysis == None:
             self.addMessage("ERROR: Analysis not yet calculated", red = True)
             return
@@ -3395,7 +3406,7 @@ class UserInterface:
             self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
             return
         try:
-            fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="PCWG Share 1.xls", title="Save PCWG Share 1 Report", initialdir=preferences.workSpaceFolder)
+            fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="PCWG Share 1 Report.xls", title="Save PCWG Share 1 Report", initialdir=preferences.workSpaceFolder)
             self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
             self.addMessage("Report written to %s" % fileName)
         except ExceptionType as e:
