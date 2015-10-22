@@ -179,7 +179,8 @@ class pcwg_share1_rpt(object):
     def _write_metrics_sheet(self, sh_name, error_col):
         self.__write_overall_metric_sheet(sh_name)
         self.__write_by_ws_metric_sheet(sh_name, error_col)
-        self.__write_by_dir_metric_sheet(sh_name, error_col)
+        if self.analysis.hasDirection:
+            self.__write_by_dir_metric_sheet(sh_name, error_col)
         self.__write_by_time_metric_sheet(sh_name, error_col)
         self.__write_by_range_metric_sheet(sh_name, error_col)
         self.__write_by_four_cell_matrix_metric_sheet(sh_name, error_col)

@@ -448,6 +448,7 @@ class Analysis:
                 self.hasAllPowers = data.hasAllPowers
                 self.hasShear = data.hasShear
                 self.hasDensity = data.hasDensity
+                self.hasDirection = data.hasDirection
                 self.rewsDefined = data.rewsDefined
                 self.sensitivityDataColumns = data.sensitivityDataColumns
 
@@ -838,7 +839,9 @@ class Analysis:
             self.overall_pcwg_err_metrics['PDM NMAE'] = NMAE
             
     def calculate_pcwg_binned_metrics(self):
-        reporting_bins = [self.normalisedWSBin, self.pcwgDirectionBin, self.hourOfDay, self.calendarMonth, self.pcwgFourCellMatrixGroup, self.pcwgRange]
+        reporting_bins = [self.normalisedWSBin, self.hourOfDay, self.calendarMonth, self.pcwgFourCellMatrixGroup, self.pcwgRange]
+        if self.hasDirection:
+            reporting_bins.append(self.pcwgDirectionBin)
         self.binned_pcwg_err_metrics = {}
         for bin_col_name in reporting_bins:
             self.binned_pcwg_err_metrics[bin_col_name] = {}
@@ -933,13 +936,14 @@ class Analysis:
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
         self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
 
-        self.pcwgDirectionBin = 'Wind Direction Bin Centre'
-        dir_bin_width = 10.
-        wdir_centre_first_bin = 0.
-        self.pcwgWindDirBins = binning.Bins(wdir_centre_first_bin, dir_bin_width, 350.)
-        self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
-        self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
-        self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
+        if self.hasDirection:
+            self.pcwgDirectionBin = 'Wind Direction Bin Centre'
+            dir_bin_width = 10.
+            wdir_centre_first_bin = 0.
+            self.pcwgWindDirBins = binning.Bins(wdir_centre_first_bin, dir_bin_width, 350.)
+            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
+            self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
+            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
 
         self.pcwgFourCellMatrixGroup = 'PCWG Four Cell WS-TI Matrix Group'
         self.dataFrame[self.pcwgFourCellMatrixGroup] = np.nan
