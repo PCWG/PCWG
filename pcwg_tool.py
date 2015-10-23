@@ -1371,6 +1371,7 @@ class BaseConfigurationDialog(BaseDialog):
                 else:
                         self.callback(self.config.path, self.index)
 
+
 class ColumnPickerDialog(BaseDialog):
 
         def __init__(self, master, status, callback, availableColumns, column):
@@ -2837,7 +2838,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 config = configuration.PowerCurveConfiguration()
                 configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
                 
-
+    
         def EditDataset(self, event = None):
                 items = self.datasetsListBoxEntry.listbox.curselection()
                 if len(items) == 1:
@@ -2852,7 +2853,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
                                         
         def NewDataset(self):
-
+    
                 try:
                         config = configuration.DatasetConfiguration()
                         configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
@@ -2867,27 +2868,27 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
         def setSpecifiedPowerCurve(self):
                 fileName = SelectFile(parent=self.master,defaultextension=".xml")
                 self.setSpecifiedPowerCurveFromPath(fileName)
-
+    
         def setSpecifiedPowerCurveFromPath(self, fileName):
                 if len(fileName) > 0: self.specifiedPowerCurve.set(fileName)
                 
         def addDataset(self):
                 fileName = SelectFile(parent=self.master,defaultextension=".xml")
                 if len(fileName) > 0: self.addDatasetFromPath(fileName)
-
+    
         def addDatasetFromPath(self, path, index = None):
-
+    
                 relativePath = configuration.RelativePath(self.filePath.get())
                 path = relativePath.convertToRelativePath(path)
-
+    
                 if index != None:
                         self.datasetsListBoxEntry.listbox.delete(index, index)
                         self.datasetsListBoxEntry.listbox.insert(index, path)
                 else:
                         self.datasetsListBoxEntry.listbox.insert(END, path)
-
+    
                 self.validateDatasets.validate()               
-
+    
         def removeDatasets(self):
                 
                 items = self.datasetsListBoxEntry.listbox.curselection()
@@ -2901,9 +2902,9 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.validateDatasets.validate()
         
         def setConfigValues(self):
-
+    
                 relativePath = configuration.RelativePath(self.config.path)
-
+    
                 self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
                 self.config.filterMode = self.filterMode.get()
                 self.config.baseLineMode = self.baseLineMode.get()
@@ -2917,352 +2918,574 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.innerRangeUpperTurbulence = float(self.innerRangeUpperTurbulence.get())
                 self.config.innerRangeLowerShear = float(self.innerRangeLowerShear.get())
                 self.config.innerRangeUpperShear = float(self.innerRangeUpperShear.get())
-
+    
                 self.config.cutInWindSpeed = float(self.cutInWindSpeed.get())
                 self.config.cutOutWindSpeed = float(self.cutOutWindSpeed.get())
                 self.config.ratedPower = float(self.ratedPower.get())
                 self.config.hubHeight = float(self.hubHeight.get())
                 self.config.diameter = float(self.diameter.get())
                 self.config.specifiedPowerCurve = relativePath.convertToRelativePath(self.specifiedPowerCurve.get())
-
+    
                 self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
                 self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
                 self.config.rewsActive = bool(self.rewsCorrectionActive.get())
-
+    
                 self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix.get())
                 self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
-
+    
                 self.config.datasets = []
-
+    
                 for i in range(self.datasetsListBoxEntry.listbox.size()):
                         dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
                         self.config.datasets.append(dataset) 
+
+
+class PcwgShare1Dialog(BaseConfigurationDialog):
+    
+    def _pcwg_defaults(self):
+        self.powerCurveMinimumCount = 10
+        self.filterMode = "All"
+        self.powerCurveMode = "InnerMeasured"
+        self.powerCurvePaddingMode = "Max"
+        self.powerCurveFirstBin = 1.
+        self.powerCurveLastBin = 30.
+        self.powerCurveBinSize = 0.5
+        self.pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
+                                  'B': {'LTI': 0.06, 'UTI': 0.1, 'LSh': 0.05, 'USh': 0.25},
+                                  'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
+        self.set_inner_range_values()
+        self.specifiedPowerCurve = None
+        self.baseLineMode = "Hub"
+        self.nominalWindSpeedDistribution = None
+        self.specifiedPowerDeviationMatrix = None#'PCWG_Trial_PDM.xml'
+        self.densityCorrectionActive = False
+        self.turbulenceCorrectionActive = False
+        self.rewsCorrectionActive = False
+        self.powerDeviationMatrixActive = False
+        
+    def set_inner_range_values(self):
+        self.innerRangeLowerTurbulence = self.pcwg_inner_ranges[self.inner_range_id]['LTI']
+        self.innerRangeUpperTurbulence = self.pcwg_inner_ranges[self.inner_range_id]['UTI']
+        self.innerRangeLowerShear = self.pcwg_inner_ranges[self.inner_range_id]['LSh']
+        self.innerRangeUpperShear = self.pcwg_inner_ranges[self.inner_range_id]['USh']
+    
+    def getInitialFileName(self):
+        return "PCWG Share 1 Analysis Configuration"
+
+    def body(self, master):
+
+        self.prepareColumns(master)
+
+        self.generalShowHide = ShowHideCommand(master)
+
+        #add spacer labels
+        spacer = " "
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.titleColumn)
+        Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.labelColumn)
+        Label(master, text=spacer * 80).grid(row = self.row, sticky=W, column=self.inputColumn)
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.buttonColumn)
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.secondButtonColumn)
+        Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.messageColumn)
+        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.showHideColumn)
+        self.row += 1
+        
+        #self.addTitleRow(master, "PCWG Share 1 Analysis Configuration")                
+        
+        self.row += 2
+
+        if self.config.isNew:
+                path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save PCWG 1 Analysis Configuration", initialdir=preferences.workSpaceFolder)
+        else:
+                path = self.config.path
+                
+        #self.filePath = path#
+        self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
+
+        self.addFormElements(master)
+    
+    def addFormElements(self, master):
+        datasetsShowHide = ShowHideCommand(master)
+        Label(master, text="Dataset Configuration XMLs:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+        datasetsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
+        self.row += 1 
+        self.datasetsListBoxEntry = self.addListBox(master, "DataSets ListBox", showHideCommand = datasetsShowHide )
+        if not self.isNew:
+            for dataset in self.config.datasets:
+                self.datasetsListBoxEntry.listbox.insert(END, dataset)
+        self.datasetsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                
+        self.validateDatasets = ValidateDatasets(master, self.datasetsListBoxEntry.listbox)
+        self.validations.append(self.validateDatasets)
+        self.validateDatasets.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
+        datasetsShowHide.addControl(self.validateDatasets.messageLabel)
+        self.newDatasetButton = Button(master, text="New", command = self.NewDataset, width=5, height=1)
+        self.newDatasetButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
+        datasetsShowHide.addControl(self.newDatasetButton)
+        self.editDatasetButton = Button(master, text="Edit", command = self.EditDataset, width=5, height=1)
+        self.datasetsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditDataset)
+        self.editDatasetButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
+        datasetsShowHide.addControl(self.editDatasetButton)
+        self.addDatasetButton = Button(master, text="+", command = self.addDataset, width=2, height=1)
+        self.addDatasetButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
+        datasetsShowHide.addControl(self.addDatasetButton)
+        self.removeDatasetButton = Button(master, text="-", command = self.removeDatasets, width=2, height=1)
+        self.removeDatasetButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+        datasetsShowHide.addControl(self.removeDatasetButton)
+        self.row += 2
+
+        turbineSettingsShowHide = ShowHideCommand(master)
+        self.addTitleRow(master, "Turbine Settings:", turbineSettingsShowHide)
+        self.cutInWindSpeed = self.addEntry(master, "Cut In Wind Speed:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.cutInWindSpeed
+        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.cutOutWindSpeed
+        self.ratedPower = self.addEntry(master, "Rated Power:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.ratedPower
+        self.hubHeight = self.addEntry(master, "Hub Height:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.hubHeight
+        self.diameter = self.addEntry(master, "Diameter:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.diameter
+
+        self.generalShowHide.hide()
+        datasetsShowHide.show()
+        turbineSettingsShowHide.show()
+
+    def EditDataset(self, event = None):
+        items = self.datasetsListBoxEntry.listbox.curselection()
+        if len(items) == 1:
+            index = items[0]
+            path = self.datasetsListBoxEntry.listbox.get(index)
+            try:
+                relativePath = configuration.RelativePath(self.filePath.get()) 
+                datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
+                configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
+            except ExceptionType as e:
+                self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
+
+    def NewDataset(self):
+        try:
+            config = configuration.DatasetConfiguration()
+            configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
+        except ExceptionType as e:
+            self.status.addMessage("ERROR creating dataset config: %s" % e)
+                    
+    def setAnalysisFilePath(self):
+        fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=preferences.workSpaceFolder)
+        if len(fileName) > 0: self.analysisFilePath.set(fileName)
+            
+    def addDataset(self):
+        fileName = SelectFile(parent=self.master,defaultextension=".xml")
+        if len(fileName) > 0: self.addDatasetFromPath(fileName)
+
+    def addDatasetFromPath(self, path, index = None):
+        relativePath = configuration.RelativePath(self.filePath.get())
+        path = relativePath.convertToRelativePath(path)
+        if index != None:
+            self.datasetsListBoxEntry.listbox.delete(index, index)
+            self.datasetsListBoxEntry.listbox.insert(index, path)
+        else:
+            self.datasetsListBoxEntry.listbox.insert(END, path)
+        self.validateDatasets.validate()
+
+    def removeDatasets(self):
+        items = self.datasetsListBoxEntry.listbox.curselection()
+        pos = 0
+        for i in items:
+            idx = int(i) - pos
+            self.datasetsListBoxEntry.listbox.delete(idx, idx)
+            pos += 1
+        self.validateDatasets.validate()
+    
+    def setConfigValues(self, inner_range_id = 'A'):
+        
+        self.config.path = self.filePath.get()
+        
+        relativePath = configuration.RelativePath(self.config.path)
+        
+        self.inner_range_id = inner_range_id
+        self._pcwg_defaults()
+
+        self.config.powerCurveMinimumCount = self.powerCurveMinimumCount
+        self.config.filterMode = self.filterMode
+        self.config.baseLineMode = self.baseLineMode
+        self.config.powerCurveMode = self.powerCurveMode
+        self.config.powerCurvePaddingMode = self.powerCurvePaddingMode
+        self.config.nominalWindSpeedDistribution = self.nominalWindSpeedDistribution
+        self.config.powerCurveFirstBin = self.powerCurveFirstBin
+        self.config.powerCurveLastBin = self.powerCurveLastBin
+        self.config.powerCurveBinSize = self.powerCurveBinSize
+        self.config.innerRangeLowerTurbulence = self.innerRangeLowerTurbulence
+        self.config.innerRangeUpperTurbulence = self.innerRangeUpperTurbulence
+        self.config.innerRangeLowerShear = self.innerRangeLowerShear
+        self.config.innerRangeUpperShear = self.innerRangeUpperShear
+
+        self.config.cutInWindSpeed = float(self.cutInWindSpeed.get())
+        self.config.cutOutWindSpeed = float(self.cutOutWindSpeed.get())
+        self.config.ratedPower = float(self.ratedPower.get())
+        self.config.hubHeight = float(self.hubHeight.get())
+        self.config.diameter = float(self.diameter.get())
+        self.config.specifiedPowerCurve = self.specifiedPowerCurve
+
+        self.config.densityCorrectionActive = self.config.densityCorrectionActive
+        self.config.turbRenormActive = self.turbulenceCorrectionActive
+        self.config.rewsActive = self.rewsCorrectionActive
+        self.config.powerDeviationMatrixActive = self.powerDeviationMatrixActive
+        
+        if self.specifiedPowerDeviationMatrix is not None:
+            self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix)
+
+        self.config.datasets = []
+        for i in range(self.datasetsListBoxEntry.listbox.size()):
+            dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
+            self.config.datasets.append(dataset)
+
+
 class UserInterface:
 
-        def __init__(self):
+    def __init__(self):
+            
+            self.analysis = None
+            self.analysisConfiguration = None
+            
+            self.root = Tk()
+            self.root.geometry("800x400")
+            self.root.title("PCWG")
+
+            labelsFrame = Frame(self.root)
+            settingsFrame = Frame(self.root)
+            consoleframe = Frame(self.root)
+            commandframe = Frame(self.root)
+
+            load_button = Button(settingsFrame, text="Load", command = self.LoadAnalysis)
+            edit_button = Button(settingsFrame, text="Edit", command = self.EditAnalysis)
+            new_button = Button(settingsFrame, text="New", command = self.NewAnalysis)
+
+            calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
+            export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
+            anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
+            pcwg_share1_report_button = Button(commandframe, text="PCWG Share 1 Report", command = self.export_pcwg_share1_report)
+            export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
+            benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
+            clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
+            about_button = Button(commandframe, text="About", command = self.About)
+            set_work_space_button = Button(commandframe, text="Set Work Space", command = self.SetWorkSpace)
+            
+            self.analysisFilePathLabel = Label(labelsFrame, text="Analysis File")
+            self.analysisFilePathTextBox = Entry(settingsFrame)
+
+            self.analysisFilePathTextBox.config(state=DISABLED)
+
+            scrollbar = Scrollbar(consoleframe, orient=VERTICAL)
+            self.listbox = Listbox(consoleframe, yscrollcommand=scrollbar.set, selectmode=EXTENDED)
+            scrollbar.configure(command=self.listbox.yview)
+
+            new_button.pack(side=RIGHT, padx=5, pady=5)                
+            edit_button.pack(side=RIGHT, padx=5, pady=5)
+            load_button.pack(side=RIGHT, padx=5, pady=5)
+            
+            calculate_button.pack(side=LEFT, padx=5, pady=5)
+            export_report_button.pack(side=LEFT, padx=5, pady=5)
+            #anonym_report_button.pack(side=LEFT, padx=5, pady=5)
+            pcwg_share1_report_button.pack(side=LEFT, padx=5, pady=5)
+            export_time_series_button.pack(side=LEFT, padx=5, pady=5)
+            benchmark_button.pack(side=LEFT, padx=5, pady=5)
+            clear_console_button.pack(side=LEFT, padx=5, pady=5)
+            about_button.pack(side=LEFT, padx=5, pady=5)
+            set_work_space_button.pack(side=LEFT, padx=5, pady=5)
+            
+            self.analysisFilePathLabel.pack(anchor=NW, padx=5, pady=5)
+            self.analysisFilePathTextBox.pack(anchor=NW,fill=X, expand=1, padx=5, pady=5)
+
+            self.listbox.pack(side=LEFT,fill=BOTH, expand=1)
+            scrollbar.pack(side=RIGHT, fill=Y)
+
+            commandframe.pack(side=TOP)
+            consoleframe.pack(side=BOTTOM,fill=BOTH, expand=1)
+            labelsFrame.pack(side=LEFT)
+            settingsFrame.pack(side=RIGHT,fill=BOTH, expand=1)
+
+            if len(preferences.analysisLastOpened) > 0:
+                    try:
+                       self.addMessage("Loading last analysis opened")
+                       self.LoadAnalysisFromPath(preferences.analysisLastOpened)
+                    except IOError:
+                        self.addMessage("Couldn't load last analysis. File could not be found.")
+
+            self.root.mainloop()        
+
+    def RunBenchmark(self):
+
+            self.LoadAnalysisFromPath("")
+            
+            self.ClearConsole()
+            
+            #read the benchmark config xml
+            path = askopenfilename(parent = self.root, title="Select Benchmark Configuration", initialfile = "Data\\Benchmark.xml")
+            
+            if len(path) > 0:
+                self.addMessage("Loading benchmark configuration file: %s" % path)                
+                benchmarkConfig = configuration.BenchmarkConfiguration(path)
                 
-                self.analysis = None
-                self.analysisConfiguration = None
+                self.addMessage("Loaded benchmark configuration: %s" % benchmarkConfig.name)
+                self.addMessage("")
                 
-                self.root = Tk()
-                self.root.geometry("800x400")
-                self.root.title("PCWG")
-
-                labelsFrame = Frame(self.root)
-                settingsFrame = Frame(self.root)
-                consoleframe = Frame(self.root)
-                commandframe = Frame(self.root)
-
-                load_button = Button(settingsFrame, text="Load", command = self.LoadAnalysis)
-                edit_button = Button(settingsFrame, text="Edit", command = self.EditAnalysis)
-                new_button = Button(settingsFrame, text="New", command = self.NewAnalysis)
-
-                calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
-                export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
-                anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
-                pcwg_share1_report_button = Button(commandframe, text="PCWG Share 1 Report", command = self.export_pcwg_share1_report)
-                export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
-                benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
-                clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
-                about_button = Button(commandframe, text="About", command = self.About)
-                set_work_space_button = Button(commandframe, text="Set Work Space", command = self.SetWorkSpace)
-                
-                self.analysisFilePathLabel = Label(labelsFrame, text="Analysis File")
-                self.analysisFilePathTextBox = Entry(settingsFrame)
-
-                self.analysisFilePathTextBox.config(state=DISABLED)
-
-                scrollbar = Scrollbar(consoleframe, orient=VERTICAL)
-                self.listbox = Listbox(consoleframe, yscrollcommand=scrollbar.set, selectmode=EXTENDED)
-                scrollbar.configure(command=self.listbox.yview)
-
-                new_button.pack(side=RIGHT, padx=5, pady=5)                
-                edit_button.pack(side=RIGHT, padx=5, pady=5)
-                load_button.pack(side=RIGHT, padx=5, pady=5)
-                
-                calculate_button.pack(side=LEFT, padx=5, pady=5)
-                export_report_button.pack(side=LEFT, padx=5, pady=5)
-                #anonym_report_button.pack(side=LEFT, padx=5, pady=5)
-                pcwg_share1_report_button.pack(side=LEFT, padx=5, pady=5)
-                export_time_series_button.pack(side=LEFT, padx=5, pady=5)
-                benchmark_button.pack(side=LEFT, padx=5, pady=5)
-                clear_console_button.pack(side=LEFT, padx=5, pady=5)
-                about_button.pack(side=LEFT, padx=5, pady=5)
-                set_work_space_button.pack(side=LEFT, padx=5, pady=5)
-                
-                self.analysisFilePathLabel.pack(anchor=NW, padx=5, pady=5)
-                self.analysisFilePathTextBox.pack(anchor=NW,fill=X, expand=1, padx=5, pady=5)
-
-                self.listbox.pack(side=LEFT,fill=BOTH, expand=1)
-                scrollbar.pack(side=RIGHT, fill=Y)
-
-                commandframe.pack(side=TOP)
-                consoleframe.pack(side=BOTTOM,fill=BOTH, expand=1)
-                labelsFrame.pack(side=LEFT)
-                settingsFrame.pack(side=RIGHT,fill=BOTH, expand=1)
-
-                if len(preferences.analysisLastOpened) > 0:
-                        try:
-                           self.addMessage("Loading last analysis opened")
-                           self.LoadAnalysisFromPath(preferences.analysisLastOpened)
-                        except IOError:
-                            self.addMessage("Couldn't load last analysis. File could not be found.")
-
-                self.root.mainloop()        
-
-        def RunBenchmark(self):
-
-                self.LoadAnalysisFromPath("")
-                
-                self.ClearConsole()
-                
-                #read the benchmark config xml
-                path = askopenfilename(parent = self.root, title="Select Benchmark Configuration", initialfile = "Data\\Benchmark.xml")
-                
-                if len(path) > 0:
-                    self.addMessage("Loading benchmark configuration file: %s" % path)                
-                    benchmarkConfig = configuration.BenchmarkConfiguration(path)
-                    
-                    self.addMessage("Loaded benchmark configuration: %s" % benchmarkConfig.name)
-                    self.addMessage("")
-                    
-                    benchmarkPassed = True
-                    totalTime = 0.0
-                    
-                    for i in range(len(benchmarkConfig.benchmarks)):
-                            benchmark = benchmarkConfig.benchmarks[i]
-                            self.addMessage("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
-                            benchmarkResults = self.BenchmarkAnalysis(benchmark.analysisPath,  benchmarkConfig.tolerance, benchmark.expectedResults)
-                            benchmarkPassed = benchmarkPassed & benchmarkResults[0]
-                            totalTime += benchmarkResults[1]
-    
-                    if benchmarkPassed:
-                            self.addMessage("All benchmarks passed")
-                    else:
-                            self.addMessage("There are failing benchmarks", red = True)
-    
-                    self.addMessage("Total Time Taken: %fs" % totalTime)
-                else:
-                    self.addMessage("No benchmark loaded", red = True)
-                
-        def BenchmarkAnalysis(self, path, tolerance, dictExpectedResults):
-
-                self.addMessage("Calculating %s (please wait)..." % path)
-
-                self.addMessage("Benchmark Tolerance: %s" % self.formatPercentTwoDP(tolerance))
-
                 benchmarkPassed = True
-                start = datetime.datetime.now()
+                totalTime = 0.0
                 
-                try:
+                for i in range(len(benchmarkConfig.benchmarks)):
+                        benchmark = benchmarkConfig.benchmarks[i]
+                        self.addMessage("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
+                        benchmarkResults = self.BenchmarkAnalysis(benchmark.analysisPath,  benchmarkConfig.tolerance, benchmark.expectedResults)
+                        benchmarkPassed = benchmarkPassed & benchmarkResults[0]
+                        totalTime += benchmarkResults[1]
+
+                if benchmarkPassed:
+                        self.addMessage("All benchmarks passed")
+                else:
+                        self.addMessage("There are failing benchmarks", red = True)
+
+                self.addMessage("Total Time Taken: %fs" % totalTime)
+            else:
+                self.addMessage("No benchmark loaded", red = True)
+            
+    def BenchmarkAnalysis(self, path, tolerance, dictExpectedResults):
+
+            self.addMessage("Calculating %s (please wait)..." % path)
+
+            self.addMessage("Benchmark Tolerance: %s" % self.formatPercentTwoDP(tolerance))
+
+            benchmarkPassed = True
+            start = datetime.datetime.now()
+            
+            try:
    
-                        analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
+                    analysis = Analysis.Analysis(configuration.AnalysisConfiguration(path))
 
-                except ExceptionType as e:
+            except ExceptionType as e:
 
-                        analysis = None
-                        self.addMessage(str(e))
-                        benchmarkPassed = False
+                    analysis = None
+                    self.addMessage(str(e))
+                    benchmarkPassed = False
 
-                if analysis != None:
-                        for (field, value) in dictExpectedResults.iteritems():
-                            try:
-                                benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, eval("analysis.%s" % field), tolerance)
-                            except:
-                                raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
+            if analysis != None:
+                    for (field, value) in dictExpectedResults.iteritems():
+                        try:
+                            benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, eval("analysis.%s" % field), tolerance)
+                        except:
+                            raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, exec("analysis.%s" % field), tolerance)
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("REWS Delta", rewsDelta, analysis.rewsDelta, tolerance)
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Turbulence Delta", turbulenceDelta, analysis.turbulenceDelta, tolerance)
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark("Combined Delta", combinedDelta, analysis.combinedDelta, tolerance)
-                                         
-                if benchmarkPassed:
-                        self.addMessage("Benchmark Passed")
-                else:
-                        self.addMessage("Benchmark Failed", red = True)
+                                     
+            if benchmarkPassed:
+                    self.addMessage("Benchmark Passed")
+            else:
+                    self.addMessage("Benchmark Failed", red = True)
 
-                end = datetime.datetime.now()
+            end = datetime.datetime.now()
 
-                timeTaken = (end - start).total_seconds()
-                self.addMessage("Time Taken: %fs" % timeTaken)
+            timeTaken = (end - start).total_seconds()
+            self.addMessage("Time Taken: %fs" % timeTaken)
 
-                self.addMessage("")
-                
-                return (benchmarkPassed, timeTaken)                
-
-        def formatPercentTwoDP(self, value):
-                return "%0.2f%%" % (value * 100.0)
-
-        def compareBenchmark(self, title, expected, actual, tolerance):
-                
-                diff = abs(expected - actual)
-                passed = (diff <= tolerance)
-
-                text = "{title}: {expec:0.10} (expected) vs {act:0.10} (actual) =>".format(title = title, expec=expected, act= actual)
-                
-                if passed:
-                        self.addMessage("%s passed" % text)
-                else:
-                        self.addMessage("%s failed" % text, red = True)
-
-                return passed
-                
-        def EditAnalysis(self):
-
-                if self.analysisConfiguration == None:            
-                        self.addMessage("ERROR: Analysis not loaded", red = True)
-                        return
-                
-                configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
-                
-        def NewAnalysis(self):
-
-                conf = configuration.AnalysisConfiguration()
-                configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
-        
-        def LoadAnalysis(self):
-
-                fileName = SelectFile(self.root)
-                if len(fileName) < 1: return
-                
-                self.LoadAnalysisFromPath(fileName)
-
-        def SetWorkSpace(self):
-
-                folder = askdirectory(parent=self.root, initialdir=preferences.workSpaceFolder)
-                if len(folder) < 1: return
-                
-                preferences.workSpaceFolder = folder
-                preferences.save()
-
-                self.addMessage("Workspace set to: %s" % folder)
-                        
-        def LoadAnalysisFromPath(self, fileName):
-
-                try:
-                        preferences.analysisLastOpened = fileName
-                        preferences.save()
-                except ExceptionType as e:
-                    self.addMessage("Cannot save preferences: %s" % e)
-                    
-                self.analysisFilePathTextBox.config(state=NORMAL)
-                self.analysisFilePathTextBox.delete(0, END)
-                self.analysisFilePathTextBox.insert(0, fileName)
-                self.analysisFilePathTextBox.config(state=DISABLED)
-                
-                self.analysis = None
-                self.analysisConfiguration = None
-
-                if len(fileName) > 0:
-                        
-                        try:
-                            self.analysisConfiguration = configuration.AnalysisConfiguration(fileName)
-                            self.addMessage("Analysis config loaded: %s" % fileName)
-                        except ExceptionType as e:
-                            self.addMessage("ERROR loading config: %s" % e, red = True)
-                        
-        def ExportReport(self):
-
-                if self.analysis == None:            
-                        self.addMessage("ERROR: Analysis not yet calculated", red = True)
-                        return
-                if not self.analysis.hasActualPower:
-                        self.addMessage("ERROR: No Power Signal in Dataset", red = True)
-                        return
-                try:
-                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
-                        self.analysis.report(fileName, version)
-                        self.addMessage("Report written to %s" % fileName)
-                except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Report: %s" % e, red = True)
-        
-        def export_pcwg_share1_report(self):
-            if self.analysis == None:
-                self.addMessage("ERROR: Analysis not yet calculated", red = True)
-                return
-            if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
-                self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
-                return
-            try:
-                fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
-                self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
-                self.addMessage("Report written to %s" % fileName)
-            except ExceptionType as e:
-                self.addMessage("ERROR Exporting Report: %s" % e, red = True)
-        
-        def ExportAnonymousReport(self):
-                scatter = True
-                deviationMatrix = True
-                
-                selections = ExportAnonReportPickerDialog(self.root, None)                    
-                scatter, deviationMatrix  = selections.getSelections() 
-
-                if self.analysis == None:
-                        self.addMessage("ERROR: Analysis not yet calculated", red = True)
-                        return
-                
-                if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
-                        self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
-                        deviationMatrix = False
-                        return
-                
-                try:
-                        fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.workSpaceFolder)
-                        self.analysis.anonym_report(fileName, version, scatter = scatter, deviationMatrix = deviationMatrix)
-                        self.addMessage("Anonymous report written to %s" % fileName)
-                        if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
-                                self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
-                                self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
-                except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Anonymous Report: %s" % e, red = True)
-
-        def ExportTimeSeries(self):
-
-                if self.analysis == None:
-                        self.addMessage("ERROR: Analysis not yet calculated", red = True)
-                        return
-
-                try:
-                        
-                        selections = ExportDataSetDialog(self.root, None)
-                        clean, full, calibration = selections.getSelections()
-
-                        fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
-                        self.analysis.export(fileName, clean, full, calibration)
-                        if clean:
-                                self.addMessage("Time series written to %s" % fileName)
-                        if any((full, calibration)):
-                                self.addMessage("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
-
-                except ExceptionType as e:
-                        self.addMessage("ERROR Exporting Time Series: %s" % e, red = True)
-
-        def Calculate(self):
-
-                if self.analysisConfiguration == None:
-                        self.addMessage("ERROR: Analysis Config file not specified", red = True)
-                        return
-
-                try:
+            self.addMessage("")
             
-                        self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
+            return (benchmarkPassed, timeTaken)                
 
-                except ExceptionType as e:
-                        
-                        self.addMessage("ERROR Calculating Analysis: %s" % e, red = True)
+    def formatPercentTwoDP(self, value):
+            return "%0.2f%%" % (value * 100.0)
 
-        def ClearConsole(self):
-                self.listbox.delete(0, END)
-                self.root.update()
+    def compareBenchmark(self, title, expected, actual, tolerance):
+            
+            diff = abs(expected - actual)
+            passed = (diff <= tolerance)
 
-        def About(self):
-                tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=version))
+            text = "{title}: {expec:0.10} (expected) vs {act:0.10} (actual) =>".format(title = title, expec=expected, act= actual)
+            
+            if passed:
+                    self.addMessage("%s passed" % text)
+            else:
+                    self.addMessage("%s failed" % text, red = True)
 
-        def addMessage(self, message, red=False):
-                self.listbox.insert(END, message)
-                if red:
-                     self.listbox.itemconfig(END, {'bg':'red','foreground':"white"})
-                self.listbox.see(END)
-                self.root.update()               
+            return passed
+            
+    def EditAnalysis(self):
+
+            if self.analysisConfiguration == None:            
+                    self.addMessage("ERROR: Analysis not loaded", red = True)
+                    return
+            
+            configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
+            
+    def NewAnalysis(self):
+
+            conf = configuration.AnalysisConfiguration()
+            configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
+    
+    def LoadAnalysis(self):
+
+            fileName = SelectFile(self.root)
+            if len(fileName) < 1: return
+            
+            self.LoadAnalysisFromPath(fileName)
+
+    def SetWorkSpace(self):
+
+            folder = askdirectory(parent=self.root, initialdir=preferences.workSpaceFolder)
+            if len(folder) < 1: return
+            
+            preferences.workSpaceFolder = folder
+            preferences.save()
+
+            self.addMessage("Workspace set to: %s" % folder)
+                    
+    def LoadAnalysisFromPath(self, fileName):
+
+            try:
+                    preferences.analysisLastOpened = fileName
+                    preferences.save()
+            except ExceptionType as e:
+                self.addMessage("Cannot save preferences: %s" % e)
+                
+            self.analysisFilePathTextBox.config(state=NORMAL)
+            self.analysisFilePathTextBox.delete(0, END)
+            self.analysisFilePathTextBox.insert(0, fileName)
+            self.analysisFilePathTextBox.config(state=DISABLED)
+            
+            self.analysis = None
+            self.analysisConfiguration = None
+
+            if len(fileName) > 0:
+                    
+                    try:
+                        self.analysisConfiguration = configuration.AnalysisConfiguration(fileName)
+                        self.addMessage("Analysis config loaded: %s" % fileName)
+                    except ExceptionType as e:
+                        self.addMessage("ERROR loading config: %s" % e, red = True)
+                    
+    def ExportReport(self):
+
+            if self.analysis == None:            
+                    self.addMessage("ERROR: Analysis not yet calculated", red = True)
+                    return
+            if not self.analysis.hasActualPower:
+                    self.addMessage("ERROR: No Power Signal in Dataset", red = True)
+                    return
+            try:
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
+                    self.analysis.report(fileName, version)
+                    self.addMessage("Report written to %s" % fileName)
+            except ExceptionType as e:
+                    self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+    
+    def export_pcwg_share1_report(self):
+        self.analysisConfiguration = configuration.AnalysisConfiguration()
+        configDialog = PcwgShare1Dialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
+        inner_range_id = 'A'
+        self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
+        try:
+            self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
+        except Exception as e:
+            print e
+            self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
+            path = self.analysis.config.path
+            self.analysisConfiguration = self.analysis.config
+            for inner_range_id in ['B','C']:
+                self.analysisConfiguration = configuration.AnalysisConfiguration(path)
+                self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
+                configDialog.inner_range_id = inner_range_id
+                configDialog.set_inner_range_values()
+                self.analysisConfiguration.innerRangeLowerTurbulence = configDialog.innerRangeLowerTurbulence
+                self.analysisConfiguration.innerRangeUpperTurbulence = configDialog.innerRangeUpperTurbulence
+                self.analysisConfiguration.innerRangeLowerShear = configDialog.innerRangeLowerShear
+                self.analysisConfiguration.innerRangeUpperShear = configDialog.innerRangeUpperShear
+                self.analysisConfiguration.save()
+                try:
+                    self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
+                    break
+                except:
+                    self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id)
+        if self.analysis == None:
+            self.addMessage("ERROR: Analysis not yet calculated", red = True)
+            return
+        if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+            self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+            return
+        try:
+            fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="PCWG Share 1 Report.xls", title="Save PCWG Share 1 Report", initialdir=preferences.workSpaceFolder)
+            self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
+            self.addMessage("Report written to %s" % fileName)
+        except ExceptionType as e:
+            self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+    
+    def ExportAnonymousReport(self):
+            scatter = True
+            deviationMatrix = True
+            
+            selections = ExportAnonReportPickerDialog(self.root, None)                    
+            scatter, deviationMatrix  = selections.getSelections() 
+
+            if self.analysis == None:
+                    self.addMessage("ERROR: Analysis not yet calculated", red = True)
+                    return
+            
+            if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+                    self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+                    deviationMatrix = False
+                    return
+            
+            try:
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.workSpaceFolder)
+                    self.analysis.anonym_report(fileName, version, scatter = scatter, deviationMatrix = deviationMatrix)
+                    self.addMessage("Anonymous report written to %s" % fileName)
+                    if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
+                            self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
+                            self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
+            except ExceptionType as e:
+                    self.addMessage("ERROR Exporting Anonymous Report: %s" % e, red = True)
+
+    def ExportTimeSeries(self):
+
+            if self.analysis == None:
+                    self.addMessage("ERROR: Analysis not yet calculated", red = True)
+                    return
+
+            try:
+                    
+                    selections = ExportDataSetDialog(self.root, None)
+                    clean, full, calibration = selections.getSelections()
+
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
+                    self.analysis.export(fileName, clean, full, calibration)
+                    if clean:
+                            self.addMessage("Time series written to %s" % fileName)
+                    if any((full, calibration)):
+                            self.addMessage("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+
+            except ExceptionType as e:
+                    self.addMessage("ERROR Exporting Time Series: %s" % e, red = True)
+
+    def Calculate(self):
+
+            if self.analysisConfiguration == None:
+                    self.addMessage("ERROR: Analysis Config file not specified", red = True)
+                    return
+
+            try:
+        
+                    self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self))
+
+            except ExceptionType as e:
+                    
+                    self.addMessage("ERROR Calculating Analysis: %s" % e, red = True)
+
+    def ClearConsole(self):
+            self.listbox.delete(0, END)
+            self.root.update()
+
+    def About(self):
+            tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=version))
+
+    def addMessage(self, message, red=False):
+            self.listbox.insert(END, message)
+            if red:
+                 self.listbox.itemconfig(END, {'bg':'red','foreground':"white"})
+            self.listbox.see(END)
+            self.root.update()
 
 preferences = configuration.Preferences()
                 
