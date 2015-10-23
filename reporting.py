@@ -505,17 +505,24 @@ class report:
         
         if hasattr(powerCurve, 'zeroTurbulencePowerCurve'):
             countRow += 3
-            sh.write(rowOffset + countRow, columnOffset + 2, name + ' Zero TI Power Curve', self.bold_style)
-            countRow += 1
-            sh.write(rowOffset + countRow, columnOffset + 1, 'Wind Speed', self.bold_style)
-            sh.write(rowOffset + countRow, columnOffset + 2, 'Power', self.bold_style)
-            pc = powerCurve.zeroTurbulencePowerCurve.dfPowerLevels
-            for ws in pc.index:
-                sh.write(rowOffset + countRow + 1, columnOffset + 1, ws, styles['Specified Wind Speed'])
-                sh.write(rowOffset + countRow + 1, columnOffset + 2, pc.loc[ws, 'Power'], styles['Specified Wind Speed'])
+            try:
+                pc = powerCurve.zeroTurbulencePowerCurve.dfPowerLevels
+                sh.write(rowOffset + countRow, columnOffset + 2, name + ' Zero TI Power Curve', self.bold_style)
                 countRow += 1
+                sh.write(rowOffset + countRow, columnOffset + 1, 'Wind Speed', self.bold_style)
+                sh.write(rowOffset + countRow, columnOffset + 2, 'Power', self.bold_style)
+                for ws in pc.index:
+                    sh.write(rowOffset + countRow + 1, columnOffset + 1, ws, styles['Specified Wind Speed'])
+                    sh.write(rowOffset + countRow + 1, columnOffset + 2, pc.loc[ws, 'Power'], styles['Specified Wind Speed'])
+                    countRow += 1                
+            except:
+                sh.write(rowOffset + countRow, columnOffset + 2,'Zero TI Power Curve not calculated successfully for %s power curve.' % name)
+                countRow+=1
         else:
+            countRow += 3
             print "Not reporting zero TI power curve for %s as it is not defined." % (name)
+            sh.write(rowOffset + countRow, columnOffset + 2,"Not reporting zero TI power curve for %s as it is not defined." % (name))
+            countRow+=1
             
         return countRow
                 
