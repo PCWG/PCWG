@@ -331,15 +331,15 @@ class ZeroTurbulencePowerCurve:
 
         self.integrationRange = integrationRange
 
-        initialZeroTurbulencePowerCurve = InitialZeroTurbulencePowerCurve(referenceWindSpeeds, referencePowers, referenceTurbulences, integrationRange, availablePower)
+        self.initialZeroTurbulencePowerCurve = InitialZeroTurbulencePowerCurve(referenceWindSpeeds, referencePowers, referenceTurbulences, integrationRange, availablePower)
 
-        simulatedReferencePowerCurve = SimulatedPowerCurve(referenceWindSpeeds, initialZeroTurbulencePowerCurve, referenceTurbulences, integrationRange)
+        simulatedReferencePowerCurve = SimulatedPowerCurve(referenceWindSpeeds, self.initialZeroTurbulencePowerCurve, referenceTurbulences, integrationRange)
 
         self.windSpeeds = referenceWindSpeeds
         self.powers = []
 
         for i in range(len(self.windSpeeds)):
-            power = referencePowers[i] - simulatedReferencePowerCurve.powers[i] + initialZeroTurbulencePowerCurve.powers[i]
+            power = referencePowers[i] - simulatedReferencePowerCurve.powers[i] + self.initialZeroTurbulencePowerCurve.powers[i]
             self.powers.append(power)
             #print "%f %f" % (self.windSpeeds[i], self.powers[i])
 
@@ -381,10 +381,11 @@ class InitialZeroTurbulencePowerCurve:
                                                                   self.availablePower,
                                                                   self.selectedStats.ratedPower,
                                                                   self.selectedStats.cutInWindSpeed,
-                                                                  self.selectedStats.cpMax)       
+                                                                  self.selectedStats.cpMax)
+
+        self.ratedWindSpeed = selectedIteration.ratedWindSpeed
         self.windSpeeds = selectedIteration.windSpeeds
         self.powers = selectedIteration.powers
-
         self.power = selectedIteration.power
         
     def solve(self, previousIterationStats, iterationCount = 1):

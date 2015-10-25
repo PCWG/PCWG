@@ -22,6 +22,10 @@
 					<Field>combinedDelta</Field>
 					<Value>0.005271</Value>
 				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerDeviationMatrixDelta</Field>
+					<Value>0.00224711</Value>
+				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
 		<Benchmark>
@@ -43,6 +47,10 @@
 					<Field>combinedDelta</Field>
 					<Value>0.003464</Value>
 				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerDeviationMatrixDelta</Field>
+					<Value>0.00127266</Value>
+				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
 		<Benchmark>
@@ -63,6 +71,10 @@
 				<ExpectedResult>
 					<Field>combinedDelta</Field>
 					<Value>-0.015835</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerDeviationMatrixDelta</Field>
+					<Value>-0.00285674</Value>
 				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
