@@ -75,6 +75,7 @@ class PowerDeviationMatrixPowerCalculator:
 
     def __init__(self, powerCurve, powerDeviationMatrix, windSpeedColumn, parameterColumns):
 
+        self.powerCurve = powerCurve
         self.powerDeviationMatrix = powerDeviationMatrix
         self.windSpeedColumn = windSpeedColumn
         self.parameterColumns = parameterColumns
@@ -87,9 +88,15 @@ class PowerDeviationMatrixPowerCalculator:
             column = self.parameterColumns[dimension.parameter]
             value = row[column]
             parameters[dimension.parameter] = value
+            #print dimension.parameter, value
 
-        return self.powerDeviationMatrix[parameters]
+        deviation = self.powerDeviationMatrix[parameters]
+        power = self.powerCurve.power(row[self.windSpeedColumn])
 
+        #print power, deviation
+        #raise Exception("Stop")
+    
+        return self.powerCurve.power(row[self.windSpeedColumn]) * (1.0 + deviation)
 
 class Analysis:
 
@@ -229,6 +236,18 @@ class Analysis:
         self.calculateBase()
         self.calculateHub()
 
+        #Normalisation Parameters
+        self.normalisingRatedPower = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
+        self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
+        self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
+
+        self.normalisedWS = 'Normalised WS'
+        self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.normalisingCutInWindSpeed) / (self.normalisingRatedWindSpeed - self.normalisingCutInWindSpeed)
+
+        if self.hasActualPower:
+            self.normalisedPower = 'Normalised Power'
+            self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.config.ratedPower
+
         if config.rewsActive:
             self.status.addMessage("Calculating REWS Correction...")
             self.calculateREWS()
@@ -277,7 +296,7 @@ class Analysis:
                 if self.hasShear: self.combPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.combinedPower, innerShearFilterMode)
 
             if config.powerDeviationMatrixActive:
-                self.powerDeviationMatrixPowerDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
+                self.powerDeviationMatrixDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
 
             self.status.addMessage("Power Curve Deviation Matrices Complete.")
         self.hours = len(self.dataFrame.index)*1.0 / 6.0
@@ -919,16 +938,8 @@ class Analysis:
 
     def calculate_anonymous_values(self):
 
-        self.observedRatedPower = self.powerCurve.zeroTurbulencePowerCurve.maxPower
-        self.observedRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.windSpeeds[5:-4][np.argmax(np.abs(np.diff(np.diff(self.powerCurve.zeroTurbulencePowerCurve.powers[5:-4]))))+1]
-
         allFilterMode = 0
-        
-        self.normalisedPower = 'Normalised Power'
-        self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.config.ratedPower
-        
-        self.normalisedWS = 'Normalised WS'
-        self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.config.cutInWindSpeed) / (self.observedRatedWindSpeed - self.config.cutInWindSpeed)
+                
         self.normalisedWSBin = 'Normalised WS Bin Centre'
         firstNormWSbin = 0.05
         lastNormWSbin = 2.95
@@ -1038,20 +1049,22 @@ class Analysis:
 
         parameterColumns = {}
 
-        windSpeed = self.inputHubWindSpeed
-
         for dimension in self.specifiedPowerDeviationMatrix.dimensions:
             if dimension.parameter.lower() == "turbulence":
                 parameterColumns[dimension.parameter] = self.hubTurbulence
-            elif dimension.parameter.lower() == "windspeed":
-                #todo consider introducing an 'inputWindSpeed' Column
-                parameterColumns[dimension.parameter] = windSpeed
-            elif dimension.parameter.lower() == "shearExponent":
+            elif dimension.parameter.lower() == "normalisedwindspeed":
+                parameterColumns[dimension.parameter] = self.normalisedWS
+            elif dimension.parameter.lower() == "shearexponent":
                 parameterColumns[dimension.parameter] = self.shearExponent
             else:
-                raise Exception("Unkown parameter %s" % dimension.parameter)
+                raise Exception("Unknown parameter %s" % dimension.parameter)
 
-        self.dataFrame[self.powerDeviationMatrixPower] = self.dataFrame.apply(PowerDeviationMatrixPowerCalculator(self.powerCurve, self.specifiedPowerDeviationMatrix, windSpeed, parameterColumns).power, axis=1)
+        self.dataFrame[self.powerDeviationMatrixPower] = self.dataFrame.apply(PowerDeviationMatrixPowerCalculator(self.powerCurve, \
+                                                                                                                  self.specifiedPowerDeviationMatrix, \
+                                                                                                                  self.inputHubWindSpeed, \
+                                                                                                                  parameterColumns).power, \
+                                                                                                                  axis=1)
+
         self.powerDeviationMatrixYield = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].sum() * self.timeStampHours
         self.powerDeviationMatrixYieldCount = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].count()
         self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0

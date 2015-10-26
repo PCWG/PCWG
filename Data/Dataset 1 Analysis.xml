@@ -38,7 +38,7 @@
 		<Active>1</Active>
 	</RotorEquivalentWindSpeed>
 	<PowerDeviationMatrix>
-		<SpecifiedPowerDeviationMatrix></SpecifiedPowerDeviationMatrix>
-		<Active>0</Active>
+		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>
+		<Active>1</Active>
 	</PowerDeviationMatrix>
 </Configuration>

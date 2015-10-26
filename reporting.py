@@ -98,6 +98,10 @@ class report:
                 self.reportPowerDeviations(book, "CombPowerDeviations", analysis.combPowerDeviations, gradient)
                 #self.reportPowerDeviationsDifference(book, "Hub-Comb-DevDiff", analysis.hubPowerDeviations, analysis.combPowerDeviations, gradient)
                 #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
+            if analysis.powerDeviationMatrixActive:
+                self.reportPowerDeviations(book, "PowerDeviationMatrixDeviations", analysis.powerDeviationMatrixDeviations, gradient)
+                #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
+                #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
 
             calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
             self.reportCalibrations(calSheet,analysis)
@@ -135,7 +139,7 @@ class report:
 
             row+=1
             for key in sorted(calib.calibrationSectorDataframe.index):
-                sh.write(row,col,key, self.bold_style)
+                sh.write(row,col,float(key), self.bold_style)
                 sh.write(row,col+1,calib.calibrationSectorDataframe['Slope'][key], self.four_dp_style)
                 sh.write(row,col+2,calib.calibrationSectorDataframe['Offset'][key], self.four_dp_style)
                 if 'Count' in calib.calibrationSectorDataframe.columns:
