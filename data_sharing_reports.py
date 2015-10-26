@@ -4,6 +4,7 @@ from xlutils.copy import copy
 from datetime import datetime as dt
 from PIL import Image
 from shutil import rmtree
+from pcwg_tool import pcwg_inner_ranges
 
 template_name = 'Share_1_template.xls'
 
@@ -48,9 +49,9 @@ class pcwg_share1_rpt(object):
         sh = self.workbook.get_sheet(sheet_map['Meta Data'])
         col = 2
         used_inner_range = [self.analysis.innerRangeLowerShear, self.analysis.innerRangeUpperShear, self.analysis.innerRangeLowerTurbulence, self.analysis.innerRangeUpperTurbulence]
-        range_A = [0.05, 0.25, 0.08, 0.12]
-        range_B = [0.05, 0.25, 0.06, 0.1]
-        range_C = [0.1, 0.3, 0.1, 0.14]
+        range_A = [pcwg_inner_ranges['A']['LSh'], pcwg_inner_ranges['A']['USh'], pcwg_inner_ranges['A']['LTI'], pcwg_inner_ranges['A']['UTI']]
+        range_B = [pcwg_inner_ranges['B']['LSh'], pcwg_inner_ranges['B']['USh'], pcwg_inner_ranges['B']['LTI'], pcwg_inner_ranges['B']['UTI']]
+        range_C = [pcwg_inner_ranges['C']['LSh'], pcwg_inner_ranges['C']['USh'], pcwg_inner_ranges['C']['LTI'], pcwg_inner_ranges['C']['UTI']]
         if used_inner_range == range_A:
             range_id = 'A'
         elif used_inner_range == range_B:
@@ -158,7 +159,7 @@ class pcwg_share1_rpt(object):
             for col in [3,4]:
                 sh.write(21, col, False)
                 _apply_cell_style(styles_dict[False], sh, 21, col)
-            sh.write(19, 5, True)
+            sh.write(21, 5, True)
             _apply_cell_style(styles_dict[True], sh, 21, 5)
         else:
             for col in [2,3,4,5]:
