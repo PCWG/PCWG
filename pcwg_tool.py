@@ -20,7 +20,10 @@ datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 version = "0.5.8 (Beta-2)"
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
-        
+pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
+                     'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
+                     'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
+
 def getDateFromEntry(entry):
     if len(entry.get()) > 0:
         return datetime.datetime.strptime(entry.get(), datePickerFormat)
@@ -163,6 +166,7 @@ class ValidationResult:
         self.valid = valid
         self.message = message
         self.permitInput = permitInput
+                
                 
 class ValidateBase:
 
@@ -2950,24 +2954,21 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.powerCurveFirstBin = 1.
         self.powerCurveLastBin = 30.
         self.powerCurveBinSize = 0.5
-        self.pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
-                                  'B': {'LTI': 0.06, 'UTI': 0.1, 'LSh': 0.05, 'USh': 0.25},
-                                  'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
         self.set_inner_range_values()
         self.specifiedPowerCurve = None
         self.baseLineMode = "Hub"
         self.nominalWindSpeedDistribution = None
-        self.specifiedPowerDeviationMatrix = None#'PCWG_Trial_PDM.xml'
+        self.specifiedPowerDeviationMatrix = os.getcwd() + os.sep + 'Data' + os.sep + 'HypothesisMatrix.xml'
         self.densityCorrectionActive = False
         self.turbulenceCorrectionActive = False
         self.rewsCorrectionActive = False
         self.powerDeviationMatrixActive = False
         
     def set_inner_range_values(self):
-        self.innerRangeLowerTurbulence = self.pcwg_inner_ranges[self.inner_range_id]['LTI']
-        self.innerRangeUpperTurbulence = self.pcwg_inner_ranges[self.inner_range_id]['UTI']
-        self.innerRangeLowerShear = self.pcwg_inner_ranges[self.inner_range_id]['LSh']
-        self.innerRangeUpperShear = self.pcwg_inner_ranges[self.inner_range_id]['USh']
+        self.innerRangeLowerTurbulence = pcwg_inner_ranges[self.inner_range_id]['LTI']
+        self.innerRangeUpperTurbulence = pcwg_inner_ranges[self.inner_range_id]['UTI']
+        self.innerRangeLowerShear = pcwg_inner_ranges[self.inner_range_id]['LSh']
+        self.innerRangeUpperShear = pcwg_inner_ranges[self.inner_range_id]['USh']
     
     def getInitialFileName(self):
         return "PCWG Share 1 Analysis Configuration"
@@ -3487,10 +3488,9 @@ class UserInterface:
             self.listbox.see(END)
             self.root.update()
 
-preferences = configuration.Preferences()
-                
-gui = UserInterface()
 
-preferences.save()
-
-print "Done"
+if __name__ == "__main__":
+    preferences = configuration.Preferences()
+    gui = UserInterface()
+    preferences.save()
+    print "Done"
