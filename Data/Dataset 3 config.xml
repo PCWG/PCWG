@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
 <Configuration xmlns="http://www.pcwg.org">
+	<InvariantRandomID>3</InvariantRandomID>
 	<GeneralSettings>
 		<Name>Dataset 3</Name>
 		<StartDate>2012-12-06T14:20:00</StartDate>
@@ -18,6 +19,7 @@
 		<BadDataValue>-99.900000</BadDataValue>
 		<DateFormat>%d/%m/%Y %H:%M</DateFormat>
 		<Separator>TAB</Separator>
+		<Decimal>FULL STOP</Decimal>
 		<HeaderRows>0</HeaderRows>
 		<TimeStamp>TimeStamp</TimeStamp>
 		<TimeStepInSeconds>600</TimeStepInSeconds>
@@ -29,10 +31,6 @@
 		<Pressure></Pressure>
 		<Density></Density>
 		<TurbineLocationWindSpeed></TurbineLocationWindSpeed>
-		<Power></Power>
-		<PowerMin></PowerMin>
-		<PowerMax></PowerMax>
-		<PowerSD></PowerSD>
 		<HubWindSpeed>Mast_WindSpeed_96m_Mean</HubWindSpeed>
 		<HubTurbulence>Mast_WindSpeed_96m_Turbulence_Intensity</HubTurbulence>
 	</Measurements>

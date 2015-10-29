@@ -47,13 +47,22 @@ class PowerCurve:
         self.turbulenceFunction = self.createFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
 
         if (turbulenceRenormalisation and has_pc):
+
             print "Calculating zero turbulence curve for {0} Power Curve".format(self.name)
+
             try:
+
                 self.calcZeroTurbulencePowerCurve()
                 print "Calculation of zero turbulence curve for {0} Power Curve successful".format(self.name)
-            except:
+
+            except Exception as error:
+
+                print error
                 print "Calculation of zero turbulence curve for {0} Power Curve unsuccessful".format(self.name)
 
+                self.zeroTurbulencePowerCurve = None
+                self.simulatedPower = None
+                
     def calcZeroTurbulencePowerCurve(self):
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
         integrationRange = IntegrationRange(0.0, 100.0, 0.1)
@@ -322,23 +331,24 @@ class ZeroTurbulencePowerCurve:
 
         self.integrationRange = integrationRange
 
-        initialZeroTurbulencePowerCurve = InitialZeroTurbulencePowerCurve(referenceWindSpeeds, referencePowers, referenceTurbulences, integrationRange, availablePower)
+        self.initialZeroTurbulencePowerCurve = InitialZeroTurbulencePowerCurve(referenceWindSpeeds, referencePowers, referenceTurbulences, integrationRange, availablePower)
 
-        simulatedReferencePowerCurve = SimulatedPowerCurve(referenceWindSpeeds, initialZeroTurbulencePowerCurve, referenceTurbulences, integrationRange)
+        simulatedReferencePowerCurve = SimulatedPowerCurve(referenceWindSpeeds, self.initialZeroTurbulencePowerCurve, referenceTurbulences, integrationRange)
 
         self.windSpeeds = referenceWindSpeeds
         self.powers = []
 
         for i in range(len(self.windSpeeds)):
-            power = referencePowers[i] - simulatedReferencePowerCurve.powers[i] + initialZeroTurbulencePowerCurve.powers[i]
+            power = referencePowers[i] - simulatedReferencePowerCurve.powers[i] + self.initialZeroTurbulencePowerCurve.powers[i]
             self.powers.append(power)
             #print "%f %f" % (self.windSpeeds[i], self.powers[i])
 
         self.powerFunction = scipy.interpolate.interp1d(self.windSpeeds, self.powers)
-
+        
         self.minWindSpeed = min(self.windSpeeds)
         self.maxWindSpeed = max(self.windSpeeds)
         self.maxPower = max(self.powers)
+        self.dfPowerLevels = pd.DataFrame(self.powers, index = self.windSpeeds, columns = ['Power'])
 
     def power(self, windSpeed):
         
@@ -371,10 +381,11 @@ class InitialZeroTurbulencePowerCurve:
                                                                   self.availablePower,
                                                                   self.selectedStats.ratedPower,
                                                                   self.selectedStats.cutInWindSpeed,
-                                                                  self.selectedStats.cpMax)       
+                                                                  self.selectedStats.cpMax)
+
+        self.ratedWindSpeed = selectedIteration.ratedWindSpeed
         self.windSpeeds = selectedIteration.windSpeeds
         self.powers = selectedIteration.powers
-
         self.power = selectedIteration.power
         
     def solve(self, previousIterationStats, iterationCount = 1):
