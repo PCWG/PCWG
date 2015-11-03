@@ -373,6 +373,7 @@ class Dataset:
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
         if self.windDirection in self.dataFrame.columns:
+            self.fullDataFrame[self.windDirection] = self.fullDataFrame[self.windDirection].astype(float)
             self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
 
     def createShearCalibration(self, dataFrame, config, timeStepInSeconds):
