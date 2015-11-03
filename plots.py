@@ -173,9 +173,6 @@ class MatplotlibPlotter(object):
                 ax.set_xlim([min(self.analysis.dataFrame[windSpeedCol].min(),meanPowerCurve.index.min()), max(self.analysis.dataFrame[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
                 ax2.set_xlim([min(self.analysis.dataFrame[windSpeedCol].min(),meanPowerCurve.index.min()), max(self.analysis.dataFrame[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
             
-            #hacked temp code
-            ax.set_ylim([-500., 4000.])
-            
             ax.set_xlabel(self.analysis.inputHubWindSpeedSource + ' (m/s)')
             ax.set_ylabel(powerCol + ' (kW)')
             refTurbCol = 'Specified Turbulence' if self.analysis.powerCurveMode == 'Specified' else self.analysis.hubTurbulence
