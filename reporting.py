@@ -49,8 +49,9 @@ class report:
 
             if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
                 rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve, analysis) )
-                
-            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, analysis) )
+            
+            if analysis.innerTurbulenceMeasuredPowerCurve != None:
+                rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, analysis) )
             
             if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
                 rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve, analysis) )
