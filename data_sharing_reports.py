@@ -5,6 +5,7 @@ from datetime import datetime as dt
 from PIL import Image
 from shutil import rmtree
 from pcwg_tool import pcwg_inner_ranges
+import numpy as np
 
 template_name = 'Share_1_template.xls'
 
@@ -70,9 +71,12 @@ class pcwg_share1_rpt(object):
             sh.write(6, col, conf.invariant_rand_id)
             _apply_cell_style(dset_header_style, sh, 6, col)
             wsl = len(conf.windSpeedLevels) if self.analysis.rewsActive else None
-            wdr = len(conf.windDirectionLevels) if self.analysis.rewsActive else None
+            if self.analysis.rewsActive:
+                rews_has_veer = (conf.windDirectionLevels[0] is not None and len(conf.windDirectionLevels[0]) > 0)
+            else:
+                rews_has_veer = None
             sh.write(8, col, wsl)
-            sh.write(9, col, wdr)
+            sh.write(9, col, rews_has_veer)
             _apply_cell_style(calculated_style, sh, 8, col)
             _apply_cell_style(calculated_style, sh, 9, col)
             sh.write(10, col, range_id)
@@ -81,7 +85,8 @@ class pcwg_share1_rpt(object):
             _apply_cell_style(calculated_style, sh, 23, col)
             sh.write(24, col, self.analysis.config.hubHeight)
             _apply_cell_style(calculated_style, sh, 24, col)
-            sh.write(25, col, self.analysis.config.ratedPower)
+            specific_power = self.analysis.config.ratedPower / (np.pi * (self.analysis.config.diameter / 2.) ** 2.)
+            sh.write(25, col, specific_power)
             _apply_cell_style(calculated_style, sh, 25, col)
             sh.write(27, col, int(min(self.analysis.dataFrame.loc[self.analysis.dataFrame[self.analysis.nameColumn] == conf.name, self.analysis.timeStamp].dt.year)))
             _apply_cell_style(calculated_style, sh, 27, col)
