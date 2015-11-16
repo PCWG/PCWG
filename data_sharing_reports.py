@@ -72,7 +72,7 @@ class pcwg_share1_rpt(object):
             _apply_cell_style(dset_header_style, sh, 6, col)
             wsl = len(conf.windSpeedLevels) if self.analysis.rewsActive else None
             if self.analysis.rewsActive:
-                rews_has_veer = (conf.windDirectionLevels[0] is not None and len(conf.windDirectionLevels[0]) > 0)
+                rews_has_veer = (conf.windDirectionLevels[conf.windDirectionLevels.keys()[0]] is not None and len(conf.windDirectionLevels[conf.windDirectionLevels.keys()[0]]) > 0)
             else:
                 rews_has_veer = None
             sh.write(8, col, wsl)
