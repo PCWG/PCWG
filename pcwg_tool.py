@@ -17,9 +17,14 @@ filterSeparator = "#"
 datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
+<<<<<<< HEAD
 version = "0.5.9 (Beta)"
+=======
+version = "0.5.8"
+>>>>>>> 05bf964dfd8f8cfba25148678d49c02e77ab9fb2
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
+
 pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
                      'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
                      'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
