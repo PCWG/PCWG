@@ -666,6 +666,7 @@ class Analysis:
             rand_sensitivity_results.append(variation_metric)
         self.sensitivityAnalysisThreshold = np.mean(rand_sensitivity_results)
         print "\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.)
+        self.status.addMessage("\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.))
         filteredDataFrame.drop(rand_columns, axis = 1, inplace = True)
         
         #sensitivity to time of day, time of year, time elapsed in test
