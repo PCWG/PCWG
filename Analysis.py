@@ -332,7 +332,7 @@ class Analysis:
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
-            
+        self.status.addMessage("Total of %s hours of data used in analysis." % self.hours)
         self.status.addMessage("Complete")
 
     def auto_activate_corrections(self):
