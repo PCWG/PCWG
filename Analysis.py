@@ -194,6 +194,9 @@ class Analysis:
         
         if self.densityCorrectionActive:
             if self.hasDensity:
+                self.status.addMessage("Performing Density Correction")
+                self.status.addMessage("Mean measured density is %.4f kg/m^3" % self.dataFrame[self.hubDensity].mean())
+                self.status.addMessage("Correcting to reference density of %.4f kg/m^3" % self.referenceDensity)
                 self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(self.referenceDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
                 self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.densityCorrectedHubWindSpeed]
                 self.inputHubWindSpeedSource = self.densityCorrectedHubWindSpeed
@@ -332,7 +335,7 @@ class Analysis:
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
-            
+        self.status.addMessage("Total of %.3f hours of data used in analysis." % self.hours)
         self.status.addMessage("Complete")
 
     def auto_activate_corrections(self):
@@ -666,6 +669,7 @@ class Analysis:
             rand_sensitivity_results.append(variation_metric)
         self.sensitivityAnalysisThreshold = np.mean(rand_sensitivity_results)
         print "\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.)
+        self.status.addMessage("\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.))
         filteredDataFrame.drop(rand_columns, axis = 1, inplace = True)
         
         #sensitivity to time of day, time of year, time elapsed in test
@@ -683,8 +687,9 @@ class Analysis:
                     self.powerCurveSensitivityVariationMetrics.drop(col, axis = 1, inplace = True)
             except:
                 print "Could not run sensitivity analysis for %s." % col
+        self.powerCurveSensitivityVariationMetrics.loc['Significance Threshold', 'Power Curve Variation Metric'] = self.sensitivityAnalysisThreshold
         self.powerCurveSensitivityVariationMetrics.sort('Power Curve Variation Metric', ascending = False, inplace = True)
-            
+
     def calculatePowerCurveSensitivity(self, dataFrame, power_curve, dataColumn, power_column, interp_pow_column):
         
         dataFrame['Energy MWh'] = (dataFrame[power_column] * (float(self.timeStepInSeconds) / 3600.)).astype('float')
