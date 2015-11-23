@@ -2500,7 +2500,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
              dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows, decimal = getDecimalValue(self.decimal.get()))               
              self.availableColumns = []
              for col in dataFrame:
-                self.availableColumns.append(col)                 
+                self.availableColumns.append(col)
                         
         def setConfigValues(self):
 
@@ -3384,8 +3384,7 @@ class UserInterface:
         except Exception as e:
             print e
             self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
-            path = self.analysis.config.path
-            self.analysisConfiguration = self.analysis.config
+            path = self.analysisConfiguration.path
             for inner_range_id in ['B','C']:
                 self.analysisConfiguration = configuration.AnalysisConfiguration(path)
                 self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
@@ -3400,7 +3399,7 @@ class UserInterface:
                     self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
                     break
                 except:
-                    self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id)
+                    self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
         if self.analysis == None:
             self.addMessage("ERROR: Analysis not yet calculated", red = True)
             return
