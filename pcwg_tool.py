@@ -19,7 +19,7 @@ datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.9 (Beta)"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
 
 pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
                      'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
@@ -2954,7 +2954,7 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.powerCurvePaddingMode = "Max"
         self.powerCurveFirstBin = 1.
         self.powerCurveLastBin = 30.
-        self.powerCurveBinSize = 0.5
+        self.powerCurveBinSize = 1.
         self.set_inner_range_values()
         self.specifiedPowerCurve = None
         self.baseLineMode = "Hub"
@@ -3379,10 +3379,15 @@ class UserInterface:
         configDialog = PcwgShare1Dialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
         inner_range_id = 'A'
         self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
+        success = False
         try:
             self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
+            self.analysis.pcwg_share_metrics_calc()
+            if not self._is_sufficient_complete_bins(self.analysis):
+                raise Exception('Insufficient complete power curve bins')
+            success = True
         except Exception as e:
-            print e
+            self.addMessage(str(e), red = True)
             self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
             path = self.analysisConfiguration.path
             for inner_range_id in ['B','C']:
@@ -3397,21 +3402,31 @@ class UserInterface:
                 self.analysisConfiguration.save()
                 try:
                     self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
+                    self.analysis.pcwg_share_metrics_calc()
+                    if not self._is_sufficient_complete_bins(self.analysis):
+                        raise Exception('Insufficient complete power curve bins')
+                    success = True
                     break
-                except:
+                except Exception as e:
+                    self.addMessage(str(e), red = True)
                     self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
-        if self.analysis == None:
-            self.addMessage("ERROR: Analysis not yet calculated", red = True)
-            return
-        if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
-            self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
-            return
-        try:
-            fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="PCWG Share 1 Report.xls", title="Save PCWG Share 1 Report", initialdir=preferences.workSpaceFolder)
-            self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
-            self.addMessage("Report written to %s" % fileName)
-        except ExceptionType as e:
-            self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+        if success:
+            if self.analysis == None:
+                self.addMessage("ERROR: Analysis not yet calculated", red = True)
+                return
+            if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+                self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+                return
+            try:
+                fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="PCWG Share 1 Report.xls", title="Save PCWG Share 1 Report", initialdir=preferences.workSpaceFolder)
+                self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
+                self.addMessage("Report written to %s" % fileName)
+            except ExceptionType as e:
+                self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+            
+    def _is_sufficient_complete_bins(self, analysis):        
+        #Todo refine to be fully consistent with PCWG-Share-01 definition document
+        return (len(analysis.powerCurveCompleteBins) >= 12)
     
     def ExportAnonymousReport(self):
             scatter = True
