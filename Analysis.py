@@ -826,19 +826,27 @@ class Analysis:
     def calculate_pcwg_error_fields(self):
         self.calculate_anonymous_values()
         self.pcwgErrorBaseline = 'Baseline Error'
+        self.pcwgErrorCols = [self.pcwgErrorBaseline]
         self.dataFrame[self.pcwgErrorBaseline] = self.dataFrame[self.hubPower] - self.dataFrame[self.actualPower]
         if self.turbRenormActive:
             self.pcwgErrorTurbRenor = 'TI Renormalisation Error'
             self.dataFrame[self.pcwgErrorTurbRenor] = self.dataFrame[self.turbulencePower] - self.dataFrame[self.actualPower]
+            self.pcwgErrorCols.append(self.pcwgErrorTurbRenor)
         if self.rewsActive:
             self.pcwgErrorRews = 'REWS Error'
             self.dataFrame[self.pcwgErrorRews] = self.dataFrame[self.rewsPower] - self.dataFrame[self.actualPower]
+            self.pcwgErrorCols.append(self.pcwgErrorRews)
         if (self.turbRenormActive and self.rewsActive):
             self.pcwgErrorTiRewsCombined = 'Combined TI Renorm and REWS Error'
             self.dataFrame[self.pcwgErrorTiRewsCombined] = self.dataFrame[self.combinedPower] - self.dataFrame[self.actualPower]
+            self.pcwgErrorCols.append(self.pcwgErrorTiRewsCombined)
         if self.powerDeviationMatrixActive:
             self.pcwgErrorPdm = 'PDM Error'
-            self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]        
+            self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]
+            self.pcwgErrorCols.append(self.pcwgErrorPdm)
+        self.powerCurveCompleteBins = self.powerCurve.powerCurveLevels.index[self.powerCurve.powerCurveLevels[self.dataCount] > 0]
+        self.pcwgErrorValid = 'Baseline Power Curve WS Bin Complete'
+        self.dataFrame[self.pcwgErrorValid] = self.dataFrame[self.windSpeedBin].isin(self.powerCurveCompleteBins)
     
     def calculate_pcwg_overall_metrics(self):
         self.overall_pcwg_err_metrics = {}
@@ -879,20 +887,41 @@ class Analysis:
                 self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorTiRewsCombined] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTiRewsCombined, bin_col_name)
             if self.powerDeviationMatrixActive:
                 self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name)
+        #Using Inner and Outer range data only to calculate error metrics binned by normalised WS
+        bin_col_name = self.windSpeedBin
+        for pcwg_range in ['Inner', 'Outer']:
+            dict_key = bin_col_name + ' ' + pcwg_range + ' Range'
+            self.binned_pcwg_err_metrics[dict_key] = {}
+            self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorBaseline] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name, pcwg_range = pcwg_range)
+            if self.turbRenormActive:
+                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorTurbRenor] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTurbRenor, bin_col_name, pcwg_range = pcwg_range)
+            if self.rewsActive:
+                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorRews] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorRews, bin_col_name, pcwg_range = pcwg_range)
+            if (self.turbRenormActive and self.rewsActive):
+                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorTiRewsCombined] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTiRewsCombined, bin_col_name, pcwg_range = pcwg_range)
+            if self.powerDeviationMatrixActive:
+                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name, pcwg_range = pcwg_range)
             
-    def _calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name):
+    def _calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name, pcwg_range = 'All'):
         def sum_abs(x):
             return x.abs().sum()
-        grouped = self.dataFrame.groupby(bin_col_name)
+        if pcwg_range == 'All':
+            grouped = self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], :].groupby(bin_col_name)
+        elif pcwg_range == 'Inner':
+            grouped = self.dataFrame.loc[np.logical_and(self.dataFrame[self.pcwgErrorValid], (self.dataFrame[self.pcwgRange] == 'Inner')), :].groupby(bin_col_name)
+        elif pcwg_range == 'Outer':
+            grouped = self.dataFrame.loc[np.logical_and(self.dataFrame[self.pcwgErrorValid], (self.dataFrame[self.pcwgRange] == 'Outer')), :].groupby(bin_col_name)
+        else:
+            raise Exception('Unrecognised pcwg_range argument %s passed to Analysis._calculate_pcwg_error_metric_by_bin() method. Must be Inner, Outer or All.' % pcwg_range)
         agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count'], self.actualPower: 'sum'})
         agg.loc[:, (candidate_error, 'NME')] = agg.loc[:, (candidate_error, 'sum')] / agg.loc[:, (self.actualPower, 'sum')]
         agg.loc[:, (candidate_error, 'NMAE')] = agg.loc[:, (candidate_error, 'sum_abs')] / agg.loc[:, (self.actualPower, 'sum')]
         return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis = 1).rename(columns = {'count': self.dataCount})
     
     def _calculate_pcwg_error_metric(self, candidate_error):
-        data_count = len(self.dataFrame[candidate_error].dropna())
-        NME = (self.dataFrame[candidate_error].sum() / self.dataFrame[self.actualPower].sum())
-        NMAE = (np.abs(self.dataFrame[candidate_error]).sum() / self.dataFrame[self.actualPower].sum())
+        data_count = len(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].dropna())
+        NME = (self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
+        NMAE = (np.abs(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error]).sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
         return NME, NMAE, data_count
 
     def iec_2005_cat_A_power_curve_uncertainty(self):
@@ -931,13 +960,15 @@ class Analysis:
 
         report.report(path, self, powerDeviationMatrix = deviationMatrix, scatterMetric= scatter)
 
-    def pcwg_data_share_report(self, version = 'Unknown', output_fname = (os.getcwd() + os.sep + 'Data Sharing Initiative 1 Report.xls')):
+    def pcwg_share_metrics_calc(self):
         if self.powerCurveMode != "InnerMeasured":
             raise Exception("Power Curve Mode must be set to Inner to export PCWG Sharing Initiative 1 Report.")
         else:
             self.calculate_pcwg_error_fields()
             self.calculate_pcwg_overall_metrics()
-            self.calculate_pcwg_binned_metrics()        
+            self.calculate_pcwg_binned_metrics()
+
+    def pcwg_data_share_report(self, version = 'Unknown', output_fname = (os.getcwd() + os.sep + 'Data Sharing Initiative 1 Report.xls')):
         from data_sharing_reports import pcwg_share1_rpt
         rpt = pcwg_share1_rpt(self, version = version, output_fname = output_fname)
         rpt.report()

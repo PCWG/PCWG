@@ -204,9 +204,10 @@ class pcwg_share1_rpt(object):
         col = 3
         for i in self.analysis.normalisedWindSpeedBins.centers:
             try:
-                wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 7, col)
-                wrt_cell_keep_style(df.loc[i, 'NME'], sh, 8, col)
-                wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 9, col)
+                if df.loc[i, 'Data Count'] > 0:
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 7, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 8, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 9, col)
                 col += 1
             except:
                 col += 1
@@ -217,9 +218,10 @@ class pcwg_share1_rpt(object):
         col = 3
         for i in self.analysis.pcwgWindDirBins.centers:
             try:
-                wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 19, col)
-                wrt_cell_keep_style(df.loc[i, 'NME'], sh, 20, col)
-                wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 21, col)
+                if df.loc[i, 'Data Count'] > 0:
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 19, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 20, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 21, col)
                 col += 1
             except:
                 col += 1
@@ -230,9 +232,10 @@ class pcwg_share1_rpt(object):
         col = 3
         for i in range(0,24):
             try:
-                wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 11, col)
-                wrt_cell_keep_style(df.loc[i, 'NME'], sh, 12, col)
-                wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 13, col)
+                if df.loc[i, 'Data Count'] > 0:
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 11, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 12, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 13, col)
                 col += 1
             except:
                 col += 1
@@ -243,9 +246,10 @@ class pcwg_share1_rpt(object):
         col = 3
         for i in ['Inner','Outer']:
             try:
-                wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 23, col)
-                wrt_cell_keep_style(df.loc[i, 'NME'], sh, 24, col)
-                wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 25, col)
+                if df.loc[i, 'Data Count'] > 0:
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 23, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 24, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 25, col)
                 col += 1
             except:
                 col += 1
@@ -256,9 +260,10 @@ class pcwg_share1_rpt(object):
         col = 3
         for i in ['LWS-LTI','LWS-HTI','HWS-LTI','HWS-HTI']:
             try:
-                wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 27, col)
-                wrt_cell_keep_style(df.loc[i, 'NME'], sh, 28, col)
-                wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 29, col)
+                if df.loc[i, 'Data Count'] > 0:
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 27, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 28, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 29, col)
                 col += 1
             except:
                 col += 1
@@ -269,9 +274,10 @@ class pcwg_share1_rpt(object):
         col = 3
         for i in range(1,13):
             try:
-                wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 15, col)
-                wrt_cell_keep_style(df.loc[i, 'NME'], sh, 16, col)
-                wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 17, col)
+                if df.loc[i, 'Data Count'] > 0:
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 15, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 16, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 17, col)
                 col += 1
             except:
                 col += 1
