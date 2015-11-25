@@ -888,7 +888,7 @@ class Analysis:
             if self.powerDeviationMatrixActive:
                 self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name)
         #Using Inner and Outer range data only to calculate error metrics binned by normalised WS
-        bin_col_name = self.windSpeedBin
+        bin_col_name = self.normalisedWSBin
         for pcwg_range in ['Inner', 'Outer']:
             dict_key = bin_col_name + ' ' + pcwg_range + ' Range'
             self.binned_pcwg_err_metrics[dict_key] = {}
