@@ -54,9 +54,7 @@ class PowerCalculator:
         self.windSpeedColumn = windSpeedColumn
 
     def power(self, row):
-
         return self.powerCurve.power(row[self.windSpeedColumn])
-
 
 class TurbulencePowerCalculator:
 
@@ -1029,6 +1027,11 @@ class Analysis:
     def calculateBase(self):
 
         if self.baseLineMode == "Hub":
+            if self.powerCurve is None:
+                exc_str = "%s Power Curve has not been calculated successfully." % self.powerCurveMode
+                if self.powerCurveMode == 'InnerMeasured':
+                    exc_str += " Check Inner Range settings."
+                raise Exception(exc_str)
             self.dataFrame[self.basePower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
         elif self.baseLineMode == "Measured":
             if self.hasActualPower:
