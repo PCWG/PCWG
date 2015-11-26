@@ -2813,6 +2813,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 advancedSettingsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Advanced Settings:", advancedSettingsShowHide)
                 self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode, showHideCommand = advancedSettingsShowHide)
+                self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic"], self.config.interpolationMode, showHideCommand = advancedSettingsShowHide)
                 self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominalWindSpeedDistribution, self.filePath, showHideCommand = advancedSettingsShowHide)
 
                 #hide all initially
@@ -2913,6 +2914,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
                 self.config.filterMode = self.filterMode.get()
                 self.config.baseLineMode = self.baseLineMode.get()
+                self.config.interpolationMode = self.interpolationMode.get()
                 self.config.powerCurveMode = self.powerCurveMode.get()
                 self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
                 self.config.nominalWindSpeedDistribution = self.nominalWindSpeedDistribution.get()
@@ -2958,6 +2960,7 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.set_inner_range_values()
         self.specifiedPowerCurve = None
         self.baseLineMode = "Hub"
+        self.interpolationMode = "Cubic"
         self.nominalWindSpeedDistribution = None
         self.specifiedPowerDeviationMatrix = os.getcwd() + os.sep + 'Data' + os.sep + 'HypothesisMatrix.xml'
         self.densityCorrectionActive = False
@@ -3104,6 +3107,7 @@ class PcwgShare1Dialog(BaseConfigurationDialog):
         self.config.powerCurveMinimumCount = self.powerCurveMinimumCount
         self.config.filterMode = self.filterMode
         self.config.baseLineMode = self.baseLineMode
+        self.config.interpolationMode = self.interpolationMode
         self.config.powerCurveMode = self.powerCurveMode
         self.config.powerCurvePaddingMode = self.powerCurvePaddingMode
         self.config.nominalWindSpeedDistribution = self.nominalWindSpeedDistribution

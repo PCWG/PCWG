@@ -10,13 +10,15 @@ import pandas as pd
 class PowerCurve:
 
     def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, powerCol, turbCol, wsCol = None,
-                 countCol = None, fixedTurbulence = None, ratedPower = None,turbulenceRenormalisation=True, name = 'Undefined'):
+                 countCol = None, fixedTurbulence = None, ratedPower = None,turbulenceRenormalisation=True,
+                name = 'Undefined', interpolationMode = 'Cubic'):
         
         self.actualPower = powerCol #strings defining column names
         self.inputHubWindSpeed = wsCol
         self.hubTurbulence = turbCol
         self.dataCount = countCol
         self.name = name
+        self.interpolationMode = interpolationMode
 
         if (self.hubTurbulence is not None) and fixedTurbulence != None:
             raise Exception("Cannot specify both turbulence levels and fixed turbulence")
@@ -118,8 +120,13 @@ class PowerCurve:
                 x.append(i)
             y.append(y_data[i])
 
-        return interpolators.LinearPowerCurveInterpolator(x, y)
-                
+        if self.interpolationMode == 'Linear':
+            return interpolators.LinearPowerCurveInterpolator(x, y)
+        elif self.interpolationMode == 'Cubic':
+            return interpolators.CubicPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
+        else:
+            raise Exception('Unknown interpolation mode: %s' % self.interpolationMode)
+
     def power(self, windSpeed, turbulence = None, extraTurbCorrection = False):
         referencePower = self.powerFunction(windSpeed)
             

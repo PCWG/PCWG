@@ -154,12 +154,14 @@ class Analysis:
         self.ratedPower = config.ratedPower
 
         self.baseLineMode = config.baseLineMode
+        self.interpolationMode = config.interpolationMode
         self.filterMode = config.filterMode
         self.powerCurveMode = config.powerCurveMode
 
         self.defineInnerRange(config)
 
         self.status.addMessage("Baseline Mode: %s" % self.baseLineMode)
+        self.status.addMessage("Interpolation Mode: %s" % self.interpolationMode)
         self.status.addMessage("Filter Mode: %s" % self.filterMode)
         self.status.addMessage("Power Curve Mode: %s" % self.powerCurveMode)
 
@@ -181,7 +183,7 @@ class Analysis:
             
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
                                                           self.rotorGeometry, "Specified Power", "Specified Turbulence", \
-                                                          turbulenceRenormalisation = self.turbRenormActive, name = 'Specified')
+                                                          turbulenceRenormalisation = self.turbRenormActive, name = 'Specified', interpolationMode = self.interpolationMode)
 
             self.referenceDensity = self.specifiedPowerCurve.referenceDensity
             
@@ -765,7 +767,8 @@ class Analysis:
 
             return turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, powerColumn,
                                       self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount,
-                                            turbulenceRenormalisation = (self.turbRenormActive if powerColumn != self.turbulencePower else False), name = name)
+                                            turbulenceRenormalisation = (self.turbRenormActive if powerColumn != self.turbulencePower else False), 
+                                            name = name, interpolationMode = self.interpolationMode)
 
     def calculatePowerDeviationMatrix(self, power, filterMode, windBin = None, turbBin = None):
         if windBin is None:

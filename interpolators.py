@@ -7,6 +7,31 @@ import numpy as np
 #DictPowerCurveInterpolator -> 0:00:28.299000
 #LinearPowerCurveInterpolator -> 0:01:42.443000
 
+class CubicPowerCurveInterpolator:
+
+    def __init__(self, x, y, cutOutWindSpeed):
+
+        self.cubicInterpolator = interpolate.interp1d(x, y, kind='cubic',fill_value=0.0,bounds_error=False)
+        self.linearInterpolator = interpolate.interp1d(x, y, kind='linear',fill_value=0.0,bounds_error=False)
+        self.cutOutWindSpeed = cutOutWindSpeed
+
+        highestNonZero = 0.0
+        self.lastCubicWindSpeed = 0.0
+
+        for i in range(2, len(x)):
+            if y[i] > 0 and x[i] > highestNonZero:
+                self.lastCubicWindSpeed = x[i - 2]
+                highestNonZero = x[i]
+
+    def __call__(self, x):
+        if x > self.cutOutWindSpeed:
+            return 0.0
+        else:
+            if x > self.lastCubicWindSpeed:
+                return self.linearInterpolator(x)
+            else:
+                return self.cubicInterpolator(x)
+
 class LinearPowerCurveInterpolator:
 
     def __init__(self, x, y):
