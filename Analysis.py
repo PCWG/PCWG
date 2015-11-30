@@ -245,6 +245,10 @@ class Analysis:
             self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
             self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
 
+            print "normalisation"
+            print self.normalisingRatedWindSpeed
+            print self.normalisingCutInWindSpeed
+            
             self.normalisedWS = 'Normalised WS'
             self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.normalisingCutInWindSpeed) / (self.normalisingRatedWindSpeed - self.normalisingCutInWindSpeed)
 
@@ -760,7 +764,7 @@ class Analysis:
             
             powerCurvePadder = PadderFactory().generate(self.powerCurvePaddingMode, powerColumn, self.inputHubWindSpeed, self.hubTurbulence, self.dataCount)
 
-            powerLevels = powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower)
+            powerLevels = powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower, self.windSpeedBins)
 
             if dfPowerCoeff is not None:
                 powerLevels[self.powerCoeff] = dfPowerCoeff
@@ -1153,114 +1157,95 @@ class Analysis:
 class PadderFactory:
     @staticmethod
     def generate(strPadder, powerCol, wsCol, turbCol, countCol):
+
         strPadder = strPadder.lower()
-        if strPadder == 'linear':
-            return LinearPadder(powerCol, wsCol, turbCol, countCol)
-        elif strPadder == 'specified':
-            return SpecifiedPadder(powerCol, wsCol, turbCol, countCol)
+        
+        if strPadder  == 'none':
+            return NonePadder(powerCol, wsCol, turbCol, countCol)
         elif strPadder  == 'observed':
             return LastObservedPadder(powerCol, wsCol, turbCol, countCol)
         elif strPadder  == 'max':
             return MaxPadder(powerCol, wsCol, turbCol, countCol)
         else:
-            print "Power curve padding option not detected/recognised - linear padding will occur at unobserved wind speeds"
-            return LinearPadder(powerCol, wsCol, turbCol, countCol)
+            raise Exception("Power curve padding option not detected/recognised: %s" % strPadder)
 
 class Padder:
-    stepIn = 0.0001
+
     def __init__(self, powerCol, wsCol, turbCol, countCol):
+
         self.powerCol = powerCol
         self.wsCol = wsCol
         self.turbCol = turbCol
         self.countCol = countCol
+        
+    def getWindSpeedBins(self, bins):
 
-    def outsideCutIns(self,powerLevels,cutInWindSpeed,cutOutWindSpeed):
-        #power values
-        powerLevels.loc[50.0, self.powerCol] = 0.0
-        powerLevels.loc[0.1, self.powerCol] = 0.0
-        powerLevels.loc[cutInWindSpeed - self.stepIn, self.powerCol] = 0.0
-        powerLevels.loc[cutOutWindSpeed + self.stepIn, self.powerCol] = 0.0
-        #ws values
-        powerLevels.loc[50.0, self.wsCol] = 50.
-        powerLevels.loc[0.1, self.wsCol] = .1
-        powerLevels.loc[cutInWindSpeed - self.stepIn, self.wsCol] = cutInWindSpeed - self.stepIn
-        powerLevels.loc[cutOutWindSpeed + self.stepIn, self.wsCol] = cutOutWindSpeed + self.stepIn
-        #turb values
-        powerLevels.loc[50.0, self.turbCol] = .1
-        powerLevels.loc[0.1, self.turbCol] = .1
-        powerLevels.loc[cutInWindSpeed - self.stepIn, self.turbCol] = .1
-        powerLevels.loc[cutOutWindSpeed + self.stepIn, self.turbCol] = .1
-        #data count values
-        powerLevels.loc[50.0, self.countCol] = 0
-        powerLevels.loc[0.1, self.countCol] = 0
-        powerLevels.loc[cutInWindSpeed - self.stepIn, self.countCol] = 0
-        powerLevels.loc[cutOutWindSpeed + self.stepIn, self.countCol] = 0
+        binArray = []
+
+        for i in range(bins.numberOfBins):
+            binArray.append(bins.binCenterByIndex(i))
+
+        return binArray
+
+    def levelExists(self, powerLevels, windSpeed):
+        
+        try:
+            dummy = powerLevels.loc[windSpeed, self.powerCol]
+            return True
+        except:
+            return False
+            
+    def turbulencePadValue(self, powerLevels, windSpeed):
+
+        #revisit this logic
+        
+        if windSpeed > self.max_key:
+            return powerLevels.loc[self.max_key, self.turbCol]
+        elif windSpeed < self.min_key:
+            return powerLevels.loc[self.min_key, self.turbCol]
+        else:
+            return powerLevels.loc[self.max_key, self.turbCol]
+        
+    def pad(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):
+
+        self.min_key = min(powerLevels.index)
+        self.max_key = max(powerLevels.index)
+        
+        for windSpeed in self.getWindSpeedBins(bins):
+            
+            if not self.levelExists(powerLevels, windSpeed):
+
+                powerPadValue = self.powerPadValue(powerLevels, windSpeed)
+                turbulencePadValue = self.turbulencePadValue(powerLevels, windSpeed)
+
+                if windSpeed > cutOutWindSpeed:
+                    powerLevels.loc[windSpeed, self.powerCol] = 0.0
+                else:
+
+                    if windSpeed < self.min_key:
+                        powerLevels.loc[windSpeed, self.powerCol] = 0.0
+                    else:
+                        powerLevels.loc[windSpeed, self.powerCol] = powerPadValue
+                    
+                powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
+                powerLevels.loc[windSpeed, self.wsCol] = windSpeed
+                powerLevels.loc[windSpeed, self.countCol] = 0
+            
+        powerLevels.sort_index(inplace=True)
+        
         return powerLevels
 
+class NonePadder(Padder):
+
+    def pad(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):
+        return powerLevels
+    
 class MaxPadder(Padder):
-    def pad(self,powerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower):
-        max_key_init = max(powerLevels.index)
-        new_x1 = max_key_init + self.stepIn
-        new_x2 = cutOutWindSpeed
-        #power vals
-        powerLevels.loc[new_x1, self.powerCol] = powerLevels[self.powerCol].max()
-        powerLevels.loc[new_x2, self.powerCol] = powerLevels[self.powerCol].max()
-        #turb
-        powerLevels.loc[new_x1, self.turbCol] = .1
-        powerLevels.loc[new_x2, self.turbCol] = .1
-        #ws
-        powerLevels.loc[new_x1, self.wsCol] = max_key_init + self.stepIn
-        powerLevels.loc[new_x2, self.wsCol] = new_x2
-        #count
-        powerLevels.loc[new_x1, self.countCol] = 0
-        powerLevels.loc[new_x2, self.countCol] = 0
-        #outside cut-ins
-        powerLevels = self.outsideCutIns(powerLevels,cutInWindSpeed,cutOutWindSpeed)
-        return powerLevels
 
+    def powerPadValue(self, powerLevels, windSpeed):
+        return powerLevels[self.powerCol].max()
+  
 class LastObservedPadder(Padder):
-    def pad(self,powerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower):
-        max_key_init = max(powerLevels.index)
-        new_x2 = cutOutWindSpeed
-        #power vals
-        powerLevels.loc[new_x2, self.powerCol] = powerLevels[self.powerCol][max_key_init]
-        #turb
-        powerLevels.loc[new_x2, self.turbCol] = .1
-        #ws
-        powerLevels.loc[new_x2, self.wsCol] = new_x2
-        #count
-        powerLevels.loc[new_x2, self.countCol] = 0
-        #outside cut-ins
-        powerLevels = self.outsideCutIns(powerLevels,cutInWindSpeed,cutOutWindSpeed)
-        return powerLevels
 
-class LinearPadder(Padder):
-    def pad(self,powerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower):
-        powerLevels.loc[cutOutWindSpeed, self.powerCol] = ratedPower
-        powerLevels.loc[cutOutWindSpeed, self.wsCol] = cutOutWindSpeed
-        powerLevels.loc[cutOutWindSpeed, self.turbCol] = .1
-        powerLevels.loc[cutOutWindSpeed, self.countCol] = 0
-        powerLevels = self.outsideCutIns(powerLevels,cutInWindSpeed,cutOutWindSpeed)
-        return powerLevels
-
-
-class SpecifiedPadder(Padder):
-    def pad(self,powerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower):
-        max_key_init = max(powerLevels.index)
-        new_x1 = max_key_init + self.stepIn
-        new_x2 = cutOutWindSpeed
-        #power vals
-        powerLevels.loc[new_x1, self.powerCol] = ratedPower
-        powerLevels.loc[new_x2, self.powerCol] = ratedPower
-        #turb
-        powerLevels.loc[new_x1, self.turbCol] = .1
-        powerLevels.loc[new_x2, self.turbCol] = .1
-        #ws
-        powerLevels.loc[new_x1, self.wsCol] = max_key_init + self.stepIn
-        powerLevels.loc[new_x2, self.wsCol] = new_x2
-        #count
-        powerLevels.loc[new_x1, self.countCol] = 0
-        powerLevels.loc[new_x2, self.countCol] = 0
-        #outside cut-ins
-        powerLevels = self.outsideCutIns(powerLevels,cutInWindSpeed,cutOutWindSpeed)
-        return powerLevels
+    def powerPadValue(self, powerLevels, windSpeed):
+        return powerLevels[self.max_key, self.powerCol]

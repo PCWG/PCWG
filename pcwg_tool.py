@@ -2525,7 +2525,6 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.headerRows = self.getHeaderRows()
                 self.config.timeStamp = self.timeStamp.get()
 
-
                 self.config.power = self.power.get()
                 self.config.powerMin = self.powerMin.get()
                 self.config.powerMax = self.powerMax.get()
@@ -2733,7 +2732,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
                 self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode, showHideCommand = self.generalShowHide)
 
-                self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Linear", "Observed", "Specified", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
+                self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Observed", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
                                               
                 powerCurveShowHide = ShowHideCommand(master)  
                 self.addTitleRow(master, "Power Curve Bins:", powerCurveShowHide)
@@ -3148,7 +3147,7 @@ class UserInterface:
             self.analysisConfiguration = None
             
             self.root = Tk()
-            self.root.geometry("800x400")
+            self.root.geometry("860x400")
             self.root.title("PCWG")
 
             labelsFrame = Frame(self.root)
@@ -3163,7 +3162,8 @@ class UserInterface:
             calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
             export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
             anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
-            pcwg_share1_report_button = Button(commandframe, text="PCWG Share 1 Report", command = self.export_pcwg_share1_report)
+            pcwg_share_01_button = Button(commandframe, text="PCWG-Share-01", command = self.export_pcwg_share_01)
+            pcwg_share_01_report_button = Button(commandframe, text="PCWG-Share-01-Report", command = self.export_pcwg_share_01_report)
             export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
             benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
             clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
@@ -3186,7 +3186,8 @@ class UserInterface:
             calculate_button.pack(side=LEFT, padx=5, pady=5)
             export_report_button.pack(side=LEFT, padx=5, pady=5)
             #anonym_report_button.pack(side=LEFT, padx=5, pady=5)
-            pcwg_share1_report_button.pack(side=LEFT, padx=5, pady=5)
+            pcwg_share_01_button.pack(side=LEFT, padx=5, pady=5)
+            pcwg_share_01_report_button.pack(side=LEFT, padx=5, pady=5)
             export_time_series_button.pack(side=LEFT, padx=5, pady=5)
             benchmark_button.pack(side=LEFT, padx=5, pady=5)
             clear_console_button.pack(side=LEFT, padx=5, pady=5)
@@ -3378,7 +3379,7 @@ class UserInterface:
             except ExceptionType as e:
                     self.addMessage("ERROR Exporting Report: %s" % e, red = True)
     
-    def export_pcwg_share1_report(self):
+    def export_pcwg_share_01(self):
         self.analysisConfiguration = configuration.AnalysisConfiguration()
         configDialog = PcwgShare1Dialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
         inner_range_id = 'A'
@@ -3405,28 +3406,44 @@ class UserInterface:
                 self.analysisConfiguration.innerRangeUpperShear = configDialog.innerRangeUpperShear
                 self.analysisConfiguration.save()
                 try:
+
                     self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
                     self.analysis.pcwg_share_metrics_calc()
+
                     if not self._is_sufficient_complete_bins(self.analysis):
                         raise Exception('Insufficient complete power curve bins')
+
                     success = True
                     break
+                
                 except Exception as e:
                     self.addMessage(str(e), red = True)
                     self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
+
         if success:
-            if self.analysis == None:
-                self.addMessage("ERROR: Analysis not yet calculated", red = True)
-                return
-            if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
-                self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
-                return
-            try:
+            self.export_pcwg_share_01_report()
+
+    def export_pcwg_share_01_report(self):
+        
+        if self.analysis == None:
+            self.addMessage("ERROR: Analysis not yet calculated", red = True)
+            return
+        if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+            self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+            return
+        try:
+
+            self.analysis.pcwg_share_metrics_calc()
+            
+            if not self._is_sufficient_complete_bins(self.analysis):
+                self.addMessage('Insufficient complete power curve bins', red = True)          
+            else:
                 fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="PCWG Share 1 Report.xls", title="Save PCWG Share 1 Report", initialdir=preferences.workSpaceFolder)
                 self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
                 self.addMessage("Report written to %s" % fileName)
-            except ExceptionType as e:
-                self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+                
+        except ExceptionType as e:
+            self.addMessage("ERROR Exporting Report: %s" % e, red = True)
             
     def _is_sufficient_complete_bins(self, analysis):        
         #Todo refine to be fully consistent with PCWG-Share-01 definition document
