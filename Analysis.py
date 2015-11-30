@@ -678,7 +678,7 @@ class Analysis:
         filteredDataFrame['Hours From Midnight'] = np.minimum(filteredDataFrame[self.timeStamp].dt.hour, np.abs(24 - filteredDataFrame[self.timeStamp].dt.hour))
         filteredDataFrame['Days From 182nd Day Of Year'] = np.abs(filteredDataFrame[self.timeStamp].dt.dayofyear - 182)
         filteredDataFrame['Days From December Solstice'] = filteredDataFrame[self.timeStamp].apply(lambda x: x.replace(day = 22, month = 12)) - filteredDataFrame[self.timeStamp]
-        filteredDataFrame['Days From December Solstice'] = np.minimum(np.abs(filteredDataFrame['Days From December Solstice'].dt.days) % 182, 182 - np.abs(filteredDataFrame['Days From December Solstice'].dt.days) % 182)
+        filteredDataFrame['Days From December Solstice'] = np.minimum(np.abs(filteredDataFrame['Days From December Solstice'].dt.days), 365 - np.abs(filteredDataFrame['Days From December Solstice'].dt.days))
         
         #for col in (self.sensitivityDataColumns + ['Days Elapsed In Test','Hours From Noon','Days From 182nd Day Of Year']):
         for col in (list(filteredDataFrame.columns)): # if we want to do the sensitivity analysis for all columns in the dataframe...
