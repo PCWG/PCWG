@@ -90,6 +90,10 @@ class pcwg_share1_rpt(object):
             _apply_cell_style(calculated_style, sh, 25, col)
             sh.write(27, col, int(min(self.analysis.dataFrame.loc[self.analysis.dataFrame[self.analysis.nameColumn] == conf.name, self.analysis.timeStamp].dt.year)))
             _apply_cell_style(calculated_style, sh, 27, col)
+            
+            sh.write(30, col, self.analysis.config.interpolationMode)
+            _apply_cell_style(calculated_style, sh, 30, col)
+
             for row in man_req_rows:
                 sh.write(row, col, None)
                 _apply_cell_style(manual_required_style, sh, row, col)

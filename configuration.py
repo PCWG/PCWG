@@ -310,6 +310,12 @@ class AnalysisConfiguration(XmlBase):
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
             self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
+            
+            if self.nodeExists(configurationNode, 'InterpolationMode'):
+                self.interpolationMode = self.getNodeValue(configurationNode, 'InterpolationMode')
+            else:
+                self.interpolationMode = 'Linear'
+
             self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
@@ -366,6 +372,8 @@ class AnalysisConfiguration(XmlBase):
             self.specifiedPowerDeviationMatrix = ""
             self.powerDeviationMatrixActive = False
 
+            self.interpolationMode = 'Cubic'
+
     def setDefaultInnerRangeTurbulence(self):
         self.innerRangeLowerTurbulence = 0.08
         self.innerRangeUpperTurbulence = 0.12
@@ -393,6 +401,7 @@ class AnalysisConfiguration(XmlBase):
 
         self.addTextNode(doc, root, "FilterMode", self.filterMode)
         self.addTextNode(doc, root, "BaseLineMode", self.baseLineMode)
+        self.addTextNode(doc, root, "InterpolationMode", self.interpolationMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
         self.addTextNode(doc, root, "NominalWindSpeedDistribution", self.nominalWindSpeedDistribution)
