@@ -17,7 +17,7 @@ filterSeparator = "#"
 datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
-version = "0.5.9"
+version = "0.5.10"
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
 
@@ -3447,7 +3447,7 @@ class UserInterface:
             
     def _is_sufficient_complete_bins(self, analysis):        
         #Todo refine to be fully consistent with PCWG-Share-01 definition document
-        return (len(analysis.powerCurveCompleteBins) >= 12)
+        return (len(analysis.powerCurveCompleteBins) >= 10)
     
     def ExportAnonymousReport(self):
             scatter = True
