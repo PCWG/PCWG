@@ -11,7 +11,7 @@ class PowerCurve:
 
     def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, powerCol, turbCol, wsCol = None,
                  countCol = None, fixedTurbulence = None, ratedPower = None,turbulenceRenormalisation=True,
-                name = 'Undefined', interpolationMode = 'Cubic'):
+                name = 'Undefined', interpolationMode = 'Cubic', required = False):
         
         self.actualPower = powerCol #strings defining column names
         self.inputHubWindSpeed = wsCol
@@ -19,6 +19,7 @@ class PowerCurve:
         self.dataCount = countCol
         self.name = name
         self.interpolationMode = interpolationMode
+        self.required = required
 
         if (self.hubTurbulence is not None) and fixedTurbulence != None:
             raise Exception("Cannot specify both turbulence levels and fixed turbulence")
@@ -59,8 +60,12 @@ class PowerCurve:
                 print "Calculation of zero turbulence curve for {0} Power Curve successful".format(self.name)
 
             except Exception as error:
-
-                raise Exception("Calculation of zero turbulence curve for {0} Power Curve unsuccessful: {1}".format(self.name, error))
+                err_msg ="Calculation of zero turbulence curve for {0} Power Curve unsuccessful: {1}".format(self.name, error) 
+                print self.required                
+                if not self.required:
+                    print err_msg
+                else:
+                    raise Exception(err_msg)
                 
     def calcZeroTurbulencePowerCurve(self):
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
@@ -77,7 +82,7 @@ class PowerCurve:
             return ratedPower
 
     def getThresholdWindSpeed(self):
-        return float(interpolators.LinearPowerCurveInterpolator(self.powerCurveLevels[self.actualPower].as_matrix(), list(self.powerCurveLevels[self.actualPower].index))(0.85*self.ratedPower))
+        return float(interpolators.LinearPowerCurveInterpolator(self.powerCurveLevels[self.actualPower].as_matrix(), list(self.powerCurveLevels[self.actualPower].index), self.ratedPower)(0.85*self.ratedPower) * 1.5)
 
 
     def getTurbulenceLevels(self, powerCurveLevels, turbulenceLevels, fixedTurbulence):
