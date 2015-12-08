@@ -3271,7 +3271,7 @@ class UserInterface:
             if analysis != None:
                     for (field, value) in dictExpectedResults.iteritems():
                         try:
-                            benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, eval("analysis.%s" % field), tolerance)
+                            benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, float(eval("analysis.%s" % field)), tolerance)
                         except:
                             raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
 #                        benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, exec("analysis.%s" % field), tolerance)
