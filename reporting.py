@@ -9,6 +9,7 @@ class report:
     no_dp_style = xlwt.easyxf(num_format_str='0')
     one_dp_style = xlwt.easyxf(num_format_str='0.0')
     two_dp_style = xlwt.easyxf(num_format_str='0.00')
+    three_dp_style = xlwt.easyxf(num_format_str='0.000')
     four_dp_style = xlwt.easyxf(num_format_str='0.0000')
     percent_style = xlwt.easyxf(num_format_str='0.00%')
     percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
@@ -116,14 +117,14 @@ class report:
     def reportCalibrations(self,sh,analysis):
         maxRow = 0
         startRow = 2
-        col = -5
+        col = -14
         for conf,calib in analysis.calibrations:
             if 'belowAbove' in calib.calibrationSectorDataframe.columns :
                 belowAbove = True
             else:
                 belowAbove = False
 
-            col+=7
+            col+=16
             row=startRow
             sh.write(row,col,conf.name, self.bold_style)
             sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
@@ -132,12 +133,19 @@ class report:
             sh.write(row,col+1,"Slope", self.bold_style)
             sh.write(row,col+2,"Offset", self.bold_style)
             sh.write(row,col+3,"Count", self.bold_style)
+            sh.write(row,col+4,"Hours", self.bold_style)
             if belowAbove:
-                sh.write(row,col+4,"Count <= 8m/s", self.bold_style)
-                sh.write(row,col+5,"Count >  8m/s", self.bold_style)
-                sh.write(row,col+6,"Valid Sector", self.bold_style)
-
-
+                sh.write(row,col+5,"Count <= 8m/s", self.bold_style)
+                sh.write(row,col+6,"Hours <= 8m/s", self.bold_style)
+                sh.write(row,col+7,"Count >  8m/s", self.bold_style)
+                sh.write(row,col+8,"Hours >  8m/s", self.bold_style)
+            sh.write(row,col+9,"Speedup at 10m/s", self.bold_style)
+            sh.write(row,col+10,"% Speedup at 10m/s", self.bold_style)
+            sh.write(row,col+11,"Filter (Total Hours > 24)", self.bold_style)
+            sh.write(row,col+12,"Filter (Hours Below/Above 8m/s > 6)", self.bold_style)
+            sh.write(row,col+13,"Filter (Speedup Change < 2%)", self.bold_style)
+            sh.write(row,col+14,"Valid Sector", self.bold_style)
+            
             row+=1
             for key in sorted(calib.calibrationSectorDataframe.index):
                 sh.write(row,col,float(key), self.bold_style)
@@ -145,12 +153,25 @@ class report:
                 sh.write(row,col+2,calib.calibrationSectorDataframe['Offset'][key], self.four_dp_style)
                 if 'Count' in calib.calibrationSectorDataframe.columns:
                     sh.write(row,col+3,calib.calibrationSectorDataframe['Count'][key], self.no_dp_style)
+                    sh.write(row,col+4,calib.calibrationSectorDataframe['Count'][key]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
                 if belowAbove:
                     ba = calib.calibrationSectorDataframe.loc[key,'belowAbove']
-                    sh.write(row,col+4,ba[0], self.no_dp_style)
-                    sh.write(row,col+5,ba[1], self.no_dp_style)
-                    valid = calib.getSectorValidity(key, analysis.timeStepInSeconds)
-                    sh.write(row,col+6, "TRUE" if valid else "FALSE" , self.bold_style)
+                    sh.write(row,col+5,ba[0], self.no_dp_style)
+                    sh.write(row,col+6,ba[0]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
+                    sh.write(row,col+7,ba[1], self.no_dp_style)
+                    sh.write(row,col+8,ba[1]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
+                sh.write(row,col+9,calib.calibrationSectorDataframe['SpeedUpAt10'][key], self.four_dp_style)
+                sh.write(row,col+10,(calib.calibrationSectorDataframe['SpeedUpAt10'][key]-1.0), self.percent_style)
+                
+                totalHoursValid = calib.getTotalHoursValidity(key, analysis.timeStepInSeconds)
+                sh.write(row,col+11, "TRUE" if totalHoursValid else "FALSE")
+                if belowAbove:
+                    belowAboveValid = calib.getBelowAboveValidity(key, analysis.timeStepInSeconds)
+                    sh.write(row,col+12, "TRUE" if belowAboveValid else "FALSE")
+                speedUpChangeValid = calib.getSpeedUpChangeValidity(key)
+                sh.write(row,col+13, "TRUE" if speedUpChangeValid else "FALSE")
+                sectorValid = calib.getSectorValidity(key, analysis.timeStepInSeconds)
+                sh.write(row,col+14, "TRUE" if sectorValid else "FALSE", self.bold_style)
                 row += 1
 
             if len(conf.calibrationFilters) > 0:

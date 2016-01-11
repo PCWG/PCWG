@@ -83,7 +83,7 @@ class MatplotlibPlotter(object):
         except:
             print "Tried to make a plot of power curve sensitivity to %s. Couldn't." % sensCol
 
-    def plotBy(self,by,variable,df):
+    def plotBy(self,by,variable,df, gridLines = False):
         import turbine
         if not isinstance(df,turbine.PowerCurve):
             kind = 'scatter'
@@ -97,6 +97,8 @@ class MatplotlibPlotter(object):
             ax.set_xlim([df[by].min()-1,df[by].max()+1])
             ax.set_xlabel(by)
             ax.set_ylabel(variable)
+            if gridLines:
+                ax.grid(True)
             file_out = self.path + "/"+variable.replace(" ","_")+"_By_"+by.replace(" ","_")+".png"
             chckMake(self.path)
             plt.savefig(file_out)
@@ -105,7 +107,7 @@ class MatplotlibPlotter(object):
         except:
             print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
 
-    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, anon = False, row_filt = None, fname = None, show_analysis_pc = True, mean_title = 'Mean Power Curve', mean_pc_color = '#00FF00'):
+    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, show_scatter = True, anon = False, row_filt = None, fname = None, show_analysis_pc = True, specified_title = 'Specified', mean_title = 'Mean Power Curve', mean_pc_color = '#00FF00', gridLines = False):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
@@ -114,19 +116,21 @@ class MatplotlibPlotter(object):
                 plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.referenceDensity)
             else:
                 plotTitle = "Power Curve"
-            ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
+            if show_scatter:
+                ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
+            else:
+                ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.0)
             if self.analysis.specifiedPowerCurve is not None:
                 has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
             else:
                 has_spec_pc = False
             if has_spec_pc:
-                ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+                ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
             if self.analysis.specifiedPowerCurve != self.analysis.powerCurve:
                 if ((self.analysis.powerCurve.name != 'All Measured') and show_analysis_pc):
                     ax = self.analysis.powerCurve.powerCurveLevels.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.analysis.powerCurve.name)
             meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels.loc[meanPowerCurveObj.powerCurveLevels.index, 'Data Count'] > 0].reset_index().set_index(windSpeedCol)
-            ax = meanPowerCurve[powerCol].plot(ax = ax,color=mean_pc_color,alpha=0.95,linestyle='--',
-                                  label=mean_title)
+            ax = meanPowerCurve[powerCol].plot(ax = ax,color=mean_pc_color,alpha=0.95,linestyle='--',label=mean_title)
             ax.legend(loc=4, scatterpoints = 1)
             if has_spec_pc:
                 ax.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
@@ -137,6 +141,8 @@ class MatplotlibPlotter(object):
             if anon:
                 ax.xaxis.set_ticklabels([])
                 ax.yaxis.set_ticklabels([])
+            if gridLines:
+                ax.grid(True)
             fname = ("PowerCurve - " + powerCol + " vs " + windSpeedCol + ".png") if fname is None else fname
             file_out = self.path + os.sep + fname
             chckMake(self.path)
@@ -189,7 +195,7 @@ class MatplotlibPlotter(object):
         except:
             print "Tried to make a TI corrected power curve scatter chart for %s. Couldn't." % meanPowerCurveObj.name
 
-    def plotPowerLimits(self):
+    def plotPowerLimits(self, specified_title = 'Specified', gridLines = False):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
@@ -198,11 +204,13 @@ class MatplotlibPlotter(object):
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Min",alpha=0.2,label='Power Min',color = 'orange')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Max",alpha=0.2,label='Power Max',color = 'green')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power SD",alpha=0.2,label='Power SD',color = 'purple')
-            ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+            ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
             ax.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
             ax.legend(loc=4, scatterpoints = 1)
             ax.set_xlabel(windSpeedCol)
             ax.set_ylabel("Power [kW]")
+            if gridLines:
+                ax.grid(True)
             file_out = self.path + "/PowerValues.png"
             chckMake(self.path)
             plt.savefig(file_out)
