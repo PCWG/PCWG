@@ -209,7 +209,7 @@ class Analysis:
         self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)
         self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
 
-        self.applyRemainingFilters()
+        self.applyRemainingFilters() #To do: record rows which are removed by each filter independently, as opposed to sequentially.
 
         if self.hasDensity:
             if self.densityCorrectionActive:
