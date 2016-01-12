@@ -303,6 +303,7 @@ class Dataset:
         self.turbRenormActive = analysisConfig.turbRenormActive
         self.turbulencePower = 'Turbulence Power'
         self.rewsDefined = config.rewsDefined
+        self.hasInflowAngle = config.inflowAngle not in (None,'')
 
         self.sensitivityDataColumns = config.sensitivityDataColumns
 
@@ -331,7 +332,10 @@ class Dataset:
                 dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["TurbineLocation"]).shearExponent, axis=1)
                 dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["ReferenceLocation"]).shearExponent, axis=1)
                 dataFrame[self.shearExponent] = dataFrame[self.referenceShearExponent]
-
+        
+        if self.hasInflowAngle:
+            dataFrame[self.inflowAngle] = dataFrame[config.inflowAngle]
+        
         dataFrame[self.residualWindSpeed] = 0.0
 
         if config.calculateHubWindSpeed:
@@ -626,6 +630,9 @@ class Dataset:
 
         if self.hasDirection:
             requiredCols.append(self.windDirection)
+            
+        if self.hasInflowAngle:
+            requiredCols.append(self.inflowAngle)
 
         if self.rewsDefined:
             requiredCols.append(self.profileRotorWindSpeed)

@@ -947,9 +947,9 @@ class Analysis:
         self.categoryAUncertainty = unc_MWh / test_MWh
         self.status.addMessage("Power curve category A uncertainty: %.3f%%" % (self.categoryAUncertainty * 100.0))
 
-    def report(self, path,version="unknown"):
+    def report(self, path,version="unknown", report_power_curve = True):
 
-        report = reporting.report(self.windSpeedBins, self.turbulenceBins, version)
+        report = reporting.report(self.windSpeedBins, self.turbulenceBins, version, report_power_curve = report_power_curve)
         report.report(path, self)
 
     def anonym_report(self, path, version="Unknown", scatter = False, deviationMatrix = True):
@@ -1139,29 +1139,31 @@ class Analysis:
         chckMake(path)
         from plots import MatplotlibPlotter
         plotter = MatplotlibPlotter(path,self)
-        plotter.plotPowerCurve(self.inputHubWindSpeed, self.actualPower, self.allMeasuredPowerCurve, specified_title = 'Warranted', mean_title = 'Measured Mean', gridLines = True)
-        plotter.plotPowerCurve(self.inputHubWindSpeed, self.actualPower, self.allMeasuredPowerCurve, show_scatter = False, fname = "PowerCurve - Warranted vs Measured Mean", specified_title = 'Warranted', mean_title = 'Measured Mean', mean_pc_color = 'blue', gridLines = True)
-        if self.turbRenormActive:
-            plotter.plotTurbCorrectedPowerCurve(self.inputHubWindSpeed, self.measuredTurbulencePower, self.allMeasuredTurbCorrectedPowerCurve)
-        if self.hasAllPowers:
-            plotter.plotPowerLimits(specified_title = 'Warranted', gridLines = True)
+        if self.hasActualPower:
+            plotter.plotPowerCurve(self.inputHubWindSpeed, self.actualPower, self.allMeasuredPowerCurve, specified_title = 'Warranted', mean_title = 'Measured Mean', gridLines = True)
+            plotter.plotPowerCurve(self.inputHubWindSpeed, self.actualPower, self.allMeasuredPowerCurve, show_scatter = False, fname = "PowerCurve - Warranted vs Measured Mean", specified_title = 'Warranted', mean_title = 'Measured Mean', mean_pc_color = 'blue', gridLines = True)
+            if self.turbRenormActive:
+                plotter.plotTurbCorrectedPowerCurve(self.inputHubWindSpeed, self.measuredTurbulencePower, self.allMeasuredTurbCorrectedPowerCurve)
+            if self.hasAllPowers:
+                plotter.plotPowerLimits(specified_title = 'Warranted', gridLines = True)
         plotter.plotBy(self.windDirection,self.hubWindSpeed,self.dataFrame, gridLines = True)
         plotter.plotBy(self.windDirection,self.shearExponent,self.dataFrame, gridLines = True)
         plotter.plotBy(self.windDirection,self.hubTurbulence,self.dataFrame, gridLines = True)
         plotter.plotBy(self.hubWindSpeed,self.hubTurbulence,self.dataFrame, gridLines = True)
-        plotter.plotBy(self.hubWindSpeed,self.powerCoeff,self.dataFrame, gridLines = True)
-        plotter.plotBy('Input Hub Wind Speed',self.powerCoeff,self.allMeasuredPowerCurve, gridLines = True)
-        #To do: assign inflow angle column in dataFrame, this needs to be defined in the config first
+        if self.hasActualPower:
+            plotter.plotBy(self.hubWindSpeed,self.powerCoeff,self.dataFrame, gridLines = True)
+            plotter.plotBy('Input Hub Wind Speed',self.powerCoeff,self.allMeasuredPowerCurve, gridLines = True)
         if self.inflowAngle in self.dataFrame.columns:
             self.dataFrame.loc[self.dataFrame[self.inflowAngle]>180,self.inflowAngle] -= 360
             plotter.plotBy(self.windDirection,self.inflowAngle,self.dataFrame, gridLines = True)
         plotter.plotCalibrationSectors()
-        if len(self.powerCurveSensitivityResults.keys()) > 0:
-            for sensCol in self.powerCurveSensitivityResults.keys():
-                plotter.plotPowerCurveSensitivity(sensCol)
-            plotter.plotPowerCurveSensitivityVariationMetrics()
-        if len(self.dataFrame[self.nameColumn].unique()) > 1:
-            plotter.plot_multiple(self.inputHubWindSpeed, self.actualPower, self.allMeasuredPowerCurve)
+        if self.hasActualPower:
+            if len(self.powerCurveSensitivityResults.keys()) > 0:
+                for sensCol in self.powerCurveSensitivityResults.keys():
+                    plotter.plotPowerCurveSensitivity(sensCol)
+                plotter.plotPowerCurveSensitivityVariationMetrics()
+            if len(self.dataFrame[self.nameColumn].unique()) > 1:
+                plotter.plot_multiple(self.inputHubWindSpeed, self.actualPower, self.allMeasuredPowerCurve)
 
 class PadderFactory:
     @staticmethod

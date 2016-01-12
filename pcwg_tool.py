@@ -1765,6 +1765,8 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.temperature = self.addPickerEntry(master, "Temperature:", None, self.config.temperature, width = 60, showHideCommand = measurementShowHide)
                 self.pressure = self.addPickerEntry(master, "Pressure:", None, self.config.pressure, width = 60, showHideCommand = measurementShowHide)
                 self.density = self.addPickerEntry(master, "Density:", None, self.config.density, width = 60, showHideCommand = measurementShowHide)
+                self.inflowAngle = self.addPickerEntry(master, "Inflow Angle:", None, self.config.inflowAngle, width = 60, showHideCommand = measurementShowHide)
+                self.inflowAngle.setTip('Not required.')
                              
                 powerShowHide = ShowHideCommand(master)  
                 self.addTitleRow(master, "Power Settings:", showHideCommand = powerShowHide)
@@ -2534,6 +2536,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.referenceWindDirection = self.referenceWindDirection.get()
                 self.config.referenceWindDirectionOffset = floatSafe(self.referenceWindDirectionOffset.get())
                 self.config.turbineLocationWindSpeed = self.turbineLocationWindSpeed.get()
+                self.config.inflowAngle = self.inflowAngle.get()
                 #self.config.turbineAvailabilityCount = self.turbineAvailabilityCount.get()
                 
                 self.config.temperature = self.temperature.get()
@@ -3370,7 +3373,10 @@ class UserInterface:
                     self.addMessage("ERROR: Analysis not yet calculated", red = True)
                     return
             if not self.analysis.hasActualPower:
-                    self.addMessage("ERROR: No Power Signal in Dataset", red = True)
+                    self.addMessage("No Power Signal in Dataset. Exporting report without power curve results.", red = True)
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
+                    self.analysis.report(fileName, version, report_power_curve = False)
+                    self.addMessage("Report written to %s" % fileName)
                     return
             try:
                     fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)

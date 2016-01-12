@@ -854,6 +854,7 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "Temperature", self.temperature)
         self.addTextNode(doc, measurementsNode, "Pressure", self.pressure)
         self.addTextNode(doc, measurementsNode, "Density", self.density)
+        self.addTextNode(doc, measurementsNode, "InflowAngle", self.inflowAngle)
 
         self.addTextNode(doc, measurementsNode, "TurbineLocationWindSpeed", self.turbineLocationWindSpeed)
         
@@ -1014,6 +1015,7 @@ class DatasetConfiguration(XmlBase):
 
         self.temperature = self.getNodeValueIfExists(measurementsNode, 'Temperature', '')
         self.pressure = self.getNodeValueIfExists(measurementsNode, 'Pressure', '')
+        self.inflowAngle = self.getNodeValueIfExists(measurementsNode, 'InflowAngle', '')
 
         if self.calculateDensity:
             self.density = "Density"
