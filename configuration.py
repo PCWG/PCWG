@@ -767,6 +767,7 @@ class DatasetConfiguration(XmlBase):
             self.powerMax = ''
             self.powerSD = ''
             self.density = ''
+            self.inflowAngle = ''
 
             self.shearMeasurements = {}
             self.shearMeasurements[50.0] = ''

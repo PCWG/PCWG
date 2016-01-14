@@ -6,6 +6,7 @@ np = pd.np
 class MatplotlibPlotter(object):
     def __init__(self,path, analysis):
         self.path = path
+        self.calibration_path = self.path + os.sep + 'Calibration Plots For Each Dataset'
         self.analysis = analysis
 
     def plot_multiple(self, windSpeedCol, powerCol, meanPowerCurveObj):
@@ -220,21 +221,56 @@ class MatplotlibPlotter(object):
             print "Tried to make a full power scatter chart. Couldn't."
 
     def plotCalibrationSectors(self):
+        from matplotlib import pyplot as plt
         for datasetConf in self.analysis.datasetConfigs:
-            try:
-                from matplotlib import pyplot as plt
-                plt.ioff()
-                df = datasetConf.data.calibrationCalculator.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit']].rename(columns={'pctSpeedUp':'% Speed Up','LowerLimit':"IEC Lower",'UpperLimit':"IEC Upper"})
-                df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
-                plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
-                file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - All Sectors {nm}.png'.format(nm=datasetConf.name)
-                plt.savefig(file_out)
-                df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-5.0 , df.index < datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+5.0),:]
-                df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
-                plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
-                file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors {nm}.png'.format(nm=datasetConf.name)
-                chckMake(self.path)
-                plt.savefig(file_out)
-                plt.close('all')
-            except:
-                print "Tried to plot variation of wind speed ratio with direction. Couldn't."
+            if (datasetConf.calibrationMethod in ['York','LeastSquares']):
+                chckMake(self.calibration_path)
+                path = self.calibration_path + os.sep + datasetConf.name
+                chckMake(path)
+                if hasattr(datasetConf.data, 'calibrationSectorConverge'):
+                    datasetConf.data.calibrationSectorConverge.to_csv(path + os.sep + 'Convergence Check Data.csv')
+                if hasattr(datasetConf.data, 'calibrationSectorConvergeSummary'):
+                    datasetConf.data.calibrationSectorConvergeSummary.to_csv(path + os.sep + 'Convergence Check Summary Data.csv')
+                dir_bin_width = 360. / datasetConf.siteCalibrationNumberOfSectors / 2.
+                try:
+                    plt.ioff()
+                    xlab, ylab = 'Direction Sector (deg)', '% Speed Up at 10m/s'
+                    df = datasetConf.data.calibrationCalculator.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit']].rename(columns={'pctSpeedUp':'% Speed Up','LowerLimit':"IEC Lower",'UpperLimit':"IEC Upper"})
+                    df.plot(kind = 'line', figsize = (12,8), grid = True)
+                    plt.xlabel(xlab)
+                    plt.ylabel(ylab)
+                    file_out = path + os.sep + 'Wind Speed Ratio with Direction - All Sectors.png'
+                    plt.savefig(file_out)
+                    df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-dir_bin_width , df.index < datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+dir_bin_width),:]
+                    df.plot(kind = 'line', figsize = (12,8))
+                    plt.xlabel(xlab)
+                    plt.ylabel(ylab)
+                    file_out = path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors.png'
+                    plt.savefig(file_out)
+                    plt.close('all')
+                except:
+                    print "Tried to plot variation of wind speed ratio with direction. Couldn't."
+                xlim_u = datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceWindSpeed].max()
+                ylim_u = datasetConf.data.filteredCalibrationDataframe[datasetConf.data.turbineLocationWindSpeed].max()
+                for directionBinCenter in datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceDirectionBin].unique():
+                    try:
+                        plt.ioff()
+                        df = datasetConf.data.filteredCalibrationDataframe.loc[datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceDirectionBin] == directionBinCenter, [datasetConf.data.referenceWindSpeed, datasetConf.data.turbineLocationWindSpeed]]
+                        ax = df.plot(kind='scatter', x=datasetConf.data.referenceWindSpeed, y=datasetConf.data.turbineLocationWindSpeed, alpha=0.6, legend=None)
+                        ax.set_title("Site Calibration: Sector %s - %s" % (int(directionBinCenter-dir_bin_width), int(directionBinCenter+dir_bin_width)), fontsize=18)
+                        ax.set_xlim([0, xlim_u])
+                        ax.set_ylim([0, ylim_u])
+                        ax.set_xlabel("Reference Mast Wind Speed (m/s)")
+                        ax.set_ylabel("Turbine Mast Wind Speed (m/s)")
+                        ax.grid(True)
+                        xValuesForLine = [0, xlim_u]
+                        slope = datasetConf.data.calibrationCalculator.calibrationSectorDataframe.loc[directionBinCenter,'Slope']
+                        intercept = datasetConf.data.calibrationCalculator.calibrationSectorDataframe.loc[directionBinCenter,'Offset']
+                        yValuesForLine = [x * slope + intercept for x in xValuesForLine]
+                        plt.hold(True)
+                        plt.plot(xValuesForLine, yValuesForLine)
+                        file_out = path + os.sep + "SiteCalibrationScatter_(Sector_%03d_to_%03d).png" % (int(directionBinCenter-dir_bin_width), int(directionBinCenter+dir_bin_width))
+                        plt.savefig(file_out)
+                        plt.close()
+                    except:
+                        print "Tried to plot reference vs turbine location wind speed for sector %s. Couldn't." % directionBinCenter

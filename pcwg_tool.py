@@ -1766,7 +1766,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.pressure = self.addPickerEntry(master, "Pressure:", None, self.config.pressure, width = 60, showHideCommand = measurementShowHide)
                 self.density = self.addPickerEntry(master, "Density:", None, self.config.density, width = 60, showHideCommand = measurementShowHide)
                 self.inflowAngle = self.addPickerEntry(master, "Inflow Angle:", None, self.config.inflowAngle, width = 60, showHideCommand = measurementShowHide)
-                self.inflowAngle.setTip('Not required.')
+                self.inflowAngle.setTip('Not required')
                              
                 powerShowHide = ShowHideCommand(master)  
                 self.addTitleRow(master, "Power Settings:", showHideCommand = powerShowHide)

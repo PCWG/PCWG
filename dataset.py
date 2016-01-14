@@ -195,31 +195,6 @@ class SiteCalibrationCalculator:
             self.calibrationSectorDataframe['UpperLimit'] = np.minimum(self.calibrationSectorDataframe['UpperLimitPrevious'], self.calibrationSectorDataframe['UpperLimitNext'])
             self.calibrationSectorDataframe['IECValid'] = np.logical_and(self.calibrationSectorDataframe['pctSpeedUp'] >  self.calibrationSectorDataframe['LowerLimit'], self.calibrationSectorDataframe['pctSpeedUp'] <  self.calibrationSectorDataframe['UpperLimit'])
             print self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']]
-            
-            try:
-                from matplotlib import pyplot as plt
-                plt.ioff()
-                #plt.style.use('ggplot')
-                axisLimit = np.ceil(np.max([self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit']].max(), -self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit']].min()]))
-                ax = self.calibrationSectorDataframe.plot(x=self.calibrationSectorDataframe.index, y='pctSpeedUp', label='% Speed Up')
-                ax.set_title("Variation of % Speed Up at 10m/s with Direction", fontsize=18)
-                ax.set_xlim([0, 360])
-                ax.set_ylim([-axisLimit, axisLimit])
-                ax.set_xlabel("Directional Sector")
-                ax.set_ylabel("% Speed Up at 10m/s")
-                plt.xticks(range(0,370,30))
-                ax.grid(True)
-                plt.plot(self.calibrationSectorDataframe.index, self.calibrationSectorDataframe['LowerLimit'], label='IEC Lower')
-                plt.plot(self.calibrationSectorDataframe.index, self.calibrationSectorDataframe['UpperLimit'], label='IEC Upper')
-                plt.legend(loc='upper right')
-                file_out = os.getcwd()+"\\Speed Up Variation with Direction.png"
-                #chckMake(self.path)
-                plt.savefig(file_out)
-                plt.close()
-                
-                self.calibrationSectorDataframe.to_csv(os.getcwd()+"\\CalibrationInfoBySector.csv")
-            except:
-                pass
         return True
     
     def getTotalHoursValidity(self, key, timeStep):
@@ -289,6 +264,8 @@ class Dataset:
         self.turbineShearExponent = "Turbine Shear Exponent"
         self.windDirection = "Wind Direction"
         self.inflowAngle = 'Inflow Angle'
+        self.referenceWindSpeed = 'Reference Wind Speed'
+        self.turbineLocationWindSpeed = 'Turbine Location Wind Speed'
 
         self.profileRotorWindSpeed = "Profile Rotor Wind Speed"
         self.profileHubWindSpeed = "Profile Hub Wind Speed"
@@ -340,6 +317,9 @@ class Dataset:
 
         if config.calculateHubWindSpeed:
 
+            dataFrame[self.referenceWindSpeed] = dataFrame[config.referenceWindSpeed]
+            dataFrame[self.turbineLocationWindSpeed] = dataFrame[config.turbineLocationWindSpeed]
+            
             if dataFrame[config.referenceWindSpeed].count() < 1:
                 raise Exception("Reference wind speed column is empty: cannot apply calibration")
 
@@ -492,9 +472,35 @@ class Dataset:
                 raise Exception("No data are available to carry out calibration.")
 
             siteCalibCalc = self.createSiteCalibrationCalculator(dataFrame,config.referenceWindSpeed, calibration)
+            self._v_ratio_convergence_check()
             dataFrame = df
 
             return siteCalibCalc
+            
+    def _v_ratio_convergence_check(self):
+        df = self.filteredCalibrationDataframe[[self.referenceWindSpeed,self.turbineLocationWindSpeed,self.referenceDirectionBin]]
+        conv_check = pd.DataFrame()
+        dirs = df[self.referenceDirectionBin].dropna().unique()
+        dirs.sort()
+        for dir_bin in dirs:
+            print "Checking convergence of %s deg sector" % dir_bin
+            sect_df = df[df[self.referenceDirectionBin] == dir_bin].reset_index().loc[:, [self.referenceWindSpeed, self.turbineLocationWindSpeed]]
+            sect_df['vRatio'] = sect_df[self.turbineLocationWindSpeed] / sect_df[self.referenceWindSpeed]
+            sect_df = sect_df[~np.isnan(sect_df['vRatio'])].reset_index()
+            sect_df['rolling_mean_vRatio'] = np.nan
+            for i in range(len(sect_df)):
+                sect_df.loc[i, 'rolling_mean_vRatio'] = sect_df.loc[sect_df.index < i+1, 'vRatio'].mean()
+            sect_df['rolling_mean_vRatio'] /= sect_df.loc[sect_df.index[-1], 'rolling_mean_vRatio']
+            conv_check = pd.concat([conv_check, pd.DataFrame(sect_df['rolling_mean_vRatio']).rename(columns = {'rolling_mean_vRatio':int(dir_bin)})], axis = 1)
+        conv_check.index += 1
+        self.calibrationSectorConverge = conv_check
+        if len(self.calibrationSectorConverge) >= 144:
+            conv_check_summary = pd.DataFrame(index = self.calibrationSectorConverge.columns, columns = ['rolling_mean_vRatio_8hrs','rolling_mean_vRatio_16hrs','rolling_mean_vRatio_24hrs'])
+            for dir_bin in self.calibrationSectorConverge.columns:
+                conv_check_summary.loc[dir_bin, 'rolling_mean_vRatio_8hrs'] = self.calibrationSectorConverge.loc[48, dir_bin]
+                conv_check_summary.loc[dir_bin, 'rolling_mean_vRatio_16hrs'] = self.calibrationSectorConverge.loc[96, dir_bin]
+                conv_check_summary.loc[dir_bin, 'rolling_mean_vRatio_24hrs'] = self.calibrationSectorConverge.loc[144, dir_bin]
+            self.calibrationSectorConvergeSummary = conv_check_summary
 
     def getCalibrationMethod(self,calibrationMethod,referenceColumn, turbineLocationColumn, timeStepInSeconds, dataFrame):
         if calibrationMethod == "RatioOfMeans":
@@ -520,10 +526,6 @@ class Dataset:
         cov  = {}
         corr  = {}
         vRatio= {}
-        
-        axisLimit = math.ceil(max(dataFrame[calibration.requiredColumns[:2]].max()))+2
-        maxCount = np.max(np.max(groups.count()))
-        normalisedRunningVRatio = pd.DataFrame(index=[x+1 for x in range(maxCount)])
 
         for group in groups:
 
@@ -546,42 +548,6 @@ class Dataset:
                 if valueColumn == self.hubWindSpeedForTurbulence:
                     belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
                 
-                try:
-                    from matplotlib import pyplot as plt
-                    plt.ioff()
-                    #plt.style.use('ggplot')
-                    df = sectorDataFrame[calibration.requiredColumns[:2]]
-                    refMastCol = calibration.requiredColumns[0]
-                    turbMastCol = calibration.requiredColumns[1]
-                    ax = df.plot(kind='scatter', x=refMastCol, y=turbMastCol, alpha=0.6, legend=None)
-                    ax.set_title("Site Calibration: Sector %s - %s" % (int(directionBinCenter-5), int(directionBinCenter+5)), fontsize=18)
-                    ax.set_xlim([0, axisLimit])
-                    ax.set_ylim([0, axisLimit])
-                    ax.set_xlabel("Reference Mast Wind Speed (m/s)")
-                    ax.set_ylabel("Turbine Mast Wind Speed (m/s)")
-                    ax.grid(True)
-                    xValuesForLine = range(0, int(axisLimit+1))
-                    yValuesForLine = [x * slopes[directionBinCenter] + intercepts[directionBinCenter] for x in xValuesForLine]
-                    plt.plot(xValuesForLine, yValuesForLine)
-                    if not os.path.exists(os.getcwd()+"\\CalibrationPlots"):
-                        os.makedirs(os.getcwd()+"\\CalibrationPlots")
-                    file_out = os.getcwd()+"\\CalibrationPlots\\SiteCalibrationScatter_(Sector %s-%s).png" % (int(directionBinCenter-5), int(directionBinCenter+5))
-                    #chckMake(self.path)
-                    plt.savefig(file_out)
-                    plt.close()
-                    
-                    df['RefMastCumSum'] = np.cumsum(df[refMastCol])
-                    df['TurbMastCumSum'] = np.cumsum(df[turbMastCol])
-                    df['RunningVRatio'] = df['TurbMastCumSum'] / df['RefMastCumSum']
-                    df['NormalisedRunningVRatio'] = df['RunningVRatio'] / (df[turbMastCol].mean() / df[refMastCol].mean())
-                    
-                    normalisedRunningVRatio[directionBinCenter] = [list(df['NormalisedRunningVRatio']) + [np.nan]*(maxCount - df['NormalisedRunningVRatio'].count())][0]
-                except:
-                    pass
-        
-        import os
-        normalisedRunningVRatio.to_csv(os.getcwd()+"\\NormalisedRunningVRatioData.csv")
-        
         calibrationSectorDataframe = pd.DataFrame([slopes,intercepts,counts, sigA, sigB, cov, corr, vRatio], ["Slope","Offset","Count","SigA","SigB","Cov","Corr","vRatio"] ).T
         if len(belowAbove.keys()):
             calibrationSectorDataframe['belowAbove'] = pd.Series(belowAbove)
@@ -630,6 +596,14 @@ class Dataset:
 
         if self.hasDirection:
             requiredCols.append(self.windDirection)
+            if self.referenceDirectionBin in dataFrame.columns:
+                requiredCols.append(self.referenceDirectionBin)
+                
+        if self.referenceWindSpeed in dataFrame.columns:
+            requiredCols.append(self.referenceWindSpeed)
+            
+        if self.turbineLocationWindSpeed in dataFrame.columns:
+            requiredCols.append(self.turbineLocationWindSpeed)
             
         if self.hasInflowAngle:
             requiredCols.append(self.inflowAngle)
