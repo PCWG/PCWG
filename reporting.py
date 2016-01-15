@@ -9,14 +9,16 @@ class report:
     no_dp_style = xlwt.easyxf(num_format_str='0')
     one_dp_style = xlwt.easyxf(num_format_str='0.0')
     two_dp_style = xlwt.easyxf(num_format_str='0.00')
+    three_dp_style = xlwt.easyxf(num_format_str='0.000')
     four_dp_style = xlwt.easyxf(num_format_str='0.0000')
     percent_style = xlwt.easyxf(num_format_str='0.00%')
     percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
 
-    def __init__(self, windSpeedBins, turbulenceBins, version="unknown"):
+    def __init__(self, windSpeedBins, turbulenceBins, version="unknown", report_power_curve = True):
         self.version = version
         self.windSpeedBins = windSpeedBins
         self.turbulenceBins = turbulenceBins
+        self.report_power_curve = report_power_curve
 
     def report(self, path, analysis):
     
@@ -26,104 +28,107 @@ class report:
         analysis.png_plots(plotsDir)
 
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
-            
-        sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
+        
+        if self.report_power_curve:
+            sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
 
         settingsSheet = book.add_sheet("Settings", cell_overwrite_ok=True)
 
         self.reportSettings(settingsSheet, analysis)
-
-        rowsAfterCurves = []
-        #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specifiedPowerCurve, analysis)) #needs fixing + move to settings sheet
-        if analysis.specifiedPowerCurve is not None:
-            if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
-                rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
-
-        if analysis.hasActualPower:
-
-            #for name in analysis.residualWindSpeedMatrices:
-            #    residualMatrix = analysis.residualWindSpeedMatrices[name]
-            #    
-            #    if residualMatrix != None:
-            #        self.reportPowerDeviations(book, "ResidualWindSpeed-%s" % name, residualMatrix, gradient)
-
-            if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
-                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve, analysis) )
-            
-            if analysis.innerTurbulenceMeasuredPowerCurve != None:
-                rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, analysis) )
-            
-            if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
-                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve, analysis) )
-
-            rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 20, 'All', analysis.allMeasuredPowerCurve, analysis) )
-            
-            if analysis.turbRenormActive:
-                rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, analysis) )
+        
+        
+        if self.report_power_curve:
+            rowsAfterCurves = []
+            #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specifiedPowerCurve, analysis)) #needs fixing + move to settings sheet
             if analysis.specifiedPowerCurve is not None:
-                rowAfterCurves = max(rowsAfterCurves) + 5
-                sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
-                specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
+                if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
+                    rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
+    
+            if analysis.hasActualPower:
+    
+                #for name in analysis.residualWindSpeedMatrices:
+                #    residualMatrix = analysis.residualWindSpeedMatrices[name]
+                #    
+                #    if residualMatrix != None:
+                #        self.reportPowerDeviations(book, "ResidualWindSpeed-%s" % name, residualMatrix, gradient)
     
                 if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
-                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
-    
-                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, specifiedLevels)
-    
+                    rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve, analysis) )
+                
+                if analysis.innerTurbulenceMeasuredPowerCurve != None:
+                    rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, analysis) )
+                
                 if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
-                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
+                    rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve, analysis) )
     
-                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
-    
+                rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 20, 'All', analysis.allMeasuredPowerCurve, analysis) )
+                
                 if analysis.turbRenormActive:
-                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, specifiedLevels)
-                    
-                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (30 if analysis.turbRenormActive else 25), 'DayTime', analysis.dayTimePowerCurve, specifiedLevels)
-                self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (35 if analysis.turbRenormActive else 30), 'NightTime', analysis.nightTimePowerCurve, specifiedLevels)
-
-            self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
-            #self.reportPowerDeviations(book, "HubPowerDeviationsInnerShear", analysis.hubPowerDeviationsInnerShear, gradient)
-            
-            if analysis.rewsActive:
-                self.reportPowerDeviations(book, "REWSPowerDeviations", analysis.rewsPowerDeviations, gradient)
-                #self.reportPowerDeviationsDifference(book, "Hub-REWS-DevDiff", analysis.hubPowerDeviations, analysis.rewsPowerDeviations, gradient)
-                self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
-                if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Inner Shear", analysis.rewsMatrixInnerShear, gradient)
-                if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Outer Shear", analysis.rewsMatrixOuterShear, gradient)
-                #self.reportPowerDeviations(book, "REWSPowerDeviationsInnerShear", analysis.rewsPowerDeviationsInnerShear, gradient)
-            if analysis.turbRenormActive:
-                self.reportPowerDeviations(book, "TurbPowerDeviations", analysis.turbPowerDeviations, gradient)
-                #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
-                #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
-            if analysis.turbRenormActive and analysis.rewsActive:
-                self.reportPowerDeviations(book, "CombPowerDeviations", analysis.combPowerDeviations, gradient)
-                #self.reportPowerDeviationsDifference(book, "Hub-Comb-DevDiff", analysis.hubPowerDeviations, analysis.combPowerDeviations, gradient)
-                #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
-            if analysis.powerDeviationMatrixActive:
-                self.reportPowerDeviations(book, "PowerDeviationMatrixDeviations", analysis.powerDeviationMatrixDeviations, gradient)
-                #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
-                #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
-
-            calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
-            self.reportCalibrations(calSheet,analysis)
-
-            if analysis.config.nominalWindSpeedDistribution is not None:
-                sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
-                self.report_aep(sh,analysis)
+                    rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, analysis) )
+                if analysis.specifiedPowerCurve is not None:
+                    rowAfterCurves = max(rowsAfterCurves) + 5
+                    sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
+                    specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
+        
+                    if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
+                        self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
+        
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, specifiedLevels)
+        
+                    if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
+                        self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
+        
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
+        
+                    if analysis.turbRenormActive:
+                        self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, specifiedLevels)
+                        
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (30 if analysis.turbRenormActive else 25), 'DayTime', analysis.dayTimePowerCurve, specifiedLevels)
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (35 if analysis.turbRenormActive else 30), 'NightTime', analysis.nightTimePowerCurve, specifiedLevels)
+    
+                self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
+                #self.reportPowerDeviations(book, "HubPowerDeviationsInnerShear", analysis.hubPowerDeviationsInnerShear, gradient)
+                
+                if analysis.rewsActive:
+                    self.reportPowerDeviations(book, "REWSPowerDeviations", analysis.rewsPowerDeviations, gradient)
+                    #self.reportPowerDeviationsDifference(book, "Hub-REWS-DevDiff", analysis.hubPowerDeviations, analysis.rewsPowerDeviations, gradient)
+                    self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
+                    if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Inner Shear", analysis.rewsMatrixInnerShear, gradient)
+                    if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Outer Shear", analysis.rewsMatrixOuterShear, gradient)
+                    #self.reportPowerDeviations(book, "REWSPowerDeviationsInnerShear", analysis.rewsPowerDeviationsInnerShear, gradient)
+                if analysis.turbRenormActive:
+                    self.reportPowerDeviations(book, "TurbPowerDeviations", analysis.turbPowerDeviations, gradient)
+                    #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
+                    #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
+                if analysis.turbRenormActive and analysis.rewsActive:
+                    self.reportPowerDeviations(book, "CombPowerDeviations", analysis.combPowerDeviations, gradient)
+                    #self.reportPowerDeviationsDifference(book, "Hub-Comb-DevDiff", analysis.hubPowerDeviations, analysis.combPowerDeviations, gradient)
+                    #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
+                if analysis.powerDeviationMatrixActive:
+                    self.reportPowerDeviations(book, "PowerDeviationMatrixDeviations", analysis.powerDeviationMatrixDeviations, gradient)
+                    #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
+                    #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
+    
+                if analysis.config.nominalWindSpeedDistribution is not None:
+                    sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
+                    self.report_aep(sh,analysis)
+                
+        calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
+        self.reportCalibrations(calSheet,analysis)
 
         book.save(path)
 
     def reportCalibrations(self,sh,analysis):
         maxRow = 0
         startRow = 2
-        col = -5
+        col = -14
         for conf,calib in analysis.calibrations:
             if 'belowAbove' in calib.calibrationSectorDataframe.columns :
                 belowAbove = True
             else:
                 belowAbove = False
 
-            col+=7
+            col+=16
             row=startRow
             sh.write(row,col,conf.name, self.bold_style)
             sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
@@ -132,12 +137,19 @@ class report:
             sh.write(row,col+1,"Slope", self.bold_style)
             sh.write(row,col+2,"Offset", self.bold_style)
             sh.write(row,col+3,"Count", self.bold_style)
+            sh.write(row,col+4,"Hours", self.bold_style)
             if belowAbove:
-                sh.write(row,col+4,"Count <= 8m/s", self.bold_style)
-                sh.write(row,col+5,"Count >  8m/s", self.bold_style)
-                sh.write(row,col+6,"Valid Sector", self.bold_style)
-
-
+                sh.write(row,col+5,"Count <= 8m/s", self.bold_style)
+                sh.write(row,col+6,"Hours <= 8m/s", self.bold_style)
+                sh.write(row,col+7,"Count >  8m/s", self.bold_style)
+                sh.write(row,col+8,"Hours >  8m/s", self.bold_style)
+            sh.write(row,col+9,"Speedup at 10m/s", self.bold_style)
+            sh.write(row,col+10,"% Speedup at 10m/s", self.bold_style)
+            sh.write(row,col+11,"Filter (Total Hours > 24)", self.bold_style)
+            sh.write(row,col+12,"Filter (Hours Below/Above 8m/s > 6)", self.bold_style)
+            sh.write(row,col+13,"Filter (Speedup Change < 2%)", self.bold_style)
+            sh.write(row,col+14,"Valid Sector", self.bold_style)
+            
             row+=1
             for key in sorted(calib.calibrationSectorDataframe.index):
                 sh.write(row,col,float(key), self.bold_style)
@@ -145,12 +157,25 @@ class report:
                 sh.write(row,col+2,calib.calibrationSectorDataframe['Offset'][key], self.four_dp_style)
                 if 'Count' in calib.calibrationSectorDataframe.columns:
                     sh.write(row,col+3,calib.calibrationSectorDataframe['Count'][key], self.no_dp_style)
+                    sh.write(row,col+4,calib.calibrationSectorDataframe['Count'][key]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
                 if belowAbove:
                     ba = calib.calibrationSectorDataframe.loc[key,'belowAbove']
-                    sh.write(row,col+4,ba[0], self.no_dp_style)
-                    sh.write(row,col+5,ba[1], self.no_dp_style)
-                    valid = calib.getSectorValidity(key, analysis.timeStepInSeconds)
-                    sh.write(row,col+6, "TRUE" if valid else "FALSE" , self.bold_style)
+                    sh.write(row,col+5,ba[0], self.no_dp_style)
+                    sh.write(row,col+6,ba[0]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
+                    sh.write(row,col+7,ba[1], self.no_dp_style)
+                    sh.write(row,col+8,ba[1]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
+                sh.write(row,col+9,calib.calibrationSectorDataframe['SpeedUpAt10'][key], self.four_dp_style)
+                sh.write(row,col+10,(calib.calibrationSectorDataframe['SpeedUpAt10'][key]-1.0), self.percent_style)
+                
+                totalHoursValid = calib.getTotalHoursValidity(key, analysis.timeStepInSeconds)
+                sh.write(row,col+11, "TRUE" if totalHoursValid else "FALSE")
+                if belowAbove:
+                    belowAboveValid = calib.getBelowAboveValidity(key, analysis.timeStepInSeconds)
+                    sh.write(row,col+12, "TRUE" if belowAboveValid else "FALSE")
+                speedUpChangeValid = calib.getSpeedUpChangeValidity(key)
+                sh.write(row,col+13, "TRUE" if speedUpChangeValid else "FALSE")
+                sectorValid = calib.getSectorValidity(key, analysis.timeStepInSeconds)
+                sh.write(row,col+14, "TRUE" if sectorValid else "FALSE", self.bold_style)
                 row += 1
 
             if len(conf.calibrationFilters) > 0:
