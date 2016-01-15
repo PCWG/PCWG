@@ -318,7 +318,8 @@ class Dataset:
         if config.calculateHubWindSpeed:
 
             dataFrame[self.referenceWindSpeed] = dataFrame[config.referenceWindSpeed]
-            dataFrame[self.turbineLocationWindSpeed] = dataFrame[config.turbineLocationWindSpeed]
+            if config.turbineLocationWindSpeed not in ('', None):
+                dataFrame[self.turbineLocationWindSpeed] = dataFrame[config.turbineLocationWindSpeed]
             
             if dataFrame[config.referenceWindSpeed].count() < 1:
                 raise Exception("Reference wind speed column is empty: cannot apply calibration")
