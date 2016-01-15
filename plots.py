@@ -3,10 +3,20 @@ import pandas as pd
 from Analysis import chckMake
 np = pd.np
 
+
+def _is_save_path_valid(full_path):
+    if ((os.name == 'nt') and (len(full_path)>=260)):
+        print "Cannot save following file as path exceeds the Windows character limit of 259:"
+        print full_path
+        return False
+    else:
+        return True
+        
+
 class MatplotlibPlotter(object):
     def __init__(self,path, analysis):
         self.path = path
-        self.calibration_path = self.path + os.sep + 'Calibration Plots For Each Dataset'
+        self.calibration_path = self.path + os.sep + 'Calibration Plots'
         self.analysis = analysis
 
     def plot_multiple(self, windSpeedCol, powerCol, meanPowerCurveObj):
@@ -228,9 +238,13 @@ class MatplotlibPlotter(object):
                 path = self.calibration_path + os.sep + datasetConf.name
                 chckMake(path)
                 if hasattr(datasetConf.data, 'calibrationSectorConverge'):
-                    datasetConf.data.calibrationSectorConverge.to_csv(path + os.sep + 'Convergence Check Data.csv')
+                    file_out = path + os.sep + 'Convergence Check Data.csv'
+                    if _is_save_path_valid(file_out):
+                        datasetConf.data.calibrationSectorConverge.to_csv(file_out)
                 if hasattr(datasetConf.data, 'calibrationSectorConvergeSummary'):
-                    datasetConf.data.calibrationSectorConvergeSummary.to_csv(path + os.sep + 'Convergence Check Summary Data.csv')
+                    file_out = path + os.sep + 'Convergence Check Summary.csv'
+                    if _is_save_path_valid(file_out):
+                        datasetConf.data.calibrationSectorConvergeSummary.to_csv(file_out)
                 dir_bin_width = 360. / datasetConf.siteCalibrationNumberOfSectors / 2.
                 try:
                     plt.ioff()
@@ -242,7 +256,7 @@ class MatplotlibPlotter(object):
                     file_out = path + os.sep + 'Wind Speed Ratio with Direction - All Sectors.png'
                     plt.savefig(file_out)
                     df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-dir_bin_width , df.index < datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+dir_bin_width),:]
-                    df.plot(kind = 'line', figsize = (12,8))
+                    df.plot(kind = 'line', figsize = (12,8), grid = True)
                     plt.xlabel(xlab)
                     plt.ylabel(ylab)
                     file_out = path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors.png'

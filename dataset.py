@@ -602,9 +602,6 @@ class Dataset:
         if self.referenceWindSpeed in dataFrame.columns:
             requiredCols.append(self.referenceWindSpeed)
             
-        if self.turbineLocationWindSpeed in dataFrame.columns:
-            requiredCols.append(self.turbineLocationWindSpeed)
-            
         if self.hasInflowAngle:
             requiredCols.append(self.inflowAngle)
 
