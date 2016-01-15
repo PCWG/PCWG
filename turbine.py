@@ -84,7 +84,6 @@ class PowerCurve:
     def getThresholdWindSpeed(self):
         return float(interpolators.LinearPowerCurveInterpolator(self.powerCurveLevels[self.actualPower].as_matrix(), list(self.powerCurveLevels[self.actualPower].index), self.ratedPower)(0.85*self.ratedPower) * 1.5)
 
-
     def getTurbulenceLevels(self, powerCurveLevels, turbulenceLevels, fixedTurbulence):
 
         if fixedTurbulence != None:

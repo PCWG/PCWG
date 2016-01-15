@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import datetime
 import math
+import os
 import configuration
 import rews
 import binning
@@ -147,11 +148,12 @@ class LeastSquares(CalibrationBase):
 
 class SiteCalibrationCalculator:
 
-    def __init__(self, directionBinColumn, valueColumn, calibrationSectorDataframe, actives = None):
+    def __init__(self, directionBinColumn, valueColumn, calibrationSectorDataframe, actives = None, path = os.getcwd()):
 
         self.calibrationSectorDataframe = calibrationSectorDataframe
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
+        self.path = path
 
         if actives != None:
 
@@ -184,16 +186,33 @@ class SiteCalibrationCalculator:
 
     def IECLimitCalculator(self):
         if len(self.calibrationSectorDataframe.index) == 36 and 'vRatio' in self.calibrationSectorDataframe.columns:
-            self.calibrationSectorDataframe['pctSpeedUp'] = (self.calibrationSectorDataframe['vRatio']-1)*100
-            self.calibrationSectorDataframe['LowerLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)-2.0,1),index=self.calibrationSectorDataframe.index)
-            self.calibrationSectorDataframe['UpperLimit'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['vRatio']-1)*100)+2.0,1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['pctSpeedUp'] = (self.calibrationSectorDataframe['SpeedUpAt10']-1)*100
+            self.calibrationSectorDataframe['LowerLimitPrevious'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['SpeedUpAt10']-1)*100)-2.0,1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['UpperLimitPrevious'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['SpeedUpAt10']-1)*100)+2.0,1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['LowerLimitNext'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['SpeedUpAt10']-1)*100)-2.0,-1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['UpperLimitNext'] = pd.Series(data=np.roll(((self.calibrationSectorDataframe['SpeedUpAt10']-1)*100)+2.0,-1),index=self.calibrationSectorDataframe.index)
+            self.calibrationSectorDataframe['LowerLimit'] = np.maximum(self.calibrationSectorDataframe['LowerLimitPrevious'], self.calibrationSectorDataframe['LowerLimitNext'])
+            self.calibrationSectorDataframe['UpperLimit'] = np.minimum(self.calibrationSectorDataframe['UpperLimitPrevious'], self.calibrationSectorDataframe['UpperLimitNext'])
             self.calibrationSectorDataframe['IECValid'] = np.logical_and(self.calibrationSectorDataframe['pctSpeedUp'] >  self.calibrationSectorDataframe['LowerLimit'], self.calibrationSectorDataframe['pctSpeedUp'] <  self.calibrationSectorDataframe['UpperLimit'])
             print self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']]
         return True
     
-    def getSectorValidity(self, key, timeStep):
+    def getTotalHoursValidity(self, key, timeStep):
+        totalHours = self.calibrationSectorDataframe.loc[key,'Count']
+        return totalHours*(timeStep/3600.0) > 24.0
+    
+    def getBelowAboveValidity(self, key, timeStep):
         ba = self.calibrationSectorDataframe.loc[key,'belowAbove']
         return ba[0]*(timeStep/3600.0) > 6.0 and ba[1]*(timeStep/3600.0) > 6.0
+    
+    def getSpeedUpChangeValidity(self, key):
+        return self.calibrationSectorDataframe['IECValid'][key]
+    
+    def getSectorValidity(self, key, timeStep):
+        totalHoursValid = self.getTotalHoursValidity(key, timeStep)
+        belowAboveValid = self.getBelowAboveValidity(key, timeStep)
+        speedUpChangeValid = self.getSpeedUpChangeValidity(key)
+        return totalHoursValid and belowAboveValid and speedUpChangeValid
 
 class ShearExponentCalculator:
 
@@ -244,6 +263,9 @@ class Dataset:
         self.referenceShearExponent = "Reference Shear Exponent"
         self.turbineShearExponent = "Turbine Shear Exponent"
         self.windDirection = "Wind Direction"
+        self.inflowAngle = 'Inflow Angle'
+        self.referenceWindSpeed = 'Reference Wind Speed'
+        self.turbineLocationWindSpeed = 'Turbine Location Wind Speed'
 
         self.profileRotorWindSpeed = "Profile Rotor Wind Speed"
         self.profileHubWindSpeed = "Profile Hub Wind Speed"
@@ -258,6 +280,7 @@ class Dataset:
         self.turbRenormActive = analysisConfig.turbRenormActive
         self.turbulencePower = 'Turbulence Power'
         self.rewsDefined = config.rewsDefined
+        self.hasInflowAngle = config.inflowAngle not in (None,'')
 
         self.sensitivityDataColumns = config.sensitivityDataColumns
 
@@ -286,11 +309,18 @@ class Dataset:
                 dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["TurbineLocation"]).shearExponent, axis=1)
                 dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["ReferenceLocation"]).shearExponent, axis=1)
                 dataFrame[self.shearExponent] = dataFrame[self.referenceShearExponent]
-
+        
+        if self.hasInflowAngle:
+            dataFrame[self.inflowAngle] = dataFrame[config.inflowAngle]
+        
         dataFrame[self.residualWindSpeed] = 0.0
 
         if config.calculateHubWindSpeed:
 
+            dataFrame[self.referenceWindSpeed] = dataFrame[config.referenceWindSpeed]
+            if config.turbineLocationWindSpeed not in ('', None):
+                dataFrame[self.turbineLocationWindSpeed] = dataFrame[config.turbineLocationWindSpeed]
+            
             if dataFrame[config.referenceWindSpeed].count() < 1:
                 raise Exception("Reference wind speed column is empty: cannot apply calibration")
 
@@ -443,9 +473,35 @@ class Dataset:
                 raise Exception("No data are available to carry out calibration.")
 
             siteCalibCalc = self.createSiteCalibrationCalculator(dataFrame,config.referenceWindSpeed, calibration)
+            self._v_ratio_convergence_check()
             dataFrame = df
 
             return siteCalibCalc
+            
+    def _v_ratio_convergence_check(self):
+        df = self.filteredCalibrationDataframe[[self.referenceWindSpeed,self.turbineLocationWindSpeed,self.referenceDirectionBin]]
+        conv_check = pd.DataFrame()
+        dirs = df[self.referenceDirectionBin].dropna().unique()
+        dirs.sort()
+        for dir_bin in dirs:
+            print "Checking convergence of %s deg sector" % dir_bin
+            sect_df = df[df[self.referenceDirectionBin] == dir_bin].reset_index().loc[:, [self.referenceWindSpeed, self.turbineLocationWindSpeed]]
+            sect_df['vRatio'] = sect_df[self.turbineLocationWindSpeed] / sect_df[self.referenceWindSpeed]
+            sect_df = sect_df[~np.isnan(sect_df['vRatio'])].reset_index()
+            sect_df['rolling_mean_vRatio'] = np.nan
+            for i in range(len(sect_df)):
+                sect_df.loc[i, 'rolling_mean_vRatio'] = sect_df.loc[sect_df.index < i+1, 'vRatio'].mean()
+            sect_df['rolling_mean_vRatio'] /= sect_df.loc[sect_df.index[-1], 'rolling_mean_vRatio']
+            conv_check = pd.concat([conv_check, pd.DataFrame(sect_df['rolling_mean_vRatio']).rename(columns = {'rolling_mean_vRatio':int(dir_bin)})], axis = 1)
+        conv_check.index += 1
+        self.calibrationSectorConverge = conv_check
+        if len(self.calibrationSectorConverge) >= 144:
+            conv_check_summary = pd.DataFrame(index = self.calibrationSectorConverge.columns, columns = ['rolling_mean_vRatio_8hrs','rolling_mean_vRatio_16hrs','rolling_mean_vRatio_24hrs'])
+            for dir_bin in self.calibrationSectorConverge.columns:
+                conv_check_summary.loc[dir_bin, 'rolling_mean_vRatio_8hrs'] = self.calibrationSectorConverge.loc[48, dir_bin]
+                conv_check_summary.loc[dir_bin, 'rolling_mean_vRatio_16hrs'] = self.calibrationSectorConverge.loc[96, dir_bin]
+                conv_check_summary.loc[dir_bin, 'rolling_mean_vRatio_24hrs'] = self.calibrationSectorConverge.loc[144, dir_bin]
+            self.calibrationSectorConvergeSummary = conv_check_summary
 
     def getCalibrationMethod(self,calibrationMethod,referenceColumn, turbineLocationColumn, timeStepInSeconds, dataFrame):
         if calibrationMethod == "RatioOfMeans":
@@ -492,10 +548,10 @@ class Dataset:
 
                 if valueColumn == self.hubWindSpeedForTurbulence:
                     belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
-
+                
         calibrationSectorDataframe = pd.DataFrame([slopes,intercepts,counts, sigA, sigB, cov, corr, vRatio], ["Slope","Offset","Count","SigA","SigB","Cov","Corr","vRatio"] ).T
         if len(belowAbove.keys()):
-            calibrationSectorDataframe['belowAbove'] = belowAbove.values()
+            calibrationSectorDataframe['belowAbove'] = pd.Series(belowAbove)
         print calibrationSectorDataframe
 
         return SiteCalibrationCalculator(self.referenceDirectionBin, valueColumn, calibrationSectorDataframe)
@@ -526,7 +582,7 @@ class Dataset:
     def extractColumns(self, dataFrame):
 
         requiredCols = []
-
+        
         requiredCols.append(self.nameColumn)
         requiredCols.append(self.timeStamp)
 
@@ -541,6 +597,15 @@ class Dataset:
 
         if self.hasDirection:
             requiredCols.append(self.windDirection)
+            if hasattr(self, 'referenceDirectionBin'):
+                if self.referenceDirectionBin in dataFrame.columns:
+                    requiredCols.append(self.referenceDirectionBin)
+                
+        if self.referenceWindSpeed in dataFrame.columns:
+            requiredCols.append(self.referenceWindSpeed)
+            
+        if self.hasInflowAngle:
+            requiredCols.append(self.inflowAngle)
 
         if self.rewsDefined:
             requiredCols.append(self.profileRotorWindSpeed)

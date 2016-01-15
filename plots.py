@@ -3,9 +3,20 @@ import pandas as pd
 from Analysis import chckMake
 np = pd.np
 
+
+def _is_save_path_valid(full_path):
+    if ((os.name == 'nt') and (len(full_path)>=260)):
+        print "Cannot save following file as path exceeds the Windows character limit of 259:"
+        print full_path
+        return False
+    else:
+        return True
+        
+
 class MatplotlibPlotter(object):
     def __init__(self,path, analysis):
         self.path = path
+        self.calibration_path = self.path + os.sep + 'Calibration Plots'
         self.analysis = analysis
 
     def plot_multiple(self, windSpeedCol, powerCol, meanPowerCurveObj):
@@ -83,7 +94,7 @@ class MatplotlibPlotter(object):
         except:
             print "Tried to make a plot of power curve sensitivity to %s. Couldn't." % sensCol
 
-    def plotBy(self,by,variable,df):
+    def plotBy(self,by,variable,df, gridLines = False):
         import turbine
         if not isinstance(df,turbine.PowerCurve):
             kind = 'scatter'
@@ -97,6 +108,8 @@ class MatplotlibPlotter(object):
             ax.set_xlim([df[by].min()-1,df[by].max()+1])
             ax.set_xlabel(by)
             ax.set_ylabel(variable)
+            if gridLines:
+                ax.grid(True)
             file_out = self.path + "/"+variable.replace(" ","_")+"_By_"+by.replace(" ","_")+".png"
             chckMake(self.path)
             plt.savefig(file_out)
@@ -105,7 +118,7 @@ class MatplotlibPlotter(object):
         except:
             print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
 
-    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, anon = False, row_filt = None, fname = None, show_analysis_pc = True, mean_title = 'Mean Power Curve', mean_pc_color = '#00FF00'):
+    def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, show_scatter = True, anon = False, row_filt = None, fname = None, show_analysis_pc = True, specified_title = 'Specified', mean_title = 'Mean Power Curve', mean_pc_color = '#00FF00', gridLines = False):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
@@ -114,19 +127,21 @@ class MatplotlibPlotter(object):
                 plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.referenceDensity)
             else:
                 plotTitle = "Power Curve"
-            ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
+            if show_scatter:
+                ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
+            else:
+                ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.0)
             if self.analysis.specifiedPowerCurve is not None:
                 has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
             else:
                 has_spec_pc = False
             if has_spec_pc:
-                ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+                ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
             if self.analysis.specifiedPowerCurve != self.analysis.powerCurve:
                 if ((self.analysis.powerCurve.name != 'All Measured') and show_analysis_pc):
                     ax = self.analysis.powerCurve.powerCurveLevels.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.analysis.powerCurve.name)
             meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels.loc[meanPowerCurveObj.powerCurveLevels.index, 'Data Count'] > 0].reset_index().set_index(windSpeedCol)
-            ax = meanPowerCurve[powerCol].plot(ax = ax,color=mean_pc_color,alpha=0.95,linestyle='--',
-                                  label=mean_title)
+            ax = meanPowerCurve[powerCol].plot(ax = ax,color=mean_pc_color,alpha=0.95,linestyle='--',label=mean_title)
             ax.legend(loc=4, scatterpoints = 1)
             if has_spec_pc:
                 ax.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
@@ -137,6 +152,8 @@ class MatplotlibPlotter(object):
             if anon:
                 ax.xaxis.set_ticklabels([])
                 ax.yaxis.set_ticklabels([])
+            if gridLines:
+                ax.grid(True)
             fname = ("PowerCurve - " + powerCol + " vs " + windSpeedCol + ".png") if fname is None else fname
             file_out = self.path + os.sep + fname
             chckMake(self.path)
@@ -189,7 +206,7 @@ class MatplotlibPlotter(object):
         except:
             print "Tried to make a TI corrected power curve scatter chart for %s. Couldn't." % meanPowerCurveObj.name
 
-    def plotPowerLimits(self):
+    def plotPowerLimits(self, specified_title = 'Specified', gridLines = False):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
@@ -198,11 +215,13 @@ class MatplotlibPlotter(object):
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Min",alpha=0.2,label='Power Min',color = 'orange')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Max",alpha=0.2,label='Power Max',color = 'green')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power SD",alpha=0.2,label='Power SD',color = 'purple')
-            ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+            ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
             ax.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
             ax.legend(loc=4, scatterpoints = 1)
             ax.set_xlabel(windSpeedCol)
             ax.set_ylabel("Power [kW]")
+            if gridLines:
+                ax.grid(True)
             file_out = self.path + "/PowerValues.png"
             chckMake(self.path)
             plt.savefig(file_out)
@@ -212,21 +231,60 @@ class MatplotlibPlotter(object):
             print "Tried to make a full power scatter chart. Couldn't."
 
     def plotCalibrationSectors(self):
+        from matplotlib import pyplot as plt
         for datasetConf in self.analysis.datasetConfigs:
-            try:
-                from matplotlib import pyplot as plt
-                plt.ioff()
-                df = datasetConf.data.calibrationCalculator.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit']].rename(columns={'pctSpeedUp':'% Speed Up','LowerLimit':"IEC Lower",'UpperLimit':"IEC Upper"})
-                df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
-                plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
-                file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - All Sectors {nm}.png'.format(nm=datasetConf.name)
-                plt.savefig(file_out)
-                df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-5.0 , df.index < datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+5.0),:]
-                df.plot(kind = 'line', title = 'Variation of wind speed ratio with direction', figsize = (12,8))
-                plt.ylabel('Wind Speed Ratio (Vturb/Vref) as %')
-                file_out = self.path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors {nm}.png'.format(nm=datasetConf.name)
-                chckMake(self.path)
-                plt.savefig(file_out)
-                plt.close('all')
-            except:
-                print "Tried to plot variation of wind speed ratio with direction. Couldn't."
+            if (datasetConf.calibrationMethod in ['York','LeastSquares']):
+                chckMake(self.calibration_path)
+                path = self.calibration_path + os.sep + datasetConf.name
+                chckMake(path)
+                if hasattr(datasetConf.data, 'calibrationSectorConverge'):
+                    file_out = path + os.sep + 'Convergence Check Data.csv'
+                    if _is_save_path_valid(file_out):
+                        datasetConf.data.calibrationSectorConverge.to_csv(file_out)
+                if hasattr(datasetConf.data, 'calibrationSectorConvergeSummary'):
+                    file_out = path + os.sep + 'Convergence Check Summary.csv'
+                    if _is_save_path_valid(file_out):
+                        datasetConf.data.calibrationSectorConvergeSummary.to_csv(file_out)
+                dir_bin_width = 360. / datasetConf.siteCalibrationNumberOfSectors / 2.
+                try:
+                    plt.ioff()
+                    xlab, ylab = 'Direction Sector (deg)', '% Speed Up at 10m/s'
+                    df = datasetConf.data.calibrationCalculator.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit']].rename(columns={'pctSpeedUp':'% Speed Up','LowerLimit':"IEC Lower",'UpperLimit':"IEC Upper"})
+                    df.plot(kind = 'line', figsize = (12,8), grid = True)
+                    plt.xlabel(xlab)
+                    plt.ylabel(ylab)
+                    file_out = path + os.sep + 'Wind Speed Ratio with Direction - All Sectors.png'
+                    plt.savefig(file_out)
+                    df = df.loc[np.logical_and(df.index > datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].min()-dir_bin_width , df.index < datasetConf.data.fullDataFrame[datasetConf.data.referenceDirectionBin].max()+dir_bin_width),:]
+                    df.plot(kind = 'line', figsize = (12,8), grid = True)
+                    plt.xlabel(xlab)
+                    plt.ylabel(ylab)
+                    file_out = path + os.sep + 'Wind Speed Ratio with Direction - Selected Sectors.png'
+                    plt.savefig(file_out)
+                    plt.close('all')
+                except:
+                    print "Tried to plot variation of wind speed ratio with direction. Couldn't."
+                xlim_u = datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceWindSpeed].max()
+                ylim_u = datasetConf.data.filteredCalibrationDataframe[datasetConf.data.turbineLocationWindSpeed].max()
+                for directionBinCenter in datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceDirectionBin].unique():
+                    try:
+                        plt.ioff()
+                        df = datasetConf.data.filteredCalibrationDataframe.loc[datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceDirectionBin] == directionBinCenter, [datasetConf.data.referenceWindSpeed, datasetConf.data.turbineLocationWindSpeed]]
+                        ax = df.plot(kind='scatter', x=datasetConf.data.referenceWindSpeed, y=datasetConf.data.turbineLocationWindSpeed, alpha=0.6, legend=None)
+                        ax.set_title("Site Calibration: Sector %s - %s" % (int(directionBinCenter-dir_bin_width), int(directionBinCenter+dir_bin_width)), fontsize=18)
+                        ax.set_xlim([0, xlim_u])
+                        ax.set_ylim([0, ylim_u])
+                        ax.set_xlabel("Reference Mast Wind Speed (m/s)")
+                        ax.set_ylabel("Turbine Mast Wind Speed (m/s)")
+                        ax.grid(True)
+                        xValuesForLine = [0, xlim_u]
+                        slope = datasetConf.data.calibrationCalculator.calibrationSectorDataframe.loc[directionBinCenter,'Slope']
+                        intercept = datasetConf.data.calibrationCalculator.calibrationSectorDataframe.loc[directionBinCenter,'Offset']
+                        yValuesForLine = [x * slope + intercept for x in xValuesForLine]
+                        plt.hold(True)
+                        plt.plot(xValuesForLine, yValuesForLine)
+                        file_out = path + os.sep + "SiteCalibrationScatter_(Sector_%03d_to_%03d).png" % (int(directionBinCenter-dir_bin_width), int(directionBinCenter+dir_bin_width))
+                        plt.savefig(file_out)
+                        plt.close()
+                    except:
+                        print "Tried to plot reference vs turbine location wind speed for sector %s. Couldn't." % directionBinCenter
