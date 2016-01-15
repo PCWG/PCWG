@@ -597,8 +597,9 @@ class Dataset:
 
         if self.hasDirection:
             requiredCols.append(self.windDirection)
-            if self.referenceDirectionBin in dataFrame.columns:
-                requiredCols.append(self.referenceDirectionBin)
+            if hasattr(self, 'referenceDirectionBin'):
+                if self.referenceDirectionBin in dataFrame.columns:
+                    requiredCols.append(self.referenceDirectionBin)
                 
         if self.referenceWindSpeed in dataFrame.columns:
             requiredCols.append(self.referenceWindSpeed)
