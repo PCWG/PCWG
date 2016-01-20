@@ -112,30 +112,39 @@ class report:
                 if analysis.config.nominalWindSpeedDistribution is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
                     self.report_aep(sh,analysis)
-                
-        calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
-        self.reportCalibrations(calSheet,analysis)
+        
+        if len(analysis.calibrations) == 1:
+            calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
+            self.reportCalibration(calSheet,analysis.calibrations[0],timeStepInSeconds = analysis.timeStepInSeconds)
+        elif len(analysis.calibrations) > 1:
+            i = 0
+            for cal in analysis.calibrations:
+                i += 1
+                calSheet = book.add_sheet("Calibration_%03d" % i, cell_overwrite_ok=True)
+                self.reportCalibration(calSheet,cal,timeStepInSeconds = analysis.timeStepInSeconds)
 
         book.save(path)
 
-    def reportCalibrations(self,sh,analysis):
-        maxRow = 0
-        startRow = 2
+    def reportCalibration(self,sh,calibration,timeStepInSeconds = 600.):
+        conf, calib = calibration
+        sh.write(0, 0, "Dataset Name", self.bold_style)
+        sh.write(1, 0, conf.name)
+        startRow = 3
         col = -14
-        for conf,calib in analysis.calibrations:
-            if 'belowAbove' in calib.calibrationSectorDataframe.columns :
-                belowAbove = True
-            else:
-                belowAbove = False
-
-            col+=16
-            row=startRow
-            sh.write(row,col,conf.name, self.bold_style)
-            sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
-            row += 1
-            sh.write(row,col,"Bin", self.bold_style)
-            sh.write(row,col+1,"Slope", self.bold_style)
-            sh.write(row,col+2,"Offset", self.bold_style)
+        
+        if 'belowAbove' in calib.calibrationSectorDataframe.columns :
+            belowAbove = True
+        else:
+            belowAbove = False
+        col+=16
+        row=startRow
+        sh.write(row,col,conf.name, self.bold_style)
+        sh.write(row,col+1,"Method:"+conf.calibrationMethod, self.bold_style)
+        row += 1
+        sh.write(row,col,"Bin", self.bold_style)
+        sh.write(row,col+1,"Slope", self.bold_style)
+        sh.write(row,col+2,"Offset", self.bold_style)
+        if conf.calibrationMethod != 'Specified':
             sh.write(row,col+3,"Count", self.bold_style)
             sh.write(row,col+4,"Hours", self.bold_style)
             if belowAbove:
@@ -150,59 +159,60 @@ class report:
             sh.write(row,col+13,"Filter (Speedup Change < 2%)", self.bold_style)
             sh.write(row,col+14,"Valid Sector", self.bold_style)
             
-            row+=1
-            for key in sorted(calib.calibrationSectorDataframe.index):
-                sh.write(row,col,float(key), self.bold_style)
-                sh.write(row,col+1,calib.calibrationSectorDataframe['Slope'][key], self.four_dp_style)
-                sh.write(row,col+2,calib.calibrationSectorDataframe['Offset'][key], self.four_dp_style)
+        row+=1
+        for key in sorted(calib.calibrationSectorDataframe.index):
+            sh.write(row,col,float(key), self.bold_style)
+            sh.write(row,col+1,calib.calibrationSectorDataframe['Slope'][key], self.four_dp_style)
+            sh.write(row,col+2,calib.calibrationSectorDataframe['Offset'][key], self.four_dp_style)
+            if conf.calibrationMethod != 'Specified':
                 if 'Count' in calib.calibrationSectorDataframe.columns:
                     sh.write(row,col+3,calib.calibrationSectorDataframe['Count'][key], self.no_dp_style)
-                    sh.write(row,col+4,calib.calibrationSectorDataframe['Count'][key]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
+                    sh.write(row,col+4,calib.calibrationSectorDataframe['Count'][key]*(timeStepInSeconds/3600.0), self.one_dp_style)
                 if belowAbove:
                     ba = calib.calibrationSectorDataframe.loc[key,'belowAbove']
                     sh.write(row,col+5,ba[0], self.no_dp_style)
-                    sh.write(row,col+6,ba[0]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
+                    sh.write(row,col+6,ba[0]*(timeStepInSeconds/3600.0), self.one_dp_style)
                     sh.write(row,col+7,ba[1], self.no_dp_style)
-                    sh.write(row,col+8,ba[1]*(analysis.timeStepInSeconds/3600.0), self.one_dp_style)
+                    sh.write(row,col+8,ba[1]*(timeStepInSeconds/3600.0), self.one_dp_style)
                 sh.write(row,col+9,calib.calibrationSectorDataframe['SpeedUpAt10'][key], self.four_dp_style)
                 sh.write(row,col+10,(calib.calibrationSectorDataframe['SpeedUpAt10'][key]-1.0), self.percent_style)
                 
-                totalHoursValid = calib.getTotalHoursValidity(key, analysis.timeStepInSeconds)
+                totalHoursValid = calib.getTotalHoursValidity(key, timeStepInSeconds)
                 sh.write(row,col+11, "TRUE" if totalHoursValid else "FALSE")
                 if belowAbove:
-                    belowAboveValid = calib.getBelowAboveValidity(key, analysis.timeStepInSeconds)
+                    belowAboveValid = calib.getBelowAboveValidity(key, timeStepInSeconds)
                     sh.write(row,col+12, "TRUE" if belowAboveValid else "FALSE")
                 speedUpChangeValid = calib.getSpeedUpChangeValidity(key)
                 sh.write(row,col+13, "TRUE" if speedUpChangeValid else "FALSE")
-                sectorValid = calib.getSectorValidity(key, analysis.timeStepInSeconds)
+                sectorValid = calib.getSectorValidity(key, timeStepInSeconds)
                 sh.write(row,col+14, "TRUE" if sectorValid else "FALSE", self.bold_style)
-                row += 1
+            row += 1
 
-            if len(conf.calibrationFilters) > 0:
-                row += 2
-                sh.write(row, col, "Calibration Filters", self.bold_style)
-                row += 1
-                sh.write(row, col, "Data Column", self.bold_style)
-                sh.write(row, col+1, "Filter Type", self.bold_style)
-                sh.write(row, col+2, "Inclusive", self.bold_style)
-                sh.write(row, col+3, "Filter Value", self.bold_style)
-                sh.write(row, col+4, "Active", self.bold_style)
-                row += 1
+        if len(conf.calibrationFilters) > 0:
+            row += 2
+            sh.write(row, col, "Calibration Filters", self.bold_style)
+            row += 1
+            sh.write(row, col, "Data Column", self.bold_style)
+            sh.write(row, col+1, "Filter Type", self.bold_style)
+            sh.write(row, col+2, "Inclusive", self.bold_style)
+            sh.write(row, col+3, "Filter Value", self.bold_style)
+            sh.write(row, col+4, "Active", self.bold_style)
+            row += 1
 
-                for filt in conf.calibrationFilters:
-                    if isinstance(filt,TimeOfDayFilter):
-                        sh.write(row, col, "Time Of Day Filter")
-                        sh.write(row, col + 1, str(filt.startTime))
-                        sh.write(row, col + 2, str(filt.endTime))
-                        sh.write(row, col + 3, str(filt.daysOfTheWeek))
-                        sh.write(row, col + 4, str(filt.months))
-                    else:
-                        sh.write(row, col, filt.column)
-                        sh.write(row, col+1, filt.filterType)
-                        sh.write(row, col+2, filt.inclusive)
-                        sh.write(row, col+3, str(filt))
-                        sh.write(row, col+4, filt.active) # always true if in list...
-                    row += 1
+            for filt in conf.calibrationFilters:
+                if isinstance(filt,TimeOfDayFilter):
+                    sh.write(row, col, "Time Of Day Filter")
+                    sh.write(row, col + 1, str(filt.startTime))
+                    sh.write(row, col + 2, str(filt.endTime))
+                    sh.write(row, col + 3, str(filt.daysOfTheWeek))
+                    sh.write(row, col + 4, str(filt.months))
+                else:
+                    sh.write(row, col, filt.column)
+                    sh.write(row, col+1, filt.filterType)
+                    sh.write(row, col+2, filt.inclusive)
+                    sh.write(row, col+3, str(filt))
+                    sh.write(row, col+4, filt.active) # always true if in list...
+                row += 1
 
 
     def reportSettings(self, sh, analysis):
