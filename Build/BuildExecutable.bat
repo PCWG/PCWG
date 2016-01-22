@@ -35,6 +35,16 @@ echo "Error: correct version (%version%) not detected in %toolpath%"
 goto:eof
 )
 
+echo Checking exception handling in %toolpath%
+findstr /c:"#ExceptionType = None" "%toolpath%" 
+
+if %errorlevel%==0 (
+echo "Correct exception handling detected in %toolpath%"
+) else (
+echo "Error: incorrect exception handling detected in %toolpath%"
+goto:eof
+)
+
 echo removing old files and folders
  
 if exist "%versionZip%" del "%versionZip%"
