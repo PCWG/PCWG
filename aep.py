@@ -69,7 +69,8 @@ class AEPCalculator:
 
     def calculate_ideal_yield(self, curveType):
         curve = self.getCurve(curveType)
-        energySum = 0
+        energySum = 0.
+        freqSum = 0.
         energyColumns = ["{0}_{1}".format(curveType, col) for col in ['Upper','Lower','Freq','Power','Energy']]
         for bin in self.distribution.df_rebinned.index:
             if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
@@ -82,7 +83,12 @@ class AEPCalculator:
                 if 'Measured' == curveType and bin in curve.powerCurveLevels.index:
                     self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Standard Deviation"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.cumulativeFunction(bin)
                     self.uncertainty_distribution.loc[bin, 'TypeB'] =  50.0 # todo: calculate this properly
-        return energySum
+            freqSum += freq
+                
+        ratioFreqSum = freqSum/(365.25*24.)
+        self.energy_distribution.loc[:, ["{0}_{1}".format(curveType, col) for col in ['Freq', 'Energy']]] /= ratioFreqSum
+        energySum /= ratioFreqSum
+        return energySum        
 
 class AEPCalculatorLCB(AEPCalculator):
     def __init__(self,referenceCurve, measuredCurve, distribution = None, distributionPath = None):
