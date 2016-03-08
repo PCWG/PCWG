@@ -142,6 +142,8 @@ class PowerCurve:
             return interpolators.LinearPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         elif self.interpolationMode == 'Cubic':
             return interpolators.CubicPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
+        elif self.interpolationMode == 'Marmander':
+            return interpolators.MarmanderPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         else:
             raise Exception('Unknown interpolation mode: %s' % self.interpolationMode)
 

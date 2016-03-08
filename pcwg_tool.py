@@ -17,9 +17,9 @@ filterSeparator = "#"
 datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
-version = "0.5.10"
+version = "0.5.X"
 ExceptionType = Exception
-ExceptionType = None #comment this line before release
+#ExceptionType = None #comment this line before release
 
 pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
                      'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
@@ -2815,7 +2815,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 advancedSettingsShowHide = ShowHideCommand(master)
                 self.addTitleRow(master, "Advanced Settings:", advancedSettingsShowHide)
                 self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode, showHideCommand = advancedSettingsShowHide)
-                self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic"], self.config.interpolationMode, showHideCommand = advancedSettingsShowHide)
+                self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode, showHideCommand = advancedSettingsShowHide)
                 self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominalWindSpeedDistribution, self.filePath, showHideCommand = advancedSettingsShowHide)
 
                 #hide all initially
