@@ -1224,7 +1224,7 @@ class Padder:
         
         for windSpeed in self.getWindSpeedBins(bins):
             
-            if not self.levelExists(powerLevels, windSpeed):
+            if ((not self.levelExists(powerLevels, windSpeed)) and (windSpeed > self.max_key)):
 
                 powerPadValue = self.powerPadValue(powerLevels, windSpeed)
                 turbulencePadValue = self.turbulencePadValue(powerLevels, windSpeed)
