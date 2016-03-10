@@ -1224,7 +1224,7 @@ class Padder:
         
         for windSpeed in self.getWindSpeedBins(bins):
             
-            if ((not self.levelExists(powerLevels, windSpeed)) and (windSpeed > self.max_key)):
+            if not self.levelExists(powerLevels, windSpeed):
 
                 powerPadValue = self.powerPadValue(powerLevels, windSpeed)
                 turbulencePadValue = self.turbulencePadValue(powerLevels, windSpeed)
@@ -1233,14 +1233,17 @@ class Padder:
                     powerLevels.loc[windSpeed, self.powerCol] = 0.0
                 else:
 
-                    if windSpeed < self.min_key:
+                    if windSpeed < cutInWindSpeed:
                         powerLevels.loc[windSpeed, self.powerCol] = 0.0
-                    else:
+                        powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
+                        powerLevels.loc[windSpeed, self.wsCol] = windSpeed
+                        powerLevels.loc[windSpeed, self.countCol] = 0
+                        
+                    elif windSpeed > self.max_key:
                         powerLevels.loc[windSpeed, self.powerCol] = powerPadValue
-                    
-                powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
-                powerLevels.loc[windSpeed, self.wsCol] = windSpeed
-                powerLevels.loc[windSpeed, self.countCol] = 0
+                        powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
+                        powerLevels.loc[windSpeed, self.wsCol] = windSpeed
+                        powerLevels.loc[windSpeed, self.countCol] = 0
             
         powerLevels.sort_index(inplace=True)
         

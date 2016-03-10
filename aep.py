@@ -81,7 +81,7 @@ class AEPCalculator:
                 energySum += freq*power
                 if 'Measured' == curveType and bin in curve.powerCurveLevels.index:
                     self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Standard Deviation"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.cumulativeFunction(bin)
-                    self.uncertainty_distribution.loc[bin, 'TypeB'] =  50.0 # todo: calculate this properly
+                    self.uncertainty_distribution.loc[bin, 'TypeB'] =  50.0 # todo: calculate this
         return energySum
 
 class AEPCalculatorLCB(AEPCalculator):
