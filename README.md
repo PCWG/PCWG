@@ -3,10 +3,10 @@ Tool for evaluating the power performance of wind turbines through power curve a
 [PCWG Website](http://www.pcwg.org)
 
 ## Current Version
-v0.5.11
+v0.5.12
 
 ## Release Versions
-A full history of release versions can be found on [SourceForge](http://sourceforge.net/projects/pcwg/files/ "SourceForge")
+A full history of release versions can be found at https://github.com/peterdougstuart/PCWG/releases)
 
 
 
