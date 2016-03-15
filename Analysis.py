@@ -773,7 +773,8 @@ class Analysis:
             if dfPowerCoeff is not None:
                 powerLevels[self.powerCoeff] = dfPowerCoeff
 
-            print "Calculating power curve"
+            print "Calculating power curve, from levels:"
+            print powerLevels.head(30)
             
             return turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, powerColumn,
                                       self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount,
@@ -1223,7 +1224,7 @@ class Padder:
 
         self.min_key = min(powerLevels.index)
         self.max_key = max(powerLevels.index)
-        
+
         for windSpeed in self.getWindSpeedBins(bins):
             
             if not self.levelExists(powerLevels, windSpeed):
@@ -1246,7 +1247,7 @@ class Padder:
                         powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
                         powerLevels.loc[windSpeed, self.wsCol] = windSpeed
                         powerLevels.loc[windSpeed, self.countCol] = 0
-            
+                        
         powerLevels.sort_index(inplace=True)
         
         return powerLevels

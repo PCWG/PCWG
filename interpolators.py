@@ -3,7 +3,33 @@ import numpy as np
 import scipy.integrate as integrate
 from math import pow, sqrt
 
-class MarmanderPowerCurveInterpolator:
+class BaseInterpolator(object):
+
+    def printSummary(self, x, y):
+        
+        for i in range(len(x)):
+            print x[i], y[i]
+    
+    def removeNans(self, x, y):
+
+        xNew = []
+        yNew = []
+
+        print "Removing NaNs"
+        
+        for i in range(len(x)):
+
+            print x[i], y[i]
+            
+            if not np.isnan(y[i]):
+                xNew.append(x[i])
+                yNew.append(y[i])
+            else:
+                print "Excluding power curve NaN at {0}".format(x[i])
+                
+        return (xNew, yNew)
+    
+class MarmanderPowerCurveInterpolator(BaseInterpolator):
 
     PostCutOutStep = 0.01
     ConvergenceConstant = 1.0
@@ -342,7 +368,7 @@ class MarmanderPowerCurveInterpolatorCubicFunction:
             else:
                 return float(self.linearInterpolator(x))
     
-class CubicPowerCurveInterpolator:
+class CubicPowerCurveInterpolator(BaseInterpolator):
 
     def __init__(self, x, y, cutOutWindSpeed):
 
@@ -372,10 +398,11 @@ class CubicPowerCurveInterpolator:
             else:
                 return self.cubicInterpolator(x)
 
-class LinearPowerCurveInterpolator:
+class LinearPowerCurveInterpolator(BaseInterpolator):
 
     def __init__(self, x, y, cutOutWindSpeed):
 
+        
         self.interpolator = interpolate.interp1d(x, y, kind='linear',fill_value=0.0,bounds_error=False)
         self.cutOutWindSpeed = cutOutWindSpeed
         
@@ -384,7 +411,7 @@ class LinearPowerCurveInterpolator:
             return 0.0
         else:
             return self.interpolator(x)
-
+    
 class LinearTurbulenceInterpolator:
 
     def __init__(self, x, y):

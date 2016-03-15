@@ -129,17 +129,20 @@ class PowerCurve:
 
         if x_data is None:
             x_data = pd.Series(y_data.index, index = y_data.index)
-            
+        
         x, y = [], []
 
         for i in y_data.index:
-            if i in x_data.index:
+            
+            if i in x_data.index and not np.isnan(x_data[i]):
                 x.append(x_data[i])
             else:
                 x.append(i)
+                
             y.append(y_data[i])
-            #print x[len(x)-1], y[len(x)-1]
 
+            print i, x[-1], y[-1]
+        
         if self.interpolationMode == 'Linear':
             return interpolators.LinearPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         elif self.interpolationMode == 'Cubic':
