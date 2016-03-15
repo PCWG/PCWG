@@ -17,7 +17,7 @@ filterSeparator = "#"
 datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
-version = "0.5.X"
+version = "0.5.12"
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
 

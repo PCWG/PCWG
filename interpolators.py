@@ -5,98 +5,348 @@ from math import pow, sqrt
 
 class MarmanderPowerCurveInterpolator:
 
+    PostCutOutStep = 0.01
+    ConvergenceConstant = 1.0
+    MaximumNumberOfIterations = 20
+    Tolerance = 0.01
+    
     ##
     ## Method contributed by Daniel Marmander of Natural Power
     ##
 
-    def __init__(self, x, y, cutOutWindSpeed):
+    def __init__(self, x, y, cutOutWindSpeed, xLimits = None, debug = False):
 
+        self.debug = debug
+        self.debugText = ""
+        
         # Set refinement factor
-        self.factor=10
         self.cutOutWindSpeed = cutOutWindSpeed
 
-        x,y=self.fixYMinMaxBins(x,y)
-        xnew = np.linspace(x[0], x[-1], num=len(x)*self.factor, endpoint=True)
-        f = self.fitpower(x,y,y,xnew)
-
-        # Deal with the low speeds. This is in need for refinement.
-        intpwr = []
+        if xLimits == None:
+            xLimits = self.calculateBinLimits(x)
+        else: 
+            self.validateLimits(x, xLimits)
+            
+        x, y, adjust, self.cutInWindSpeed, self.ratedWindSpeed = self.preprocessBins(x,y,cutOutWindSpeed)        
         
-        for index,data in enumerate(xnew):
-            bin=int(index/self.factor)+2
-            if bin<10 and y[bin]==0:
-                intpwr.append(0)
-            else:
-                intpwr.append(f(data))
-
-        self.finalInterpolator = interpolate.interp1d(xnew, intpwr, kind='linear',fill_value=0.0,bounds_error=False)
-        
+        self.interpolator = self.fitpower(x,xLimits,y,adjust)
+                        
     def __call__(self, x):
-        if x > self.cutOutWindSpeed:
-            return 0.0
+        
+        return self.interpolator(x)
+
+    def validateLimits(self, x, xLimits):
+
+        for speed in x:
+
+            if not speed in xLimits:
+                raise Exception("Limits not found for: {0}".format(speed))
+
+            limit = xLimits[speed]
+            start = limit[0]
+            end = limit[1]
+
+            if speed < start or speed > end:
+                raise Exception("supplied bin center {0} is not within supplied bin limits: {1} to {2}".format(speed, start, end))
+            
+    def preprocessBins(self,x,y,cutOutWindSpeed):        
+        
+        cutInWindSpeed = None
+        ratedWindSpeed = None
+        
+        #assumptions:
+        #- if bin average value is zero (min value), all values in this bin must have been zero.
+        #- if bin average value is rated (max value), all values in this bin must have been rated.
+
+        inputX, sortedY = zip(*sorted(zip(x,y)))
+        
+        numberOfBins = len(inputX)
+        lastBin = (numberOfBins - 1)
+
+        roundedY = []
+        inputY = []
+        
+        rated = []
+        operating = []
+
+        lastBinBeforeCutIn = None
+        firstBinAfterCutIn = None
+
+        lastBinBeforeRated = None
+        firstBinAfterRated = None        
+        
+        lastBinBeforeCutOut = None
+
+        #round power curve      
+        for i in range(numberOfBins):
+            roundedY.append(round(sortedY[i], 0))
+
+        roundedRatedPower = max(roundedY)
+        minRoundedPower = min(roundedY)
+        
+        if minRoundedPower < 0:
+            raise Exception("Unexpected negative values in power curve: {0}".format(minRoundedPower))
+        
+        #set bins which round to zero to exactly zero
+        for i in range(numberOfBins):
+            if roundedY[i] == 0:
+                inputY.append(0.0)
+            else:
+                inputY.append(sortedY[i])
+            
+        #determine which bins are operating and rated
+        for i in range(numberOfBins):
+            
+            is_operating = (roundedY[i] > 0)
+            operating.append(is_operating)
+
+            is_rated = (roundedY[i] == roundedRatedPower)
+            rated.append(is_rated)
+
+        #output power curve for debugging
+        #for i in range(numberOfBins):
+        #    print inputX[i], inputY[i], operating[i], rated[i]
+
+        #establish First Operating Bin, Last Operating Bin and First Bin Before Rated
+        for i in range(numberOfBins):
+
+            if operating[i] and firstBinAfterCutIn == None:
+                firstBinAfterCutIn = i
+
+            if operating[i]:
+                lastBinBeforeCutOut = i
+
+            if rated[i] and firstBinAfterRated == None:
+                firstBinAfterRated= i
+
+        #check for unexpected gaps
+        for i in range(numberOfBins):
+
+            if i > firstBinAfterCutIn and i < lastBinBeforeCutOut:
+                if not operating[i]:
+                    raise Exception("Unexpected power curve gap at bin x = {0}".format(x[i]))
+
+        #establish Last Bin Before Cut In
+        if firstBinAfterCutIn != None and firstBinAfterCutIn > 0:
+            lastBinBeforeCutIn = firstBinAfterCutIn - 1
         else:
-            return self.finalInterpolator(x)
+            lastBinBeforeCutIn = None
 
-    # Calculate RMSE between two lists
-    def rmse(self,x,y):
-        esum=0
-        for index,data in enumerate(x):
-            esum=esum+pow(data-y[index],2)
-        return sqrt(esum/len(x))
-
-    # Add some bin limits where power is constant.
-    def fixYMinMaxBins(self,x,y):
-        minY=min(y)
-        maxY=max(y)
+        #establish Last Bin Before Rated
+        if firstBinAfterRated != None and firstBinAfterRated > 0:
+            lastBinBeforeRated = firstBinAfterRated - 1
+        else:
+            lastBinBeforeRated = None
+            
         xnew=[]
         ynew=[]
-        for index,data in enumerate(y):
-            if data==maxY:
-              xnew.append(x[index]+0.5)  
-              ynew.append(maxY)  
-            xnew.append(x[index])
-            ynew.append(y[index])
-            if data==minY:
-              xnew.append(x[index]+0.5)  
-              ynew.append(minY)  
-        return xnew,ynew
-
-    # Recursively fit power
-    def fitpower(self,speed,power,binpower,xnew,iteration = 0):    
-
-        if iteration > 100:
-            raise Exception("Maximum number of fitpower iterations exceeded")
+        rated_new = []
+        operating_new = []
         
-        f = interpolate.interp1d(speed, power, kind=3)
-        pwr2=[]
-        
-        for i,spd in enumerate(speed):
-            if i==0:
-                start=spd
-            else:
-                start=spd-0.5*(spd-speed[i-1])
-            if i==len(speed)-1:
-                end=spd
-            else:
-                end=spd+0.5*(speed[i+1]-spd)
-            if binpower[i]==0:
-                A=0
-            else:
-                # print start,end
-                A,e=integrate.quad(lambda x: f(x), start, end)
-            pwr2.append(int(A/(end-start)))
+        for i in range(numberOfBins):
 
-        if self.rmse(pwr2,binpower) > 0.01:
-            npower=[]
-            for index,data in enumerate(power):
-                npower.append(int(data+(binpower[index]-pwr2[index])))
-            f = self.fitpower(speed,npower,binpower,xnew,iteration+1)
+            xnew.append(inputX[i])
+            ynew.append(inputY[i])
+            rated_new.append(rated[i])
+            operating_new.append(operating[i])
             
-        return f
+            #extra point before cut-in
+            if lastBinBeforeCutIn != None and i == lastBinBeforeCutIn:
+                cutInWindSpeed = 0.5 * (inputX[i] + inputX[i+1])
+                xnew.append(cutInWindSpeed)
+                ynew.append(0.0)
+                rated_new.append(False)
+                operating_new.append(False)
+            
+            #extra point before rated
+            if lastBinBeforeRated != None and i == lastBinBeforeRated:
+                ratedWindSpeed = 0.5 * (inputX[i] + inputX[i+1])
+                xnew.append(ratedWindSpeed)
+                ynew.append(inputY[i+1])
+                rated_new.append(True)
+                operating_new.append(True)
+            
+            #extra point before cut-out
+            if lastBinBeforeCutOut != None and i == lastBinBeforeCutOut:
+                
+                if inputY[lastBinBeforeCutOut] < cutOutWindSpeed:
+                    xnew.append(cutOutWindSpeed)
+                    ynew.append(inputY[i])
+                    rated_new.append(True)
+                    operating_new.append(True)
 
+                xnew.append(cutOutWindSpeed + MarmanderPowerCurveInterpolator.PostCutOutStep)
+                ynew.append(0.0)
+                rated_new.append(False)
+                operating_new.append(False)
+                
+        if cutInWindSpeed == None:
+            raise Exception("Culd not determine cut-in wind speed")
+
+        if ratedWindSpeed == None:
+            raise Exception("Culd not determine rated wind speed")
+        
+        #determine whcih bins can be adjusted
+        numberOfNewBins = len(ynew)
+        adjust = []
+        
+        for i in range(numberOfNewBins):
+
+            if rated_new[i] == False and operating_new[i] == True:
+                adjust.append(True)
+            else:
+                adjust.append(False)
+            
+        return xnew,ynew,adjust,cutInWindSpeed,ratedWindSpeed
+    
+    def calculateBinLimits(self, binCenters):
+
+        limits = {}
+        
+        for i,spd in enumerate(binCenters):
+
+            if i==0:
+                start = spd
+            else:
+                start = 0.5 * (spd + binCenters[i-1])
+
+            if i==len(binCenters)-1:
+                end = spd
+            else:
+                end = 0.5 * (spd + binCenters[i+1])        
+
+            limits[spd] = (start, end)
+
+        return limits
+    
+    def fitpower(self,binCenters,binLimits,binAverages,adjust,adjustedBinPowers = None,iteration = 0):    
+
+        if adjustedBinPowers == None:
+            adjustedBinPowers = binAverages
+            
+        f = MarmanderPowerCurveInterpolatorCubicFunction(binCenters, adjustedBinPowers, self.cutInWindSpeed, self.ratedWindSpeed, self.cutOutWindSpeed)
+
+        intergatedPowers = []
+        errors = []
+        nextPowers = []
+        rmse = 0.0
+        rmse_count = 0
+        
+        for i,spd in enumerate(binCenters):
+
+            if adjust[i]:
+
+                center = binCenters[i]
+                
+                start = binLimits[center][0]
+                end = binLimits[center][1]
+                
+                area,e = integrate.quad(lambda x: f(x), start, end)
+                intergatedPower = area / (end - start)
+
+                error = intergatedPower - binAverages[i]
+
+                nextPower = adjustedBinPowers[i] - MarmanderPowerCurveInterpolator.ConvergenceConstant * error
+                
+                nextPowers.append(nextPower)
+
+                rmse += pow(error, 2.0)
+                rmse_count += 1
+
+                intergatedPowers.append(intergatedPower)
+                errors.append(error)
+                
+            else:
+
+                nextPowers.append(adjustedBinPowers[i])
+                intergatedPowers.append(None)
+                errors.append(None)
+                
+        rmse = sqrt(rmse/float(rmse_count))
+        
+        if rmse > MarmanderPowerCurveInterpolator.Tolerance:
+
+            if iteration > MarmanderPowerCurveInterpolator.MaximumNumberOfIterations:
+
+                self.debugText = "Maximum number of iterations exceeded\n"
+                self.debugText += self.prepareDebugText(binCenters, binLimits,binAverages, adjustedBinPowers, adjust, intergatedPowers, errors, f)
+
+                print debugText
+
+                raise Exception("Could not converge fitted power curve (RMSE = {0}).".format(rmse))
+
+            #iterate
+            return self.fitpower(binCenters,binLimits,binAverages,adjust,nextPowers,iteration+1)
+
+        else:
+
+            if self.debug:
+                self.debugText = self.prepareDebugText(binCenters, binLimits, binAverages, adjustedBinPowers, adjust, intergatedPowers, errors, f)
+                
+            return f
+
+    def prepareDebugText(self, binCenters, binLimits, binAverages, adjustedBinPowers, adjust, intergatedPowers, errors, f):
+
+        text = "Centers\tStart\tEnd\tAverages\tAdjusted\tIntegrated\tErrors\n"
+
+        for i in range(len(binCenters)):
+
+            center = binCenters[i]
+
+            text += "{0:.2f}\t".format(center)
+            
+            if adjust[i]:
+                start = binLimits[center][0]
+                end = binLimits[center][1]
+                text += "{0:.2f}\t{1:.2f}\t".format(start, end)
+            else:
+                text += "N/A\tN/A\t"
+                
+            text += "{0:.2f}\t{1:.2f}\t".format(binAverages[i], adjustedBinPowers[i])
+            
+            if adjust[i]:
+                text += "{0:.2f}\t{1:.2f}".format(intergatedPowers[i], errors[i])
+            else:
+                text += "N/A\tN/A"
+            
+            text += "\n"
+
+        xnew = np.linspace(binCenters[0], binCenters[-1], num=len(binCenters)*100, endpoint=True)
+
+        text += "\n"
+        text += "Speed\tPower\n"
+
+        for i in range(len(xnew)):
+            text += "{0:.2f}\t{1:.2f}\n".format(xnew[i], f(xnew[i]))
+            
+        return text
+
+class MarmanderPowerCurveInterpolatorCubicFunction:
+
+    def __init__(self, x, y, cutInWindSpeed, ratedWindSpeed, cutOutWindSpeed):
+
+        self.cutInWindSpeed = cutInWindSpeed
+        self.ratedWindSpeed = ratedWindSpeed
+        self.cutOutWindSpeed = cutOutWindSpeed
+        
+        self.cubicInterpolator = interpolate.interp1d(x, y, kind='cubic',fill_value=0.0,bounds_error=False)
+        self.linearInterpolator = interpolate.interp1d(x, y, kind='linear',fill_value=0.0,bounds_error=False)
+        
+    def __call__(self, x):
+
+        if x < self.cutInWindSpeed or x > self.cutOutWindSpeed:
+            return 0.0
+        else:
+            if x < self.ratedWindSpeed:
+                return float(self.cubicInterpolator(x))
+            else:
+                return float(self.linearInterpolator(x))
+    
 class CubicPowerCurveInterpolator:
 
     def __init__(self, x, y, cutOutWindSpeed):
+
+        #todo consolidate preprocessing logic with MarmanderPowerCurveInterpolator (maybe extract base class)
 
         self.cubicInterpolator = interpolate.interp1d(x, y, kind='cubic',fill_value=0.0,bounds_error=False)
         self.linearInterpolator = interpolate.interp1d(x, y, kind='linear',fill_value=0.0,bounds_error=False)
@@ -112,8 +362,6 @@ class CubicPowerCurveInterpolator:
             if y[i] > 0 and x[i] > highestNonZero:
                 self.lastCubicWindSpeed = x[i - 3]
                 highestNonZero = x[i]
-
-        print highestNonZero
         
     def __call__(self, x):
         if x > self.cutOutWindSpeed:

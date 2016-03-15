@@ -41,7 +41,9 @@ class PowerCurve:
         else:
             ws_data = powerCurveLevels[self.inputHubWindSpeed]
 
+        print "calculating power function"
         self.powerFunction = self.createPowerFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
+        print "power function calculated"
         
         self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower]) if has_pc else None
         if 'Data Count' in self.powerCurveLevels.columns:
