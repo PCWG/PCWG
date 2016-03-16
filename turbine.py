@@ -41,7 +41,9 @@ class PowerCurve:
         else:
             ws_data = powerCurveLevels[self.inputHubWindSpeed]
 
+        print "calculating power function"
         self.powerFunction = self.createPowerFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
+        print "power function calculated"
         
         self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower]) if has_pc else None
         if 'Data Count' in self.powerCurveLevels.columns:
@@ -127,21 +129,26 @@ class PowerCurve:
 
         if x_data is None:
             x_data = pd.Series(y_data.index, index = y_data.index)
-            
+        
         x, y = [], []
 
         for i in y_data.index:
-            if i in x_data.index:
+            
+            if i in x_data.index and not np.isnan(x_data[i]):
                 x.append(x_data[i])
             else:
                 x.append(i)
+                
             y.append(y_data[i])
-            #print x[len(x)-1], y[len(x)-1]
 
+            print i, x[-1], y[-1]
+        
         if self.interpolationMode == 'Linear':
             return interpolators.LinearPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         elif self.interpolationMode == 'Cubic':
             return interpolators.CubicPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
+        elif self.interpolationMode == 'Marmander':
+            return interpolators.MarmanderPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         else:
             raise Exception('Unknown interpolation mode: %s' % self.interpolationMode)
 

@@ -95,12 +95,4 @@ goto:eof
 FOR /F "eol=; eol=[ tokens=1,2* delims==" %%i in ('findstr /b /l /i %~2= %1') DO set %~3=%%~j
 goto:eof
 
-:getversion
- rem This function reads tool version number and stores it in a variable
- rem %1 = name of source file to search in.
- rem %2 = search term to look for
- rem %3 = variable to place search result
-FOR /F "eol=; eol=[ tokens=1,2* delims==" %%i in ('findstr /b /l /i %~2= %1') DO set %~3=%%~j
-goto:eof
-
 pause
