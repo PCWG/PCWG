@@ -224,7 +224,7 @@ class ShearExponentCalculator:
         windspeeds = np.array([np.log(row[col]) for col in self.shearMeasurements.values()])
         heights = np.array([np.log(height) for height in self.shearMeasurements.keys()])
         deg = 1 # linear
-        if len(windspeeds[~np.isnan(windspeeds)]) < 1:
+        if len(windspeeds[~np.isnan(windspeeds)]) < 2:
             return np.nan
         polyfitResult = np.polyfit(windspeeds[~np.isnan(windspeeds)], heights[~np.isnan(windspeeds)], deg, rcond=None, full=False)
         shearThreePT = 1/ polyfitResult[0]
