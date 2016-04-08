@@ -1234,6 +1234,7 @@ class Padder:
 
                 if windSpeed > cutOutWindSpeed:
                     powerLevels.loc[windSpeed, self.powerCol] = 0.0
+                    powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
                 else:
 
                     if windSpeed < cutInWindSpeed:
