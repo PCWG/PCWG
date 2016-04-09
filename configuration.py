@@ -213,6 +213,54 @@ class RelativePath:
                 replacedFilePath = filePath.replace("/", os.path.sep)
                 return replacedFilePath
 
+class PortfolioConfiguration(XmlBase):
+
+    def __init__(self, path = None):
+
+        #todo include meta data
+        
+        self.path = path
+        self.items = []
+        
+        if path != None:
+            
+            doc = self.readDoc(path)
+
+            portfolioNode = self.getNode(doc, 'Portfolio')
+            self.description = self.getNodeValueIfExists(portfolioNode, 'Description', None)
+
+            itemsNode = self.getNode(portfolioNode, 'PortfolioItems')
+                          
+            for itemNode in self.getNodes(itemsNode, 'PortfolioItem'):
+                self.items.append(self.readItem(itemNode))
+                
+        else:
+
+            self.description = ""
+            
+    def readItem(self, node):
+
+        datasets = []
+
+        datasetsNode = self.getNode(node, 'Datasets')
+        
+        for datasetNode in self.getNodes(datasetsNode, 'Dataset'):
+            datasets.append(self.getValue(datasetNode))
+
+        diameter = self.getNodeFloat(node, "Diameter")
+        hubHeight = self.getNodeFloat(node, "HubHeight")
+        cutOutWindSpeed = self.getNodeFloat(node, "CutOutWindSpeed")
+        
+        return PortfolioItem(diameter, hubHeight, cutOutWindSpeed, datasets)
+    
+class PortfolioItem:
+
+    def __init__(self, diameter, hubHeight, cutOutWindSpeed, datasets):
+        self.diameter = diameter
+        self.hubHeight = hubHeight
+        self.cutOutWindSpeed = cutOutWindSpeed
+        self.datasets = datasets
+        
 class Preferences(XmlBase):
 
     def __init__(self):
