@@ -817,12 +817,12 @@ class Analysis:
             energyDiffMWh = np.abs((self.dataFrame.loc[rows, powerColumn] - self.dataFrame.loc[rows, self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame.loc[rows, powerColumn] * (float(self.timeStepInSeconds) / 3600.)
             powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
-            print "%s scatter metric is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
+            print "%s NMAE is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
             if print_to_console:
-                self.status.addMessage("\n%s scatter metric is %.3f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
+                self.status.addMessage("\n%s Normalised Mean Absolute Error is %.3f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
             return powerCurveScatterMetric
         except:
-            print "Could not calculate power curve scatter metric."
+            print "Could not calculate power curve NMAE."
             return np.nan
             
     def calculateScatterMetricByWindSpeed(self, measuredPowerCurve, powerColumn):
@@ -948,7 +948,7 @@ class Analysis:
         unc_MWh = (np.abs(pc['s_i']) * (pc[self.dataCount] / 6.)).sum()
         test_MWh = (np.abs(pc[pow_col]) * (pc[self.dataCount] / 6.)).sum()
         self.categoryAUncertainty = unc_MWh / test_MWh
-        self.status.addMessage("Power curve category A uncertainty: %.3f%%" % (self.categoryAUncertainty * 100.0))
+        self.status.addMessage("Power curve category A uncertainty (assuming measured wind speed distribution for test): %.3f%%" % (self.categoryAUncertainty * 100.0))
 
     def report(self, path,version="unknown", report_power_curve = True):
 

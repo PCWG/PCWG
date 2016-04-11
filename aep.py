@@ -18,7 +18,8 @@ def run(analysis,fileName, measuredPowerCurve):
         analysis.status.addMessage("    AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
         analysis.status.addMessage("    AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
         analysis.status.addMessage("    Number of Hours in test: {hrs} \n".format(hrs =analysis.hours) )
-        analysis.status.addMessage("    [In test] Total Measured AEP Uncertainty: {unc:.02f}% \n".format(unc =aepCalc.totalUncertainty*100) )
+        #analysis.status.addMessage("    Category A Uncertainty in AEP: {unc} %\n".format(unc ="%.2f" % (aepCalcLCB.cat_a_unc * 100.)) )
+        #analysis.status.addMessage("    [In test] Total Measured AEP Uncertainty: {unc:.02f}% \n".format(unc =aepCalc.totalUncertainty*100) )
 
     return aepCalc,aepCalcLCB
 
@@ -49,6 +50,7 @@ class AEPCalculator:
         self.measuredYield = self.calculate_ideal_yield('Measured')
         self.AEP = self.measuredYield/self.refYield
         typeAVariance = (self.uncertainty_distribution['TypeA'].dropna()**2).sum()
+        self.cat_a_unc = self.uncertainty_distribution['TypeA'].dropna().sum() / self.measuredYield
         typeBVariance = (self.uncertainty_distribution['TypeB'].dropna()**2).sum()
         self.uncertainty_distribution['Combined'] = (self.uncertainty_distribution['TypeA']**2 + self.uncertainty_distribution['TypeB']**2)**0.5
 
@@ -81,12 +83,13 @@ class AEPCalculator:
                 self.energy_distribution.loc[bin, energyColumns] = [float(upper),lower,freq,power,freq*power]
                 energySum += freq*power
                 if 'Measured' == curveType and bin in curve.powerCurveLevels.index:
-                    self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Standard Deviation"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.cumulativeFunction(bin)
-                    self.uncertainty_distribution.loc[bin, 'TypeB'] =  50.0 # todo: calculate this properly
+                    self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Standard Deviation"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.df_rebinned[bin]
+                    self.uncertainty_distribution.loc[bin, 'TypeB'] =  0.0 # todo: calculate this properly
             freqSum += freq
                 
         ratioFreqSum = freqSum/(365.25*24.)
         self.energy_distribution.loc[:, ["{0}_{1}".format(curveType, col) for col in ['Freq', 'Energy']]] /= ratioFreqSum
+        self.uncertainty_distribution.loc[:, 'TypeA'] /= ratioFreqSum
         energySum /= ratioFreqSum
         return energySum        
 

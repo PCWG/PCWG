@@ -657,7 +657,7 @@ class report:
         sh.write(row,5, "Last Complete Bin (LCB)", self.bold_style)
         sh.write(row,6, "Direction Sectors Analysed (degrees)", self.bold_style)
         sh.write(row,7, "Measured Hours", self.bold_style)
-        sh.write(row,8, "Annual Energy Yield Uncertainty as a percentage of the Warranted Annual Yield (%)", self.bold_style)
+        #sh.write(row,8, "Annual Energy Yield Uncertainty as a percentage of the Warranted Annual Yield (%)", self.bold_style)
         row += 1
         sh.write(row,2, analysis.config.Name)
         sh.write(row,3, analysis.aepCalcLCB.AEP*100, self.two_dp_style)
@@ -666,52 +666,78 @@ class report:
         sh.write(row,6, "{mi} - {ma}".format(mi=analysis.dataFrame[analysis.windDirection].min(),ma=analysis.dataFrame[analysis.windDirection].max()))
         timeCovered = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount].sum() * hrsMultiplier
         sh.write(row,7, timeCovered, self.two_dp_style)
-        sh.write(row,8, "NOT YET CALCULATED")
+        #sh.write(row,8, "NOT YET CALCULATED")
 
         row += 3
         if hasattr(analysis.specifiedPowerCurve,"referenceDensity"):
             sh.write_merge(row,row,2,6, "Measured Power Curve\n Reference Air Density = {ref} kg/m^3".format(ref=analysis.specifiedPowerCurve.referenceDensity), self.bold_style)
-        sh.write(row,7, "Category A Uncertainty", self.bold_style)
-        sh.write(row,8, "Category B Uncertainty", self.bold_style)
-        sh.write(row,9, "Category C Uncertainty", self.bold_style)
+        #sh.write(row,7, "Category A Uncertainty", self.bold_style)
+        #sh.write(row,8, "Category B Uncertainty", self.bold_style)
+        #sh.write(row,9, "Category C Uncertainty", self.bold_style)
         row += 1
+        
         sh.write(row,2, "Bin No", self.bold_style)
-        sh.write(row,3, "Hub Height Wind Speed", self.bold_style)
-        sh.write(row,4, "Power Output", self.bold_style)
-        sh.write(row,5, "Cp", self.bold_style)
-        sh.write(row,6, "Qty 10-Min Data", self.bold_style)
-        sh.write(row,7, "Standard Uncertainty", self.bold_style)
-        sh.write(row,8, "Standard Uncertainty", self.bold_style)
-        sh.write(row,9, "Standard Uncertainty", self.bold_style)
+        
+        sh.write(row,3, "Bin Centre Wind Speed", self.bold_style)
+        
+        sh.write(row,4, "Hub Height Wind Speed", self.bold_style)
+        sh.write(row,5, "Power Output", self.bold_style)
+        sh.write(row,6, "Cp", self.bold_style)
+        sh.write(row,7, "Qty 10-Min Data", self.bold_style)
+        sh.write(row,8, "Standard Deviation", self.bold_style)
+        
+        #sh.write(row,7, "Standard Uncertainty", self.bold_style)
+        #sh.write(row,8, "Standard Uncertainty", self.bold_style)
+        #sh.write(row,9, "Standard Uncertainty", self.bold_style)
+        
         row += 1
         sh.write(row,2, "I", self.bold_style)
-        sh.write(row,3, "Vi", self.bold_style)
-        sh.write(row,4, "Pi", self.bold_style)
+        
+        sh.write(row,3, "Vi_centre", self.bold_style)
+        
+        sh.write(row,4, "Vi", self.bold_style)
+        sh.write(row,5, "Pi", self.bold_style)
         sh.write(row,6, "Ni", self.bold_style)
-        sh.write(row,7, "si", self.bold_style)
-        sh.write(row,8, "ui", self.bold_style)
-        sh.write(row,9, "uc,I", self.bold_style)
+        
+        sh.write(row,8, "StDev i", self.bold_style)
+        
+        #sh.write(row,7, "si", self.bold_style)
+        #sh.write(row,8, "ui", self.bold_style)
+        #sh.write(row,9, "uc,I", self.bold_style)
         row += 1
         sh.write(row,3, "[m/s]", self.bold_style)
         sh.write(row,4, "[kW]", self.bold_style)
-        sh.write(row,7, "[kW]", self.bold_style)
+        
         sh.write(row,8, "[kW]", self.bold_style)
-        sh.write(row,9, "[kW]", self.bold_style)
+        
+        #sh.write(row,7, "[kW]", self.bold_style)
+        #sh.write(row,8, "[kW]", self.bold_style)
+        #sh.write(row,9, "[kW]", self.bold_style)
+        
         for binNo,ws in enumerate(analysis.allMeasuredPowerCurve.powerCurveLevels .index):
             if ws <= analysis.aepCalcLCB.lcb and analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws] > 0:
                 row+=1
                 sh.write(row,2, binNo+1, self.no_dp_style)
-                sh.write(row,3, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.inputHubWindSpeed][ws], self.two_dp_style)
-                sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.actualPower][ws], self.two_dp_style)
+                
+                sh.write(row,3, ws, self.one_dp_style)
+                
+                sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.inputHubWindSpeed][ws], self.two_dp_style)
+                sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.actualPower][ws], self.two_dp_style)
                 if analysis.powerCoeff in analysis.allMeasuredPowerCurve.powerCurveLevels.columns:
-                    sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
+                    sh.write(row,6, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
                 else:
-                    sh.write(row,5, "-", self.no_dp_style)
+                    sh.write(row,6, "-", self.no_dp_style)
                 datCount = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws]
-                sh.write(row,6, datCount, self.no_dp_style)
-                sh.write(row,7, "-", self.no_dp_style)
-                sh.write(row,8, "~", self.no_dp_style)
-                sh.write(row,9, "-", self.no_dp_style)
+                sh.write(row,7, datCount, self.no_dp_style)
+                
+                if analysis.powerStandDev in analysis.allMeasuredPowerCurve.powerCurveLevels.columns:
+                    sh.write(row,8, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerStandDev][ws])
+                else:
+                    sh.write(row,8, "-", self.no_dp_style)
+                
+                #sh.write(row,7, "-", self.no_dp_style)
+                #sh.write(row,8, "~", self.no_dp_style)
+                #sh.write(row,9, "-", self.no_dp_style)
 
         row+=2
         sh.write_merge(row,row,2,5, "More than 180 hours of data:", self.bold_style)
