@@ -1180,6 +1180,8 @@ class PadderFactory:
             return LastObservedPadder(powerCol, wsCol, turbCol, countCol)
         elif strPadder  == 'max':
             return MaxPadder(powerCol, wsCol, turbCol, countCol)
+        elif strPadder == 'rated':
+            return RatedPowerPadder(powerCol, wsCol, turbCol, countCol)
         else:
             raise Exception("Power curve padding option not detected/recognised: %s" % strPadder)
 
@@ -1229,7 +1231,7 @@ class Padder:
             
             if not self.levelExists(powerLevels, windSpeed):
 
-                powerPadValue = self.powerPadValue(powerLevels, windSpeed)
+                powerPadValue = self.powerPadValue(powerLevels, windSpeed, ratedPower)
                 turbulencePadValue = self.turbulencePadValue(powerLevels, windSpeed)
 
                 if windSpeed > cutOutWindSpeed:
@@ -1260,10 +1262,15 @@ class NonePadder(Padder):
     
 class MaxPadder(Padder):
 
-    def powerPadValue(self, powerLevels, windSpeed):
+    def powerPadValue(self, powerLevels, windSpeed, ratedPower):
         return powerLevels[self.powerCol].max()
   
 class LastObservedPadder(Padder):
 
-    def powerPadValue(self, powerLevels, windSpeed):
+    def powerPadValue(self, powerLevels, windSpeed, ratedPower):
         return powerLevels[self.max_key, self.powerCol]
+
+class RatedPowerPadder(Padder):
+    
+    def powerPadValue(self, powerLevels, windSpeed, ratedPower):
+        return ratedPower
