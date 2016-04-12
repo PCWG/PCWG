@@ -2735,7 +2735,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
                 self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode, showHideCommand = self.generalShowHide)
 
-                self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Observed", "Max"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
+                self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Observed", "Max", "Rated"], self.config.powerCurvePaddingMode, showHideCommand = self.generalShowHide)
                                               
                 powerCurveShowHide = ShowHideCommand(master)  
                 self.addTitleRow(master, "Power Curve Bins:", powerCurveShowHide)
