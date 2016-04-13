@@ -72,7 +72,6 @@ class AEPCalculator:
     def calculate_ideal_yield(self, curveType):
         curve = self.getCurve(curveType)
         energySum = 0.
-        freqSum = 0.
         energyColumns = ["{0}_{1}".format(curveType, col) for col in ['Upper','Lower','Freq','Power','Energy']]
         for bin in self.distribution.df_rebinned.index:
             if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
@@ -85,12 +84,6 @@ class AEPCalculator:
                 if 'Measured' == curveType and bin in curve.powerCurveLevels.index:
                     self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Standard Deviation"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.df_rebinned[bin]
                     self.uncertainty_distribution.loc[bin, 'TypeB'] =  0.0 # todo: calculate this properly
-            freqSum += freq
-                
-        ratioFreqSum = freqSum/(365.25*24.)
-        self.energy_distribution.loc[:, ["{0}_{1}".format(curveType, col) for col in ['Freq', 'Energy']]] /= ratioFreqSum
-        self.uncertainty_distribution.loc[:, 'TypeA'] /= ratioFreqSum
-        energySum /= ratioFreqSum
         return energySum        
 
 class AEPCalculatorLCB(AEPCalculator):
@@ -124,6 +117,7 @@ class WindSpeedDistribution(XmlBase):
 
         self.binSize = self.df.index[2]-self.df.index[1]
         self.df_rebinned = self.rebin()
+        self.df_rebinned /= (self.df_rebinned.sum() / (365.25 * 24.))
         self.cumulative  = self.df_rebinned.cumsum()
         self.cumulativeFunction = interp1d(self.cumulative.index, self.cumulative,bounds_error=False, fill_value=0.0)#,kind = 'cubic')
 
