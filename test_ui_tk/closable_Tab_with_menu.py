@@ -34,14 +34,10 @@ class FileOpener:
         fileName = self.SelectFile(parent=self.root, defaultextension=".xml")
         tab = self.tabs.add(os.path.basename(fileName))
 
-        analysis_nb = ttk.Notebook(tab, width=200, height=200)
-        analysis_nb.pressed_index = None
+        sub_tabs = ValidationTabs(tab)
 
-        main_frame = tk.Frame(analysis_nb)
-        analysis_nb.add(main_frame, text="Main Settings", padding=3)
-
-        correction_frame = tk.Frame(analysis_nb)
-        analysis_nb.add(correction_frame, text="Correction Settings", padding=3)
+        main_frame = sub_tabs.add("Main Settings")
+        correction_frame = sub_tabs.add("Correction Settings")
 
         analysis_nb.pack(expand=1, fill='both')
 
@@ -94,7 +90,7 @@ class ClosableTabs:
 
         self.loadImages()
 
-        self.style = self.createTabStyle()
+        self.style = self.createClosableTabStyle()
 
         parent.bind_class("TNotebook", "<ButtonPress-1>", self.btn_press, True)
         parent.bind_class("TNotebook", "<ButtonRelease-1>", self.btn_release)
@@ -154,7 +150,7 @@ class ClosableTabs:
         widget.state(["!pressed"])
         widget.pressed_index = None
 
-    def createTabStyle(self):
+    def createClosableTabStyle(self):
 
         style = ttk.Style()
 
@@ -177,6 +173,33 @@ class ClosableTabs:
         )
 
         return style
+
+class ValidationTabs:
+
+    def __init__(self, parent):
+
+        self.loadImages()
+
+        #add notebook (holds tabs)
+        self.nb = ttk.Notebook(parent)
+        self.nb.pressed_index = None
+
+    def add(self, name):
+
+        frame = tk.Frame(self.nb)
+        self.nb.add(frame, text=name, padding=3, image = self.img_valid, compound=tk.RIGHT)
+        tab = self.nb.tabs(len(self.nb.tabs))
+        tab.configure(image = self.img_invalid)
+        self.nb.pack(expand=1, fill='both')
+
+        return frame
+
+    def loadImages(self):
+
+        imgdir = os.path.join(os.path.dirname(__file__), 'img')
+
+        self.img_valid = tk.PhotoImage("img_valid", file=os.path.join(imgdir, 'valid.gif'))
+        self.img_invalid = tk.PhotoImage("img_invalid", file=os.path.join(imgdir, 'invalid.gif'))
 
 class Console:
 
