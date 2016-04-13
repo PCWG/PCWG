@@ -697,7 +697,8 @@ class report:
         
         sh.write(row,4, "Vi", self.bold_style)
         sh.write(row,5, "Pi", self.bold_style)
-        sh.write(row,6, "Ni", self.bold_style)
+        
+        sh.write(row,7, "Ni", self.bold_style)
         
         sh.write(row,8, "StDev i", self.bold_style)
         
