@@ -6,26 +6,86 @@ import os
 import Tkinter as tk
 import ttk
 import os.path
+import xml.dom.minidom
+
 from tkFileDialog import *
 import tkMessageBox
 import tkSimpleDialog
+import configuration
 
 #http://effbot.org/tkbook/menu.htm
+
+class NullConsole:
+
+    def write(self, text):
+        pass
+
+class TypeDetector(configuration.XmlBase):
+
+    def __init__(self, path):
+
+        doc = self.readDoc(path)
+        root = doc.firstChild
+
+        if root == None:
+            self.type = "data"
+        if self.nodeExists(root, "Measurements"):
+            self.type = "dataset"
+        elif self.nodeExists(root, "InnerRange"):
+            self.type = "analysis"
+        else:
+            raise Exception("Unrecogniseed xml format.")
 
 class Analysis:
 
     def __init__(self, fileName):
         self.fileName = fileName
-        self.s1 = "text1"
+        self.s1 = "Analysis"
         self.s2 = "text2"
 
-    def save(self):
-        print "save"
+    def save(self, console = None):
+        self.saveAs(self.fileName, console)
+
+    def saveAs(self, path = None, console = NullConsole()):
+
+        if path != None:
+            self.fileName = path
+
+        console.write("{0} saved".format(self.fileName))
+
+class Dataset:
+
+    def __init__(self, fileName):
+        self.fileName = fileName
+        self.s1 = "Dataset"
+        self.s2 = "text2"
+
+    def save(self, console = None):
+        self.saveAs(self.fileName, console)
+
+    def saveAs(self, path = None, console = NullConsole()):
+
+        if path != None:
+            self.fileName = path
+
+        console.write("{0} saved".format(self.fileName))
 
 class Preferences:
 
     def __init__(self):
+
         self.workSpaceFolder = ""
+
+    def getRecent(self):
+
+        recent = []
+
+        recent.append("One")
+        recent.append("Two")
+        recent.append("Three")
+        recent.append("Four")
+
+        return recent
 
 class Recent:
 
@@ -100,51 +160,33 @@ class ConfirmClose(tkSimpleDialog.Dialog):
 
 class FileOpener:
 
-    def __init__(self, root, tabs):
+    def __init__(self, root, tabs, preferences):
         self.root = root
         self.tabs = tabs
+        self.preferences = preferences
 
     def openFile(self):
 
         fileName = self.SelectFile(parent=self.root, defaultextension=".xml")
 
         if len(fileName) > 0:
-            self.tabs.addAnalysis(fileName)
+
+            detector = TypeDetector(fileName)
+
+            if detector.type == "analysis":
+                self.tabs.addAnalysis(fileName)
+            elif detector.type == "dataset":
+                self.tabs.addDataset(fileName)
+            elif detector.type == "data":
+                raise Exception("Not implemented")
+            else:
+                raise Exception("Unexpected file type {0}".format(detector.type))
 
     def SelectFile(self, parent, defaultextension=None):
-            if len(preferences.workSpaceFolder) > 0:
-                    return askopenfilename(parent=parent, initialdir=preferences.workSpaceFolder, defaultextension=defaultextension)
+            if len(self.preferences.workSpaceFolder) > 0:
+                    return askopenfilename(parent=parent, initialdir=seflf.preferences.workSpaceFolder, defaultextension=defaultextension)
             else:
                     return askopenfilename(parent=parent, defaultextension=defaultextension)
-
-def openMaximized(root):
-
-    w, h = root.winfo_screenwidth(), root.winfo_screenheight()
-    root.geometry("%dx%d+0+0" % (w, h))
-
-def getRecent():
-
-    recent = []
-
-    recent.append("One")
-    recent.append("Two")
-    recent.append("Three")
-    recent.append("Four")
-
-    return recent
-
-def addRecent(recent_menu):
-
-    for recent in getRecent():
-        recent_menu.add_command(label=recent, command = Recent(recent))
-        
-def hello():
-    print "hello!"
-
-def getTabID(notebook):
-    my_tabs = notebook.tabs()
-    tab_id = my_tabs[len(my_tabs) - 1]
-    return tab_id
 
 class ClosableTab:
 
@@ -155,23 +197,20 @@ class ClosableTab:
         self.frame = tk.Frame(notebook)
 
         notebook.add(self.frame, text=self.name, padding=3)
-        self.index = self.getTabIndex(notebook)
 
     def close(self):
 
-        d = ConfirmClose(root, self.name)
+        d = ConfirmClose(self.frame, self.name)
 
         if d.save:
             self.save()
-            self.console.write("{0} saved".format(self.name))
 
         return d.close
 
-    def getTabIndex(self, notebook):
-        my_tabs = notebook.tabs()
-        return len(my_tabs) - 1
-
     def save(self):
+        pass
+
+    def saveAs(self, path):
         pass
 
 class AnalysisTab(ClosableTab):
@@ -203,7 +242,44 @@ class AnalysisTab(ClosableTab):
         notebook.pack(expand=1, fill='both')
 
     def save(self):
-        self.analysis.save()
+        self.analysis.save(self.console)
+
+    def saveAs(self):
+        self.analysis.saveAs(path, self.console)
+
+class DatasetTab(ClosableTab):
+
+    def __init__(self, notebook, fileName, console):
+
+        ClosableTab.__init__(self, notebook, fileName, console)
+
+        self.dataset = Dataset(fileName)
+
+        sub_tabs = ValidationTabs(self.frame)
+
+        main_frame = sub_tabs.add("Main Settings")
+        correction_frame = sub_tabs.add("Correction Settings")
+
+        s1Var = tk.StringVar()
+        s2Var = tk.StringVar()
+        s1Var.set(self.dataset.s1)
+        s2Var.set(self.dataset.s2)
+        square1Label = tk.Label(main_frame.frame,textvariable=s1Var)
+        square1Label.grid(row=0, column=7)
+        square2Label = tk.Label(main_frame.frame,textvariable=s2Var)
+        square2Label.grid(row=0, column=6)
+
+        sub_tabs.pack()
+
+        main_frame.validate(False)
+
+        notebook.pack(expand=1, fill='both')
+
+    def save(self):
+        self.dataset.save(self.console)
+
+    def saveAs(self):
+        self.dataset.saveAs(path, self.console)
 
 class ClosableTabs:
 
@@ -221,15 +297,28 @@ class ClosableTabs:
         self.nb = ttk.Notebook(parent, style="ButtonNotebook")
         self.nb.pressed_index = None
 
-        self.tabs = {}
+        self.tabs = []
+
+    def getTabIDForIndex(self, index):
+
+        for tab_id in self.tabs:
+            if self.nb.index(tab_id) == index:
+                return tab_id
+
+    def getSelected(self):
+        if len(self.tabs) > 0:
+            return self.tabs[self.nb.index(self.nb.select())]
+        else:
+            return None
+
+    def addDataset(self, fileName):
+        self.addTab(DatasetTab(self.nb, fileName, self.console))
 
     def addAnalysis(self, fileName):
+        self.addTab(AnalysisTab(self.nb, fileName, self.console))
 
-        closableTab = AnalysisTab(self.nb, fileName, self.console)
-
-        self.tabs[closableTab.index] = closableTab
-
-        return closableTab
+    def addTab(self, closableTab):
+        self.tabs.append(closableTab)
 
     def loadImages(self):
 
@@ -265,6 +354,7 @@ class ClosableTabs:
         if tab.close():
             widget.forget(index)
             widget.event_generate("<<NotebookClosedTab>>")
+            del self.tabs[index]
 
     def btn_release(self, event):
         x, y, widget = event.x, event.y, event.widget
@@ -319,10 +409,8 @@ class ValidationTabs:
 
         my_frame = tk.Frame(self.nb)
         self.nb.add(my_frame, text=name, padding=3)
-
-        tab_id = getTabID(self.nb)
-
-        validationTab = ValidationTab(self.nb, tab_id, my_frame, self.img_invalid)
+        index = len(self.nb.tabs()) - 1
+        validationTab = ValidationTab(self.nb, index, my_frame, self.img_invalid)
 
         return validationTab
 
@@ -339,19 +427,19 @@ class ValidationTabs:
 
 class ValidationTab:
 
-    def __init__(self, notebook, tab_id, frame, img_invalid):
+    def __init__(self, notebook, index, frame, img_invalid):
 
         self.notebook = notebook
-        self.tab_id = tab_id
+        self.index = index
         self.frame = frame
         self.img_invalid = img_invalid
 
     def validate(self, valid):
         
         if not valid:
-            self.notebook.tab(self.tab_id, image = self.img_invalid, compound=tk.RIGHT)
+            self.notebook.tab(self.index, image = self.img_invalid, compound=tk.RIGHT)
         else:
-            self.notebook.tab(self.tab_id, image = None)
+            self.notebook.tab(self.index, image = None)
 
 class Console:
 
@@ -368,15 +456,35 @@ class Console:
 
         self.listbox.insert(tk.END, str(line))
 
-class Menu:
+class PCWG_GUI:
 
-    def __init__(self, root, fileOpener, preferences):
+    def __init__(self):
 
-        self.root = root
-        self.fileOpener = fileOpener
-        self.preferences = preferences
+        self.root = tk.Tk()
 
-        self.addMenus(root)
+        self.tab_frame = tk.Frame(self.root)
+        self.console_frame = tk.Frame(self.root, background="grey")
+
+        self.tab_frame.grid(row=0, column=0, sticky="nsew")
+        self.console_frame.grid(row=1, column=0, sticky="nsew")
+
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+        self.console = Console(self.console_frame)
+        self.tabs = ClosableTabs(self.tab_frame, self.console)
+        self.preferences = Preferences()
+        self.fileOpener = FileOpener(self.root, self.tabs, self.preferences)
+
+        self.addMenus(self.root)
+
+    def open(self):
+        self.openMaximized(self.root)
+        self.root.mainloop()
+
+    def openMaximized(self, root):
+        w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+        root.geometry("%dx%d+0+0" % (w, h))
 
     def addMenus(self, root):
 
@@ -397,10 +505,10 @@ class Menu:
         filemenu.add_command(label="Open", command=self.fileOpener.openFile)
 
         recent_menu = tk.Menu(self.menubar)
-        addRecent(recent_menu)
+        self.addRecent(recent_menu)
         filemenu.add_cascade(label="Open Recent", menu=recent_menu)
 
-        filemenu.add_command(label="Save")
+        filemenu.add_command(label="Save", command=self.save_selected)
         filemenu.add_command(label="Save As")
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=root.quit)
@@ -411,40 +519,47 @@ class Menu:
         #filemenu.add_cascade(label="Analysis", menu=filemenu)
 
         # create more pulldown menus
-        editmenu = tk.Menu(self.menubar, tearoff=0)
-        editmenu.add_command(label="Cut", command=hello)
-        editmenu.add_command(label="Copy", command=hello)
-        editmenu.add_command(label="Paste", command=hello)
-        self.menubar.add_cascade(label="Edit", menu=editmenu)
+        #editmenu = tk.Menu(self.menubar, tearoff=0)
+        #editmenu.add_command(label="Cut", command=hello)
+        #editmenu.add_command(label="Copy", command=hello)
+        #editmenu.add_command(label="Paste", command=hello)
+        #self.menubar.add_cascade(label="Edit", menu=editmenu)
 
         helpmenu = tk.Menu(self.menubar, tearoff=0)
-        helpmenu.add_command(label="About", command=hello)
+        helpmenu.add_command(label="About", command=self.about)
         self.menubar.add_cascade(label="Help", menu=helpmenu)
 
         # display the menu
         root.config(menu=self.menubar)
 
+
+    def addRecent(self, recent_menu):
+
+        for recent in self.preferences.getRecent():
+            recent_menu.add_command(label=recent, command = Recent(recent))
+
+    def about(self):
+
+        pass
+
+    def save_selected(self):
+        
+        selected = self.tabs.getSelected()
+
+        if selected != None:
+            selected.save()
+
+    def save_as_selected(self):
+        
+        fileName = tkFileDialog.asksaveasfilename(parent=self.root, defaultextension=".xml")
+
+        if len(fileName) > 0:
+    
+            selected = self.tabs.getSelected()
+
+            if selected != None:
+                selected.saveAs(fileName)
+
 #start of main code
-
-root = tk.Tk()
-
-tab_frame = tk.Frame(root)
-console_frame = tk.Frame(root, background="grey")
-
-tab_frame.grid(row=0, column=0, sticky="nsew")
-console_frame.grid(row=1, column=0, sticky="nsew")
-
-root.grid_rowconfigure(0, weight=1)
-root.grid_columnconfigure(0, weight=1)
-
-console = Console(console_frame)
-
-tabs = ClosableTabs(tab_frame, console)
-fileOpener = FileOpener(root, tabs)
-preferences = Preferences()
-
-menu = Menu(root, fileOpener, preferences)
-
-openMaximized(root)
-
-root.mainloop()
+pcwg = PCWG_GUI()
+pcwg.open()
