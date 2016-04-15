@@ -7,8 +7,20 @@ import Tkinter as tk
 import ttk
 import os.path
 from tkFileDialog import *
+import tkMessageBox
+import tkSimpleDialog
 
 #http://effbot.org/tkbook/menu.htm
+
+class Analysis:
+
+    def __init__(self, fileName):
+        self.fileName = fileName
+        self.s1 = "text1"
+        self.s2 = "text2"
+
+    def save(self):
+        print "save"
 
 class Preferences:
 
@@ -23,6 +35,69 @@ class Recent:
     def __call__(self):
         pass
 
+class ConfirmClose(tkSimpleDialog.Dialog):
+
+    def __init__(self, parent, name):
+
+        self.name = name
+
+        self.close = False
+        self.save = False
+
+        imgdir = os.path.join(os.path.dirname(__file__), 'img')
+
+        self.img_logo = tk.PhotoImage("img_logo", file=os.path.join(imgdir, 'logo.gif'))
+
+        tkSimpleDialog.Dialog.__init__(self, parent, "Confirm File Close")
+
+    def body(self, master):
+
+        tk.Label(master, image = self.img_logo).grid(column=0, row=0)
+        tk.Label(master, text="Do you want to save the changes you made to {0}?".format(self.name)).grid(column=1, row=0)
+
+    def buttonbox(self):
+        
+        try:
+            self.attributes("-toolwindow",1) #only works on windows
+        except:
+            #self.overrideredirect(1) #removes whole frame
+            self.resizable(0,0) #stops maximising and resizing but can still be minimised
+
+        box = tk.Frame(self)
+
+        w = tk.Button(box, text="Don't Save", width=10, command=self.close_dont_save)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        w = tk.Button(box, text="Cancel", width=10, command=self.cancel)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        w = tk.Button(box, text="Save", width=10, command=self.close_and_save, default=tk.ACTIVE)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.bind("<Return>", self.close_and_save)
+        self.bind("<Escape>", self.cancel)
+
+        box.pack()
+
+    def close_dont_save(self, event=None):
+        self.close = True
+        self.save = False
+        self.close_window()
+
+    def close_and_save(self, event=None):
+        self.close = True
+        self.save = True
+        self.close_window()
+
+    def cancel(self, event=None):
+        self.close = False
+        self.save = False
+        self.close_window()
+
+    def close_window(self):
+        self.parent.focus_set()
+        self.destroy()
+
 class FileOpener:
 
     def __init__(self, root, tabs):
@@ -32,14 +107,9 @@ class FileOpener:
     def openFile(self):
 
         fileName = self.SelectFile(parent=self.root, defaultextension=".xml")
-        tab = self.tabs.add(os.path.basename(fileName))
 
-        sub_tabs = ValidationTabs(tab)
-
-        main_frame = sub_tabs.add("Main Settings")
-        correction_frame = sub_tabs.add("Correction Settings")
-
-        analysis_nb.pack(expand=1, fill='both')
+        if len(fileName) > 0:
+            self.tabs.addAnalysis(fileName)
 
     def SelectFile(self, parent, defaultextension=None):
             if len(preferences.workSpaceFolder) > 0:
@@ -71,23 +141,75 @@ def addRecent(recent_menu):
 def hello():
     print "hello!"
 
-def analysis():
-    # this is the child window
-    board = Toplevel()
-    board.title("Analysis [Unsaved]")
-    s1Var = StringVar()
-    s2Var = StringVar()
-    s1Var.set("s1")
-    s2Var.set("s2")
-    square1Label = Label(board,textvariable=s1Var)
-    square1Label.grid(row=0, column=7)
-    square2Label = Label(board,textvariable=s2Var)
-    square2Label.grid(row=0, column=6)
+def getTabID(notebook):
+    my_tabs = notebook.tabs()
+    tab_id = my_tabs[len(my_tabs) - 1]
+    return tab_id
+
+class ClosableTab:
+
+    def __init__(self, notebook, fileName, console):
+
+        self.console = console
+        self.name = os.path.basename(fileName)
+        self.frame = tk.Frame(notebook)
+
+        notebook.add(self.frame, text=self.name, padding=3)
+        self.index = self.getTabIndex(notebook)
+
+    def close(self):
+
+        d = ConfirmClose(root, self.name)
+
+        if d.save:
+            self.save()
+            self.console.write("{0} saved".format(self.name))
+
+        return d.close
+
+    def getTabIndex(self, notebook):
+        my_tabs = notebook.tabs()
+        return len(my_tabs) - 1
+
+    def save(self):
+        pass
+
+class AnalysisTab(ClosableTab):
+
+    def __init__(self, notebook, fileName, console):
+
+        ClosableTab.__init__(self, notebook, fileName, console)
+
+        self.analysis = Analysis(fileName)
+
+        sub_tabs = ValidationTabs(self.frame)
+
+        main_frame = sub_tabs.add("Main Settings")
+        correction_frame = sub_tabs.add("Correction Settings")
+
+        s1Var = tk.StringVar()
+        s2Var = tk.StringVar()
+        s1Var.set(self.analysis.s1)
+        s2Var.set(self.analysis.s2)
+        square1Label = tk.Label(main_frame.frame,textvariable=s1Var)
+        square1Label.grid(row=0, column=7)
+        square2Label = tk.Label(main_frame.frame,textvariable=s2Var)
+        square2Label.grid(row=0, column=6)
+
+        sub_tabs.pack()
+
+        main_frame.validate(False)
+
+        notebook.pack(expand=1, fill='both')
+
+    def save(self):
+        self.analysis.save()
 
 class ClosableTabs:
 
-    def __init__(self, parent):
+    def __init__(self, parent, console):
 
+        self.console = console
         self.loadImages()
 
         self.style = self.createClosableTabStyle()
@@ -99,13 +221,15 @@ class ClosableTabs:
         self.nb = ttk.Notebook(parent, style="ButtonNotebook")
         self.nb.pressed_index = None
 
-    def add(self, name):
+        self.tabs = {}
 
-        frame = tk.Frame(self.nb)
-        self.nb.add(frame, text=name, padding=3)
-        self.nb.pack(expand=1, fill='both')
+    def addAnalysis(self, fileName):
 
-        return frame
+        closableTab = AnalysisTab(self.nb, fileName, self.console)
+
+        self.tabs[closableTab.index] = closableTab
+
+        return closableTab
 
     def loadImages(self):
 
@@ -134,6 +258,14 @@ class ClosableTabs:
 
             pass
 
+    def close_tab(self, widget, index):
+
+        tab = self.tabs[index]
+
+        if tab.close():
+            widget.forget(index)
+            widget.event_generate("<<NotebookClosedTab>>")
+
     def btn_release(self, event):
         x, y, widget = event.x, event.y, event.widget
 
@@ -144,8 +276,7 @@ class ClosableTabs:
         index = widget.index("@%d,%d" % (x, y))
 
         if "close" in elem and widget.pressed_index == index:
-            widget.forget(index)
-            widget.event_generate("<<NotebookClosedTab>>")
+            self.close_tab(widget, index)
 
         widget.state(["!pressed"])
         widget.pressed_index = None
@@ -186,13 +317,14 @@ class ValidationTabs:
 
     def add(self, name):
 
-        frame = tk.Frame(self.nb)
-        self.nb.add(frame, text=name, padding=3, image = self.img_valid, compound=tk.RIGHT)
-        tab = self.nb.tabs(len(self.nb.tabs))
-        tab.configure(image = self.img_invalid)
-        self.nb.pack(expand=1, fill='both')
+        my_frame = tk.Frame(self.nb)
+        self.nb.add(my_frame, text=name, padding=3)
 
-        return frame
+        tab_id = getTabID(self.nb)
+
+        validationTab = ValidationTab(self.nb, tab_id, my_frame, self.img_invalid)
+
+        return validationTab
 
     def loadImages(self):
 
@@ -200,6 +332,26 @@ class ValidationTabs:
 
         self.img_valid = tk.PhotoImage("img_valid", file=os.path.join(imgdir, 'valid.gif'))
         self.img_invalid = tk.PhotoImage("img_invalid", file=os.path.join(imgdir, 'invalid.gif'))
+
+    def pack(self):
+
+        self.nb.pack(expand=1, fill='both')
+
+class ValidationTab:
+
+    def __init__(self, notebook, tab_id, frame, img_invalid):
+
+        self.notebook = notebook
+        self.tab_id = tab_id
+        self.frame = frame
+        self.img_invalid = img_invalid
+
+    def validate(self, valid):
+        
+        if not valid:
+            self.notebook.tab(self.tab_id, image = self.img_invalid, compound=tk.RIGHT)
+        else:
+            self.notebook.tab(self.tab_id, image = None)
 
 class Console:
 
@@ -209,15 +361,10 @@ class Console:
         self.listbox = tk.Listbox(parent, yscrollcommand=scrollbar.set, selectmode=tk.EXTENDED)
         scrollbar.configure(command=self.listbox.yview)
 
-        for i in range(100):
-            self.add(i)
-
         self.listbox.pack(side=tk.LEFT,fill=tk.BOTH, expand=1, pady=5)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
 
-        #parent.pack(side=BOTTOM,fill=BOTH, expand=1)
-
-    def add(self, line):
+    def write(self, line):
 
         self.listbox.insert(tk.END, str(line))
 
@@ -292,7 +439,7 @@ root.grid_columnconfigure(0, weight=1)
 
 console = Console(console_frame)
 
-tabs = ClosableTabs(tab_frame)
+tabs = ClosableTabs(tab_frame, console)
 fileOpener = FileOpener(root, tabs)
 preferences = Preferences()
 
