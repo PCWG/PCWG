@@ -7,8 +7,8 @@ import Tkinter as tk
 import ttk
 import os.path
 from tkFileDialog import *
-import tkMessageBox
 import tkSimpleDialog
+import configuration
 
 #http://effbot.org/tkbook/menu.htm
 

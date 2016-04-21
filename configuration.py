@@ -293,7 +293,10 @@ class Preferences(XmlBase):
             else:
 
                 return False
-
+    
+    def addRecent(self, path):
+        self.recent.append(path)
+        
     def save(self):
 
         doc = self.createDocument()
@@ -302,6 +305,10 @@ class Preferences(XmlBase):
         self.addTextNode(doc, root, "AnalysisLastOpened", self.analysisLastOpened)
         self.addTextNode(doc, root, "WorkSpaceFolder", self.workSpaceFolder)
 
+        root = self.addNode(root, "Recents")
+        
+        root = self.addNode(root, "Recents")
+        
         self.saveDocument(doc, self.path)
 
 class BenchmarkConfiguration(XmlBase):
