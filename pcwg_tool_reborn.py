@@ -6,12 +6,10 @@ import os
 import Tkinter as tk
 import ttk
 import os.path
-from tkFileDialog import *
+from tkFileDialog import askopenfilename
 import tkSimpleDialog
 import configuration
-
-#http://effbot.org/tkbook/menu.htm
-
+                
 class Analysis:
 
     def __init__(self, fileName):
@@ -21,22 +19,15 @@ class Analysis:
 
     def save(self):
         print "save"
-
-class Preferences:
-
-    def __init__(self):
-        self.workSpaceFolder = ""
-
-    def addRecent(self, path):
-        pass
         
-class Recent:
+class OpenRecent:
 
-    def __init__(self, file):
-        self.file = file
-
+    def __init__(self, fileOpener, path):
+        self.path = path
+        self.fileOpener = fileOpener
+        
     def __call__(self):
-        pass
+        self.fileOpener.loadFile(self.path)
 
 class ConfirmClose(tkSimpleDialog.Dialog):
 
@@ -111,37 +102,23 @@ class FileOpener:
     def openFile(self):
 
         fileName = self.SelectFile(parent=self.root, defaultextension=".xml")
+        self.loadFile(fileName)
 
+    def SelectFile(self, parent, defaultextension=None):
+            if len(self.preferences.workSpaceFolder) > 0:
+                    return askopenfilename(parent=parent, initialdir=self.preferences.workSpaceFolder, defaultextension=defaultextension)
+            else:
+                    return askopenfilename(parent=parent, defaultextension=defaultextension)
+    
+    def loadFile(self, fileName):
         if len(fileName) > 0:
             self.tabs.addAnalysis(fileName)
             self.preferences.addRecent(fileName)
-
-    def SelectFile(self, parent, defaultextension=None):
-            if len(preferences.workSpaceFolder) > 0:
-                    return askopenfilename(parent=parent, initialdir=preferences.workSpaceFolder, defaultextension=defaultextension)
-            else:
-                    return askopenfilename(parent=parent, defaultextension=defaultextension)
-
+            
 def openMaximized(root):
 
     w, h = root.winfo_screenwidth(), root.winfo_screenheight()
     root.geometry("%dx%d+0+0" % (w, h))
-
-def getRecent():
-
-    recent = []
-
-    recent.append("One")
-    recent.append("Two")
-    recent.append("Three")
-    recent.append("Four")
-
-    return recent
-
-def addRecent(recent_menu):
-
-    for recent in getRecent():
-        recent_menu.add_command(label=recent, command = Recent(recent))
         
 def hello():
     print "hello!"
@@ -378,7 +355,9 @@ class PCWG:
     def __init__(self, root):
 
         self.root = root
-        
+
+        self.added_recents = []
+                
         tab_frame = tk.Frame(root)
         console_frame = tk.Frame(root, background="grey")
         
@@ -391,12 +370,17 @@ class PCWG:
         console = Console(console_frame)
         tabs = ClosableTabs(tab_frame, console)
 
-        self.preferences = Preferences()
+        self.preferences = configuration.Preferences()
         self.fileOpener = FileOpener(root, tabs, self.preferences)
 
         self.addMenus(root)
 
+        self.preferences.onRecentChange += self.addRecents
+
+        
     def addMenus(self, root):
+
+        #http://effbot.org/tkbook/menu.htm
 
         #add menu
         self.menubar = tk.Menu(root)
@@ -414,10 +398,10 @@ class PCWG:
 
         filemenu.add_command(label="Open", command=self.fileOpener.openFile)
 
-        recent_menu = tk.Menu(self.menubar)
-        addRecent(recent_menu)
-        filemenu.add_cascade(label="Open Recent", menu=recent_menu)
-
+        self.recent_menu = tk.Menu(self.menubar)
+        filemenu.add_cascade(label="Open Recent", menu=self.recent_menu)
+        self.addRecents()
+        
         filemenu.add_command(label="Save")
         filemenu.add_command(label="Save As")
         filemenu.add_separator()
@@ -442,6 +426,14 @@ class PCWG:
         # display the menu
         root.config(menu=self.menubar)
 
+    def addRecents(self):
+    
+        for recent in self.preferences.recents:
+            if recent not in self.added_recents:
+                self.added_recents.append(recent)
+                self.recent_menu.add_command(label=recent, command = OpenRecent(self.fileOpener, recent))
+
+
 #start of main code
 
 root = tk.Tk()
@@ -451,3 +443,5 @@ menu = PCWG(root)
 openMaximized(root)
 
 root.mainloop()
+
+menu.preferences.save()

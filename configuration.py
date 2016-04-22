@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 import datetime
+import event
 
 isoDateFormat = "%Y-%m-%dT%H:%M:00"
         
@@ -266,6 +267,9 @@ class Preferences(XmlBase):
     def __init__(self):
 
         self.path = "preferences.xml"
+        
+        self.recents = []
+        self.onRecentChange = event.EventHook()         
 
         try:
             loaded = self.loadPreferences()
@@ -285,17 +289,31 @@ class Preferences(XmlBase):
                 doc = self.readDoc(self.path)
                 root = self.getNode(doc, "Preferences")
 
-                self.analysisLastOpened = self.getNodeValueIfExists(doc, "AnalysisLastOpened", "")
-                self.workSpaceFolder = self.getNodeValueIfExists(doc, "WorkSpaceFolder", "")
+                self.analysisLastOpened = self.getNodeValueIfExists(root, "AnalysisLastOpened", "")
+                self.workSpaceFolder = self.getNodeValueIfExists(root, "WorkSpaceFolder", "")
 
+                if self.nodeExists(root, "Recents"):
+                    
+                    recents = self.getNode(root, "Recents")
+                    
+                    for node in self.getNodes(recents, "Recent"):
+                        recent = self.getValue(node)
+                        self.addRecent(recent, False)
+
+                self.addRecent(self.analysisLastOpened)
+                                
                 return True
 
             else:
 
                 return False
     
-    def addRecent(self, path):
-        self.recent.append(path)
+    def addRecent(self, path, raiseEvents = True):
+        
+        if len(path) > 0:
+            if not path in self.recents:
+                self.recents.append(path)
+                if raiseEvents: self.onRecentChange.fire()
         
     def save(self):
 
@@ -305,9 +323,10 @@ class Preferences(XmlBase):
         self.addTextNode(doc, root, "AnalysisLastOpened", self.analysisLastOpened)
         self.addTextNode(doc, root, "WorkSpaceFolder", self.workSpaceFolder)
 
-        root = self.addNode(root, "Recents")
+        recentsNode = self.addNode(doc, root, "Recents")
         
-        root = self.addNode(root, "Recents")
+        for recent in self.recents:
+            self.addTextNode(doc, recentsNode, "Recent", recent)
         
         self.saveDocument(doc, self.path)
 
