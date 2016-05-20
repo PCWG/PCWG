@@ -60,7 +60,7 @@ class PcwgShare01Config(configuration.AnalysisConfiguration):
         for dataset in datasets:
             self.datasets.append(dataset)
 
-class PcwgShare01dot1Config(configuration.AnalysisConfiguration):
+class PcwgShare01dot1Config(PcwgShare01Config):
 
     def __init__(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
 
@@ -199,8 +199,8 @@ class PcwgShare01:
         rpt.report()
         return rpt
 
-class PcwgShare01dot1:
-    
+class PcwgShare01dot1(PcwgShare01):
+
     def new_config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
         return PcwgShare01dot1Config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id)     
     
