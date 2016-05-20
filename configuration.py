@@ -8,7 +8,7 @@ import event
 
 isoDateFormat = "%Y-%m-%dT%H:%M:00"
         
-class XmlBase:
+class XmlBase(object):
 
     def readDoc(self, path):
         return xml.dom.minidom.parse(path)
@@ -67,13 +67,7 @@ class XmlBase:
         return node.getElementsByTagNameNS("http://www.pcwg.org", query)
 
     def nodeExists(self, node, query):
-
         return(len(self.getNodes(node, query)) > 0)
-
-        if exists: #? unreachable code here?
-            return len(self.getNodeValue(node, query)) > 0
-        else:
-            return False
 
     def nodeValueExists(self, node, query): #seems to be defined above
 
@@ -222,6 +216,7 @@ class PortfolioConfiguration(XmlBase):
         
         self.path = path
         self.items = []
+        self.baseFolder = self.replaceFileSeparators(os.path.dirname(os.path.abspath(path)))
         
         if path != None:
             
@@ -234,40 +229,100 @@ class PortfolioConfiguration(XmlBase):
                           
             for itemNode in self.getNodes(itemsNode, 'PortfolioItem'):
                 self.items.append(self.readItem(itemNode))
-                
+            
+            self.isNew = False
+            
         else:
 
             self.description = ""
+            self.isNew = True
+
+    def save(self):
+
+        doc = self.createDocument()
+        root = self.addRootNode(doc, "Portfolio", "http://www.pcwg.org")
+
+        self.addTextNode(doc, root, "Description", self.description)
+        
+        itemsNode = self.addNode(doc, root, "PortfolioItems")
+        
+        for item in self.items:
+            itemNode = self.addNode(doc, itemsNode, "PortfolioItem") 
+            self.addTextNode(doc, itemNode, "Description", item.description)
+            self.addFloatNode(doc, itemNode, "Diameter", item.diameter)
+            self.addFloatNode(doc, itemNode, "HubHeight", item.hubHeight)
+            self.addFloatNode(doc, itemNode, "RatedPower", item.ratedPower)
+            self.addFloatNode(doc, itemNode, "CutOutWindSpeed", item.cutOutWindSpeed)
+            
+            datasetsNode = self.addNode(doc, itemNode, "Datasets")
+            
+            for dataset in item.datasets:
+                self.addTextNode(doc, datasetsNode, "Dataset", dataset.relativePath)
+            
+        self.saveDocument(doc, self.path)
             
     def readItem(self, node):
 
-        datasets = []
+        dataset_objects = []
 
         datasetsNode = self.getNode(node, 'Datasets')
         
         for datasetNode in self.getNodes(datasetsNode, 'Dataset'):
-            datasets.append(self.getValue(datasetNode))
+            dataset_objects.append(PortfolioItemDataset(self.baseFolder, self.getValue(datasetNode)))
 
+        description = self.getNodeValue(node, "Description")
         diameter = self.getNodeFloat(node, "Diameter")
         hubHeight = self.getNodeFloat(node, "HubHeight")
+        ratedPower = self.getNodeFloat(node, "RatedPower")
         cutOutWindSpeed = self.getNodeFloat(node, "CutOutWindSpeed")
         
-        return PortfolioItem(diameter, hubHeight, cutOutWindSpeed, datasets)
-    
+        return PortfolioItem(description, diameter, hubHeight, ratedPower, cutOutWindSpeed, dataset_objects)
+        
+    def addItem(self, description, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets):
+        
+        dataset_objects = []
+        
+        for dataset in datasets:
+            dataset_objects.append(PortfolioItemDataset(self.baseFolder, dataset))
+            
+        self.items.append(PortfolioItem(description, diameter, hubHeight, ratedPower, cutOutWindSpeed, dataset_objects))
+            
+    def replaceFileSeparators(self, filePath):
+            replacedFilePath = filePath.replace("\\", os.path.sep)
+            replacedFilePath = filePath.replace("/", os.path.sep)
+            return replacedFilePath
+                
 class PortfolioItem:
 
-    def __init__(self, diameter, hubHeight, cutOutWindSpeed, datasets):
+    def __init__(self, description, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets):
+        self.description = description
         self.diameter = diameter
         self.hubHeight = hubHeight
+        self.ratedPower = ratedPower
         self.cutOutWindSpeed = cutOutWindSpeed
         self.datasets = datasets
         
+    def get_dataset_paths(self):
+        
+        paths = []
+        
+        for dataset in self.datasets:
+            paths.append(dataset.path)
+            
+        return paths
+        
+class PortfolioItemDataset:
+    
+    def __init__(self, baseFolder, relativePath):
+        self.path = os.path.join(baseFolder, relativePath)
+        self.relativePath = relativePath
+        
 class Preferences(XmlBase):
 
-    def __init__(self):
+    def __init__(self, version):
 
         self.path = "preferences.xml"
-        
+        self.versionLastOpened = version
         self.recents = []
         self.onRecentChange = event.EventHook()         
 
@@ -280,8 +335,11 @@ class Preferences(XmlBase):
         if not loaded:
 
             self.analysisLastOpened =  ""
-            self.workSpaceFolder = ""
-
+            self.datasetLastOpened = ""
+            self.portfolioLastOpened = ""
+            self.powerCurveLastOpened = ""
+            self.benchmarkLastOpened = ""
+            
     def loadPreferences(self):
 
             if os.path.isfile(self.path):
@@ -290,8 +348,11 @@ class Preferences(XmlBase):
                 root = self.getNode(doc, "Preferences")
 
                 self.analysisLastOpened = self.getNodeValueIfExists(root, "AnalysisLastOpened", "")
-                self.workSpaceFolder = self.getNodeValueIfExists(root, "WorkSpaceFolder", "")
-
+                self.datasetLastOpened = self.getNodeValueIfExists(root, "DatasetLastOpened", "")
+                self.portfolioLastOpened = self.getNodeValueIfExists(root, "PortfolioLastOpened", "")
+                self.powerCurveLastOpened = self.getNodeValueIfExists(root, "PowerCurveLastOpened", "")
+                self.benchmarkLastOpened = self.getNodeValueIfExists(root, "BenchmarkLastOpened", "")
+                
                 if self.nodeExists(root, "Recents"):
                     
                     recents = self.getNode(root, "Recents")
@@ -300,8 +361,12 @@ class Preferences(XmlBase):
                         recent = self.getValue(node)
                         self.addRecent(recent, False)
 
-                self.addRecent(self.analysisLastOpened)
-                                
+                if len(self.analysisLastOpened) >  1: self.addRecent(self.analysisLastOpened)
+                if len(self.datasetLastOpened) >  1: self.addRecent(self.datasetLastOpened)
+                if len(self.portfolioLastOpened) >  1: self.addRecent(self.portfolioLastOpened)
+                if len(self.powerCurveLastOpened) >  1: self.addRecent(self.powerCurveLastOpened)
+                if len(self.benchmarkLastOpened) >  1: self.addRecent(self.benchmarkLastOpened)
+                
                 return True
 
             else:
@@ -310,6 +375,9 @@ class Preferences(XmlBase):
     
     def addRecent(self, path, raiseEvents = True):
         
+        if path in self.recents:
+            return
+            
         if len(path) > 0:
             if not path in self.recents:
                 self.recents.append(path)
@@ -321,8 +389,12 @@ class Preferences(XmlBase):
         root = self.addRootNode(doc, "Preferences", "http://www.pcwg.org")
 
         self.addTextNode(doc, root, "AnalysisLastOpened", self.analysisLastOpened)
-        self.addTextNode(doc, root, "WorkSpaceFolder", self.workSpaceFolder)
-
+        self.addTextNode(doc, root, "DatasetLastOpened", self.datasetLastOpened)
+        self.addTextNode(doc, root, "PortfolioLastOpened", self.portfolioLastOpened)
+        self.addTextNode(doc, root, "PowerCurveLastOpened", self.powerCurveLastOpened)
+        self.addTextNode(doc, root, "BenchmarkLastOpened", self.benchmarkLastOpened)
+        self.addTextNode(doc, root, "VersionLastOpened", self.versionLastOpened)
+        
         recentsNode = self.addNode(doc, root, "Recents")
         
         for recent in self.recents:
@@ -330,6 +402,48 @@ class Preferences(XmlBase):
         
         self.saveDocument(doc, self.path)
 
+    def benchmark_last_opened_dir(self):
+        return self.get_last_opened_dir(self.benchmarkLastOpened)
+            
+    def benchmark_last_opened_file(self):
+        return self.get_last_opened_file(self.benchmarkLastOpened)
+        
+    def power_curve_last_opened_dir(self):
+        return self.get_last_opened_dir(self.powerCurveLastOpened)
+            
+    def power_curve_last_opened_file(self):
+        return self.get_last_opened_file(self.powerCurveLastOpened)
+        
+    def portfolio_last_opened_dir(self):
+        return self.get_last_opened_dir(self.portfolioLastOpened)
+            
+    def portfolio_last_opened_file(self):
+        return self.get_last_opened_file(self.portfolioLastOpened)
+
+    def dataset_last_opened_dir(self):
+        return self.get_last_opened_dir(self.datasetLastOpened)
+            
+    def dataset_last_opened_file(self):
+        return self.get_last_opened_file(self.datasetLastOpened)
+
+    def analysis_last_opened_dir(self):
+        return self.get_last_opened_dir(self.analysisLastOpened)
+            
+    def analysis_last_opened_file(self):
+        return self.get_last_opened_file(self.analysisLastOpened)
+                
+    def get_last_opened_dir(self, path):
+        if len(path) > 0:
+            return os.path.dirname(path)
+        else:
+            return None
+
+    def get_last_opened_file(self, path):
+        if len(path) > 0:
+            return os.path.basename(path)
+        else:
+            return None
+            
 class BenchmarkConfiguration(XmlBase):
     
     def __init__(self, path):
@@ -416,6 +530,7 @@ class AnalysisConfiguration(XmlBase):
 
         else:
 
+            self.path = None
             self.isNew = True
             self.Name = ""
             self.powerCurveMinimumCount = 10
@@ -447,7 +562,8 @@ class AnalysisConfiguration(XmlBase):
             self.powerDeviationMatrixActive = False
 
             self.interpolationMode = 'Cubic'
-
+            self.datasets = []
+            
     def setDefaultInnerRangeTurbulence(self):
         self.innerRangeLowerTurbulence = 0.08
         self.innerRangeUpperTurbulence = 0.12
@@ -461,7 +577,10 @@ class AnalysisConfiguration(XmlBase):
             self.powerCurveLastBin = 30.0
             self.powerCurveBinSize = 1.0
 
-    def save(self):
+    def save(self, path = None):
+
+        if path != None:
+            self.path = path
 
         self.isNew = False
         doc = self.createDocument()
@@ -500,9 +619,14 @@ class AnalysisConfiguration(XmlBase):
 
         turbineNode = self.addNode(doc, root, "Turbine")
 
-        self.addFloatNode(doc, turbineNode, "CutInWindSpeed", self.cutInWindSpeed)
+        if self.cutInWindSpeed != None:
+            self.addFloatNode(doc, turbineNode, "CutInWindSpeed", self.cutInWindSpeed)
+            
         self.addFloatNode(doc, turbineNode, "CutOutWindSpeed", self.cutOutWindSpeed)
-        self.addFloatNode(doc, turbineNode, "RatedPower", self.ratedPower)
+
+        if self.ratedPower != None:
+            self.addFloatNode(doc, turbineNode, "RatedPower", self.ratedPower)
+        
         self.addFloatNode(doc, turbineNode, "HubHeight", self.hubHeight)
         self.addFloatNode(doc, turbineNode, "Diameter", self.diameter)
         self.addTextNode(doc, turbineNode, "SpecifiedPowerCurve", self.specifiedPowerCurve)
@@ -519,8 +643,6 @@ class AnalysisConfiguration(XmlBase):
         powerDeviationMatrixNode = self.addNode(doc, root, "PowerDeviationMatrix")
         self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specifiedPowerDeviationMatrix)
         self.addBoolNode(doc, powerDeviationMatrixNode, "Active", self.powerDeviationMatrixActive)
-
-
 
     def readDatasets(self, configurationNode):
 
@@ -550,9 +672,17 @@ class AnalysisConfiguration(XmlBase):
         self.hubHeight = self.getNodeFloat(turbineNode, 'HubHeight')
         self.diameter = self.getNodeFloat(turbineNode, 'Diameter')
 
-        self.cutInWindSpeed = self.getNodeFloat(turbineNode, 'CutInWindSpeed')
+        if self.nodeExists(turbineNode, 'CutInWindSpeed'): 
+            self.cutInWindSpeed = self.getNodeFloat(turbineNode, 'CutInWindSpeed')
+        else:
+            self.cutInWindSpeed = None
+            
         self.cutOutWindSpeed = self.getNodeFloat(turbineNode, 'CutOutWindSpeed')
-        self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
+
+        if self.nodeExists(turbineNode, 'RatedPower'): 
+            self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
+        else:
+            self.ratedPower = None
 
         self.specifiedPowerCurve = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve','')
 

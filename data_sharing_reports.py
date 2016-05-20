@@ -4,8 +4,8 @@ from xlutils.copy import copy
 from datetime import datetime as dt
 from PIL import Image
 from shutil import rmtree
-from pcwg_tool import pcwg_inner_ranges
 import numpy as np
+import xlwt
 
 template_name = 'Share_1_template.xls'
 
@@ -28,16 +28,64 @@ def _get_cell_style(sheet, row, col):
 def _apply_cell_style(style, sheet, row, col):
     sheet._Worksheet__rows.get(row)._Row__cells.get(col).xf_idx = style
 
+class PortfolioReport(object):
+        
+    def __init__(self):
+        
+        self.bold_style = xlwt.easyxf('font: bold 1')
+        self.no_dp_style = xlwt.easyxf(num_format_str='0')
+        self.one_dp_style = xlwt.easyxf(num_format_str='0.0')
+        self.two_dp_style = xlwt.easyxf(num_format_str='0.00')
+        self.three_dp_style = xlwt.easyxf(num_format_str='0.000')
+        self.four_dp_style = xlwt.easyxf(num_format_str='0.0000')
+        self.percent_style = xlwt.easyxf(num_format_str='0.00%')
+        self.percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
+    
+    def report(self, shares, path):
+        
+        self.book = xlwt.Workbook()
+        self.sheet = self.book.add_sheet("Summary", cell_overwrite_ok=True)    
 
+        row = 0
+        
+        self.sheet.write(0, 0, "Analysis", self.bold_style)
+        self.sheet.write(0, 1, "B-IR-Count", self.bold_style)
+        self.sheet.write(0, 2, "B-IR-NME", self.bold_style)
+        self.sheet.write(0, 3, "B-IR-NMAE", self.bold_style)
+        self.sheet.write(0, 4, "B-OR-Count", self.bold_style)
+        self.sheet.write(0, 5, "B-OR-NME", self.bold_style)
+        self.sheet.write(0, 6, "B-OR-NMAE", self.bold_style)
+            
+        for share in shares:            
+            row += 1
+            self.sheet.write(row, 0, share.analysis.uniqueAnalysisId)            
+            self.write_errors(share.analysis, self.sheet, row, 1, 'Inner')
+            self.write_errors(share.analysis, self.sheet, row, 4, 'Outer')
+            
+        self.book.save(path)
+
+    def write_errors(self, analysis, sh, row, base_column, range_type):
+
+        df = self.analysis.binned_pcwg_err_metrics[analysis.pcwgRange][analysis.pcwgErrorBaseline]
+        
+        try:
+            if df.loc[range_type, 'Data Count'] > 0:
+                sh.write(row, base_column, int(df.loc[range_type, 'Data Count']))
+                sh.write(row, base_column + 1, df.loc[range_type, 'NME'])
+                sh.write(row, base_column + 2, df.loc[range_type, 'NMAE'])
+        except:
+            print "Cannot write summary information"
+        
 class pcwg_share1_rpt(object):
     
-    def __init__(self, analysis, version = 'Unknown', template = template_name, output_fname = (os.getcwd() + os.sep + 'Data Sharing Initiative 1 Report.xls')):
+    def __init__(self, analysis, version, template, output_fname, pcwg_inner_ranges):
         rb = xlrd.open_workbook(template, formatting_info=True)
         self.workbook = copy(rb)
         self.analysis = analysis
         self.no_of_datasets = len(analysis.datasetConfigs)
         self.output_fname = output_fname
         self.version = version
+        self.pcwg_inner_ranges = pcwg_inner_ranges
     
     def report(self):
         self.write_submission_data(sheet_map['Submission'])
@@ -50,9 +98,9 @@ class pcwg_share1_rpt(object):
         sh = self.workbook.get_sheet(sheet_map['Meta Data'])
         col = 2
         used_inner_range = [self.analysis.innerRangeLowerShear, self.analysis.innerRangeUpperShear, self.analysis.innerRangeLowerTurbulence, self.analysis.innerRangeUpperTurbulence]
-        range_A = [pcwg_inner_ranges['A']['LSh'], pcwg_inner_ranges['A']['USh'], pcwg_inner_ranges['A']['LTI'], pcwg_inner_ranges['A']['UTI']]
-        range_B = [pcwg_inner_ranges['B']['LSh'], pcwg_inner_ranges['B']['USh'], pcwg_inner_ranges['B']['LTI'], pcwg_inner_ranges['B']['UTI']]
-        range_C = [pcwg_inner_ranges['C']['LSh'], pcwg_inner_ranges['C']['USh'], pcwg_inner_ranges['C']['LTI'], pcwg_inner_ranges['C']['UTI']]
+        range_A = [self.pcwg_inner_ranges['A']['LSh'], self.pcwg_inner_ranges['A']['USh'], self.pcwg_inner_ranges['A']['LTI'], self.pcwg_inner_ranges['A']['UTI']]
+        range_B = [self.pcwg_inner_ranges['B']['LSh'], self.pcwg_inner_ranges['B']['USh'], self.pcwg_inner_ranges['B']['LTI'], self.pcwg_inner_ranges['B']['UTI']]
+        range_C = [self.pcwg_inner_ranges['C']['LSh'], self.pcwg_inner_ranges['C']['USh'], self.pcwg_inner_ranges['C']['LTI'], self.pcwg_inner_ranges['C']['UTI']]
         if used_inner_range == range_A:
             range_id = 'A'
         elif used_inner_range == range_B:

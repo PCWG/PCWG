@@ -3,3 +3,6 @@ preferences.xml
 
 report.xls
 *.zip
+Build/extractor.spec
+*.spec
+Data/Dataset 1 Analysis_PPAnalysisPlots/Hub_Turbulence_By_Hub_Wind_Speed.png

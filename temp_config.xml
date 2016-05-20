@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
+	<FilterMode>All</FilterMode>
+	<BaseLineMode>Hub</BaseLineMode>
+	<InterpolationMode>Cubic</InterpolationMode>
+	<PowerCurveMode>InnerMeasured</PowerCurveMode>
+	<PowerCurvePaddingMode>Max</PowerCurvePaddingMode>
+	<NominalWindSpeedDistribution></NominalWindSpeedDistribution>
+	<PowerCurveBins>
+		<FirstBinCentre>1.000000</FirstBinCentre>
+		<LastBinCentre>30.000000</LastBinCentre>
+		<BinSize>1.000000</BinSize>
+	</PowerCurveBins>
+	<Datasets>
+		<Dataset>D:\GISSource\PowerPerformance\PCWG Data\RES Internal Benchmarks\PCWG Share 1 Submissions\Jacks Lane T1 Mast\JCK T01 config (Transducer Issue).xml</Dataset>
+		<Dataset>D:\GISSource\PowerPerformance\PCWG Data\RES Internal Benchmarks\PCWG Share 1 Submissions\Jacks Lane T1 Mast\JCK T01 config (Transducer Normal).xml</Dataset>
+	</Datasets>
+	<InnerRange>
+		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
+		<InnerRangeUpperTurbulence>0.140000</InnerRangeUpperTurbulence>
+		<InnerRangeLowerShear>0.100000</InnerRangeLowerShear>
+		<InnerRangeUpperShear>0.300000</InnerRangeUpperShear>
+	</InnerRange>
+	<Turbine>
+		<CutOutWindSpeed>25.000000</CutOutWindSpeed>
+		<RatedPower>2500.000000</RatedPower>
+		<HubHeight>90.000000</HubHeight>
+		<Diameter>80.000000</Diameter>
+		<SpecifiedPowerCurve></SpecifiedPowerCurve>
+	</Turbine>
+	<DensityCorrection>
+		<Active>0</Active>
+	</DensityCorrection>
+	<TurbulenceRenormalisation>
+		<Active>0</Active>
+	</TurbulenceRenormalisation>
+	<RotorEquivalentWindSpeed>
+		<Active>0</Active>
+	</RotorEquivalentWindSpeed>
+	<PowerDeviationMatrix>
+		<SpecifiedPowerDeviationMatrix>D:\GIT\PCWG\Data\HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>
+		<Active>0</Active>
+	</PowerDeviationMatrix>
+</Configuration>
