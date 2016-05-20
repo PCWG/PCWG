@@ -181,6 +181,20 @@ class XmlBase(object):
             clauses.append(self.readSimpleFilter(clause))
         return RelationshipFilter(active, conjunction, clauses)
 
+class TypeDetector(XmlBase):
+
+    def __init__(self, path):
+        
+        doc = self.readDoc(path)
+        configurationNode = self.getNode(doc, "Configuration")
+
+        if self.nodeExists(configurationNode, "Datasets"):
+            self.file_type = "analysis"
+        elif  self.nodeExists(configurationNode, "Measurements"):
+            self.file_type = "dataset"
+        else:
+            raise Exception("Unknown file type: {0}".format(path))
+
 class RelativePath:
 
         def __init__(self, basePath):
