@@ -66,7 +66,7 @@ class PortfolioReport(object):
 
     def write_errors(self, analysis, sh, row, base_column, range_type):
 
-        df = self.analysis.binned_pcwg_err_metrics[analysis.pcwgRange][analysis.pcwgErrorBaseline]
+        df = analysis.binned_pcwg_err_metrics[analysis.pcwgRange][analysis.pcwgErrorBaseline]
         
         try:
             if df.loc[range_type, 'Data Count'] > 0:
