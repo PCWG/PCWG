@@ -181,7 +181,7 @@ class PcwgShare01:
 
                 self.log.addMessage("Exporting results to {0}".format(temp_file_name))                
                 self.pcwg_data_share_report(version = self.version, output_fname = temp_file_name)
-                self.log.addMessage("Report written to %s".format(temp_file_name))
+                self.log.addMessage("Report written to {0}".format(temp_file_name))
                 
                 self.log.addMessage("Adding {0} to output zip.".format(temp_file_name))
                 output_zip.write(temp_file_name)
@@ -252,7 +252,7 @@ class BaseSharePortfolio(object):
         self.log.addMessage("Exporting results to {0}".format(summary_file))                
         report = PortfolioReport()
         report.report(self.shares, summary_file)
-        self.log.addMessage("Report written to %s".format(summary_file))
+        self.log.addMessage("Report written to {0}".format(summary_file))
 
         summary_file_for_zip = "Summary.xls"
 
@@ -266,7 +266,7 @@ class BaseSharePortfolio(object):
         output_zip.write(summary_file_for_zip)
         self.log.addMessage("{0} added to output zip.".format(summary_file_for_zip))
 
-        self.log.addMessage("Deleting %s".format(summary_file_for_zip))
+        self.log.addMessage("Deleting {0}".format(summary_file_for_zip))
         os.remove(summary_file_for_zip)
         
     def new_share(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, dataset_paths, output_zip):
