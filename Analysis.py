@@ -98,7 +98,7 @@ class PowerDeviationMatrixPowerCalculator:
 
 class Analysis:
 
-    def __init__(self, config, status = NullStatus(), auto_activate_corrections = False):
+    def __init__(self, config, status = NullStatus(), auto_activate_corrections = False, relativePath = None):
 
         self.config = config
         self.nameColumn = "Dataset Name"
@@ -123,7 +123,12 @@ class Analysis:
         self.measuredTurbPowerCurveInterp = 'Measured TI Corrected Power Curve Interp'
         self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
         self.inflowAngle = 'Inflow Angle'
-        self.relativePath = configuration.RelativePath(config.path)
+        
+        if relativePath != None:
+            self.relativePath = relativePath
+        else:
+            self.relativePath = configuration.RelativePath(config.path)
+            
         self.status = status
 
         self.calibrations = []
@@ -135,6 +140,7 @@ class Analysis:
 
         if auto_activate_corrections:            
             self.auto_activate_corrections()
+            
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
         self.turbRenormActive = config.turbRenormActive
@@ -178,7 +184,7 @@ class Analysis:
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
         
-        if config.specifiedPowerCurve != '':
+        if config.specifiedPowerCurve != None and config.specifiedPowerCurve != '' :
 
             powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
             
@@ -340,11 +346,12 @@ class Analysis:
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
+                
         self.status.addMessage("Total of %.3f hours of data used in analysis." % self.hours)
         self.status.addMessage("Complete")
 
     def auto_activate_corrections(self):
-        self.status.addMessage("Automatically activating corrections based on availabe data.")
+        self.status.addMessage("Automatically activating corrections based on available data.")
         save_conf = False
         if self.hasDensity:
             self.config.densityCorrectionActive = True
@@ -857,6 +864,7 @@ class Analysis:
             self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]
             self.pcwgErrorCols.append(self.pcwgErrorPdm)
         self.powerCurveCompleteBins = self.powerCurve.powerCurveLevels.index[self.powerCurve.powerCurveLevels[self.dataCount] > 0]
+        self.number_of_complete_bins = len(self.powerCurveCompleteBins)
         self.pcwgErrorValid = 'Baseline Power Curve WS Bin Complete'
         self.dataFrame[self.pcwgErrorValid] = self.dataFrame[self.windSpeedBin].isin(self.powerCurveCompleteBins)
     
@@ -979,11 +987,6 @@ class Analysis:
             self.calculate_pcwg_error_fields()
             self.calculate_pcwg_overall_metrics()
             self.calculate_pcwg_binned_metrics()
-
-    def pcwg_data_share_report(self, version = 'Unknown', output_fname = (os.getcwd() + os.sep + 'Data Sharing Initiative 1 Report.xls')):
-        from data_sharing_reports import pcwg_share1_rpt
-        rpt = pcwg_share1_rpt(self, version = version, output_fname = output_fname)
-        rpt.report()
 
     def calculate_anonymous_values(self):
 
@@ -1254,7 +1257,7 @@ class Padder:
         powerLevels.sort_index(inplace=True)
         
         return powerLevels
-
+        
 class NonePadder(Padder):
 
     def pad(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):

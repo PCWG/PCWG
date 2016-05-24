@@ -11,19 +11,19 @@ import os
 import os.path
 import pandas as pd
 import dateutil
+import update
+
+from share import PcwgShare01Portfolio
+from share import PcwgShare01dot1Portfolio
 
 columnSeparator = "|"
 filterSeparator = "#"
 datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
 datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
-version = "0.5.13"
+version = "0.5.14"
 ExceptionType = Exception
 #ExceptionType = None #comment this line before release
-
-pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
-                     'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
-                     'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
 
 def getDateFromEntry(entry):
     if len(entry.get()) > 0:
@@ -39,12 +39,41 @@ def getBoolFromText(text):
     else:
         raise Exception("Cannot convert Text to Boolean: %s" % text)
         
-def SelectFile(parent, defaultextension=None):
-        if len(preferences.workSpaceFolder) > 0:
-                return askopenfilename(parent=parent, initialdir=preferences.workSpaceFolder, defaultextension=defaultextension)
-        else:
-                return askopenfilename(parent=parent, defaultextension=defaultextension)
+def encodePortfolioItemValuesAsText(description, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets):
 
+    text = "{0}{1}{2}{3}{4}{5}{6}{7}{8}".format(description, \
+                                                    columnSeparator, \
+                                                    diameter, \
+                                                    columnSeparator, \
+                                                    hubHeight, \
+                                                    columnSeparator, \
+                                                    ratedPower, \
+                                                    columnSeparator, \
+                                                    cutOutWindSpeed)
+                                                    
+    for dataset in datasets:
+        text += "{0}{1}".format(columnSeparator, dataset)
+    
+    return text
+   
+def extractPortfolioItemValuesFromText(text):
+    items = text.split(columnSeparator)
+
+    description = items[0]
+    diameter = float(items[1])
+    hubHeight = float(items[2])
+    ratedPower = float(items[3])
+    cutOutWindSpeed = float(items[4])
+
+    datasets = []
+    index = 5
+
+    while index < len(items):      
+        datasets.append(items[index])
+        index += 1
+    
+    return (description, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets)
+                                                         
 def encodePowerLevelValueAsText(windSpeed, power):
     return "%f%s%f" % (windSpeed, columnSeparator, power)
 
@@ -228,7 +257,7 @@ class ValidateNonNegativeInteger(ValidateBase):
                 message = "Value must be a positive integer"
 
                 try:
-                        val = int(value)
+                        int(value)
                         return ValidationResult(int(value) >= 0, message)
                 except ValueError:
                         return ValidationResult(False, message)
@@ -243,7 +272,7 @@ class ValidatePositiveInteger(ValidateBase):
                 message = "Value must be a positive integer"
 
                 try:
-                        val = int(value)
+                        int(value)
                         return ValidationResult(int(value) > 0, message)
                 except ValueError:
                         return ValidationResult(False, message)
@@ -258,7 +287,7 @@ class ValidateFloat(ValidateBase):
                 message = "Value must be a float"
 
                 try:
-                        val = float(value)
+                        float(value)
                         return ValidationResult(True, message)
                 except ValueError:
                         return ValidationResult(False, message)
@@ -361,9 +390,11 @@ class ValidateDatasetFilePath(ValidateBase):
 
         def validate(self, value):
 
-                message = "Value not specified"
-
-                return ValidationResult(len(value) > 0, message)
+                message = "Illegal file path"
+                
+                valid = True
+                    
+                return ValidationResult(valid, message)
 
 class ValidateTimeSeriesFilePath(ValidateBase):
 
@@ -487,6 +518,26 @@ class ValidateDatasets:
                 
                 self.messageLabel['text'] = message
 
+class ValidatePortfolioItems:
+
+        def __init__(self, master, listbox):
+
+                self.listbox = listbox
+                self.messageLabel = Label(master, text="", fg="red")
+                self.validate()
+                self.title = "Portfolio Items Validation"
+
+        def validate(self):
+                
+                self.valid = True
+                message = ""
+                
+                if self.listbox.size() < 2:
+                        self.valid = self.valid and False
+                        message = "At least one portfolio item must be specified"
+                
+                self.messageLabel['text'] = message
+
 class VariableEntry:
 
     def __init__(self, variable, entry, tip):
@@ -593,7 +644,7 @@ class SetFileSaveAsCommand:
                 self.variable = variable
 
         def __call__(self):
-                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=preferences.workSpaceFolder)
+                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml")
                 if len(fileName) > 0: self.variable.set(fileName)
         
 class SetFileOpenCommand:
@@ -605,8 +656,13 @@ class SetFileOpenCommand:
 
         def __call__(self):
 
-                fileName = SelectFile(parent=self.master,defaultextension=".xml")
-
+                if self.basePathVariable != None:
+                    initial_folder = os.path.dirname(self.basePathVariable.get())
+                else:
+                    initial_folder = None
+                    
+                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=initial_folder)
+                
                 if len(fileName) > 0:
                         if self.basePathVariable != None:
                                 relativePath = configuration.RelativePath(self.basePathVariable.get())
@@ -704,12 +760,12 @@ class BaseDialog(tkSimpleDialog.Dialog):
 
                 return variable
                 
-        def addListBox(self, master, title, showHideCommand = None):
+        def addListBox(self, master, title, showHideCommand = None, height = 3):
                 
                 scrollbar =  Scrollbar(master, orient=VERTICAL)
                 tipLabel = Label(master, text="")
                 tipLabel.grid(row = self.row, sticky=W, column=self.tipColumn)                
-                lb = Listbox(master, yscrollcommand=scrollbar, selectmode=EXTENDED, height=3)  
+                lb = Listbox(master, yscrollcommand=scrollbar, selectmode=EXTENDED, height=height)  
                 
                 self.listboxEntries[title] = ListBoxEntry(lb,scrollbar,tipLabel)
                 self.listboxEntries[title].addToShowHide(showHideCommand)                
@@ -1332,7 +1388,7 @@ class BaseConfigurationDialog(BaseDialog):
                 self.addTitleRow(master, "General Settings:", self.generalShowHide)                
 
                 if self.config.isNew:
-                        path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save New Config", initialdir=preferences.workSpaceFolder)
+                        path = None
                 else:
                         path = self.config.path
                         
@@ -1344,10 +1400,26 @@ class BaseConfigurationDialog(BaseDialog):
 
                 return "Config"
         
+        def getInitialFolder(self):
+            
+                return preferences.analysis_last_opened_dir()
+                
         def validate(self):
 
                 if BaseDialog.validate(self) == 0: return
 
+                if len(self.filePath.get()) < 1:
+                    path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save New Config", initialdir=self.getInitialFolder())
+                    self.filePath.set(path)
+                    
+                if len(self.filePath.get()) < 1:
+                    
+                    tkMessageBox.showwarning(
+                            "File path not specified",
+                            "A file save path has not been specified, please try again or hit cancel to exit without saving.")
+                        
+                    return 0
+                    
                 if self.originalPath != None and self.filePath.get() != self.originalPath and os.path.isfile(self.filePath.get()):                        
                         result = tkMessageBox.askokcancel(
                         "File Overwrite Confirmation",
@@ -1360,8 +1432,8 @@ class BaseConfigurationDialog(BaseDialog):
                         
                 self.config.path = self.filePath.get()
 
-                self.setConfigValues()
-
+                self.setConfigValues()                
+                
                 self.config.save()
                 
                 self.isSaved = True
@@ -1421,8 +1493,6 @@ class DatePickerDialog(BaseDialog):
                 
         def body(self, master):
 
-                thisYear = datetime.datetime.today().year
-
                 if self.date != None:
                         selectedDay = self.date.day
                         selectedMonth = self.date.month
@@ -1459,7 +1529,7 @@ class DatePickerDialog(BaseDialog):
 
                 try:
                         self.getDate()
-                except Exception as e:
+                except:
                         pass
                         
         def parseClipBoard(self, date):
@@ -1656,7 +1726,7 @@ class DateFormatPicker:
         def __call__(self):
                         
                 try:                                
-                        dialog = DateFormatPickerDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableFormats, self.entry.get())
+                        DateFormatPickerDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableFormats, self.entry.get())
                 except ExceptionType as e:
                         self.status.addMessage("ERROR picking dateFormat: %s" % e)
 
@@ -1697,7 +1767,7 @@ class ColumnSeparatorPicker:
         def __call__(self):
                         
                 try:                                
-                        dialog = ColumnSeparatorDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableSeparators, self.entry.get())
+                        ColumnSeparatorDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableSeparators, self.entry.get())
                 except ExceptionType as e:
                         self.status.addMessage("ERROR picking separator: %s" % e)
 
@@ -1790,7 +1860,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 
                 self.shearProfileLevelsListBoxEntry = self.addListBox(master, "Shear Listbox", showHideCommand = shearShowHide)
                 self.shearProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.shearProfileLevelsListBoxEntry.listbox.insert(END, "Height,Wind Speed")
+                self.shearProfileLevelsListBoxEntry.listbox.insert(END, "Height,Wind Speed".replace(",", columnSeparator))
                 
                 self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=12, height=1)
                 self.newShearProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
@@ -1825,7 +1895,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.row += 1
                 
                 self.rewsProfileLevelsListBoxEntry = self.addListBox(master, "REWS Listbox", showHideCommand = rewsProfileShowHide)               
-                self.rewsProfileLevelsListBoxEntry.listbox.insert(END, "Height,WindSpeed,WindDirection")               
+                self.rewsProfileLevelsListBoxEntry.listbox.insert(END, "Height,WindSpeed,WindDirection".replace(",", columnSeparator))               
                 if not self.isNew:
                         for height in sorted(self.config.windSpeedLevels):
                                 windSpeed = self.config.windSpeedLevels[height]
@@ -1875,7 +1945,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.row += 1                
                                 
                 self.calibrationDirectionsListBoxEntry = self.addListBox(master, "Calibration Sectors ListBox", showHideCommand = calibrationSectorsShowHide)
-                self.calibrationDirectionsListBoxEntry.listbox.insert(END, "Direction,Slope,Offset,Active")
+                self.calibrationDirectionsListBoxEntry.listbox.insert(END, "Direction,Slope,Offset,Active".replace(",", columnSeparator))
                 self.calibrationDirectionsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
     
                 self.newCalibrationDirectionButton = Button(master, text="New", command = self.NewCalibrationDirection, width=5, height=1)
@@ -1907,7 +1977,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.row += 1     
                 
                 self.calibrationFiltersListBoxEntry = self.addListBox(master, "Calibration Filters ListBox", showHideCommand = calibrationFiltersShowHide)                
-                self.calibrationFiltersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active")
+                self.calibrationFiltersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active".replace(",", columnSeparator))
                 self.calibrationFiltersListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                               
                
                 self.newCalibrationFilterButton = Button(master, text="New", command = self.NewCalibrationFilter, width=5, height=1)
@@ -1941,7 +2011,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.row += 1     
                 
                 self.exclusionsListBoxEntry = self.addListBox(master, "Exclusions ListBox", showHideCommand = exclusionsShowHide)                          
-                self.exclusionsListBoxEntry.listbox.insert(END, "StartDate,EndDate,Active")                               
+                self.exclusionsListBoxEntry.listbox.insert(END, "StartDate,EndDate,Active".replace(",", columnSeparator))                               
                 self.exclusionsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
 
                 self.newExclusionButton = Button(master, text="New", command = self.NewExclusion, width=5, height=1)
@@ -1974,7 +2044,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.row += 1     
                 
                 self.filtersListBoxEntry = self.addListBox(master, "Filters ListBox", showHideCommand = filtersShowHide)                          
-                self.filtersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active")                             
+                self.filtersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active".replace(",", columnSeparator))                             
                 self.filtersListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
  
                 self.newFilterButton = Button(master, text="New", command = self.NewFilter, width=5, height=1)
@@ -2124,7 +2194,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def NewFilter(self):
 
-            configDialog = FilterDialog(self, self.status, self.addFilterFromText)
+            FilterDialog(self, self.status, self.addFilterFromText)
 
         def EditFilter(self, event = None):
 
@@ -2139,7 +2209,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         text = self.filtersListBoxEntry.listbox.get(items[0])                        
                         
                         try:
-                            dialog = FilterDialog(self, self.status, self.addFilterFromText, text, idx)                                
+                            FilterDialog(self, self.status, self.addFilterFromText, text, idx)                                
                         except ExceptionType as e:
                             self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
             
@@ -2168,7 +2238,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         
         def NewCalibrationFilter(self):
 
-            configDialog = CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText)
+            CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText)
 
         def EditCalibrationFilter(self, event = None):
 
@@ -2183,7 +2253,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         text = self.calibrationFiltersListBoxEntry.listbox.get(items[0])                        
                         
                         try:
-                            dialog = CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText, text, idx)                                
+                            CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText, text, idx)                                
                         except ExceptionType as e:
                             self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
             
@@ -2214,7 +2284,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def NewExclusion(self):
 
-            configDialog = ExclusionDialog(self, self.status, self.addExclusionFromText)
+            ExclusionDialog(self, self.status, self.addExclusionFromText)
 
         def EditExclusion(self, event = None):
 
@@ -2229,7 +2299,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         text = self.exclusionsListBoxEntry.listbox.get(items[0])                        
                         
                         try:
-                            dialog = ExclusionDialog(self, self.status, self.addExclusionFromText, text, idx)                                
+                            ExclusionDialog(self, self.status, self.addExclusionFromText, text, idx)                                
                         except ExceptionType as e:
                             self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
             
@@ -2259,7 +2329,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def NewCalibrationDirection(self):
 
-            configDialog = CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText)
+            CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText)
 
         def EditCalibrationDirection(self, event = None):
 
@@ -2274,7 +2344,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         text = self.calibrationDirectionsListBoxEntry.listbox.get(items[0])                        
                         
                         try:
-                            dialog = CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText, text, idx)                                
+                            CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText, text, idx)                                
                         except ExceptionType as e:
                             self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
             
@@ -2312,13 +2382,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                             text = self.shearProfileLevelsListBoxEntry.listbox.get(items[0])                        
                         
                             try:                                
-                                    dialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText, text, idx)
+                                    ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText, text, idx)
                             except ExceptionType as e:
                                    self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                             
         def NewShearProfileLevel(self):
                 
-                configDialog = ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText)
+                ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText)
                 
         def addShearProfileLevelFromText(self, text, index = None):
 
@@ -2381,13 +2451,13 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                             text = self.rewsProfileLevelsListBoxEntry.listbox.get(items[0])                        
                             
                             try:                                
-                                    dialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
+                                    REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
                             except ExceptionType as e:
                                    self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewREWSProfileLevel(self):
                 
-                configDialog = REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText)
+                REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText)
                 
         def addREWSProfileLevelFromText(self, text, index = None):
 
@@ -2479,7 +2549,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                                                 
                         try:
-                              dataFrame = self.read_dataset()                              
+                              self.read_dataset()                              
                         except ExceptionType as e:
                                 tkMessageBox.showwarning(
                                 "Column header error",
@@ -2491,7 +2561,7 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                         self.availableColumnsFile = inputTimeSeriesPath
 
                 try:                                
-                        dialog = ColumnPickerDialog(parentDialog, self.status, pick, self.availableColumns, selectedColumn)
+                        ColumnPickerDialog(parentDialog, self.status, pick, self.availableColumns, selectedColumn)
                 except ExceptionType as e:
                         self.status.addMessage("ERROR picking column: %s" % e)
         
@@ -2662,12 +2732,12 @@ class PowerCurveConfigurationDialog(BaseConfigurationDialog):
                         idx = items[0]
                         text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])
                         try:                                
-                                dialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText, text, idx)
+                                PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText, text, idx)
                         except ExceptionType as e:
                                self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
                                         
         def NewPowerCurveLevel(self):
-                configDialog = PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText)
+                PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText)
                 
         def addPowerCurveLevelFromText(self, text, index = None):
 
@@ -2836,15 +2906,16 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                 path = os.path.join(folder, specifiedPowerCurve)
                 
                 if len(specifiedPowerCurve) > 0:
+                    
                         try:
                                 config = configuration.PowerCurveConfiguration(path)
-                                configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
+                                PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
                         except ExceptionType as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (specifiedPowerCurve, e))
-                                        
+                        
         def NewPowerCurve(self):
                 config = configuration.PowerCurveConfiguration()
-                configDialog = PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
+                PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
                 
     
         def EditDataset(self, event = None):
@@ -2855,7 +2926,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                         try:
                                 relativePath = configuration.RelativePath(self.filePath.get()) 
                                 datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
-                                configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
+                                DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
                                                                                                  
                         except ExceptionType as e:
                                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
@@ -2864,38 +2935,51 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
     
                 try:
                         config = configuration.DatasetConfiguration()
-                        configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
+                        DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
                                                  
                 except ExceptionType as e:
                         self.status.addMessage("ERROR creating dataset config: %s" % e)
-                        
-        def setAnalysisFilePath(self):
-                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=preferences.workSpaceFolder)
-                if len(fileName) > 0: self.analysisFilePath.set(fileName)
-                
+                                        
         def setSpecifiedPowerCurve(self):
-                fileName = SelectFile(parent=self.master,defaultextension=".xml")
+                fileName = askopenfilename(parent=self.master, initialdir=preferences.power_curve_last_opened_dir(), defaultextension=".xml")
                 self.setSpecifiedPowerCurveFromPath(fileName)
     
         def setSpecifiedPowerCurveFromPath(self, fileName):
-                if len(fileName) > 0: self.specifiedPowerCurve.set(fileName)
+            
+                if len(fileName) > 0:
+                    
+                    try:
+                            preferences.powerCurveLastOpened = fileName
+                            preferences.save()
+                    except ExceptionType as e:
+                        self.addMessage("Cannot save preferences: %s" % e)
+
+                    self.specifiedPowerCurve.set(fileName)
                 
         def addDataset(self):
-                fileName = SelectFile(parent=self.master,defaultextension=".xml")
-                if len(fileName) > 0: self.addDatasetFromPath(fileName)
+                
+            fileName = askopenfilename(parent=self.master, initialdir=preferences.dataset_last_opened_dir(), defaultextension=".xml")
+
+            if len(fileName) > 0: self.addDatasetFromPath(fileName)
     
         def addDatasetFromPath(self, path, index = None):
-    
-                relativePath = configuration.RelativePath(self.filePath.get())
-                path = relativePath.convertToRelativePath(path)
-    
-                if index != None:
-                        self.datasetsListBoxEntry.listbox.delete(index, index)
-                        self.datasetsListBoxEntry.listbox.insert(index, path)
-                else:
-                        self.datasetsListBoxEntry.listbox.insert(END, path)
-    
-                self.validateDatasets.validate()               
+
+            try:
+                    preferences.datasetLastOpened = path
+                    preferences.save()
+            except ExceptionType as e:
+                self.addMessage("Cannot save preferences: %s" % e)
+                
+            relativePath = configuration.RelativePath(self.filePath.get())
+            path = relativePath.convertToRelativePath(path)
+
+            if index != None:
+                    self.datasetsListBoxEntry.listbox.delete(index, index)
+                    self.datasetsListBoxEntry.listbox.insert(index, path)
+            else:
+                    self.datasetsListBoxEntry.listbox.insert(END, path)
+
+            self.validateDatasets.validate()               
     
         def removeDatasets(self):
                 
@@ -2949,198 +3033,279 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                         self.config.datasets.append(dataset) 
 
 
-class PcwgShare1Dialog(BaseConfigurationDialog):
-    
-    def _pcwg_defaults(self):
-        self.powerCurveMinimumCount = 10
-        self.filterMode = "All"
-        self.powerCurveMode = "InnerMeasured"
-        self.powerCurvePaddingMode = "Max"
-        self.powerCurveFirstBin = 1.
-        self.powerCurveLastBin = 30.
-        self.powerCurveBinSize = 1.
-        self.set_inner_range_values()
-        self.specifiedPowerCurve = None
-        self.baseLineMode = "Hub"
-        self.interpolationMode = "Cubic"
-        self.nominalWindSpeedDistribution = None
-        self.specifiedPowerDeviationMatrix = os.getcwd() + os.sep + 'Data' + os.sep + 'HypothesisMatrix.xml'
-        self.densityCorrectionActive = False
-        self.turbulenceCorrectionActive = False
-        self.rewsCorrectionActive = False
-        self.powerDeviationMatrixActive = False
+class PortfolioDialog(BaseConfigurationDialog):
         
-    def set_inner_range_values(self):
-        self.innerRangeLowerTurbulence = pcwg_inner_ranges[self.inner_range_id]['LTI']
-        self.innerRangeUpperTurbulence = pcwg_inner_ranges[self.inner_range_id]['UTI']
-        self.innerRangeLowerShear = pcwg_inner_ranges[self.inner_range_id]['LSh']
-        self.innerRangeUpperShear = pcwg_inner_ranges[self.inner_range_id]['USh']
-    
     def getInitialFileName(self):
-        return "PCWG Share 1 Analysis Configuration"
+        return "portfolio"
+            
+    def getInitialFolder(self):        
+        return preferences.portfolio_last_opened_dir()
+                
+    def addFormElements(self, master):
 
+        self.description = self.addEntry(master, "Description:", ValidateNotBlank(master), self.config.description)
+
+        #Items
+        label = Label(master, text="Portfolio Items:")
+        label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+        self.row += 1     
+        
+        self.itemsListBoxEntry = self.addListBox(master, "Items ListBox", height = 10)   
+
+        self.validateItems = ValidatePortfolioItems(master, self.itemsListBoxEntry.listbox)
+        self.validations.append(self.validateItems)
+        self.validateItems.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
+        
+        self.itemsListBoxEntry.listbox.insert(END, "Description,Diameter,HubHeight,RatedPower,CutOutWindSpeed,Datasets".replace(",", columnSeparator))                               
+        self.itemsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
+
+        self.newItemButton = Button(master, text="New", command = self.new_item, width=5, height=1)
+        self.newItemButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
+        
+        self.editItemButton = Button(master, text="Edit", command = self.edit_item, width=5, height=1)
+        self.editItemButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
+        self.itemsListBoxEntry.listbox.bind("<Double-Button-1>", self.edit_item)
+        
+        self.deleteItemButton = Button(master, text="Delete", command = self.remove_item, width=5, height=1)
+        self.deleteItemButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+        self.row +=1
+
+        if not self.isNew:
+                for item in self.config.items:
+                    
+                        text = encodePortfolioItemValuesAsText(description = item.description, \
+                                                                diameter = item.diameter, \
+                                                                hubHeight = item.hubHeight, \
+                                                                ratedPower = item.ratedPower, \
+                                                                cutOutWindSpeed = item.cutOutWindSpeed, \
+                                                                datasets = item.get_dataset_paths())
+                                    
+                        self.itemsListBoxEntry.listbox.insert(END, text)
+
+        self.validateItems.validate()   
+                
+    def setConfigValues(self):
+        
+        self.config.path = self.filePath.get()
+        self.config.description = self.description.get()
+
+        #exclusions
+        self.config.items = []
+        
+        for i in range(self.itemsListBoxEntry.listbox.size()):
+            if i > 0:
+                values = extractPortfolioItemValuesFromText(self.itemsListBoxEntry.listbox.get(i))
+                self.config.addItem(description = values[0], \
+                                    diameter = values[1], \
+                                    hubHeight = values[2], \
+                                    ratedPower = values[3], \
+                                    cutOutWindSpeed = values[4], \
+                                    datasets = values[5])
+
+    def new_item(self):
+
+        PortfolioItemDialog(self, configuration.RelativePath(self.filePath.get()), self.status, self.addPortfolioItemFromText)
+        self.validateItems.validate()   
+        
+    def edit_item(self, event = None):
+
+        items = self.itemsListBoxEntry.listbox.curselection()
+
+        if len(items) == 1:
+
+                idx = int(items[0])
+
+                if idx > 0:
+
+                    text = self.itemsListBoxEntry.listbox.get(items[0])                        
+                    
+                    try:
+                        PortfolioItemDialog(self, configuration.RelativePath(self.filePath.get()), self.status, self.addPortfolioItemFromText, text, idx)                                
+                    except ExceptionType as e:
+                        self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+        
+
+    def remove_item(self):
+
+        items = self.itemsListBoxEntry.listbox.curselection()
+        pos = 0
+        
+        for i in items:
+            
+            idx = int(i) - pos
+            
+            if idx > 0:
+                self.itemsListBoxEntry.listbox.delete(idx, idx)
+
+            pos += 1
+
+        self.validateItems.validate()   
+        
+    def addPortfolioItemFromText(self, text, index = None):
+
+            if index != None:
+                    self.itemsListBoxEntry.listbox.delete(index, index)
+                    self.itemsListBoxEntry.listbox.insert(index, text)
+            else:
+                    self.itemsListBoxEntry.listbox.insert(END, text)     
+
+
+class PortfolioItemDialog(BaseDialog):
+        
+    def __init__(self, master, relativePath, status, callback, text = None, index = None):
+
+        self.relativePath = relativePath
+        self.callback = callback
+        self.text = text
+        self.index = index
+        
+        self.callback = callback
+
+        self.isNew = (text == None)
+        
+        BaseDialog.__init__(self, master, status)
+                    
     def body(self, master):
 
-        self.prepareColumns(master)
+        self.prepareColumns(master)     
 
-        self.generalShowHide = ShowHideCommand(master)
-
-        #add spacer labels
-        spacer = " "
-        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.titleColumn)
-        Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.labelColumn)
-        Label(master, text=spacer * 80).grid(row = self.row, sticky=W, column=self.inputColumn)
-        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.buttonColumn)
-        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.secondButtonColumn)
-        Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.messageColumn)
-        Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.showHideColumn)
+        #dummy label to force width
+        Label(master, text=" " * 275).grid(row = self.row, sticky=W, column=self.titleColumn, columnspan = 8)
         self.row += 1
         
-        #self.addTitleRow(master, "PCWG Share 1 Analysis Configuration")                
-        
-        self.row += 2
-
-        if self.config.isNew:
-                path = asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save PCWG 1 Analysis Configuration", initialdir=preferences.workSpaceFolder)
-        else:
-                path = self.config.path
-                
-        #self.filePath = path#
-        self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
-
-        self.addFormElements(master)
-    
-    def addFormElements(self, master):
-        datasetsShowHide = ShowHideCommand(master)
-        Label(master, text="Dataset Configuration XMLs:").grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-        datasetsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
-        self.row += 1 
-        self.datasetsListBoxEntry = self.addListBox(master, "DataSets ListBox", showHideCommand = datasetsShowHide )
         if not self.isNew:
-            for dataset in self.config.datasets:
-                self.datasetsListBoxEntry.listbox.insert(END, dataset)
+                
+            items = extractPortfolioItemValuesFromText(self.text)
+            
+            description = items[0]
+            diameter = items[1]
+            hubHeight = items[2]
+            ratedPower = items[3]
+            cutOutWindSpeed = items[4]                
+            datasets = items[5]                    
+
+        else:
+            
+            description = None
+            diameter = None
+            hubHeight = None
+            ratedPower = None
+            cutOutWindSpeed = None               
+            datasets = None
+                
+        self.addTitleRow(master, "Portfolio Item Settings:")
+        
+        self.description = self.addEntry(master, "Description:", ValidateNotBlank(master), description)
+        self.diameter = self.addEntry(master, "Diameter:", ValidateNonNegativeFloat(master), diameter)
+        self.hubHeight = self.addEntry(master, "Hub Height:", ValidateNonNegativeFloat(master), hubHeight)
+        self.ratedPower = self.addEntry(master, "Rated Power:", ValidateNonNegativeFloat(master), ratedPower)
+        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidateNonNegativeFloat(master), cutOutWindSpeed)
+
+        self.datasetsListBoxEntry = self.addListBox(master, "Datasets ListBox")
+                        
+        if not self.isNew:
+                for dataset in datasets:
+                        self.datasetsListBoxEntry.listbox.insert(END, dataset)
+                        
         self.datasetsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                
         self.validateDatasets = ValidateDatasets(master, self.datasetsListBoxEntry.listbox)
         self.validations.append(self.validateDatasets)
         self.validateDatasets.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
-        datasetsShowHide.addControl(self.validateDatasets.messageLabel)
+
         self.newDatasetButton = Button(master, text="New", command = self.NewDataset, width=5, height=1)
         self.newDatasetButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-        datasetsShowHide.addControl(self.newDatasetButton)
+        
         self.editDatasetButton = Button(master, text="Edit", command = self.EditDataset, width=5, height=1)
         self.datasetsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditDataset)
         self.editDatasetButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-        datasetsShowHide.addControl(self.editDatasetButton)
+        
         self.addDatasetButton = Button(master, text="+", command = self.addDataset, width=2, height=1)
         self.addDatasetButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
-        datasetsShowHide.addControl(self.addDatasetButton)
+        
         self.removeDatasetButton = Button(master, text="-", command = self.removeDatasets, width=2, height=1)
         self.removeDatasetButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-        datasetsShowHide.addControl(self.removeDatasetButton)
-        self.row += 2
 
-        turbineSettingsShowHide = ShowHideCommand(master)
-        self.addTitleRow(master, "Turbine Settings:", turbineSettingsShowHide)
-        self.cutInWindSpeed = self.addEntry(master, "Cut In Wind Speed:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.cutInWindSpeed
-        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.cutOutWindSpeed
-        self.ratedPower = self.addEntry(master, "Rated Power:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.ratedPower
-        self.hubHeight = self.addEntry(master, "Hub Height:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.hubHeight
-        self.diameter = self.addEntry(master, "Diameter:", ValidatePositiveFloat(master), '', showHideCommand = turbineSettingsShowHide)#self.config.diameter
+        #dummy label to indent controls
+        Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
 
-        self.generalShowHide.hide()
-        datasetsShowHide.show()
-        turbineSettingsShowHide.show()
+    def apply(self):
+
+        datasets = []
+        
+        for i in range(self.datasetsListBoxEntry.listbox.size()):
+                dataset = self.relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
+                datasets.append(dataset) 
+                    
+        self.text = encodePortfolioItemValuesAsText(self.description.get().strip(), \
+                                                    self.diameter.get(), \
+                                                    self.hubHeight.get(), \
+                                                    self.ratedPower.get(), \
+                                                    self.cutOutWindSpeed.get(), \
+                                                    datasets)
+
+        if self.isNew:
+                self.status.addMessage("Portfolio Item created")
+        else:
+                self.status.addMessage("Portfolio Item updated")
+
+        if self.index== None:
+                self.callback(self.text)
+        else:
+                self.callback(self.text, self.index)
 
     def EditDataset(self, event = None):
+
         items = self.datasetsListBoxEntry.listbox.curselection()
         if len(items) == 1:
             index = items[0]
             path = self.datasetsListBoxEntry.listbox.get(index)
             try:
-                relativePath = configuration.RelativePath(self.filePath.get()) 
-                datasetConfig = configuration.DatasetConfiguration(relativePath.convertToAbsolutePath(path))
-                configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)
+                datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(path))
+                DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)                                                                                     
             except ExceptionType as e:
                 self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
-
+                                    
     def NewDataset(self):
+
         try:
             config = configuration.DatasetConfiguration()
-            configDialog = DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)
+            DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)                                         
         except ExceptionType as e:
             self.status.addMessage("ERROR creating dataset config: %s" % e)
-                    
-    def setAnalysisFilePath(self):
-        fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=preferences.workSpaceFolder)
-        if len(fileName) > 0: self.analysisFilePath.set(fileName)
-            
+
     def addDataset(self):
-        fileName = SelectFile(parent=self.master,defaultextension=".xml")
+        fileName = askopenfilename(parent=self.master, initialdir=preferences.dataset_last_opened_dir(), defaultextension=".xml")
         if len(fileName) > 0: self.addDatasetFromPath(fileName)
 
     def addDatasetFromPath(self, path, index = None):
-        relativePath = configuration.RelativePath(self.filePath.get())
-        path = relativePath.convertToRelativePath(path)
+
+        try:
+                preferences.datasetLastOpened = path
+                preferences.save()
+        except ExceptionType as e:
+            self.addMessage("Cannot save preferences: %s" % e)
+                
+        path = self.relativePath.convertToRelativePath(path)
+
         if index != None:
             self.datasetsListBoxEntry.listbox.delete(index, index)
             self.datasetsListBoxEntry.listbox.insert(index, path)
         else:
             self.datasetsListBoxEntry.listbox.insert(END, path)
-        self.validateDatasets.validate()
+
+        self.validateDatasets.validate()               
 
     def removeDatasets(self):
+            
         items = self.datasetsListBoxEntry.listbox.curselection()
         pos = 0
+        
         for i in items:
             idx = int(i) - pos
             self.datasetsListBoxEntry.listbox.delete(idx, idx)
             pos += 1
-        self.validateDatasets.validate()
     
-    def setConfigValues(self, inner_range_id = 'A'):
-        
-        self.config.path = self.filePath.get()
-        
-        relativePath = configuration.RelativePath(self.config.path)
-        
-        self.inner_range_id = inner_range_id
-        self._pcwg_defaults()
-
-        self.config.powerCurveMinimumCount = self.powerCurveMinimumCount
-        self.config.filterMode = self.filterMode
-        self.config.baseLineMode = self.baseLineMode
-        self.config.interpolationMode = self.interpolationMode
-        self.config.powerCurveMode = self.powerCurveMode
-        self.config.powerCurvePaddingMode = self.powerCurvePaddingMode
-        self.config.nominalWindSpeedDistribution = self.nominalWindSpeedDistribution
-        self.config.powerCurveFirstBin = self.powerCurveFirstBin
-        self.config.powerCurveLastBin = self.powerCurveLastBin
-        self.config.powerCurveBinSize = self.powerCurveBinSize
-        self.config.innerRangeLowerTurbulence = self.innerRangeLowerTurbulence
-        self.config.innerRangeUpperTurbulence = self.innerRangeUpperTurbulence
-        self.config.innerRangeLowerShear = self.innerRangeLowerShear
-        self.config.innerRangeUpperShear = self.innerRangeUpperShear
-
-        self.config.cutInWindSpeed = float(self.cutInWindSpeed.get())
-        self.config.cutOutWindSpeed = float(self.cutOutWindSpeed.get())
-        self.config.ratedPower = float(self.ratedPower.get())
-        self.config.hubHeight = float(self.hubHeight.get())
-        self.config.diameter = float(self.diameter.get())
-        self.config.specifiedPowerCurve = self.specifiedPowerCurve
-
-        self.config.densityCorrectionActive = self.config.densityCorrectionActive
-        self.config.turbRenormActive = self.turbulenceCorrectionActive
-        self.config.rewsActive = self.rewsCorrectionActive
-        self.config.powerDeviationMatrixActive = self.powerDeviationMatrixActive
-        
-        if self.specifiedPowerDeviationMatrix is not None:
-            self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix)
-
-        self.config.datasets = []
-        for i in range(self.datasetsListBoxEntry.listbox.size()):
-            dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
-            self.config.datasets.append(dataset)
-
+        self.validateDatasets.validate()
 
 class UserInterface:
 
@@ -3153,70 +3318,149 @@ class UserInterface:
             self.root.geometry("860x400")
             self.root.title("PCWG")
 
-            labelsFrame = Frame(self.root)
-            settingsFrame = Frame(self.root)
             consoleframe = Frame(self.root)
             commandframe = Frame(self.root)
-
-            load_button = Button(settingsFrame, text="Load", command = self.LoadAnalysis)
-            edit_button = Button(settingsFrame, text="Edit", command = self.EditAnalysis)
-            new_button = Button(settingsFrame, text="New", command = self.NewAnalysis)
-
-            calculate_button = Button(commandframe, text="Calculate", command = self.Calculate)
-            export_report_button = Button(commandframe, text="Export Report", command = self.ExportReport)
-            anonym_report_button = Button(commandframe, text="Export Anonymous Report", command = self.ExportAnonymousReport)
-            pcwg_share_01_button = Button(commandframe, text="PCWG-Share-01", command = self.export_pcwg_share_01)
-            pcwg_share_01_report_button = Button(commandframe, text="PCWG-Share-01-Report", command = self.export_pcwg_share_01_report)
-            export_time_series_button = Button(commandframe, text="Export Time Series", command = self.ExportTimeSeries)
-            benchmark_button = Button(commandframe, text="Benchmark", command = self.RunBenchmark)
-            clear_console_button = Button(commandframe, text="Clear Console", command = self.ClearConsole)
-            about_button = Button(commandframe, text="About", command = self.About)
-            set_work_space_button = Button(commandframe, text="Set Work Space", command = self.SetWorkSpace)
             
-            self.analysisFilePathLabel = Label(labelsFrame, text="Analysis File")
-            self.analysisFilePathTextBox = Entry(settingsFrame)
+            #analyse
+            analyse_group = LabelFrame(commandframe, text="Analysis", padx=5, pady=5)
 
-            self.analysisFilePathTextBox.config(state=DISABLED)
+            analyse_group_top = Frame(analyse_group)
+            analyse_group_bottom = Frame(analyse_group)
+            
+            load_button = Button(analyse_group_bottom, text="Load", command = self.LoadAnalysis)
+            edit_button = Button(analyse_group_bottom, text="Edit", command = self.EditAnalysis)
+            new_button = Button(analyse_group_bottom, text="New", command = self.NewAnalysis)
+            calculate_button = Button(analyse_group_top, text="Calculate", command = self.Calculate)
+            export_report_button = Button(analyse_group_top, text="Export Report", command = self.ExportReport)
+            export_time_series_button = Button(analyse_group_top, text="Export Time Series", command = self.ExportTimeSeries)
 
-            scrollbar = Scrollbar(consoleframe, orient=VERTICAL)
-            self.listbox = Listbox(consoleframe, yscrollcommand=scrollbar.set, selectmode=EXTENDED)
-            scrollbar.configure(command=self.listbox.yview)
-
-            new_button.pack(side=RIGHT, padx=5, pady=5)                
-            edit_button.pack(side=RIGHT, padx=5, pady=5)
             load_button.pack(side=RIGHT, padx=5, pady=5)
-            
+            edit_button.pack(side=RIGHT, padx=5, pady=5)
+            new_button.pack(side=RIGHT, padx=5, pady=5)
             calculate_button.pack(side=LEFT, padx=5, pady=5)
             export_report_button.pack(side=LEFT, padx=5, pady=5)
-            #anonym_report_button.pack(side=LEFT, padx=5, pady=5)
-            pcwg_share_01_button.pack(side=LEFT, padx=5, pady=5)
-            pcwg_share_01_report_button.pack(side=LEFT, padx=5, pady=5)
             export_time_series_button.pack(side=LEFT, padx=5, pady=5)
+            
+            self.analysisFilePathLabel = Label(analyse_group_bottom, text="Analysis File")
+            self.analysisFilePathTextBox = Entry(analyse_group_bottom)
+            self.analysisFilePathTextBox.config(state=DISABLED)
+            self.analysisFilePathLabel.pack(side=LEFT, anchor=NW, padx=5, pady=5)
+            self.analysisFilePathTextBox.pack(side=RIGHT, anchor=NW,fill=X, expand=1, padx=5, pady=5)
+
+            analyse_group_bottom.pack(side=BOTTOM,fill=BOTH, expand=1)
+            analyse_group_top.pack(side=TOP,fill=BOTH, expand=1)
+
+            analyse_group.pack(side=TOP, padx=10, pady=5, anchor=NW,fill=X, expand=1)
+            
+            #portfolio
+            portfolio_group = LabelFrame(commandframe, text="PCWG-Share-X", padx=5, pady=5)
+
+            portfolio_group_top = Frame(portfolio_group)
+            portfolio_group_bottom = Frame(portfolio_group)
+            
+            run_portfolio_button = Button(portfolio_group_top, text="PCWG-Share-1.0", command = self.PCWG_Share_1_Portfolio)            
+            run_portfolio_button.pack(side=LEFT, padx=5, pady=5)
+
+            run_portfolio_button = Button(portfolio_group_top, text="PCWG-Share-1.1", command = self.PCWG_Share_1_dot_1_Portfolio)            
+            run_portfolio_button.pack(side=LEFT, padx=5, pady=5)
+
+            load_portfolio_button = Button(portfolio_group_bottom, text="Load", command = self.load_portfolio)            
+            edit_portfolio_button = Button(portfolio_group_bottom, text="Edit", command = self.edit_portfolio)
+            new_portfolio_button = Button(portfolio_group_bottom, text="New", command = self.new_portfolio)
+
+            load_portfolio_button.pack(side=RIGHT, padx=5, pady=5)
+            edit_portfolio_button.pack(side=RIGHT, padx=5, pady=5)
+            new_portfolio_button.pack(side=RIGHT, padx=5, pady=5)
+            
+            self.portfolioFilePathLabel = Label(portfolio_group_bottom, text="Portfolio File")
+            self.portfolioFilePathTextBox = Entry(portfolio_group_bottom)
+            self.portfolioFilePathTextBox.config(state=DISABLED)
+            self.portfolioFilePathLabel.pack(side=LEFT, anchor=NW, padx=5, pady=5)
+            self.portfolioFilePathTextBox.pack(side=RIGHT, anchor=NW,fill=X, expand=1, padx=5, pady=5)
+
+            portfolio_group_bottom.pack(side=BOTTOM,fill=BOTH, expand=1)
+            portfolio_group_top.pack(side=TOP,fill=BOTH, expand=1)
+            
+            portfolio_group.pack(side=LEFT, padx=10, pady=5,fill=X, expand=1)
+
+            #misc
+            misc_group = LabelFrame(commandframe, text="Miscellaneous", padx=5, pady=5)
+
+            misc_group_top = Frame(misc_group)
+            msic_group_bottom = Frame(misc_group)
+
+            benchmark_button = Button(misc_group_top, text="Benchmark", command = self.RunBenchmark)
+            clear_console_button = Button(misc_group_top, text="Clear Console", command = self.ClearConsole)
+            about_button = Button(msic_group_bottom, text="About", command = self.About)
+            
             benchmark_button.pack(side=LEFT, padx=5, pady=5)
             clear_console_button.pack(side=LEFT, padx=5, pady=5)
             about_button.pack(side=LEFT, padx=5, pady=5)
-            set_work_space_button.pack(side=LEFT, padx=5, pady=5)
+ 
+            msic_group_bottom.pack(side=BOTTOM)
+            misc_group_top.pack(side=TOP)
             
-            self.analysisFilePathLabel.pack(anchor=NW, padx=5, pady=5)
-            self.analysisFilePathTextBox.pack(anchor=NW,fill=X, expand=1, padx=5, pady=5)
-
+            misc_group.pack(side=RIGHT, padx=10, pady=5)
+            
+            #console
+            scrollbar = Scrollbar(consoleframe, orient=VERTICAL)
+            self.listbox = Listbox(consoleframe, yscrollcommand=scrollbar.set, selectmode=EXTENDED)
+            scrollbar.configure(command=self.listbox.yview)
+                       
             self.listbox.pack(side=LEFT,fill=BOTH, expand=1)
             scrollbar.pack(side=RIGHT, fill=Y)
 
-            commandframe.pack(side=TOP)
-            consoleframe.pack(side=BOTTOM,fill=BOTH, expand=1)
-            labelsFrame.pack(side=LEFT)
-            settingsFrame.pack(side=RIGHT,fill=BOTH, expand=1)
+            commandframe.pack(anchor=N, fill=X, expand=1)
+            consoleframe.pack(anchor=N, side=BOTTOM, fill=BOTH, expand=1)
 
             if len(preferences.analysisLastOpened) > 0:
                     try:
                        self.addMessage("Loading last analysis opened")
                        self.LoadAnalysisFromPath(preferences.analysisLastOpened)
                     except IOError:
-                        self.addMessage("Couldn't load last analysis. File could not be found.")
-
+                        self.addMessage("Couldn't load last analysis: File could not be found.")
+                    except Exception as e:
+                        self.addMessage("Couldn't load last analysis: {0}".format(e))
+                        
+            if len(preferences.portfolioLastOpened) > 0:
+                    try:
+                       self.addMessage("Loading last portfolio opened")
+                       self.LoadPortfolioFromPath(preferences.portfolioLastOpened)
+                    except IOError:
+                        self.addMessage("Couldn't load last portfolio: File could not be found.")
+                    except Exception as e:
+                        self.addMessage("Couldn't load last portfolio: {0}".format(e))
+                        
+            self.update()
             self.root.mainloop()        
+            
+    def update(self):
+        
+        updator = update.Updator(version, self)
+        
+        if updator.is_update_available:
+            
+            if tkMessageBox.askyesno("New Version Available", "A new version is available (current version {0}), do you want to upgrade to {1} (restart required)?".format(updator.current_version, updator.latest_version)):
 
+                try:    
+                    updator.download_latest_version()
+                except Exception as e:
+                    self.addMessage("Failed to download latest version: {0}".format(e), red = True)
+                    return
+
+                try:
+                    updator.start_extractor()
+                except Exception as e:
+                    self.addMessage("Cannot start extractor: {0}".format(e), red = True)
+                    return
+                    
+                self.addMessage("Exiting")
+                sys.exit(0)
+                        
+        else:
+            
+            self.addMessage("No updates avaialble")
+                
     def RunBenchmark(self):
 
             self.LoadAnalysisFromPath("")
@@ -3224,9 +3468,19 @@ class UserInterface:
             self.ClearConsole()
             
             #read the benchmark config xml
-            path = askopenfilename(parent = self.root, title="Select Benchmark Configuration", initialfile = "Data\\Benchmark.xml")
+            path = askopenfilename(parent = self.root, \
+                                    title="Select Benchmark Configuration", \
+                                    initialdir = preferences.benchmark_last_opened_dir(), \
+                                    initialfile = preferences.benchmark_last_opened_file())
             
             if len(path) > 0:
+                
+                try:
+                        preferences.benchmarkLastOpened = path
+                        preferences.save()
+                except ExceptionType as e:
+                    self.addMessage("Cannot save preferences: %s" % e)
+
                 self.addMessage("Loading benchmark configuration file: %s" % path)                
                 benchmarkConfig = configuration.BenchmarkConfiguration(path)
                 
@@ -3319,29 +3573,20 @@ class UserInterface:
                     self.addMessage("ERROR: Analysis not loaded", red = True)
                     return
             
-            configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
+            AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
             
     def NewAnalysis(self):
 
             conf = configuration.AnalysisConfiguration()
-            configDialog = AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
+            AnalysisConfigurationDialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, conf)
     
     def LoadAnalysis(self):
 
-            fileName = SelectFile(self.root)
+            fileName = askopenfilename(parent=self.root, initialdir=preferences.analysis_last_opened_dir(), defaultextension=".xml")
+            
             if len(fileName) < 1: return
             
             self.LoadAnalysisFromPath(fileName)
-
-    def SetWorkSpace(self):
-
-            folder = askdirectory(parent=self.root, initialdir=preferences.workSpaceFolder)
-            if len(folder) < 1: return
-            
-            preferences.workSpaceFolder = folder
-            preferences.save()
-
-            self.addMessage("Workspace set to: %s" % folder)
                     
     def LoadAnalysisFromPath(self, fileName):
 
@@ -3366,6 +3611,29 @@ class UserInterface:
                         self.addMessage("Analysis config loaded: %s" % fileName)
                     except ExceptionType as e:
                         self.addMessage("ERROR loading config: %s" % e, red = True)
+
+    def LoadPortfolioFromPath(self, fileName):
+
+            try:
+                    preferences.portfolioLastOpened = fileName
+                    preferences.save()
+            except ExceptionType as e:
+                self.addMessage("Cannot save preferences: %s" % e)
+                
+            self.portfolioFilePathTextBox.config(state=NORMAL)
+            self.portfolioFilePathTextBox.delete(0, END)
+            self.portfolioFilePathTextBox.insert(0, fileName)
+            self.portfolioFilePathTextBox.config(state=DISABLED)
+            
+            self.portfolioConfiguration = None
+
+            if len(fileName) > 0:
+                    
+                    try:
+                        self.portfolioConfiguration = configuration.PortfolioConfiguration(fileName)
+                        self.addMessage("Portfolio config loaded: %s" % fileName)
+                    except ExceptionType as e:
+                        self.addMessage("ERROR loading config: %s" % e, red = True)
                     
     def ExportReport(self):
 
@@ -3374,82 +3642,71 @@ class UserInterface:
                     return
             if not self.analysis.hasActualPower:
                     self.addMessage("No Power Signal in Dataset. Exporting report without power curve results.", red = True)
-                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.report(fileName, version, report_power_curve = False)
                     self.addMessage("Report written to %s" % fileName)
                     return
             try:
-                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.workSpaceFolder)
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.report(fileName, version)
                     self.addMessage("Report written to %s" % fileName)
             except ExceptionType as e:
                     self.addMessage("ERROR Exporting Report: %s" % e, red = True)
     
-    def export_pcwg_share_01(self):
-        self.analysisConfiguration = configuration.AnalysisConfiguration()
-        configDialog = PcwgShare1Dialog(self.root, WindowStatus(self), self.LoadAnalysisFromPath, self.analysisConfiguration)
-        inner_range_id = 'A'
-        self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
-        success = False
+    def PCWG_Share_1_Portfolio(self):
+
+        if self.portfolioConfiguration == None:            
+                self.addMessage("ERROR: Portfolio not loaded", red = True)
+                return
         try:
-            self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
-            self.analysis.pcwg_share_metrics_calc()
-            if not self._is_sufficient_complete_bins(self.analysis):
-                raise Exception('Insufficient complete power curve bins')
-            success = True
-        except Exception as e:
-            self.addMessage(str(e), red = True)
-            self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
-            path = self.analysisConfiguration.path
-            for inner_range_id in ['B','C']:
-                self.analysisConfiguration = configuration.AnalysisConfiguration(path)
-                self.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
-                configDialog.inner_range_id = inner_range_id
-                configDialog.set_inner_range_values()
-                self.analysisConfiguration.innerRangeLowerTurbulence = configDialog.innerRangeLowerTurbulence
-                self.analysisConfiguration.innerRangeUpperTurbulence = configDialog.innerRangeUpperTurbulence
-                self.analysisConfiguration.innerRangeLowerShear = configDialog.innerRangeLowerShear
-                self.analysisConfiguration.innerRangeUpperShear = configDialog.innerRangeUpperShear
-                self.analysisConfiguration.save()
-                try:
-
-                    self.analysis = Analysis.Analysis(self.analysisConfiguration, WindowStatus(self), auto_activate_corrections = True)
-                    self.analysis.pcwg_share_metrics_calc()
-
-                    if not self._is_sufficient_complete_bins(self.analysis):
-                        raise Exception('Insufficient complete power curve bins')
-
-                    success = True
-                    break
-                
-                except Exception as e:
-                    self.addMessage(str(e), red = True)
-                    self.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
-
-        if success:
-            self.export_pcwg_share_01_report()
-
-    def export_pcwg_share_01_report(self):
-        
-        if self.analysis == None:
-            self.addMessage("ERROR: Analysis not yet calculated", red = True)
-            return
-        if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
-            self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
-            return
-        try:
-
-            self.analysis.pcwg_share_metrics_calc()
-            
-            if not self._is_sufficient_complete_bins(self.analysis):
-                self.addMessage('Insufficient complete power curve bins', red = True)          
-            else:
-                fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="PCWG Share 1 Report.xls", title="Save PCWG Share 1 Report", initialdir=preferences.workSpaceFolder)
-                self.analysis.pcwg_data_share_report(version = version, output_fname = fileName)
-                self.addMessage("Report written to %s" % fileName)
-                
+            PcwgShare01Portfolio(self.portfolioConfiguration, log = self, version = version)
         except ExceptionType as e:
-            self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+            self.addMessage(str(e), red = True)
+
+    def PCWG_Share_1_dot_1_Portfolio(self):
+        
+        if self.portfolioConfiguration == None:            
+                self.addMessage("ERROR: Portfolio not loaded", red = True)
+                return
+        try:
+            PcwgShare01dot1Portfolio(self.portfolioConfiguration, log = self, version = version)
+        except ExceptionType as e:
+            self.addMessage(str(e), red = True)
+        
+    def new_portfolio(self):
+
+        try:
+            portfolioConfiguration = configuration.PortfolioConfiguration()
+            PortfolioDialog(self.root, WindowStatus(self), self.LoadPortfolioFromPath, portfolioConfiguration)
+        except ExceptionType as e:
+            self.addMessage(str(e), red = True)
+
+    def edit_portfolio(self):
+        
+        if self.portfolioConfiguration == None:            
+                self.addMessage("ERROR: Portfolio not loaded", red = True)
+                return
+
+        try:
+            PortfolioDialog(self.root, WindowStatus(self), self.LoadPortfolioFromPath, self.portfolioConfiguration)                    
+        except ExceptionType as e:
+            self.addMessage(str(e), red = True)
+
+    def load_portfolio(self):
+        
+        try:
+
+            initial_dir = preferences.portfolio_last_opened_dir()
+            initial_file = preferences.portfolio_last_opened_file()
+                
+            #read the benchmark config xml
+            portfolio_path = askopenfilename(parent = self.root, title="Select Portfolio Configuration", initialfile = initial_file, initialdir=initial_dir)
+
+            self.LoadPortfolioFromPath(portfolio_path)
+            
+        except ExceptionType as e:
+
+            self.addMessage(str(e), red = True)
             
     def _is_sufficient_complete_bins(self, analysis):        
         #Todo refine to be fully consistent with PCWG-Share-01 definition document
@@ -3472,7 +3729,7 @@ class UserInterface:
                     return
             
             try:
-                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.workSpaceFolder)
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.anonym_report(fileName, version, scatter = scatter, deviationMatrix = deviationMatrix)
                     self.addMessage("Anonymous report written to %s" % fileName)
                     if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
@@ -3492,7 +3749,7 @@ class UserInterface:
                     selections = ExportDataSetDialog(self.root, None)
                     clean, full, calibration = selections.getSelections()
 
-                    fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.workSpaceFolder)
+                    fileName = asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.export(fileName, clean, full, calibration)
                     if clean:
                             self.addMessage("Time series written to %s" % fileName)
@@ -3532,7 +3789,7 @@ class UserInterface:
 
 
 if __name__ == "__main__":
-    preferences = configuration.Preferences()
+    preferences = configuration.Preferences(version)
     gui = UserInterface()
     preferences.save()
     print "Done"

@@ -19,8 +19,11 @@ echo Version: %version%
 echo SevenZipPath: %sevenZipPath%
 
 set tool=pcwg_tool
+set extractor=extractor
 
 set toolpath=%gitfolder%\%tool%.py
+set extractorpath=%gitfolder%\%extractor%.py
+
 set outputfolder=%pyinstallerfolder%\%tool%
 set outputZipPath=%pyinstallerfolder%\%tool%.zip
 set versionZip=%tool%-%version%.zip
@@ -54,12 +57,15 @@ if exist "%tool%" rmdir /s /q "%tool%"
 
 echo building executable
 
-rem build exectuable: -F option binds output into a single file
-python %pyinstallerfolder%\PyInstaller.py -F %toolpath%
-
 mkdir %tool%
 
+rem build exectuable: -F option binds output into a single file
+python %pyinstallerfolder%\PyInstaller.py -F %toolpath%
 xcopy /s /Y /q dist\%tool%.exe %tool%\
+
+echo building launcher
+python %pyinstallerfolder%\PyInstaller.py -F %extractorpath%
+xcopy /s /Y /q dist\%extractor%.exe %tool%\
 
 echo copying ancialliary files
 

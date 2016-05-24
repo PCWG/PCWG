@@ -2,41 +2,41 @@
 
 Based on an example by patthoyts, http://paste.tclers.tk/896
 """
+import datetime
 import os
 import Tkinter as tk
 import ttk
 import os.path
-from tkFileDialog import *
-import tkMessageBox
+from tkFileDialog import askopenfilename
 import tkSimpleDialog
+import configuration
+import pcwg_tool
+import Analysis
+from gui.utils import *
+import gui.dataset_tab
+import gui.analysis_tab
 
-#http://effbot.org/tkbook/menu.htm
+columnSeparator = "|"
+filterSeparator = "#"
+datePickerFormat = "%Y-%m-%d %H:%M"# "%d-%m-%Y %H:%M"
+datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
-class Analysis:
+version = "0.5.13"
+ExceptionType = Exception
+#ExceptionType = None #comment this line before release
 
-    def __init__(self, fileName):
-        self.fileName = fileName
-        self.s1 = "text1"
-        self.s2 = "text2"
+pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
+                     'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
+                     'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
 
-    def save(self):
-        print "save"
+class OpenRecent:
 
-class Preferences:
-
-    def __init__(self):
-        self.workSpaceFolder = ""
-
-    def addRecent(self, path):
-        pass
+    def __init__(self, fileOpener, path):
+        self.path = path
+        self.fileOpener = fileOpener
         
-class Recent:
-
-    def __init__(self, file):
-        self.file = file
-
     def __call__(self):
-        pass
+        self.fileOpener.loadFile(self.path)
 
 class ConfirmClose(tkSimpleDialog.Dialog):
 
@@ -111,37 +111,33 @@ class FileOpener:
     def openFile(self):
 
         fileName = self.SelectFile(parent=self.root, defaultextension=".xml")
-
-        if len(fileName) > 0:
-            self.tabs.addAnalysis(fileName)
-            self.preferences.addRecent(fileName)
+        self.loadFile(fileName)
 
     def SelectFile(self, parent, defaultextension=None):
-            if len(preferences.workSpaceFolder) > 0:
-                    return askopenfilename(parent=parent, initialdir=preferences.workSpaceFolder, defaultextension=defaultextension)
+            if len(self.preferences.workSpaceFolder) > 0:
+                    return askopenfilename(parent=parent, initialdir=self.preferences.workSpaceFolder, defaultextension=defaultextension)
             else:
                     return askopenfilename(parent=parent, defaultextension=defaultextension)
+    
+    def loadFile(self, fileName):
 
+        if len(fileName) > 0:
+            
+            detector = configuration.TypeDetector(fileName)
+            
+            if detector.file_type == "analysis":
+                self.tabs.addAnalysis(fileName)
+            elif detector.file_type == "dataset":
+                self.tabs.addDataset(fileName)
+            else:
+                raise Exception("Unkown file type: {0}".format(detector.file_type))
+
+            self.preferences.addRecent(fileName)
+            
 def openMaximized(root):
 
     w, h = root.winfo_screenwidth(), root.winfo_screenheight()
     root.geometry("%dx%d+0+0" % (w, h))
-
-def getRecent():
-
-    recent = []
-
-    recent.append("One")
-    recent.append("Two")
-    recent.append("Three")
-    recent.append("Four")
-
-    return recent
-
-def addRecent(recent_menu):
-
-    for recent in getRecent():
-        recent_menu.add_command(label=recent, command = Recent(recent))
         
 def hello():
     print "hello!"
@@ -162,6 +158,22 @@ class ClosableTab:
         notebook.add(self.frame, text=self.name, padding=3)
         self.index = self.getTabIndex(notebook)
 
+        #self.status = status
+        self.isNew = False
+
+        self.titleColumn = 0
+        self.labelColumn = 1
+        self.inputColumn = 2
+        self.buttonColumn = 3
+        self.secondButtonColumn = 4
+        self.tipColumn = 5
+        self.messageColumn = 6
+        
+        self.validations = []
+
+        self.row = 0
+        self.listboxEntries = {}
+
     def close(self):
 
         d = ConfirmClose(root, self.name)
@@ -179,36 +191,161 @@ class ClosableTab:
     def save(self):
         pass
 
-class AnalysisTab(ClosableTab):
+    def addDatePickerEntry(self, master, title, validation, value, width = None):
 
-    def __init__(self, notebook, fileName, console):
+        if value != None:
+            if type(value) == str:
+                textValue = value
+            else:
+                textValue = value.strftime(datePickerFormat)
+        else:
+            textValue = None
+      
+        entry = self.addEntry(master, title + " " + datePickerFormatDisplay, validation, textValue, width = width)
+        entry.entry.config(state=tk.DISABLED)
+        
+        pickButton = tk.Button(master, text=".", command = DatePicker(self, entry, datePickerFormat), width=3, height=1)
+        pickButton.grid(row=(self.row-1), sticky=tk.N, column=self.inputColumn, padx = 160)
 
-        ClosableTab.__init__(self, notebook, fileName, console)
+        clearButton = tk.Button(master, text="x", command = ClearEntry(entry), width=3, height=1)
+        clearButton.grid(row=(self.row-1), sticky=tk.W, column=self.inputColumn, padx = 133)
+                
+        entry.bindPickButton(pickButton)
 
-        self.analysis = Analysis(fileName)
+        return entry
+        
+    def addPickerEntry(self, master, title, validation, value, width = None):
 
-        sub_tabs = ValidationTabs(self.frame)
+            entry = self.addEntry(master, title, validation, value, width = width)
+            pickButton = tk.Button(master, text=".", command = ColumnPicker(self, entry), width=5, height=1)
+            pickButton.grid(row=(self.row-1), sticky=tk.E+tk.N, column=self.buttonColumn)
+                    
+            entry.bindPickButton(pickButton)
 
-        main_frame = sub_tabs.add("Main Settings")
-        correction_frame = sub_tabs.add("Correction Settings")
+            return entry
+    
+    def addOption(self, master, title, options, value):
 
-        s1Var = tk.StringVar()
-        s2Var = tk.StringVar()
-        s1Var.set(self.analysis.s1)
-        s2Var.set(self.analysis.s2)
-        square1Label = tk.Label(main_frame.frame,textvariable=s1Var)
-        square1Label.grid(row=0, column=7)
-        square2Label = tk.Label(main_frame.frame,textvariable=s2Var)
-        square2Label.grid(row=0, column=6)
+            label = tk.Label(master, text=title)
+            label.grid(row=self.row, sticky=tk.W, column=self.labelColumn)
 
-        sub_tabs.pack()
+            variable = tk.StringVar(master, value)
 
-        main_frame.validate(False)
+            option = apply(tk.OptionMenu, (master, variable) + tuple(options))
+            option.grid(row=self.row, column=self.inputColumn, sticky=tk.W)
 
-        notebook.pack(expand=1, fill='both')
+            self.row += 1
 
-    def save(self):
-        self.analysis.save()
+            return variable
+            
+    def addListBox(self, master, title):
+            
+            scrollbar =  tk.Scrollbar(master, orient=tk.VERTICAL)
+            tipLabel = tk.Label(master, text="")
+            tipLabel.grid(row = self.row, sticky=tk.W, column=self.tipColumn)                
+            lb = tk.Listbox(master, yscrollcommand=scrollbar, selectmode=tk.EXTENDED, height=3)  
+            
+            self.listboxEntries[title] = ListBoxEntry(lb,scrollbar,tipLabel)              
+            self.row += 1
+            self.listboxEntries[title].scrollbar.configure(command=self.listboxEntries[title].listbox.yview)
+            self.listboxEntries[title].scrollbar.grid(row=self.row, sticky=tk.W+tk.N+tk.S, column=self.titleColumn)
+            return self.listboxEntries[title]
+
+    def addCheckBox(self, master, title, value):
+
+            label = tk.Label(master, text=title)
+            label.grid(row=self.row, sticky=tk.W, column=self.labelColumn)
+            variable = tk.IntVar(master, value)
+
+            checkButton = tk.Checkbutton(master, variable=variable)
+            checkButton.grid(row=self.row, column=self.inputColumn, sticky=tk.W)
+
+            self.row += 1
+
+            return variable
+
+    def addTitleRow(self, master, title):
+
+            tk.Label(master, text=title).grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
+
+            #add dummy label to stop form shrinking when validation messages hidden
+            tk.Label(master, text = " " * 70).grid(row=self.row, sticky=tk.W, column=self.messageColumn)
+
+            self.row += 1
+
+    def addEntry(self, master, title, validation, value, width = None):
+
+            variable = tk.StringVar(master, value)
+
+            label = tk.Label(master, text=title)
+            label.grid(row = self.row, sticky=tk.W, column=self.labelColumn)
+
+            tipLabel = tk.Label(master, text="")
+            tipLabel.grid(row = self.row, sticky=tk.W, column=self.tipColumn)
+
+            if validation != None:
+                    validation.messageLabel.grid(row = self.row, sticky=tk.W, column=self.messageColumn)
+                    validation.title = title
+                    self.validations.append(validation)
+                    validationCommand = validation.CMD
+            else:
+                    validationCommand = None
+
+            entry = tk.Entry(master, textvariable=variable, validate = 'key', validatecommand = validationCommand, width = width)
+
+            entry.grid(row=self.row, column=self.inputColumn, sticky=tk.W)
+
+            if validation != None:
+                validation.link(entry)
+
+            self.row += 1
+
+            return VariableEntry(variable, entry, tipLabel)
+
+    def addFileSaveAsEntry(self, master, title, validation, value, width = 60):
+
+            variable = self.addEntry(master, title, validation, value, width, showHideCommand)
+
+            button = tk.Button(master, text="...", command = SetFileSaveAsCommand(master, variable), height=1)
+            button.grid(row=(self.row - 1), sticky=tk.E+tk.W, column=self.buttonColumn)
+
+            return variable
+
+    def addFileOpenEntry(self, master, title, validation, value, basePathVariable = None, width = 60):
+
+            variable = self.addEntry(master, title, validation, value, width)
+
+            button = tk.Button(master, text="...", command = SetFileOpenCommand(master, variable, basePathVariable), height=1)
+            button.grid(row=(self.row - 1), sticky=tk.E+tk.W, column=self.buttonColumn)
+
+            return variable
+
+    def validate(self):
+
+            valid = True
+            message = ""
+
+            for validation in self.validations:
+                    
+                    if not validation.valid:
+                            if not isinstance(validation,ValidateDatasets):
+                                    message += "%s (%s)\r" % (validation.title, validation.messageLabel['text'])
+                            else:
+                                    message += "Datasets error. \r"
+                            valid = False
+            if not valid:
+
+                    tkMessageBox.showwarning(
+                            "Validation errors",
+                            "Illegal values, please review error messages and try again:\r %s" % message
+                            )
+                            
+                    return 0
+
+            else:
+    
+                    return 1
+
 
 class ClosableTabs:
 
@@ -230,7 +367,15 @@ class ClosableTabs:
 
     def addAnalysis(self, fileName):
 
-        closableTab = AnalysisTab(self.nb, fileName, self.console)
+        closableTab = gui.analysis_tab.AnalysisTab(self.nb, fileName, self.console)
+
+        self.tabs[closableTab.index] = closableTab
+
+        return closableTab
+
+    def addDataset(self, fileName):
+
+        closableTab = gui.dataset_tab.DatasetTab(self.nb, fileName, self.console)
 
         self.tabs[closableTab.index] = closableTab
 
@@ -378,7 +523,9 @@ class PCWG:
     def __init__(self, root):
 
         self.root = root
-        
+
+        self.added_recents = []
+                
         tab_frame = tk.Frame(root)
         console_frame = tk.Frame(root, background="grey")
         
@@ -391,12 +538,17 @@ class PCWG:
         console = Console(console_frame)
         tabs = ClosableTabs(tab_frame, console)
 
-        self.preferences = Preferences()
+        self.preferences = configuration.Preferences()
         self.fileOpener = FileOpener(root, tabs, self.preferences)
 
         self.addMenus(root)
 
+        self.preferences.onRecentChange += self.addRecents
+
+        
     def addMenus(self, root):
+
+        #http://effbot.org/tkbook/menu.htm
 
         #add menu
         self.menubar = tk.Menu(root)
@@ -414,10 +566,10 @@ class PCWG:
 
         filemenu.add_command(label="Open", command=self.fileOpener.openFile)
 
-        recent_menu = tk.Menu(self.menubar)
-        addRecent(recent_menu)
-        filemenu.add_cascade(label="Open Recent", menu=recent_menu)
-
+        self.recent_menu = tk.Menu(self.menubar)
+        filemenu.add_cascade(label="Open Recent", menu=self.recent_menu)
+        self.addRecents()
+        
         filemenu.add_command(label="Save")
         filemenu.add_command(label="Save As")
         filemenu.add_separator()
@@ -442,6 +594,14 @@ class PCWG:
         # display the menu
         root.config(menu=self.menubar)
 
+    def addRecents(self):
+    
+        for recent in self.preferences.recents:
+            if recent not in self.added_recents:
+                self.added_recents.append(recent)
+                self.recent_menu.add_command(label=recent, command = OpenRecent(self.fileOpener, recent))
+
+
 #start of main code
 
 root = tk.Tk()
@@ -451,3 +611,5 @@ menu = PCWG(root)
 openMaximized(root)
 
 root.mainloop()
+
+menu.preferences.save()
