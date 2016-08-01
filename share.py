@@ -263,7 +263,7 @@ class BaseSharePortfolio(object):
         if os.path.isfile(summary_file_for_zip):
             os.remove(summary_file_for_zip)
         
-        self.log.addMessage("Copying to %s".format(summary_file_for_zip))
+        self.log.addMessage("Copying to {0}".format(summary_file_for_zip))
         copyfile(summary_file, summary_file_for_zip)
 
         self.log.addMessage("Adding {0} to output zip.".format(summary_file_for_zip))
