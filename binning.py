@@ -2,7 +2,7 @@ import numpy as np
 
 class Bins:
 
-    def __init__(self, centerOfFirstBin, binWidth, centerOfLastBin  ):
+    def __init__(self, centerOfFirstBin, binWidth, centerOfLastBin ):
 
         self.centerOfFirstBin = centerOfFirstBin
         self.binWidth = binWidth
@@ -17,8 +17,11 @@ class Bins:
         self.numberOfBins = int(self.numberOfBins)
 
         self.centers = []
+        self.limits = []
 
         for i in range(self.numberOfBins):
+            limit = (self.binStartByIndex(i), self.binEndByIndex(i))
+            self.limits.append(limit)
             self.centers.append(self.binCenterByIndex(i))
 
     def binCenterForFirstCenterAndWidth(self, x, centerOfFirstBin, binWidth):
@@ -28,6 +31,12 @@ class Bins:
     def binCenterByIndex(self, index):
         return self.centerOfFirstBin + index * self.binWidth
 
+    def binStartByIndex(self, index):
+        return self.binCenterByIndex(index) - self.binWidth / 2.0
+
+    def binEndByIndex(self, index):
+        return self.binCenterByIndex(index) + self.binWidth / 2.0
+        
     def binCenter(self, x):
         if np.isnan(x): return np.nan
         return self.binCenterForFirstCenterAndWidth(x, self.centerOfFirstBin, self.binWidth)

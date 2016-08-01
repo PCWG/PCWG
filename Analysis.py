@@ -1,17 +1,12 @@
 import pandas as pd
 import numpy as np
-import scipy as sp
 import hashlib
-
 import os
-import datetime
-import math
 import configuration
 import dataset
 from dataset import  DeviationMatrix
 import binning
 import turbine
-import rews
 import reporting
 
 
@@ -89,12 +84,111 @@ class PowerDeviationMatrixPowerCalculator:
             #print dimension.parameter, value
 
         deviation = self.powerDeviationMatrix[parameters]
-        power = self.powerCurve.power(row[self.windSpeedColumn])
-
+        
+        #power = self.powerCurve.power(row[self.windSpeedColumn])
         #print power, deviation
         #raise Exception("Stop")
     
         return self.powerCurve.power(row[self.windSpeedColumn]) * (1.0 + deviation)
+
+class SubPower:
+            
+    def __init__(self, unfiltered_data_frame, filtered_data_frame, aggregations, wind_speed_column, power_polumn, wind_speed_bins, sub_divisions = 4):
+
+        self.sub_divisions = sub_divisions
+        self.aggregations = aggregations
+        
+        self.wind_speed_column = wind_speed_column
+        self.power_polumn = power_polumn
+        
+        self.data_count = "Data Count"
+        self.wind_speed_sub_bin_col = "Wind Speed Sub Bin"
+             
+        print "Creating sub-power bins"
+        self.wind_speed_sub_bins = binning.Bins(self.center_of_first_sub_bin(wind_speed_bins), \
+                            self.sub_width(wind_speed_bins), \
+                            self.center_of_last_sub_bin(wind_speed_bins))
+
+        self.unfiltered_sub_power = self.calculate_sub_power(unfiltered_data_frame)   
+        self.filtered_sub_power = self.calculate_sub_power(filtered_data_frame)
+
+        print "Creating cut-in wind speed"
+        self.cut_in_wind_speed = self.calculate_cut_in_speed(self.unfiltered_sub_power)
+    
+    def calculate_sub_power(self, data_frame):
+
+        data_frame[self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
+
+        print "Creating sub-power distribution"
+
+        sub_distribution = data_frame[self.power_polumn].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.data_count:'count'})
+        sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.power_polumn:'mean'})
+        
+        #sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).aggregate(self.aggregations.average)
+        
+        sub_power = sub_power.join(sub_distribution, how = 'inner')
+        sub_power.dropna(inplace = True)                           
+
+        return sub_power
+        
+    def sub_width(self, bins):
+        return bins.binWidth / float(self.sub_divisions)
+
+    def center_of_first_sub_bin(self, bins):
+        start_of_first_bin =  bins.centerOfFirstBin - 0.5 * bins.binWidth
+        return start_of_first_bin + 0.5 * self.sub_width(bins)
+
+    def center_of_last_sub_bin(self, bins):
+        return bins.centerOfLastBin + 0.5 * self.sub_width(bins)
+
+    def sub_limit(self, sub_index, start):
+
+        sub_start = start + sub_index * self.wind_speed_sub_bins.binWidth
+        sub_end = sub_start + self.wind_speed_sub_bins.binWidth
+
+        return (sub_start, sub_end)
+        
+    def get_count_for_range(self, start, end):
+        
+        width = end - start
+        
+        if width != self.wind_speed_sub_bins.binWidth:
+            raise Exception("Unexpected implied bin width for range {0} to {1}. Implied width = {2} vs Expected Width = {3}".format(start, end, width, self.wind_speed_sub_bins.binWidth))
+            
+        center = 0.5 * (start + end)
+
+        try:
+
+            sub_distribution =  self.filtered_sub_power[self.data_count]
+            
+            if center in sub_distribution:
+                return sub_distribution[center]
+            else:
+                return 0.0
+        
+        except Exception as e:
+           
+           raise Exception("Cannot calculate weight for center {0}: {1}".format(center, e))
+         
+    def calculate_cut_in_speed(self, sub_power):
+            
+        first_center = None
+        powers = sub_power[self.power_polumn]
+        
+        for speed in powers.index:    
+            
+            if powers[speed] > 0:
+                if first_center == None or speed < first_center:
+                    first_center = speed
+        
+        if first_center == None:
+            raise Exception("Could not determine cut-in")
+
+        cut_in = first_center - 0.5 * self.wind_speed_sub_bins.binWidth
+        
+        print "Cut-in: {0}".format(cut_in)
+        
+        return cut_in
 
 class Analysis:
 
@@ -149,6 +243,7 @@ class Analysis:
         self.uniqueAnalysisId = hash_file_contents(self.config.path)
         self.status.addMessage("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
         self.status.addMessage("Calculating (please wait)...")
+
         if len(self.datasetConfigs) > 0:
             self.datasetUniqueIds = self.generate_unique_dset_ids()
 
@@ -173,7 +268,7 @@ class Analysis:
         self.status.addMessage("Power Curve Mode: %s" % self.powerCurveMode)
 
         self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
-
+        
         first_turb_bin = 0.01
         turb_bin_width = 0.02
         last_turb_bin = 0.25
@@ -213,7 +308,7 @@ class Analysis:
             self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.hubWindSpeed]
             self.inputHubWindSpeedSource = self.hubWindSpeed
 
-        self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)
+        self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)        
         self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
 
         self.applyRemainingFilters() #To do: record rows which are removed by each filter independently, as opposed to sequentially.
@@ -237,6 +332,7 @@ class Analysis:
 
             if self.hasShear:
                 self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(1, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Inner Range', required = (self.powerCurveMode == 'InnerMeasured'))
+                #print "Exiting"; sys.exit()                
                 self.outerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(4, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Outer Range', required = (self.powerCurveMode == 'OuterMeasured'))
 
             self.status.addMessage("Actual Power Curves Complete.")
@@ -745,16 +841,21 @@ class Analysis:
         mask = (self.dataFrame[powerColumn] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
         
         filteredDataFrame = self.dataFrame[mask]
+
+        if mode == 0 or mode == 1:        
+            filteredDataFrame.to_csv("debug ({0}).dat".format(name))
         
         print "%s rows of data being used for %s power curve." % (len(filteredDataFrame), name)
 
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[powerColumn, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         powerStdDev = filteredDataFrame[[powerColumn, self.inputHubWindSpeed]].groupby(filteredDataFrame[self.windSpeedBin]).std().rename(columns={powerColumn:self.powerStandDev})[self.powerStandDev]
-
+        
         dfDataCount = filteredDataFrame[powerColumn].groupby(filteredDataFrame[self.windSpeedBin]).agg({self.dataCount:'count'})
+
         if not all(dfPowerLevels.index == dfDataCount.index):
             raise Exception("Index of aggregated data count and mean quantities for measured power curve do not match.")
+            
         dfPowerLevels = dfPowerLevels.join(dfDataCount, how = 'inner')
         dfPowerLevels = dfPowerLevels.join(powerStdDev, how = 'inner')
         dfPowerLevels.dropna(inplace = True)
@@ -765,13 +866,12 @@ class Analysis:
             dfPowerCoeff = None
 
         if len(dfPowerLevels.index) != 0:
+            
             #padding
             # To deal with data missing between cutOut and last measured point:
             # Specified : Use specified rated power
             # Last : Use last observed power
             # Linear : linearly interpolate from last observed power at last observed ws to specified power at specified ws.
-            maxTurb = dfPowerLevels[self.hubTurbulence].max()
-            minTurb = dfPowerLevels[self.hubTurbulence].min()
             
             powerCurvePadder = PadderFactory().generate(self.powerCurvePaddingMode, powerColumn, self.inputHubWindSpeed, self.hubTurbulence, self.dataCount)
 
@@ -781,12 +881,23 @@ class Analysis:
                 powerLevels[self.powerCoeff] = dfPowerCoeff
 
             print "Calculating power curve, from levels:"
-            print powerLevels.head(30)
+            print powerLevels.head(len(powerLevels))
             
-            return turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, powerColumn,
-                                      self.hubTurbulence, wsCol = self.inputHubWindSpeed, countCol = self.dataCount,
+            print "Calculating sub-power"
+            sub_power = SubPower(self.dataFrame, filteredDataFrame, self.aggregations, self.inputHubWindSpeed, powerColumn, self.windSpeedBins)
+                            
+            print "Creating turbine"            
+            turb = turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, inputHubWindSpeed = self.inputHubWindSpeed, 
+                                            hubTurbulence = self.hubTurbulence, actualPower = powerColumn,
                                             turbulenceRenormalisation = (self.turbRenormActive if powerColumn != self.turbulencePower else False), 
-                                            name = name, interpolationMode = self.interpolationMode, required = required)
+                                            name = name, interpolationMode = self.interpolationMode, 
+                                            required = required, xLimits = self.windSpeedBins.limits, 
+                                            sub_power = sub_power)
+
+            #if mode == 1:
+            #    raw_input("Turbine Created ({0})".format(name))
+                
+            return turb
 
     def calculatePowerDeviationMatrix(self, power, filterMode, windBin = None, turbBin = None):
         if windBin is None:

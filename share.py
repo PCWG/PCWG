@@ -17,9 +17,11 @@ from data_sharing_reports import PortfolioReport
 
 class PcwgShare01Config(configuration.AnalysisConfiguration):
 
-    pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
-                     'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
-                     'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
+    #pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
+    #                 'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
+    #                 'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
+
+    pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25}}
 
     def __init__(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
         configuration.AnalysisConfiguration.__init__(self)
@@ -31,7 +33,7 @@ class PcwgShare01Config(configuration.AnalysisConfiguration):
         self.powerCurveMinimumCount = 10
         self.filterMode = "All"
         self.baseLineMode = "Hub"
-        self.interpolationMode = "Cubic"
+        self.interpolationMode = self.get_interpolation_mode()
         self.powerCurveMode = "InnerMeasured"
         self.powerCurvePaddingMode = "Max"
         self.nominalWindSpeedDistribution = None
@@ -60,13 +62,13 @@ class PcwgShare01Config(configuration.AnalysisConfiguration):
         for dataset in datasets:
             self.datasets.append(dataset)
 
+    def get_interpolation_mode(self):
+        return "Cubic"
+        
 class PcwgShare01dot1Config(PcwgShare01Config):
-
-    def __init__(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
-
-        PcwgShare01Config.__init__(hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets, inner_range_id)
-
-        self.interpolationMode = "Marmander"
+                
+    def get_interpolation_mode(self):
+        return "Marmander"
         
 class PcwgShare01:
     
@@ -94,7 +96,7 @@ class PcwgShare01:
 
         options = []
         
-        for inner_range_id in ['A', 'B','C']:
+        for inner_range_id in PcwgShare01Config.pcwg_inner_ranges:
             
             analysis, success = self.attempt_calculation(self.diameter, self.hubHeight, self.ratedPower, self.cutOutWindSpeed, self.datasets, inner_range_id, self.log)
             
@@ -127,14 +129,14 @@ class PcwgShare01:
         else:
             return False
     
-    def new_config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
+    def new_config(self, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
         return PcwgShare01Config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id)     
          
     def attempt_calculation(self, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id, log):
 
         temp_path = "temp_config.xml"
         
-        config = PcwgShare01Config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id)
+        config = self.new_config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id)
         config.save(temp_path)
                 
         log.addMessage("Attempting PCWG analysis using Inner Range definition %s." % inner_range_id)
@@ -201,13 +203,15 @@ class PcwgShare01:
 
 class PcwgShare01dot1(PcwgShare01):
 
-    def new_config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
+    def new_config(self, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
         return PcwgShare01dot1Config(diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets, inner_range_id)     
     
 class BaseSharePortfolio(object):
     
     def __init__(self, portfolio_configuration, log, version):
 
+        log.addMessage("Running Portfolio: {0}".format(self.share_name()))
+        
         self.version = version
         self.portfolio_path = portfolio_configuration.path
         self.relativePath = configuration.RelativePath(self.portfolio_path)
@@ -275,7 +279,7 @@ class BaseSharePortfolio(object):
 class PcwgShare01Portfolio(BaseSharePortfolio):
     
     def __init__(self, portfolio_configuration, log, version):
-
+        
         BaseSharePortfolio.__init__(self, portfolio_configuration, log, version)
     
     def new_share(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, dataset_paths, output_zip):

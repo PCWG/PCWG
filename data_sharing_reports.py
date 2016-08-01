@@ -44,38 +44,141 @@ class PortfolioReport(object):
     def report(self, shares, path):
         
         self.book = xlwt.Workbook()
-        self.sheet = self.book.add_sheet("Summary", cell_overwrite_ok=True)    
 
-        row = 0
-        
-        self.sheet.write(0, 0, "Analysis", self.bold_style)
-        self.sheet.write(0, 1, "B-IR-Count", self.bold_style)
-        self.sheet.write(0, 2, "B-IR-NME", self.bold_style)
-        self.sheet.write(0, 3, "B-IR-NMAE", self.bold_style)
-        self.sheet.write(0, 4, "B-OR-Count", self.bold_style)
-        self.sheet.write(0, 5, "B-OR-NME", self.bold_style)
-        self.sheet.write(0, 6, "B-OR-NMAE", self.bold_style)
-            
-        for share in shares:            
-            row += 1
-            self.sheet.write(row, 0, share.analysis.uniqueAnalysisId)            
-            self.write_errors(share.analysis, self.sheet, row, 1, 'Inner')
-            self.write_errors(share.analysis, self.sheet, row, 4, 'Outer')
-            
+        self.write_sheet(shares, "Baseline")
+        self.write_sheet(shares, "TI Renormalisation")
+        self.write_sheet(shares, "REWS")
+        self.write_sheet(shares, "Combined TI Renorm and REWS")
+        self.write_sheet(shares, "PDM")
+                
         self.book.save(path)
 
-    def write_errors(self, analysis, sh, row, base_column, range_type):
+    def get_analysis_key(self, report_type):
+        return '{0} Error'.format(report_type)
+        
+    def write_sheet(self, shares, report_type):
+        
+        analysis_key = self.get_analysis_key(report_type)
 
-        df = analysis.binned_pcwg_err_metrics[analysis.pcwgRange][analysis.pcwgErrorBaseline]
+        by_wind_speed_header_row = 0
+        header_row = by_wind_speed_header_row + 1
+
+        sheet = self.book.add_sheet(report_type, cell_overwrite_ok=True)    
+
+        uid_col = 0
+        inner_start_col = 1
+        outer_start_col = 4
+
+        four_cell_ranges = ['LWS-LTI','LWS-HTI','HWS-LTI','HWS-HTI']
+
+        outer_four_cell_nme_col = 8
+        outer_four_cell_nmae_col = 13
+        
+        inner_by_ws_start_col = 18
+        
+        sheet.write(header_row, uid_col,             "Analysis", self.bold_style)
+        sheet.write(header_row, inner_start_col,     "IR-Count", self.bold_style)
+        sheet.write(header_row, inner_start_col + 1, "IR-NME", self.bold_style)
+        sheet.write(header_row, inner_start_col + 2, "IR-NMAE", self.bold_style)
+        sheet.write(header_row, outer_start_col,     "OR-Count", self.bold_style)
+        sheet.write(header_row, outer_start_col + 1, "OR-NME", self.bold_style)
+        sheet.write(header_row, outer_start_col + 2, "OR-NMAE", self.bold_style)
+
+        for index, key in enumerate(four_cell_ranges):
+            sheet.write(header_row, outer_four_cell_nme_col + index,  "OR-NME-{0}".format(key), self.bold_style)
+            sheet.write(header_row, outer_four_cell_nmae_col + index, "OR-NMAE-{0}".format(key), self.bold_style)
+        
+        data_row = header_row
+        
+        for share_index, share in enumerate(shares):            
+
+            data_row += 1
+
+            if share.analysis != None:
+
+                number_of_wind_speed_bins = len(share.analysis.normalisedWindSpeedBins.centers)
+                
+                outer_by_ws_start_col = (inner_by_ws_start_col + 1 + number_of_wind_speed_bins)
+                
+                if share_index == 0:
+
+                    sheet.write(by_wind_speed_header_row, inner_by_ws_start_col, "I-NME (By Wind Speed)", self.bold_style)
+                    sheet.write(by_wind_speed_header_row, outer_by_ws_start_col, "O-NME (By Wind Speed)", self.bold_style)
+                    
+                    for speed_index, wind_speed in enumerate(share.analysis.normalisedWindSpeedBins.centers):
+                        sheet.write(header_row, inner_by_ws_start_col + speed_index, wind_speed, self.bold_style)
+                        sheet.write(header_row, outer_by_ws_start_col + speed_index, wind_speed, self.bold_style)
+
+                sheet.write(data_row, uid_col, share.analysis.uniqueAnalysisId)            
+
+                self.write_range_errors(share.analysis, sheet, data_row, inner_start_col, analysis_key, 'Inner')
+                self.write_range_errors(share.analysis, sheet, data_row, outer_start_col, analysis_key, 'Outer')
+
+                self.write_by_ws_metric(share.analysis, sheet, data_row, inner_by_ws_start_col, analysis_key, 'Inner')                
+                self.write_by_ws_metric(share.analysis, sheet, data_row, outer_by_ws_start_col, analysis_key, 'Outer')
+
+                self.write_four_cell(share.analysis, four_cell_ranges, sheet, data_row, outer_four_cell_nme_col, analysis_key, 'NME')
+                self.write_four_cell(share.analysis, four_cell_ranges, sheet, data_row, outer_four_cell_nmae_col, analysis_key, 'NMAE')
+                
+            else:
+
+                self.sheet.write(data_row, 0, "Failed")  
+
+    def write_four_cell(self, analysis, ranges, sh, row, base_column, analysis_key, error_type):
+
+        if not analysis_key in analysis.binned_pcwg_err_metrics[analysis.pcwgFourCellMatrixGroup]:
+            return
+            
+        df = analysis.binned_pcwg_err_metrics[analysis.pcwgFourCellMatrixGroup][analysis_key]
+        #print df.head(len(df))
         
         try:
+
+            for index, key in enumerate(ranges):
+                if df.loc[key, 'Data Count'] > 0:
+                    sh.write(row, base_column + index, df.loc[key, error_type], self.percent_style)            
+
+        except Exception as e:
+            print "Cannot write four cell information {0}".format(e)
+        
+    def write_range_errors(self, analysis, sh, row, base_column, analysis_key, range_type):
+
+        if not analysis_key in analysis.binned_pcwg_err_metrics[analysis.pcwgRange]:
+            return
+            
+        df = analysis.binned_pcwg_err_metrics[analysis.pcwgRange][analysis_key]
+        
+        try:
+            
             if df.loc[range_type, 'Data Count'] > 0:
                 sh.write(row, base_column, int(df.loc[range_type, 'Data Count']))
-                sh.write(row, base_column + 1, df.loc[range_type, 'NME'])
-                sh.write(row, base_column + 2, df.loc[range_type, 'NMAE'])
-        except:
-            print "Cannot write summary information"
+                sh.write(row, base_column + 1, df.loc[range_type, 'NME'], self.percent_style)
+                sh.write(row, base_column + 2, df.loc[range_type, 'NMAE'], self.percent_style)
+            
+        except Exception as e:
+            print "Cannot write summary information {0}".format(e)
+
+    def write_by_ws_metric(self, analysis, sh, row, base_column, analysis_key, range_type):
+
+        range_key = analysis.normalisedWSBin + ' ' + range_type + ' Range'
         
+        if not analysis_key in analysis.binned_pcwg_err_metrics[range_key]:
+            return
+
+        df = analysis.binned_pcwg_err_metrics[range_key][analysis_key]
+        
+        col = 0
+        
+        for i in analysis.normalisedWindSpeedBins.centers:
+            try:
+                if df.loc[i, 'Data Count'] > 0:
+                    sh.write(row, base_column + col, df.loc[i, 'NME'], self.percent_style)
+                    col += 1
+                    #print "Column: {0}".format(base_column + col)
+            except:
+                col += 1
+
+                        
 class pcwg_share1_rpt(object):
     
     def __init__(self, analysis, version, template, output_fname, pcwg_inner_ranges):
@@ -93,22 +196,26 @@ class pcwg_share1_rpt(object):
         self.write_metrics()
         self.insert_images()
         self.export()
-    
+
+    def match_inner_range(self, used_inner_range):
+
+        for key in self.pcwg_inner_ranges:
+            
+            range_x = [self.pcwg_inner_ranges[key]['LSh'], self.pcwg_inner_ranges[key]['USh'], self.pcwg_inner_ranges[key]['LTI'], self.pcwg_inner_ranges[key]['UTI']]
+            
+            if used_inner_range == range_x:
+                return key
+        
+        raise Exception('The inner range %s is not valid for use in the PCWG Sharing Initiative.' % used_inner_range)
+        
     def write_meta_data(self):
+
         sh = self.workbook.get_sheet(sheet_map['Meta Data'])
         col = 2
+
         used_inner_range = [self.analysis.innerRangeLowerShear, self.analysis.innerRangeUpperShear, self.analysis.innerRangeLowerTurbulence, self.analysis.innerRangeUpperTurbulence]
-        range_A = [self.pcwg_inner_ranges['A']['LSh'], self.pcwg_inner_ranges['A']['USh'], self.pcwg_inner_ranges['A']['LTI'], self.pcwg_inner_ranges['A']['UTI']]
-        range_B = [self.pcwg_inner_ranges['B']['LSh'], self.pcwg_inner_ranges['B']['USh'], self.pcwg_inner_ranges['B']['LTI'], self.pcwg_inner_ranges['B']['UTI']]
-        range_C = [self.pcwg_inner_ranges['C']['LSh'], self.pcwg_inner_ranges['C']['USh'], self.pcwg_inner_ranges['C']['LTI'], self.pcwg_inner_ranges['C']['UTI']]
-        if used_inner_range == range_A:
-            range_id = 'A'
-        elif used_inner_range == range_B:
-            range_id = 'B'
-        elif used_inner_range == range_C:
-            range_id = 'C'
-        else:
-            raise Exception('The inner range %s is not valid for use in the PCWG Sharing Initiative.' % used_inner_range)
+        range_id = self.match_inner_range(used_inner_range)
+
         manual_required_style = _get_cell_style(sh, 7, 2)
         manual_optional_style = _get_cell_style(sh, 13, 2)
         calculated_style = _get_cell_style(sh, 8, 2)
