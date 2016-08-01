@@ -2,25 +2,102 @@ import math
 import interpolators
 import scipy.interpolate
 import numpy as np
-import scipy as sp
-from scipy import stats
-import sys
 import pandas as pd
 
+class RelaxationFactory:
+    
+    def __init__(self, lws_lti, lws_hti, hws_lti, hws_hti):
+
+        self.lws_lti = lws_lti
+        self.lws_hti = lws_hti
+        self.hws_lti = hws_lti
+        self.hws_hti = hws_hti
+        
+    def new_relaxation(self, power_function, lower_wind_speed, upper_wind_speed):
+                
+        return Relaxation(self.lws_lti, self.lws_hti, self.hws_lti, self.hws_hti, power_function, lower_wind_speed, upper_wind_speed)
+
+class NoRelaxationFactory:
+    def new_relaxation(self, power_function, lower_wind_speed, upper_wind_speed):
+        return NoRelaxation()
+        
+class NoRelaxation:
+    
+    def relax(self, correction, wind_speed, reference_turbulence, target_turbulence):
+        
+        return correction
+
+class Relaxation:
+    
+    def __init__(self, lws_lti, lws_hti, hws_lti, hws_hti, power_function, lower_wind_speed, upper_wind_speed):
+        
+        self.lws_lti = lws_lti
+        self.lws_hti = lws_hti
+        self.hws_lti = hws_lti
+        self.hws_hti = hws_hti
+
+        self.inflection_point = self.calculate_inflection_point(power_function, lower_wind_speed, upper_wind_speed)
+        print "Inflection point: {0}".format(self.inflection_point)
+
+    def relax(self, correction, wind_speed, reference_turbulence, target_turbulence):
+        
+        if target_turbulence > reference_turbulence:
+            if wind_speed > self.inflection_point:
+                return self.hws_hti * correction
+            else:
+                return self.lws_hti * correction
+        else:
+            if wind_speed > self.inflection_point:
+                return self.hws_lti * correction
+            else:
+                return self.lws_lti * correction
+                
+    def calculate_inflection_point(self, power_function, lower_wind_speed, upper_wind_speed):
+
+        previous_derivative = None
+        wind_speed = lower_wind_speed
+        delta = 0.1
+        
+        while wind_speed < upper_wind_speed:
+
+            derivative = self.derivative(wind_speed, delta)  
+
+            if previous_derivative != None:
+                if abs(derivative) > 0.0 and abs(previous_derivative) > 0.0:
+                    if (derivative * previous_derivative) < 0.0:      
+                        return wind_speed
+                                  
+            wind_speed += delta
+            previous_derivative = derivative    
+
+        raise Exception("Cannot calculate inflection point")
+        
+    def power_derivative(self, wind_speed, delta):
+        
+        wind_speed_m = wind_speed - delta        
+        wind_speed_p = wind_speed + delta        
+
+        power_m = self.powerFunction(wind_speed_m)       
+        power_p = self.powerFunction(wind_speed_p) 
+        
+        return (power_p - power_m) / (wind_speed_p - wind_speed_m)
+        
 class PowerCurve:
 
-    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, powerCol, turbCol, wsCol = None,
-                 countCol = None, fixedTurbulence = None, ratedPower = None,turbulenceRenormalisation=True,
-                name = 'Undefined', interpolationMode = 'Cubic', required = False):
+    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, inputHubWindSpeed = None, actualPower = None, hubTurbulence = None, fixedTurbulence = None, ratedPower = None, turbulenceRenormalisation=True,
+                name = 'Undefined', interpolationMode = 'Cubic', required = False, xLimits = None, sub_power = None,
+                relaxation_factory = NoRelaxationFactory()):
         
-        self.actualPower = powerCol #strings defining column names
-        self.inputHubWindSpeed = wsCol
-        self.hubTurbulence = turbCol
-        self.dataCount = countCol
         self.name = name
         self.interpolationMode = interpolationMode
         self.required = required
-
+        self.inputHubWindSpeed = inputHubWindSpeed
+        self.hubTurbulence = hubTurbulence
+        self.actualPower = actualPower
+        
+        self.xLimits = xLimits
+        self.sub_power = sub_power
+        
         if (self.hubTurbulence is not None) and fixedTurbulence != None:
             raise Exception("Cannot specify both turbulence levels and fixed turbulence")
 
@@ -35,21 +112,25 @@ class PowerCurve:
         self.firstWindSpeed = min(self.powerCurveLevels.index) if has_pc else None
         self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels) if has_pc else None
         self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels) if has_pc else None
-        
+                
         if self.inputHubWindSpeed is None:
             ws_data = None
         else:
             ws_data = powerCurveLevels[self.inputHubWindSpeed]
 
-        print "calculating power function"
+        print "calculating power function ({0})".format(self.interpolationMode)
         self.powerFunction = self.createPowerFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
-        print "power function calculated"
-        
+        print "power function calculated ({0})".format(type(self.powerFunction))
+
+        self.relaxation = relaxation_factory.new_relaxation(self.powerFunction, self.cutInWindSpeed, self.cutOutWindSpeed) if has_pc else NoRelaxation()
+            
         self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower]) if has_pc else None
+
         if 'Data Count' in self.powerCurveLevels.columns:
             self.hours = self.powerCurveLevels['Data Count'].sum()*1.0/6.0
         else:
             self.hours = 0.0
+            
         self.turbulenceFunction = self.createTurbulenceFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
 
         if (turbulenceRenormalisation and has_pc):
@@ -68,11 +149,13 @@ class PowerCurve:
                     print err_msg
                 else:
                     raise Exception(err_msg)
-                
+        
+        print "Turbine Created Successfully"
+        
     def calcZeroTurbulencePowerCurve(self):
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
         integrationRange = IntegrationRange(0.0, 100.0, 0.1)
-        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(self.powerCurveLevels[self.actualPower], keys), self.getArray(self.powerCurveLevels[self.hubTurbulence], keys), integrationRange, self.availablePower)
+        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys, self.getArray(self.powerCurveLevels[self.actualPower], keys), self.getArray(self.powerCurveLevels[self.hubTurbulence], keys), integrationRange, self.availablePower, self.relaxation)
         self.simulatedPower = SimulatedPower(self.zeroTurbulencePowerCurve, integrationRange)
 
 
@@ -123,7 +206,7 @@ class PowerCurve:
                 x.append(i)
             y.append(y_data[i])
 
-        return interpolators.LinearTurbulenceInterpolator(x, y)
+        return interpolators.LinearTurbulenceInterpolator(x, y)        
         
     def createPowerFunction(self, y_data, x_data):
 
@@ -132,23 +215,32 @@ class PowerCurve:
         
         x, y = [], []
 
+        print "Preparing input points"
         for i in y_data.index:
             
             if i in x_data.index and not np.isnan(x_data[i]):
-                x.append(x_data[i])
+                    x.append(x_data[i])
             else:
                 x.append(i)
-                
-            y.append(y_data[i])
+
+            if y_data[i] < 0.0:
+                print "Supressing negative value {0} ({1})".format(y_data[i], x[-1])
+                y.append(0.0)
+            else:                
+                y.append(y_data[i])
 
             print i, x[-1], y[-1]
+        
+        print "Creating interpolator"
         
         if self.interpolationMode == 'Linear':
             return interpolators.LinearPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         elif self.interpolationMode == 'Cubic':
             return interpolators.CubicPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         elif self.interpolationMode == 'Marmander':
-            return interpolators.MarmanderPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
+            return interpolators.MarmanderPowerCurveInterpolator(x, y, self.cutOutWindSpeed,
+                                                                 xLimits = self.xLimits,
+                                                                 sub_power = self.sub_power)
         else:
             raise Exception('Unknown interpolation mode: %s' % self.interpolationMode)
 
@@ -159,7 +251,8 @@ class PowerCurve:
             power = referencePower
         else:
             referenceTurbulence = self.referenceTurbulence(windSpeed)
-            power = referencePower + self.simulatedPower.power(windSpeed, turbulence) - self.simulatedPower.power(windSpeed, referenceTurbulence)
+            correction = (self.simulatedPower.power(windSpeed, turbulence) - self.simulatedPower.power(windSpeed, referenceTurbulence))
+            power = referencePower + self.relaxation.relax(correction, windSpeed, referenceTurbulence, turbulence)
             if extraTurbCorrection: power *= self.calculateExtraTurbulenceCorrection(windSpeed, turbulence, referenceTurbulence)
 
         power = max([0.0, power])
@@ -228,80 +321,6 @@ class RotorGeometry:
 
     def withinRotor(self, height):
         return height > self.lowerTip and height < self.upperTip
-
-class InterpolatedNormDist:
-
-    def __init__(self):
-
-        #speed optimisation
-        
-        self.xstep = 0.05
-        self.xend = 5.0
-        self.xstart = -self.xend
-        self.steps = int((self.xend - self.xstart) / self.xstep) + 1
-
-        x = np.linspace(self.xstart, self.xend, self.steps)
-        y = []
-
-        normDist = NormDist()
-
-        for i in range(len(x)):
-            y.append(normDist.probability(x[i], 0.0, 1.0))
-
-        self.f = scipy.interpolate.interp1d(x, y, bounds_error = False, fill_value = 0.0)
-
-    def probability(self, windSpeed, windSpeedMean, windSpeedStandardDeviation):
-
-        oneOverStandardDeviation = 1.0 / windSpeedStandardDeviation
-        standardDeviationsFromMean = oneOverStandardDeviation * (windSpeed - windSpeedMean)
-        
-        return self.f(standardDeviationsFromMean) * oneOverStandardDeviation
-
-class DictionaryNormDist:
-
-    def __init__(self):
-
-        #speed optimisation
-
-        self.decimalPlaces = 2
-        self.xstep = 0.1 ** self.decimalPlaces
-        self.xend = 5.0
-        self.xstart = -self.xend
-
-        x = np.arange(self.xstart, self.xend + self.xstep, self.xstep)
-
-        self.dictionary = {}
-        normDist = NormDist()
-
-        for i in range(len(x)):
-            self.dictionary[self.key(x[i])] = normDist.probability(x[i], 0.0, 1.0)
-
-    def probability(self, windSpeed, windSpeedMean, windSpeedStandardDeviation):
-
-        oneOverStandardDeviation = self.oneOver(windSpeedStandardDeviation)
-        standardDeviationsFromMean = self.standardDeviationsFromMean(windSpeed, windSpeedMean, oneOverStandardDeviation)
-
-        if self.inDictionary(standardDeviationsFromMean):
-            return self.lookUpDictionary(standardDeviationsFromMean) * oneOverStandardDeviation
-        else: 
-            return 0.0            
-
-    def oneOver(self, value):
-        return 1.0 / value
-    
-    def standardDeviationsFromMean(self, value, mean, oneOverStandardDeviation):
-        return oneOverStandardDeviation * (value - mean)
-        
-    def inDictionary(self, value):
-        if value < self.xstart: return False
-        if value > self.xend: return False
-        return True
-    
-    def lookUpDictionary(self, value):
-        return self.dictionary[self.key(value)]
-    
-    def key(self, value):
-        return round(value, self.decimalPlaces)
             
 class IntegrationProbabilities:
 
@@ -359,7 +378,7 @@ class AvailablePower:
 
 class ZeroTurbulencePowerCurve:
 
-    def __init__(self, referenceWindSpeeds, referencePowers, referenceTurbulences, integrationRange, availablePower):
+    def __init__(self, referenceWindSpeeds, referencePowers, referenceTurbulences, integrationRange, availablePower, relaxation):
 
         self.integrationRange = integrationRange
 
@@ -371,7 +390,8 @@ class ZeroTurbulencePowerCurve:
         self.powers = []
 
         for i in range(len(self.windSpeeds)):
-            power = referencePowers[i] - simulatedReferencePowerCurve.powers[i] + self.initialZeroTurbulencePowerCurve.powers[i]
+            correct_to_zero_turbulence = (-simulatedReferencePowerCurve.powers[i] + self.initialZeroTurbulencePowerCurve.powers[i])
+            power = referencePowers[i] + relaxation.relax(correct_to_zero_turbulence, self.windSpeeds[i], referenceTurbulences[i], 0.0)
             self.powers.append(power)
             #print "%f %f" % (self.windSpeeds[i], self.powers[i])
 
@@ -525,8 +545,6 @@ class IterationPowerCurveStats:
             windSpeed = windSpeeds[i]
             power = powers[i]
 
-            cp = availablePower.powerCoefficient(windSpeed, power)
-            
             cps.append(availablePower.powerCoefficient(windSpeed, power))
 
             if power >= thresholdPower: operatingWindSpeeds.append(windSpeed)
@@ -544,7 +562,7 @@ class SimulatedPower:
         
         self.zeroTurbulencePowerCurve = zeroTurbulencePowerCurve
         self.integrationRange = integrationRange
-
+                
         integrationPowers = []
 
         for windSpeed in np.nditer(self.integrationRange.windSpeeds):
