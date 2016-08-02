@@ -284,7 +284,7 @@ class Analysis:
             powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
             
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
-                                                          self.rotorGeometry, "Specified Power", "Specified Turbulence", \
+                                                          self.rotorGeometry, actualPower = "Specified Power", hubTurbulence = "Specified Turbulence", \
                                                           turbulenceRenormalisation = self.turbRenormActive, name = 'Specified', interpolationMode = self.interpolationMode)
 
             self.referenceDensity = self.specifiedPowerCurve.referenceDensity
