@@ -221,8 +221,8 @@ class ShearExponentCalculator:
 
     def calculateMultiPointShear(self, row):
         # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
-        windspeeds = np.array([np.log(row[col]) for col in self.shearMeasurements.values()])
-        heights = np.array([np.log(height) for height in self.shearMeasurements.keys()])
+        windspeeds = np.array([np.log(row[item.wind_speed_column]) for item in self.shearMeasurements])
+        heights = np.array([np.log(item.height) for item in self.shearMeasurements])
         deg = 1 # linear
         if len(windspeeds[~np.isnan(windspeeds)]) < 2:
             return np.nan
@@ -274,7 +274,7 @@ class Dataset:
 
         self.hasShear = len(config.shearMeasurements) > 1
         self.hasDirection = config.referenceWindDirection not in (None,'')
-        self.shearCalibration = "TurbineLocation" in config.shearMeasurements.keys() and "ReferenceLocation" in config.shearMeasurements.keys()
+        self.shearCalibration = "TurbineLocation" in config.get_shear_columns() and "ReferenceLocation" in config.get_shear_columns()
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
         self.turbRenormActive = analysisConfig.turbRenormActive
         self.turbulencePower = 'Turbulence Power'
@@ -442,16 +442,26 @@ class Dataset:
         #dataFrame[self.referenceDirectionBin] -= float(config.siteCalibrationCenterOfFirstSector)
 
         if config.calibrationMethod == "Specified":
-            if all([dir in config.calibrationSlopes.keys() for dir in config.calibrationActives.keys()]):
+
+            calibrationSlopes = {}
+            calibrationOffsets = {}
+            calibrationActives = {}
+            
+            for item in config.calibrationSectors:
+                calibrationSlopes[item.direction] = item.slope
+                calibrationOffsets[item.direction] = item.offset
+                calibrationActives[item.direction] = item.active
+                
+            if all([dir in calibrationSlopes.keys() for dir in calibrationActives.keys()]):
                 print "Applying Specified calibration"
                 print "Direction\tSlope\tOffset\tApplicable Datapoints"
-                for direction in config.calibrationSlopes:
-                    if config.calibrationActives[direction]:
+                for direction in calibrationSlopes:
+                    if calibrationActives[direction]:
                         mask = (dataFrame[self.referenceDirectionBin] == direction)
                         dataCount = dataFrame[mask][self.referenceDirectionBin].count()
-                        print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, config.calibrationSlopes[direction], config.calibrationOffsets[direction], dataCount)
-                df = pd.DataFrame([config.calibrationSlopes, config.calibrationOffsets], index=['Slope','Offset']).T
-                return SiteCalibrationCalculator( self.referenceDirectionBin, config.referenceWindSpeed,df, actives = config.calibrationActives)
+                        print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, calibrationSlopes[direction], calibrationOffsets[direction], dataCount)
+                df = pd.DataFrame([calibrationSlopes, calibrationOffsets], index=['Slope','Offset']).T
+                return SiteCalibrationCalculator( self.referenceDirectionBin, config.referenceWindSpeed,df, actives = calibrationActives)
             else:
                 raise Exception("The specified slopes have different bin centres to that specified by siteCalibrationCenterOfFirstSector which is: {0}".format(config.siteCalibrationCenterOfFirstSector))
         else:
@@ -566,14 +576,14 @@ class Dataset:
 
         for exclusion in config.exclusions:
 
-            startDate = exclusion[0]
-            endDate = exclusion[1]
-            active = exclusion[2]
+            startDate = exclusion.startDate
+            endDate = exclusion.endDate
+            active = exclusion.active
 
             if active:
                 subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
                 mask = mask & ~subMask
-                print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion[0].strftime("%Y-%m-%d %H:%M"),exclusion[1].strftime("%Y-%m-%d %H:%M"),len(mask[mask]))
+                print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion.startDate.strftime("%Y-%m-%d %H:%M"),exclusion.endDate.strftime("%Y-%m-%d %H:%M"),len(mask[mask]))
 
         print "Data set length after exclusions: {0}".format(len(mask[mask]))
         return dataFrame[mask]
@@ -773,7 +783,12 @@ class Dataset:
 
     def defineREWS(self, dataFrame, config, rotorGeometry):
 
-        profileLevels = rews.ProfileLevels(rotorGeometry, config.windSpeedLevels)
+        windSpeedLevels = {}
+        
+        for item in config.rewsProfileLevels:
+            windSpeedLevels[item.height] = item.wind_speed_column
+            
+        profileLevels = rews.ProfileLevels(rotorGeometry, windSpeedLevels)
 
         if config.rotorMode == "EvenlySpacedLevels":
             self.rotor = rews.EvenlySpacedRotor(rotorGeometry, config.numberOfRotorLevels)

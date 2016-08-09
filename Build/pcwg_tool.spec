@@ -3,22 +3,26 @@
 block_cipher = None
 
 
-a = Analysis(['D:\\Git\\PCWG\\pcwg_tool.py'],
-             pathex=['D:\\GIT\\PCWG\\Build'],
+a = Analysis(['C:\\Git\\PCWG\\pcwg_tool.py'],
+             pathex=['C:\\GIT\\PCWG\\Build'],
+             binaries=None,
+             datas=None,
              hiddenimports=[],
-             hookspath=None,
-             runtime_hooks=None,
-             excludes=None,
+             hookspath=[],
+             runtime_hooks=[],
+             excludes=[],
+             win_no_prefer_redirects=False,
+             win_private_assemblies=False,
              cipher=block_cipher)
-pyz = PYZ(a.pure,
+pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
           a.binaries,
           a.zipfiles,
           a.datas,
-          name='pcwg_tool.exe',
+          name='pcwg_tool',
           debug=False,
-          strip=None,
+          strip=False,
           upx=True,
           console=True )
