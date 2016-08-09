@@ -2,6 +2,7 @@ from Tkinter import *
 from tkFileDialog import *
 import tkSimpleDialog
 import tkMessageBox
+import ttk
 from dataset import getSeparatorValue
 from dataset import getDecimalValue
 import Analysis
@@ -13,6 +14,7 @@ import pandas as pd
 import dateutil
 import update
 
+from grid_box import GridBox
 from share import PcwgShare01Portfolio
 from share import PcwgShare01dot1Portfolio
 
@@ -23,14 +25,20 @@ datePickerFormatDisplay = "[dd-mm-yyyy hh:mm]"
 
 version = "0.5.14"
 ExceptionType = Exception
-#ExceptionType = None #comment this line before release
+ExceptionType = None #comment this line before release
 
-def getDateFromEntry(entry):
-    if len(entry.get()) > 0:
-        return datetime.datetime.strptime(entry.get(), datePickerFormat)
+def convertDateToText(date):
+    return date.strftime(datePickerFormat)
+
+def getDateFromText(text):
+    if len(text) > 0:
+        return datetime.datetime.strptime(text, datePickerFormat)
     else:
         return None
-   
+
+def getDateFromEntry(entry):
+    return getDateFromText(entry.get())
+
 def getBoolFromText(text):
     if text == "True":
         return True
@@ -38,41 +46,6 @@ def getBoolFromText(text):
         return False
     else:
         raise Exception("Cannot convert Text to Boolean: %s" % text)
-        
-def encodePortfolioItemValuesAsText(description, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets):
-
-    text = "{0}{1}{2}{3}{4}{5}{6}{7}{8}".format(description, \
-                                                    columnSeparator, \
-                                                    diameter, \
-                                                    columnSeparator, \
-                                                    hubHeight, \
-                                                    columnSeparator, \
-                                                    ratedPower, \
-                                                    columnSeparator, \
-                                                    cutOutWindSpeed)
-                                                    
-    for dataset in datasets:
-        text += "{0}{1}".format(columnSeparator, dataset)
-    
-    return text
-   
-def extractPortfolioItemValuesFromText(text):
-    items = text.split(columnSeparator)
-
-    description = items[0]
-    diameter = float(items[1])
-    hubHeight = float(items[2])
-    ratedPower = float(items[3])
-    cutOutWindSpeed = float(items[4])
-
-    datasets = []
-    index = 5
-
-    while index < len(items):      
-        datasets.append(items[index])
-        index += 1
-    
-    return (description, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets)
                                                          
 def encodePowerLevelValueAsText(windSpeed, power):
     return "%f%s%f" % (windSpeed, columnSeparator, power)
@@ -92,39 +65,6 @@ def extractREWSLevelValuesFromText(text):
 
 def encodeREWSLevelValuesAsText(height, windSpeed, windDirection):
     return "{hight:.04}{sep}{windspeed}{sep}{windDir}".format(hight = height, sep = columnSeparator, windspeed = windSpeed, windDir = windDirection)
-
-def extractShearMeasurementValuesFromText(text):
-    items = text.split(columnSeparator)
-    height = float(items[0])
-    windSpeed = items[1].strip()
-    return (height, windSpeed)
-
-def encodeShearMeasurementValuesAsText(height, windSpeed):
-    return "{height:.04}{sep}{windspeed}{sep}".format(height = height, sep = columnSeparator, windspeed = windSpeed)
-
-def extractCalibrationDirectionValuesFromText(text):
-        
-    items = text.split(columnSeparator)
-    direction = float(items[0])
-    slope = float(items[1].strip())
-    offset = float(items[2].strip())
-    active = getBoolFromText(items[3].strip())
-
-    return (direction, slope, offset, active)
-
-def encodeCalibrationDirectionValuesAsText(direction, slope, offset, active):
-
-    return "%0.4f%s%0.4f%s%0.4f%s%s" % (direction, columnSeparator, slope, columnSeparator, offset, columnSeparator, active)
-
-def extractExclusionValuesFromText(text):
-    items = text.split(columnSeparator)
-    startDate = pd.to_datetime(items[0].strip(), dayfirst =True)
-    endDate = pd.to_datetime(items[1].strip(), dayfirst =True)
-    active = getBoolFromText(items[2].strip())
-    return (startDate, endDate, active)
-
-def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
-    return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
 
 def encodeRelationshipFilterValuesAsText(relationshipFilter):
         text = ""
@@ -151,24 +91,6 @@ def extractRelationshipFilterFromText(text):
 
         except Exception as ex:
                 raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
-
-def extractFilterValuesFromText(text):
-
-        try:
-                items = text.split(columnSeparator)
-                column = items[0].strip()
-                value = float(items[1].strip())
-                filterType = items[2].strip()
-                inclusive = getBoolFromText(items[3].strip())
-                active = getBoolFromText(items[4].strip())
-                return (column, value, filterType, inclusive, active)
-
-        except Exception as ex:
-                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
-
-def encodeExclusionValuesAsText(startDate, endDate, active):
-
-    return "%s%s%s%s%s" % (startDate, columnSeparator, endDate, columnSeparator, active)
 
 def intSafe(text, valueIfBlank = 0):
     try:
@@ -520,9 +442,9 @@ class ValidateDatasets:
 
 class ValidatePortfolioItems:
 
-        def __init__(self, master, listbox):
+        def __init__(self, master, grid_box):
 
-                self.listbox = listbox
+                self.grid_box = grid_box
                 self.messageLabel = Label(master, text="", fg="red")
                 self.validate()
                 self.title = "Portfolio Items Validation"
@@ -532,10 +454,10 @@ class ValidatePortfolioItems:
                 self.valid = True
                 message = ""
                 
-                if self.listbox.size() < 2:
+                if self.grid_box.item_count() < 1:
                         self.valid = self.valid and False
                         message = "At least one portfolio item must be specified"
-                
+
                 self.messageLabel['text'] = message
 
 class VariableEntry:
@@ -661,7 +583,7 @@ class SetFileOpenCommand:
                 else:
                     initial_folder = None
                     
-                fileName = asksaveasfilename(parent=self.master,defaultextension=".xml", initialdir=initial_folder)
+                fileName = askopenfilename(parent=self.master, initialdir=initial_folder)
                 
                 if len(fileName) > 0:
                         if self.basePathVariable != None:
@@ -690,6 +612,8 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 self.row = 0
                 self.listboxEntries = {}
                 
+                self.master = master
+
                 tkSimpleDialog.Dialog.__init__(self, master)
         
         def prepareColumns(self, master):
@@ -947,54 +871,37 @@ class PowerCurveLevelDialog(BaseDialog):
 
 class FilterDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, text = None, index = None):
+        def __init__(self, master, parent_dialog, item = None):
 
-                self.callback = callback
-                self.text = text
-                self.index = index
-                
-                self.callback = callback
+                self.parent_dialog = parent_dialog
+                self.isNew = (item == None)
 
-                self.isNew = (text == None)
-                
-                BaseDialog.__init__(self, master, status)
+                if self.isNew:
+                    self.item = configuration.Filter()
+                else:
+                    self.item = item
+
+                BaseDialog.__init__(self, master, parent_dialog.status)
 
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
-                return self.parent.ShowColumnPicker(parentDialog, pick, selectedColumn)
+                return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)
 
         def body(self, master):
 
                 self.prepareColumns(master)     
-
-                if not self.isNew:
-                        
-                        items = extractFilterValuesFromText(self.text)
-                        
-                        column = items[0]
-                        value = items[1]
-                        filterType = items[2]
-                        inclusive = items[3]
-                        active = items[4]
-
-                else:
-                        column = ''
-                        value = 0.0
-                        filterType = 'Below'
-                        inclusive = False
-                        active = False
                         
                 self.addTitleRow(master, "Filter Settings:")
                 
-                self.column = self.addPickerEntry(master, "Column:", ValidateNotBlank(master), column)
-                self.value = self.addEntry(master, "Value:", ValidateFloat(master), value)
-                self.filterType = self.addOption(master, "Filter Type:", ["Below", "Above", "AboveOrBelow"], filterType)
+                self.column = self.addPickerEntry(master, "Column:", ValidateNotBlank(master), self.item.column)
+                self.value = self.addEntry(master, "Value:", ValidateFloat(master), self.item.value)
+                self.filterType = self.addOption(master, "Filter Type:", ["Below", "Above", "AboveOrBelow"], self.item.filterType)
 
-                if inclusive:
+                if self.item.inclusive:
                     self.inclusive = self.addCheckBox(master, "Inclusive:", 1)
                 else:
                     self.inclusive = self.addCheckBox(master, "Inclusive:", 0)
                     
-                if active:
+                if self.item.active:
                     self.active = self.addCheckBox(master, "Active:", 1)
                 else:
                     self.active = self.addCheckBox(master, "Active:", 0)
@@ -1005,122 +912,36 @@ class FilterDialog(BaseDialog):
         def apply(self):
 
                 if int(self.active.get()) == 1:
-                    active = True
+                    self.item.active = True
                 else:
-                    active = False
+                    self.item.active = False
 
                 if int(self.inclusive.get()) == 1:
-                    inclusive = True
+                    self.item.inclusive = True
                 else:
-                    inclusive = False
+                    self.item.inclusive = False
                         
-                self.text = encodeFilterValuesAsText(self.column.get(), float(self.value.get()), self.filterType.get(), inclusive, active)
+                self.item.column = self.column.get()
+                self.item.value = float(self.value.get())
+                self.item.filterType = self.filterType.get()
 
                 if self.isNew:
                         self.status.addMessage("Filter created")
                 else:
                         self.status.addMessage("Filter updated")
 
-                if self.index== None:
-                        self.callback(self.text)
-                else:
-                        self.callback(self.text, self.index)
-
-class CalibrationFilterDialog(BaseDialog):
-
-        def __init__(self, master, status, callback, text = None, index = None):
-
-                self.callback = callback
-                self.text = text
-                self.index = index
-                
-                self.callback = callback
-
-                self.isNew = (text == None)
-                
-                BaseDialog.__init__(self, master, status)
-
-        def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
-                return self.parent.ShowColumnPicker(parentDialog, pick, selectedColumn)
-
-        def body(self, master):
-
-                self.prepareColumns(master)
-
-                if not self.isNew:
-                        
-                        items = extractFilterValuesFromText(self.text)
-                        
-                        column = items[0]
-                        value = items[1]
-                        calibrationFilterType = items[2]
-                        inclusive = items[3]
-                        active = items[4]
-
-                else:
-                        column = ''
-                        value = 0.0
-                        calibrationFilterType = 'Below'
-                        inclusive = False
-                        active = False
-                        
-                self.addTitleRow(master, "Calibration Filter Settings:")
-                
-                self.column = self.addPickerEntry(master, "Column:", ValidateNotBlank(master), column)
-                self.value = self.addEntry(master, "Value:", ValidateFloat(master), value)
-                self.calibrationFilterType = self.addOption(master, "Calibration Filter Type:", ["Below", "Above", "AboveOrBelow"], calibrationFilterType)
-
-                if inclusive:
-                    self.inclusive = self.addCheckBox(master, "Inclusive:", 1)
-                else:
-                    self.inclusive = self.addCheckBox(master, "Inclusive:", 0)
-                    
-                if active:
-                    self.active = self.addCheckBox(master, "Active:", 1)
-                else:
-                    self.active = self.addCheckBox(master, "Active:", 0)
-                    
-                #dummy label to indent controls
-                Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
-
-        def apply(self):
-
-                if int(self.active.get()) == 1:
-                    active = True
-                else:
-                    active = False
-
-                if int(self.inclusive.get()) == 1:
-                    inclusive = True
-                else:
-                    inclusive = False
-                        
-                self.text = encodeFilterValuesAsText(self.column.get(), float(self.value.get()), self.calibrationFilterType.get(), inclusive, active)
-
-                if self.isNew:
-                        self.status.addMessage("Calibration Filter created")
-                else:
-                        self.status.addMessage("Calibration Filter updated")
-
-                if self.index== None:
-                        self.callback(self.text)
-                else:
-                        self.callback(self.text, self.index)
-
-
 class ExclusionDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, text = None, index = None):
+        def __init__(self, master, parent_dialog, item = None):
 
-                self.callback = callback
-                self.text = text
-                self.index = index
-                
-                self.callback = callback
+                self.isNew = (item == None)
 
-                self.isNew = (text == None)
+                if self.isNew:
+                    self.item = configuration.Exclusion()
+                else:
+                    self.item = item
                 
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master, parent_dialog.status)
                         
         def body(self, master):
 
@@ -1130,25 +951,13 @@ class ExclusionDialog(BaseDialog):
                 Label(master, text=" " * 275).grid(row = self.row, sticky=W, column=self.titleColumn, columnspan = 8)
                 self.row += 1
                 
-                if not self.isNew:
-                        
-                        items = extractExclusionValuesFromText(self.text)
-                        
-                        startDate = items[0]
-                        endDate = items[1]
-                        active = items[2]
-
-                else:
-                        startDate = None
-                        endDate = None 
-                        active = False
                         
                 self.addTitleRow(master, "Exclusion Settings:")
                 
-                self.startDate = self.addDatePickerEntry(master, "Start Date:", ValidateNotBlank(master), startDate)
-                self.endDate = self.addDatePickerEntry(master, "End Date:", ValidateNotBlank(master), endDate)
+                self.startDate = self.addDatePickerEntry(master, "Start Date:", ValidateNotBlank(master), self.item.startDate)
+                self.endDate = self.addDatePickerEntry(master, "End Date:", ValidateNotBlank(master), self.item.endDate)
 
-                if active:
+                if self.item.active:
                     self.active = self.addCheckBox(master, "Active:", 1)
                 else:
                     self.active = self.addCheckBox(master, "Active:", 0)
@@ -1159,62 +968,42 @@ class ExclusionDialog(BaseDialog):
         def apply(self):
 
                 if int(self.active.get()) == 1:
-                    active = True
+                    self.item.active = True
                 else:
-                    active = False
-                        
-                self.text = encodeExclusionValuesAsText(self.startDate.get(), self.endDate.get().strip(), active)
+                    self.item.active = False
+
+                self.item.startDate = pd.to_datetime(self.startDate.get().strip(), dayfirst =True)
+                self.item.endDate = pd.to_datetime(self.endDate.get().strip(), dayfirst =True)
 
                 if self.isNew:
                         self.status.addMessage("Exclusion created")
                 else:
                         self.status.addMessage("Exclusion updated")
-
-                if self.index== None:
-                        self.callback(self.text)
-                else:
-                        self.callback(self.text, self.index)
                         
 class CalibrationDirectionDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, text = None, index = None):
+        def __init__(self, master, parent_dialog, item):
 
-                self.callback = callback
-                self.text = text
-                self.index = index
+                self.isNew = (item == None)
                 
-                self.callback = callback
+                if self.isNew:
+                    self.item = configuration.CalibrationSector()
+                else:
+                    self.item = item
 
-                self.isNew = (text == None)
-                
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master, parent_dialog.status)
                         
         def body(self, master):
 
                 self.prepareColumns(master)     
-
-                if not self.isNew:
-                        
-                        items = extractCalibrationDirectionValuesFromText(self.text)
-                        
-                        direction = items[0]
-                        slope = items[1]
-                        offset = items[2]
-                        active = items[3]
-
-                else:
-                        direction = 0.0
-                        slope = 0.0
-                        offset = 0.0
-                        active = False
                         
                 self.addTitleRow(master, "Calibration Direction Settings:")
                 
-                self.direction = self.addEntry(master, "Direction:", ValidateFloat(master), direction)
-                self.slope = self.addEntry(master, "Slope:", ValidateFloat(master), slope)
-                self.offset = self.addEntry(master, "Offset:", ValidateFloat(master), offset)
+                self.direction = self.addEntry(master, "Direction:", ValidateFloat(master), self.item.direction)
+                self.slope = self.addEntry(master, "Slope:", ValidateFloat(master), self.item.slope)
+                self.offset = self.addEntry(master, "Offset:", ValidateFloat(master), self.item.offset)
 
-                if active:
+                if self.item.active:
                     self.active = self.addCheckBox(master, "Active:", 1)
                 else:
                     self.active = self.addCheckBox(master, "Active:", 0)
@@ -1225,129 +1014,97 @@ class CalibrationDirectionDialog(BaseDialog):
         def apply(self):
 
                 if int(self.active.get()) == 1:
-                    active = True
+                    self.item.active = True
                 else:
-                    active = False
+                    self.item.active = False
                         
-                self.text = encodeCalibrationDirectionValuesAsText(float(self.direction.get()), float(self.slope.get().strip()), float(self.offset.get().strip()), active)
+                self.item.direction = float(self.direction.get())
+                self.item.slope = float(self.slope.get().strip())
+                self.item.offset = float(self.offset.get().strip())
 
                 if self.isNew:
                         self.status.addMessage("Calibration direction created")
                 else:
                         self.status.addMessage("Calibration direction updated")
 
-                if self.index== None:
-                        self.callback(self.text)
-                else:
-                        self.callback(self.text, self.index)
-
 class ShearMeasurementDialog(BaseDialog):
     
-        def __init__(self, master, status, callback, text = None, index = None):
+        def __init__(self, master, parent_dialog, item):
 
-                self.callback = callback
-                self.text = text
-                self.index = index
+                self.parent_dialog = parent_dialog
+                self.isNew = (item == None)
                 
-                self.callback = callback
+                if self.isNew:
+                    self.item = configuration.ShearMeasurement()
+                else:
+                    self.item = item
 
-                self.isNew = (text == None)
-                
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master, parent_dialog.status)
         
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
-                return self.parent.ShowColumnPicker(parentDialog, pick, selectedColumn)        
+                return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)        
         
         def body(self, master):
 
-                self.prepareColumns(master)     
-
-                if not self.isNew:
-                        
-                        items = extractShearMeasurementValuesFromText(self.text)
-                        
-                        height = items[0]
-                        windSpeed = items[1]
-                      
-                else:
-                        height = 0.0                        
-                        windSpeed = ""                        
+                self.prepareColumns(master)                       
                         
                 self.addTitleRow(master, "Shear measurement:")
                 
-                self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), height)                
-                self.windSpeed = self.addPickerEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
+                self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), self.item.height)                
+                self.windSpeed = self.addPickerEntry(master, "Wind Speed:", ValidateNotBlank(master), self.item.wind_speed_column, width = 60)
                 
                 #dummy label to indent controls
                 Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
 
         def apply(self):
                         
-                self.text = encodeShearMeasurementValuesAsText(float(self.height.get()), self.windSpeed.get().strip())
+                self.item.height = float(self.height.get())
+                self.item.wind_speed_column = self.windSpeed.get().strip()
 
                 if self.isNew:
                         self.status.addMessage("Shear measurement created")
                 else:
                         self.status.addMessage("Shear measurement updated")
 
-                if self.index== None:
-                        self.callback(self.text)
-                else:
-                        self.callback(self.text, self.index)
-
 class REWSProfileLevelDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, text = None, index = None):
+        def __init__(self, master, parent_dialog, item):
 
-                self.callback = callback
-                self.text = text
-                self.index = index
-                
-                self.callback = callback
+            self.parent_dialog = parent_dialog
+            self.isNew = (item == None)
+            
+            if self.isNew:
+                self.item = configuration.ShearMeasurement()
+            else:
+                self.item = item
 
-                self.isNew = (text == None)
-                
-                BaseDialog.__init__(self, master, status)
+            BaseDialog.__init__(self, master, parent_dialog.status)
 
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
-                return self.parent.ShowColumnPicker(parentDialog, pick, selectedColumn)
+                return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)
         
         def body(self, master):
 
                 self.prepareColumns(master)
-
-                if not self.isNew:
-                        items = extractREWSLevelValuesFromText(self.text)
-                        height = items[0]
-                        windSpeed = items[1]
-                        windDirection = items[2]
-                else:
-                        height = 0.0
-                        windSpeed = ""
-                        windDirection = ""
-
                 self.addTitleRow(master, "REWS Level Settings:")
 
-                self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), height)
-                self.windSpeed = self.addPickerEntry(master, "Wind Speed:", ValidateNotBlank(master), windSpeed, width = 60)
-                self.windDirection = self.addPickerEntry(master, "Wind Direction:", None, windDirection, width = 60)
+                self.height = self.addEntry(master, "Height:", ValidatePositiveFloat(master), self.item.height)
+                self.windSpeed = self.addPickerEntry(master, "Wind Speed:", ValidateNotBlank(master), self.item.wind_speed_column, width = 60)
+                self.windDirection = self.addPickerEntry(master, "Wind Direction:", None, self.item.wind_direction_column, width = 60)
 
                 #dummy label to indent controls
                 Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)
 
         def apply(self):
                         
-                self.text = encodeREWSLevelValuesAsText(float(self.height.get()), self.windSpeed.get().strip(), self.windDirection.get().strip())
+                self.item.height = float(self.height.get())
+                self.item.wind_speed_column = self.windSpeed.get().strip()
+                self.item.wind_direction_column = self.windDirection.get().strip()
 
                 if self.isNew:
                         self.status.addMessage("Rotor level created")
                 else:
                         self.status.addMessage("Rotor level updated")
-
-                if self.index== None:
-                        self.callback(self.text)
-                else:
-                        self.callback(self.text, self.index)
      
 class BaseConfigurationDialog(BaseDialog):
 
@@ -1383,26 +1140,26 @@ class BaseConfigurationDialog(BaseDialog):
                 Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.secondButtonColumn)
                 Label(master, text=spacer * 40).grid(row = self.row, sticky=W, column=self.messageColumn)
                 Label(master, text=spacer * 10).grid(row = self.row, sticky=W, column=self.showHideColumn)
-                self.row += 1
-                
-                self.addTitleRow(master, "General Settings:", self.generalShowHide)                
+                self.row += 1            
 
                 if self.config.isNew:
                         path = None
                 else:
                         path = self.config.path
                         
-                self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
+                self.addFilePath(master, path)
 
-                self.addFormElements(master)
+                self.addFormElements(master, path)
+
+        def addFilePath(self, master, path):
+            self.addTitleRow(master, "General Settings:", self.generalShowHide)    
+            self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", ValidateDatasetFilePath(master), path, showHideCommand = self.generalShowHide)
 
         def getInitialFileName(self):
-
-                return "Config"
+            return "Config"
         
         def getInitialFolder(self):
-            
-                return preferences.analysis_last_opened_dir()
+            return preferences.analysis_last_opened_dir()
                 
         def validate(self):
 
@@ -1443,10 +1200,11 @@ class BaseConfigurationDialog(BaseDialog):
                 else:
                         self.status.addMessage("Config updated")
 
-                if self.index == None:
-                        self.callback(self.config.path)
-                else:
-                        self.callback(self.config.path, self.index)
+                if self.callback != None:
+                    if self.index == None:
+                            self.callback(self.config.path)
+                    else:
+                            self.callback(self.config.path, self.index)
 
 
 class ColumnPickerDialog(BaseDialog):
@@ -1775,15 +1533,276 @@ class ColumnSeparatorPicker:
                 
                 if len(column) > 0:
                         self.entry.set(column)
-              
-              
+
+class DialogGridBox(GridBox):
+
+    def __init__(self, master, parent_dialog, row, column):
+
+        self.parent_dialog = parent_dialog
+
+        headers = self.get_headers()
+
+        GridBox.__init__(self, master, headers, row, column)
+
+    def get_headers(self):
+        pass
+
+    def get_item_values(self, item):
+        pass
+
+    def new_dialog(self, master, parent_dialog, item):
+        pass      
+
+    def new(self):
+
+        dialog = self.new_dialog(self.master, self.parent_dialog, None)
+        self.add_item(dialog.item)
+        
+    def edit_item(self, item):                   
+                    
+        try:
+            dialog = self.new_dialog(self.master, self.parent_dialog, self.get_selected())                                
+        except ExceptionType as e:
+            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+
+    def remove(self):
+        GridBox.remove(self)
+
+class ExclusionsGridBox(DialogGridBox):
+
+    def get_headers(self):
+        return ["StartDate", "EndDate", "Active"]   
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["StartDate"] = convertDateToText(item.startDate)
+        values_dict["EndDate"] = convertDateToText(item.endDate)
+        values_dict["Active"] = item.active
+
+        return values_dict
+
+    def new_dialog(self, master, parent_dialog, item):
+        return ExclusionDialog(master, self.parent_dialog, item)   
+
+class FiltersGridBox(DialogGridBox):
+
+    def get_headers(self):
+        return ["Column","Value","FilterType","Inclusive","Active"]
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["Column"] = item.column
+        values_dict["Value"] = item.value
+        values_dict["FilterType"] = item.filterType
+        values_dict["Inclusive"] = item.inclusive
+        values_dict["Active"] = item.active
+
+        return values_dict
+
+    def new_dialog(self, master, parent_dialog, item):
+        return FilterDialog(master, self.parent_dialog, item)  
+
+class CalibrationSectorsGridBox(DialogGridBox):
+
+    def get_headers(self):
+        return ["Direction","Slope","Offset","Active"]
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["Direction"] = item.direction
+        values_dict["Slope"] = item.slope
+        values_dict["Offset"] = item.offset
+        values_dict["Active"] = item.active
+
+        return values_dict
+
+    def new_dialog(self, master, parent_dialog, item):
+        return CalibrationDirectionDialog(master, self.parent_dialog, item)  
+
+class ShearGridBox(DialogGridBox):
+
+    def get_headers(self):
+        return ["Height","WindSpeed"]
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["Height"] = item.height
+        values_dict["WindSpeed"] = item.wind_speed_column
+
+        return values_dict
+
+    def new_dialog(self, master, parent_dialog, item):
+        return ShearMeasurementDialog(master, self.parent_dialog, item) 
+
+class REWSGridBox(DialogGridBox):
+
+    def get_headers(self):
+        return ["Height","WindSpeed", "WindDirection"]
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["Height"] = item.height
+        values_dict["WindSpeed"] = item.wind_speed_column
+        values_dict["WindDirection"] = item.wind_direction_column
+
+        return values_dict
+
+    def new_dialog(self, master, parent_dialog, item):
+        return REWSProfileLevelDialog(master, self.parent_dialog, item) 
+
 class DatasetConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
+            return "Dataset"
 
-                return "Dataset"
-                
-        def addFormElements(self, master):
+        def addFilePath(self, master, path):
+            pass
+
+        def add_general(self, master, path):
+
+            self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", ValidateDatasetFilePath(master), path)
+
+            self.name = self.addEntry(master, "Dataset Name:", ValidateNotBlank(master), self.config.name)
+                  
+            self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath)
+                            
+            self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator)
+            self.separator.trace("w", self.columnSeparatorChange)
+            
+            self.decimal = self.addOption(master, "Decimal Mark:", ["FULL STOP", "COMMA"], self.config.decimal)
+            self.decimal.trace("w", self.decimalChange)
+            
+            self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows)
+
+            self.startDate = self.addDatePickerEntry(master, "Start Date:", None, self.config.startDate)
+            self.endDate = self.addDatePickerEntry(master, "End Date:", None, self.config.endDate)
+            
+            self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["None", "Calculated", "Specified"], self.config.hubWindSpeedMode)
+            self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
+
+            self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod)
+            self.calibrationMethod.trace("w", self.calibrationMethodChange)
+            
+            self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified"], self.config.densityMode)
+            self.densityMode.trace("w", self.densityMethodChange)
+
+        def add_measurements(self, master):
+
+            self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds)
+            self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData)
+
+            self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60)
+            pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d-%m-%y %H:%M', '%y-%m-%d %H:%M', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S', '%d/%m/%y %H:%M', '%y/%m/%d %H:%M']), width=5, height=1)
+            pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)              
+
+            self.timeStamp = self.addPickerEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60) 
+            self.turbineLocationWindSpeed = self.addPickerEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60) #Should this be with reference wind speed?
+            self.hubWindSpeed = self.addPickerEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60)
+            self.hubTurbulence = self.addPickerEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60)
+            self.temperature = self.addPickerEntry(master, "Temperature:", None, self.config.temperature, width = 60)
+            self.pressure = self.addPickerEntry(master, "Pressure:", None, self.config.pressure, width = 60)
+            self.density = self.addPickerEntry(master, "Density:", None, self.config.density, width = 60)
+            self.inflowAngle = self.addPickerEntry(master, "Inflow Angle:", None, self.config.inflowAngle, width = 60)
+            self.inflowAngle.setTip('Not required')
+        
+        def add_power(self, master):
+
+            self.power = self.addPickerEntry(master, "Power:", None, self.config.power, width = 60)
+            self.powerMin = self.addPickerEntry(master, "Power Min:", None, self.config.powerMin, width = 60)
+            self.powerMax = self.addPickerEntry(master, "Power Max:", None, self.config.powerMax, width = 60)
+            self.powerSD = self.addPickerEntry(master, "Power Std Dev:", None, self.config.powerSD, width = 60)
+        
+        def add_reference(self, master):
+            
+            self.referenceWindSpeed = self.addPickerEntry(master, "Reference Wind Speed:", None, self.config.referenceWindSpeed, width = 60)
+            self.referenceWindSpeedStdDev = self.addPickerEntry(master, "Reference Wind Speed Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60)
+            self.referenceWindDirection = self.addPickerEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60)
+            self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset)
+
+        def add_shear(self, master):
+            
+            label = Label(master, text="Shear Heights (Power Law):")
+            label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+            self.row += 1   
+
+            self.shearGridBox = ShearGridBox(master, self, self.row, self.inputColumn)
+            self.shearGridBox.add_items(self.config.shearMeasurements)
+
+            self.copyToREWSButton = Button(master, text="Copy To REWS", command = self.copyToREWSShearProileLevels, width=12, height=1)
+            self.copyToREWSButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)     
+
+        def add_rews(self, master):
+                        
+            self.addTitleRow(master, "REWS Settings:")
+            self.rewsDefined = self.addCheckBox(master, "REWS Active", self.config.rewsDefined)
+            self.numberOfRotorLevels = self.addEntry(master, "REWS Number of Rotor Levels:", ValidateNonNegativeInteger(master), self.config.numberOfRotorLevels)
+            self.rotorMode = self.addOption(master, "REWS Rotor Mode:", ["EvenlySpacedLevels", "ProfileLevels"], self.config.rotorMode)
+            self.hubMode = self.addOption(master, "Hub Mode:", ["Interpolated", "PiecewiseExponent"], self.config.hubMode)                
+
+            label = Label(master, text="REWS Profile Levels:")
+            label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+            self.row += 1
+            
+            self.rewsGridBox = REWSGridBox(master, self, self.row, self.inputColumn)
+            self.rewsGridBox.add_items(self.config.rewsProfileLevels)
+
+            self.copyToShearButton = Button(master, text="Copy To Shear", command = self.copyToShearREWSProileLevels, width=12, height=1)
+            self.copyToShearButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)           
+            
+        def add_specified_calibration(self, master):
+
+            label = Label(master, text="Calibration Sectors:")
+            label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+            self.row += 1                
+
+            self.calibrationSectorsGridBox = CalibrationSectorsGridBox(master, self, self.row, self.inputColumn)
+            self.calibrationSectorsGridBox.add_items(self.config.calibrationSectors)
+             
+        def add_calculated_calibration(self, master):
+
+            self.calibrationStartDate = self.addDatePickerEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate)                
+            self.calibrationEndDate = self.addDatePickerEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate)
+            self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors)
+            self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector)
+
+            label = Label(master, text="Calibration Filters:")
+            label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+            self.row += 1     
+
+            self.calibrationFiltersGridBox = FiltersGridBox(master, self, self.row, self.inputColumn)
+            self.calibrationFiltersGridBox.add_items(self.config.calibrationFilters)
+
+        def add_exclusions(self, master):
+
+            #Exclusions
+            label = Label(master, text="Exclusions:")
+            label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+            self.row += 1     
+            
+            self.exclusionsGridBox = ExclusionsGridBox(master, self, self.row, self.inputColumn)   
+            self.exclusionsGridBox.add_items(self.config.exclusions)
+        
+        def add_filters(self, master):
+
+            #Filters             
+            label = Label(master, text="Filters:")
+            label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+            self.row += 1     
+            
+            self.filtersGridBox = FiltersGridBox(master, self, self.row, self.inputColumn)
+            self.filtersGridBox.add_items(self.config.filters)
+
+        def addFormElements(self, master, path):
 
                 self.availableColumnsFile = None
                 self.columnsFileHeaderRows = None
@@ -1792,296 +1811,44 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.shearWindSpeedHeights = []
                 self.shearWindSpeeds = []
 
-                self.name = self.addEntry(master, "Dataset Name:", ValidateNotBlank(master), self.config.name, showHideCommand = self.generalShowHide)
-                      
-                self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath, showHideCommand = self.generalShowHide)
-                                
-                self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator, showHideCommand = self.generalShowHide)
-                self.separator.trace("w", self.columnSeparatorChange)
+                nb = ttk.Notebook(master, height=400)
+                nb.pressed_index = None
                 
-                self.decimal = self.addOption(master, "Decimal Mark:", ["FULL STOP", "COMMA"], self.config.decimal, showHideCommand = self.generalShowHide)
-                self.decimal.trace("w", self.decimalChange)
-                
-                self.headerRows = self.addEntry(master, "Header Rows:", ValidateNonNegativeInteger(master), self.config.headerRows, showHideCommand = self.generalShowHide)
+                general_tab = Frame(nb)
+                measurements_tab = Frame(nb)
+                power_tab = Frame(nb)
+                reference_tab = Frame(nb)
+                shear_tab = Frame(nb)
+                rews_tab = Frame(nb)
+                calculated_calibration_tab = Frame(nb)
+                specified_calibration_tab = Frame(nb)
+                exclusions_tab = Frame(nb)
+                filters_tab = Frame(nb)
 
-                self.startDate = self.addDatePickerEntry(master, "Start Date:", None, self.config.startDate, showHideCommand = self.generalShowHide)
-                self.endDate = self.addDatePickerEntry(master, "End Date:", None, self.config.endDate, showHideCommand = self.generalShowHide)
-                
-                self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["None", "Calculated", "Specified"], self.config.hubWindSpeedMode, showHideCommand = self.generalShowHide)
-                self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
+                nb.add(general_tab, text='General', padding=3)
+                nb.add(measurements_tab, text='Measurements', padding=3)
+                nb.add(power_tab, text='Power', padding=3)
+                nb.add(reference_tab, text='Reference', padding=3)
+                nb.add(shear_tab, text='Shear', padding=3)
+                nb.add(rews_tab, text='REWS', padding=3)
+                nb.add(calculated_calibration_tab, text='Calibration (Calculated)', padding=3)
+                nb.add(specified_calibration_tab, text='Calibration (Specified)', padding=3)
+                nb.add(exclusions_tab, text='Exclusions', padding=3)
+                nb.add(filters_tab, text='Filters', padding=3)
 
-                self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod, showHideCommand = self.generalShowHide)
-                self.calibrationMethod.trace("w", self.calibrationMethodChange)
-                
-                self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified"], self.config.densityMode, showHideCommand = self.generalShowHide)
-                self.densityMode.trace("w", self.densityMethodChange)
-                
-                measurementShowHide = ShowHideCommand(master)
-                self.addTitleRow(master, "Measurement Settings:", showHideCommand = measurementShowHide)
-                
-                self.timeStepInSeconds = self.addEntry(master, "Time Step In Seconds:", ValidatePositiveInteger(master), self.config.timeStepInSeconds, showHideCommand = measurementShowHide)
-                self.badData = self.addEntry(master, "Bad Data Value:", ValidateFloat(master), self.config.badData, showHideCommand = measurementShowHide)
-
-                self.dateFormat = self.addEntry(master, "Date Format:", ValidateNotBlank(master), self.config.dateFormat, width = 60, showHideCommand = measurementShowHide)
-                pickDateFormatButton = Button(master, text=".", command = DateFormatPicker(self, self.dateFormat, ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%d-%m-%y %H:%M', '%y-%m-%d %H:%M', '%d/%m/%Y %H:%M', '%d/%m/%Y %H:%M:%S', '%d/%m/%y %H:%M', '%y/%m/%d %H:%M']), width=5, height=1)
-                pickDateFormatButton.grid(row=(self.row-1), sticky=E+N, column=self.buttonColumn)
-                measurementShowHide.addControl(pickDateFormatButton)               
-
-                self.timeStamp = self.addPickerEntry(master, "Time Stamp:", ValidateNotBlank(master), self.config.timeStamp, width = 60, showHideCommand = measurementShowHide) 
-                #self.turbineAvailabilityCount = self.addPickerEntry(master, "Turbine Availability Count:", None, self.config.turbineAvailabilityCount, width = 60, showHideCommand = measurementShowHide) #Could be taken out? Doesn't have to be used.
-                self.turbineLocationWindSpeed = self.addPickerEntry(master, "Turbine Location Wind Speed:", None, self.config.turbineLocationWindSpeed, width = 60, showHideCommand = measurementShowHide) #Should this be with reference wind speed?
-                self.hubWindSpeed = self.addPickerEntry(master, "Hub Wind Speed:", None, self.config.hubWindSpeed, width = 60, showHideCommand = measurementShowHide)
-                self.hubTurbulence = self.addPickerEntry(master, "Hub Turbulence:", None, self.config.hubTurbulence, width = 60, showHideCommand = measurementShowHide)
-                self.temperature = self.addPickerEntry(master, "Temperature:", None, self.config.temperature, width = 60, showHideCommand = measurementShowHide)
-                self.pressure = self.addPickerEntry(master, "Pressure:", None, self.config.pressure, width = 60, showHideCommand = measurementShowHide)
-                self.density = self.addPickerEntry(master, "Density:", None, self.config.density, width = 60, showHideCommand = measurementShowHide)
-                self.inflowAngle = self.addPickerEntry(master, "Inflow Angle:", None, self.config.inflowAngle, width = 60, showHideCommand = measurementShowHide)
-                self.inflowAngle.setTip('Not required')
-                             
-                powerShowHide = ShowHideCommand(master)  
-                self.addTitleRow(master, "Power Settings:", showHideCommand = powerShowHide)
-                self.power = self.addPickerEntry(master, "Power:", None, self.config.power, width = 60, showHideCommand = powerShowHide)
-                self.powerMin = self.addPickerEntry(master, "Power Min:", None, self.config.powerMin, width = 60, showHideCommand = powerShowHide)
-                self.powerMax = self.addPickerEntry(master, "Power Max:", None, self.config.powerMax, width = 60, showHideCommand = powerShowHide)
-                self.powerSD = self.addPickerEntry(master, "Power Std Dev:", None, self.config.powerSD, width = 60, showHideCommand = powerShowHide)
-                
-                referenceWindSpeedShowHide = ShowHideCommand(master)  
-                self.addTitleRow(master, "Reference Wind Speed Settings:", showHideCommand = referenceWindSpeedShowHide)                
-                self.referenceWindSpeed = self.addPickerEntry(master, "Reference Wind Speed:", None, self.config.referenceWindSpeed, width = 60, showHideCommand = referenceWindSpeedShowHide)
-                self.referenceWindSpeedStdDev = self.addPickerEntry(master, "Reference Wind Speed Std Dev:", None, self.config.referenceWindSpeedStdDev, width = 60, showHideCommand = referenceWindSpeedShowHide)
-                self.referenceWindDirection = self.addPickerEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60, showHideCommand = referenceWindSpeedShowHide)
-                self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", ValidateFloat(master), self.config.referenceWindDirectionOffset, showHideCommand = referenceWindSpeedShowHide)
-                
-                shearShowHide = ShowHideCommand(master)
-                label = Label(master, text="Shear Measurements:")
-                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-                shearShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
+                nb.grid(row=self.row, sticky=E+W, column=self.titleColumn, columnspan=8)
                 self.row += 1
                 
-                self.shearProfileLevelsListBoxEntry = self.addListBox(master, "Shear Listbox", showHideCommand = shearShowHide)
-                self.shearProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                self.shearProfileLevelsListBoxEntry.listbox.insert(END, "Height,Wind Speed".replace(",", columnSeparator))
-                
-                self.newShearProfileLevelButton = Button(master, text="New", command = self.NewShearProfileLevel, width=12, height=1)
-                self.newShearProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                shearShowHide.addControl(self.newShearProfileLevelButton)
-                
-                self.copyToREWSShearProileLevelButton = Button(master, text="Copy To REWS", command = self.copyToREWSShearProileLevels, width=12, height=1)
-                self.copyToREWSShearProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
-                shearShowHide.addControl(self.copyToREWSShearProileLevelButton)
-                                
-                self.editShearProfileLevelButton = Button(master, text="Edit", command = self.EditShearProfileLevel, width=12, height=1)
-                self.editShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                shearShowHide.addControl(self.editShearProfileLevelButton)
-                
-                self.deleteShearProfileLevelButton = Button(master, text="Delete", command = self.removeShearProfileLevels, width=12, height=1)
-                self.deleteShearProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                shearShowHide.addControl(self.deleteShearProfileLevelButton)
-                self.row +=1 
-                
-                
-               
-                rewsShowHide = ShowHideCommand(master)
-                self.addTitleRow(master, "REWS Settings:", showHideCommand = rewsShowHide)
-                self.rewsDefined = self.addCheckBox(master, "REWS Active", self.config.rewsDefined, showHideCommand = rewsShowHide)
-                self.numberOfRotorLevels = self.addEntry(master, "REWS Number of Rotor Levels:", ValidateNonNegativeInteger(master), self.config.numberOfRotorLevels, showHideCommand = rewsShowHide)
-                self.rotorMode = self.addOption(master, "REWS Rotor Mode:", ["EvenlySpacedLevels", "ProfileLevels"], self.config.rotorMode, showHideCommand = rewsShowHide)
-                self.hubMode = self.addOption(master, "Hub Mode:", ["Interpolated", "PiecewiseExponent"], self.config.hubMode, showHideCommand = rewsShowHide)                
-
-                rewsProfileShowHide = ShowHideCommand(master)
-                label = Label(master, text="REWS Profile Levels:")
-                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-                rewsProfileShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
-                self.row += 1
-                
-                self.rewsProfileLevelsListBoxEntry = self.addListBox(master, "REWS Listbox", showHideCommand = rewsProfileShowHide)               
-                self.rewsProfileLevelsListBoxEntry.listbox.insert(END, "Height,WindSpeed,WindDirection".replace(",", columnSeparator))               
-                if not self.isNew:
-                        for height in sorted(self.config.windSpeedLevels):
-                                windSpeed = self.config.windSpeedLevels[height]
-                                direction = self.config.windDirectionLevels[height]
-                                self.rewsProfileLevelsListBoxEntry.listbox.insert(END, encodeREWSLevelValuesAsText(height, windSpeed, direction))
-                        for height in sorted(self.config.shearMeasurements):
-                                windSpeed = self.config.shearMeasurements[height]
-                                self.shearProfileLevelsListBoxEntry.listbox.insert(END, encodeShearMeasurementValuesAsText(height, windSpeed))
-                                
-                self.rewsProfileLevelsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-                #self.rewsProfileLevelsScrollBar.configure(command=self.rewsProfileLevelsListBox.yview)
-                #self.rewsProfileLevelsScrollBar.grid(row=self.row, sticky=W+N+S, column=self.titleColumn)
-                #self.validatedREWSProfileLevels = ValidateREWSProfileLevels(master, self.rewsProfileLevelsListBox) #Should we add this back in?
-                #self.validations.append(self.validatedREWSProfileLevels)
-                #self.validatedREWSProfileLevels.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
-
-                self.newREWSProfileLevelButton = Button(master, text="New", command = self.NewREWSProfileLevel, width=12, height=1)
-                self.newREWSProfileLevelButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                rewsProfileShowHide.addControl(self.newREWSProfileLevelButton)
-                
-                self.copyToShearREWSProileLevelButton = Button(master, text="Copy To Shear", command = self.copyToShearREWSProileLevels, width=12, height=1)
-                self.copyToShearREWSProileLevelButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
-                rewsProfileShowHide.addControl(self.copyToShearREWSProileLevelButton)                
-                
-                self.editREWSProfileLevelButton = Button(master, text="Edit", command = self.EditREWSProfileLevel, width=12, height=1)
-                self.editREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                rewsProfileShowHide.addControl(self.editREWSProfileLevelButton)
-                
-                self.deleteREWSProfileLevelButton = Button(master, text="Delete", command = self.removeREWSProfileLevels, width=12, height=1)
-                self.deleteREWSProfileLevelButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                rewsProfileShowHide.addControl(self.deleteREWSProfileLevelButton)
-                self.row +=1
-                
-                calibrationSettingsShowHide = ShowHideCommand(master)
-                self.addTitleRow(master, "Calibration Settings:", showHideCommand = calibrationSettingsShowHide)
-                calibrationSettingsShowHide.button.grid(row=self.row, sticky=N+E+W, column=self.showHideColumn)
-
-                self.calibrationStartDate = self.addDatePickerEntry(master, "Calibration Start Date:", None, self.config.calibrationStartDate, showHideCommand = calibrationSettingsShowHide)                
-                self.calibrationEndDate = self.addDatePickerEntry(master, "Calibration End Date:", None, self.config.calibrationEndDate, showHideCommand = calibrationSettingsShowHide)
-                self.siteCalibrationNumberOfSectors = self.addEntry(master, "Number of Sectors:", None, self.config.siteCalibrationNumberOfSectors, showHideCommand = calibrationSettingsShowHide)
-                self.siteCalibrationCenterOfFirstSector = self.addEntry(master, "Center of First Sector:", None, self.config.siteCalibrationCenterOfFirstSector, showHideCommand = calibrationSettingsShowHide)
-    
-                calibrationSectorsShowHide = ShowHideCommand(master)
-                label = Label(master, text="Calibration Sectors:")
-                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-                calibrationSectorsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
-                self.row += 1                
-                                
-                self.calibrationDirectionsListBoxEntry = self.addListBox(master, "Calibration Sectors ListBox", showHideCommand = calibrationSectorsShowHide)
-                self.calibrationDirectionsListBoxEntry.listbox.insert(END, "Direction,Slope,Offset,Active".replace(",", columnSeparator))
-                self.calibrationDirectionsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)
-    
-                self.newCalibrationDirectionButton = Button(master, text="New", command = self.NewCalibrationDirection, width=5, height=1)
-                self.newCalibrationDirectionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                calibrationSectorsShowHide.addControl(self.newCalibrationDirectionButton)
-                
-                self.editCalibrationDirectionButton = Button(master, text="Edit", command = self.EditCalibrationDirection, width=5, height=1)
-                self.editCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                calibrationSectorsShowHide.addControl(self.editCalibrationDirectionButton)
-                self.calibrationDirectionsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditCalibrationDirection)
-                
-                self.deleteCalibrationDirectionButton = Button(master, text="Delete", command = self.RemoveCalibrationDirection, width=5, height=1)
-                self.deleteCalibrationDirectionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                calibrationSectorsShowHide.addControl(self.deleteCalibrationDirectionButton)
-                self.row +=1
-
-                if not self.isNew:
-                        for direction in sorted(self.config.calibrationSlopes):
-                                slope = self.config.calibrationSlopes[direction]
-                                offset = self.config.calibrationOffsets[direction]
-                                active = self.config.calibrationActives[direction]
-                                text = encodeCalibrationDirectionValuesAsText(direction, slope, offset, active)
-                                self.calibrationDirectionsListBoxEntry.listbox.insert(END, text)
-                 
-                calibrationFiltersShowHide = ShowHideCommand(master)
-                label = Label(master, text="Calibration Filters:")
-                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-                calibrationFiltersShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
-                self.row += 1     
-                
-                self.calibrationFiltersListBoxEntry = self.addListBox(master, "Calibration Filters ListBox", showHideCommand = calibrationFiltersShowHide)                
-                self.calibrationFiltersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active".replace(",", columnSeparator))
-                self.calibrationFiltersListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                               
-               
-                self.newCalibrationFilterButton = Button(master, text="New", command = self.NewCalibrationFilter, width=5, height=1)
-                self.newCalibrationFilterButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                calibrationFiltersShowHide.addControl(self.newCalibrationFilterButton)
-                
-                self.editCalibrationFilterButton = Button(master, text="Edit", command = self.EditCalibrationFilter, width=5, height=1)
-                self.editCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                calibrationFiltersShowHide.addControl(self.editCalibrationFilterButton)
-                self.calibrationFiltersListBoxEntry.listbox.bind("<Double-Button-1>", self.EditCalibrationFilter)
-                
-                self.deleteCalibrationFilterButton = Button(master, text="Delete", command = self.RemoveCalibrationFilter, width=5, height=1)
-                self.deleteCalibrationFilterButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                calibrationFiltersShowHide.addControl(self.deleteCalibrationFilterButton)
-                self.row +=1
-
-                if not self.isNew:
-                        for calibrationFilterItem in sorted(self.config.calibrationFilters):
-                                if isinstance(calibrationFilterItem, configuration.RelationshipFilter):
-                                        text = encodeRelationshipFilterValuesAsText(calibrationFilterItem)
-                                else:
-                                        text = encodeFilterValuesAsText(calibrationFilterItem.column, calibrationFilterItem.value, calibrationFilterItem.filterType, calibrationFilterItem.inclusive, calibrationFilterItem.active)
-                                self.calibrationFiltersListBoxEntry.listbox.insert(END, text)
-
-               
-               #Exclusions
-                exclusionsShowHide = ShowHideCommand(master)
-                label = Label(master, text="Exclusions:")
-                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-                exclusionsShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
-                self.row += 1     
-                
-                self.exclusionsListBoxEntry = self.addListBox(master, "Exclusions ListBox", showHideCommand = exclusionsShowHide)                          
-                self.exclusionsListBoxEntry.listbox.insert(END, "StartDate,EndDate,Active".replace(",", columnSeparator))                               
-                self.exclusionsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
-
-                self.newExclusionButton = Button(master, text="New", command = self.NewExclusion, width=5, height=1)
-                self.newExclusionButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                exclusionsShowHide.addControl(self.newExclusionButton)
-                
-                self.editExclusionButton = Button(master, text="Edit", command = self.EditExclusion, width=5, height=1)
-                self.editExclusionButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                exclusionsShowHide.addControl(self.editExclusionButton)
-                self.exclusionsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditExclusion)
-                
-                self.deleteExclusionButton = Button(master, text="Delete", command = self.RemoveExclusion, width=5, height=1)
-                self.deleteExclusionButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                exclusionsShowHide.addControl(self.deleteExclusionButton)
-                self.row +=1
-
-                if not self.isNew:
-                        for exclusion in sorted(self.config.exclusions):
-                                startDate = exclusion[0]
-                                endDate = exclusion[1]
-                                active = exclusion[2]
-                                text = encodeExclusionValuesAsText(startDate, endDate, active)
-                                self.exclusionsListBoxEntry.listbox.insert(END, text)
-
-                #Filters
-                filtersShowHide = ShowHideCommand(master)                
-                label = Label(master, text="Filters:")
-                label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
-                filtersShowHide.button.grid(row=self.row, sticky=E+W, column=self.showHideColumn)
-                self.row += 1     
-                
-                self.filtersListBoxEntry = self.addListBox(master, "Filters ListBox", showHideCommand = filtersShowHide)                          
-                self.filtersListBoxEntry.listbox.insert(END, "Column,Value,FilterType,Inclusive,Active".replace(",", columnSeparator))                             
-                self.filtersListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
- 
-                self.newFilterButton = Button(master, text="New", command = self.NewFilter, width=5, height=1)
-                self.newFilterButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-                filtersShowHide.addControl(self.newFilterButton)
-                
-                self.editFilterButton = Button(master, text="Edit", command = self.EditFilter, width=5, height=1)
-                self.editFilterButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-                filtersShowHide.addControl(self.editFilterButton)
-                self.filtersListBoxEntry.listbox.bind("<Double-Button-1>", self.EditFilter)
-                
-                self.deleteFilterButton = Button(master, text="Delete", command = self.RemoveFilter, width=5, height=1)
-                self.deleteFilterButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-                filtersShowHide.addControl(self.deleteFilterButton)
-                self.row +=1
-
-                if not self.isNew:
-                        for filterItem in sorted(self.config.filters):
-                                if isinstance(filterItem, configuration.RelationshipFilter):
-                                        text = encodeRelationshipFilterValuesAsText(filterItem)
-                                else:
-                                        text = encodeFilterValuesAsText(filterItem.column, filterItem.value, filterItem.filterType, filterItem.inclusive, filterItem.active)
-                                self.filtersListBoxEntry.listbox.insert(END, text)
-
-                #set initial visibility
-                self.generalShowHide.show()
-                rewsShowHide.hide()
-                measurementShowHide.hide()
-                shearShowHide.hide()
-                rewsProfileShowHide.hide()
-                calibrationSettingsShowHide.hide()                
-                calibrationSectorsShowHide.hide()
-                calibrationFiltersShowHide.hide()
-                exclusionsShowHide.hide()
-                filtersShowHide.hide()
-                powerShowHide.hide()
-                referenceWindSpeedShowHide.hide()
+                self.add_general(general_tab, path)
+                self.add_measurements(measurements_tab)
+                self.add_power(power_tab)  
+                self.add_reference(reference_tab)
+                self.add_shear(shear_tab) 
+                self.add_rews(rews_tab)                          
+                self.add_calculated_calibration(calculated_calibration_tab)
+                self.add_specified_calibration(specified_calibration_tab)
+                self.add_exclusions(exclusions_tab)
+                self.add_filters(filters_tab)
 
                 self.calibrationMethodChange()
                 self.densityMethodChange()
@@ -2191,323 +1958,20 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
 
                 else:
                         raise Exception("Unknown hub wind speed mode: %s" % self.hubWindSpeedMode.get())
-
-        def NewFilter(self):
-
-            FilterDialog(self, self.status, self.addFilterFromText)
-
-        def EditFilter(self, event = None):
-
-            items = self.filtersListBoxEntry.listbox.curselection()
-
-            if len(items) == 1:
-
-                    idx = int(items[0])
-
-                    if idx > 0:
-
-                        text = self.filtersListBoxEntry.listbox.get(items[0])                        
-                        
-                        try:
-                            FilterDialog(self, self.status, self.addFilterFromText, text, idx)                                
-                        except ExceptionType as e:
-                            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-            
-
-        def RemoveFilter(self):
-
-            items = self.filtersListBoxEntry.listbox.curselection()
-            pos = 0
-            
-            for i in items:
-                
-                idx = int(i) - pos
-                
-                if idx > 0:
-                    self.filtersListBoxEntry.listbox.delete(idx, idx)
-
-                pos += 1
-            
-        def addFilterFromText(self, text, index = None):
-
-                if index != None:
-                        self.filtersListBoxEntry.listbox.delete(index, index)
-                        self.filtersListBoxEntry.listbox.insert(index, text)
-                else:
-                        self.filtersListBoxEntry.listbox.insert(END, text)    
-                        
-        def NewCalibrationFilter(self):
-
-            CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText)
-
-        def EditCalibrationFilter(self, event = None):
-
-            items = self.calibrationFiltersListBoxEntry.listbox.curselection()
-
-            if len(items) == 1:
-
-                    idx = int(items[0])
-
-                    if idx > 0:
-
-                        text = self.calibrationFiltersListBoxEntry.listbox.get(items[0])                        
-                        
-                        try:
-                            CalibrationFilterDialog(self, self.status, self.addCalibrationFilterFromText, text, idx)                                
-                        except ExceptionType as e:
-                            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-            
-
-        def RemoveCalibrationFilter(self):
-
-            items = self.calibrationFiltersListBoxEntry.listbox.curselection()
-            pos = 0
-            
-            for i in items:
-                
-                idx = int(i) - pos
-                
-                if idx > 0:
-                    self.calibrationFiltersListBoxEntry.listbox.delete(idx, idx)
-
-                pos += 1
-            
-        def addCalibrationFilterFromText(self, text, index = None):
-
-                if index != None:
-                        self.calibrationFiltersListBoxEntry.listbox.delete(index, index)
-                        self.calibrationFiltersListBoxEntry.listbox.insert(index, text)
-                else:
-                        self.calibrationFiltersListBoxEntry.listbox.insert(END, text)     
-
-
-
-        def NewExclusion(self):
-
-            ExclusionDialog(self, self.status, self.addExclusionFromText)
-
-        def EditExclusion(self, event = None):
-
-            items = self.exclusionsListBoxEntry.listbox.curselection()
-
-            if len(items) == 1:
-
-                    idx = int(items[0])
-
-                    if idx > 0:
-
-                        text = self.exclusionsListBoxEntry.listbox.get(items[0])                        
-                        
-                        try:
-                            ExclusionDialog(self, self.status, self.addExclusionFromText, text, idx)                                
-                        except ExceptionType as e:
-                            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-            
-
-        def RemoveExclusion(self):
-
-            items = self.exclusionsListBoxEntry.listbox.curselection()
-            pos = 0
-            
-            for i in items:
-                
-                idx = int(i) - pos
-                
-                if idx > 0:
-                    self.exclusionsListBoxEntry.listbox.delete(idx, idx)
-
-                pos += 1
-            
-        def addExclusionFromText(self, text, index = None):
-
-                if index != None:
-                        self.exclusionsListBoxEntry.listbox.delete(index, index)
-                        self.exclusionsListBoxEntry.listbox.insert(index, text)
-                else:
-                        self.exclusionsListBoxEntry.listbox.insert(END, text)     
-
-
-        def NewCalibrationDirection(self):
-
-            CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText)
-
-        def EditCalibrationDirection(self, event = None):
-
-            items = self.calibrationDirectionsListBoxEntry.listbox.curselection()
-
-            if len(items) == 1:
-
-                    idx = int(items[0])
-
-                    if idx > 0:
-
-                        text = self.calibrationDirectionsListBoxEntry.listbox.get(items[0])                        
-                        
-                        try:
-                            CalibrationDirectionDialog(self, self.status, self.addCalbirationDirectionFromText, text, idx)                                
-                        except ExceptionType as e:
-                            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-            
-
-        def RemoveCalibrationDirection(self):
-
-            items = self.calibrationDirectionsListBoxEntry.listbox.curselection()
-            pos = 0
-            
-            for i in items:
-                
-                idx = int(i) - pos
-                
-                if idx > 0:
-                    self.calibrationDirectionsListBoxEntry.listbox.delete(idx, idx)
-
-                pos += 1
-            
-        def addCalbirationDirectionFromText(self, text, index = None):
-
-                if index != None:
-                        self.calibrationDirectionsListBoxEntry.listbox.delete(index, index)
-                        self.calibrationDirectionsListBoxEntry.listbox.insert(index, text)
-                else:
-                        self.calibrationDirectionsListBoxEntry.listbox.insert(END, text)     
-
-        def EditShearProfileLevel(self):
-
-                items = self.shearProfileLevelsListBoxEntry.listbox.curselection()
-
-                if len(items) == 1:
-
-                        idx = items[0]
-                        if idx > 0:
-                            text = self.shearProfileLevelsListBoxEntry.listbox.get(items[0])                        
-                        
-                            try:                                
-                                    ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText, text, idx)
-                            except ExceptionType as e:
-                                   self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-                                            
-        def NewShearProfileLevel(self):
-                
-                ShearMeasurementDialog(self, self.status, self.addShearProfileLevelFromText)
-                
-        def addShearProfileLevelFromText(self, text, index = None):
-
-                if index != None:
-                        self.shearProfileLevelsListBoxEntry.listbox.delete(index, index)
-                        self.shearProfileLevelsListBoxEntry.listbox.insert(index, text)
-                else:
-                        self.shearProfileLevelsListBoxEntry.listbox.insert(END, text)
-                        
-                self.sortLevelsShear()
-                #self.validatedShearProfileLevels.validate()               
-
-        def removeShearProfileLevels(self):
-                
-                items = self.shearProfileLevelsListBoxEntry.listbox.curselection()
-                pos = 0
-                
-                for i in items:
-                    idx = int(i) - pos
-                    if idx > 0:
-                        self.shearProfileLevelsListBoxEntry.listbox.delete(idx, idx)
-                    pos += 1
                     
         def copyToREWSShearProileLevels(self):            
             
-            shears = {}            
-            for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
-                    if i > 0:                        
-                        text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
-                        referenceWindDirection = self.config.referenceWindDirection
-                        shears[extractShearMeasurementValuesFromText(text)[0]] = text + columnSeparator + str(referenceWindDirection)
-           
-            for height in sorted(shears):
-                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, shears[height])
-            self.sortLevels()
+            self.rewsGridBox.remove_all()
 
-        def sortLevelsShear(self):
-
-                levels = {}
-                startText = self.shearProfileLevelsListBoxEntry.listbox.get(0)                
-                
-                for i in range(1, self.shearProfileLevelsListBoxEntry.listbox.size()):
-                    text = self.shearProfileLevelsListBoxEntry.listbox.get(i)
-                    levels[extractShearMeasurementValuesFromText(text)[0]] = text
-
-                self.shearProfileLevelsListBoxEntry.listbox.delete(0, END)
-                self.shearProfileLevelsListBoxEntry.listbox.insert(END, startText)
-                        
-                for height in sorted(levels):
-                        self.shearProfileLevelsListBoxEntry.listbox.insert(END, levels[height])
-                        
-        def EditREWSProfileLevel(self):
-
-                items = self.rewsProfileLevelsListBoxEntry.listbox.curselection()
-
-                if len(items) == 1:
-
-                        idx = items[0]
-                        if idx > 0:
-                            text = self.rewsProfileLevelsListBoxEntry.listbox.get(items[0])                        
-                            
-                            try:                                
-                                    REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText, text, idx)
-                            except ExceptionType as e:
-                                   self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-                                        
-        def NewREWSProfileLevel(self):
-                
-                REWSProfileLevelDialog(self, self.status, self.addREWSProfileLevelFromText)
-                
-        def addREWSProfileLevelFromText(self, text, index = None):
-
-                if index != None:
-                        self.rewsProfileLevelsListBoxEntry.listbox.delete(index, index)
-                        self.rewsProfileLevelsListBoxEntry.listbox.insert(index, text)
-                else:
-                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, text)
-                        
-                self.sortLevels()
-                #self.validatedREWSProfileLevels.validate()               
-
-        def removeREWSProfileLevels(self):
-                
-                items = self.rewsProfileLevelsListBoxEntry.listbox.curselection()
-                pos = 0
-                
-                for i in items:
-                    idx = int(i) - pos
-                    if idx > 0:
-                        self.rewsProfileLevelsListBoxEntry.listbox.delete(idx, idx)
-                    pos += 1
-            
-                #self.validatedREWSProfileLevels.validate()
+            for item in self.shearGridBox.get_items():
+                self.rewsGridBox.add_item(configuration.ShearMeasurement(item.height, item.wind_speed_column))
             
         def copyToShearREWSProileLevels(self):            
             
-            profiles = {}            
-            for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
-                    if i > 0:                        
-                        text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)          
-                        height, ws , wd = extractREWSLevelValuesFromText(text)
-                        profiles[height] = encodeShearMeasurementValuesAsText(height, ws )
-           
-            for height in sorted(profiles):
-                        self.shearProfileLevelsListBoxEntry.listbox.insert(END, profiles[height])
-            self.sortLevelsShear()
+            self.shearGridBox.remove_all()
 
-        def sortLevels(self):
-
-                levels = {}
-                startText = self.rewsProfileLevelsListBoxEntry.listbox.get(0)    
-                for i in range(1,self.rewsProfileLevelsListBoxEntry.listbox.size()):
-                    text = self.rewsProfileLevelsListBoxEntry.listbox.get(i)
-                    levels[extractREWSLevelValuesFromText(text)[0]] = text
-
-                self.rewsProfileLevelsListBoxEntry.listbox.delete(0, END)
-                self.rewsProfileLevelsListBoxEntry.listbox.insert(END,startText)
-                for height in sorted(levels):
-                        self.rewsProfileLevelsListBoxEntry.listbox.insert(END, levels[height])
+            for item in self.rewsGridBox.get_items():
+                self.shearGridBox.add_item(configuration.ShearMeasurement(item.height, item.wind_speed_column))
 
         def getInputTimeSeriesRelativePath(self):
 
@@ -2582,11 +2046,6 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.hubWindSpeedMode = self.hubWindSpeedMode.get()
                 self.config.calibrationMethod = self.calibrationMethod.get()
                 self.config.densityMode = self.densityMode.get()
-                
-                self.config.rewsDefined = bool(self.rewsDefined.get())
-                self.config.numberOfRotorLevels = intSafe(self.numberOfRotorLevels.get())
-                self.config.rotorMode = self.rotorMode.get()
-                self.config.hubMode = self.hubMode.get()
 
                 self.config.inputTimeSeriesPath = self.getInputTimeSeriesRelativePath()
                 self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
@@ -2607,7 +2066,6 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.referenceWindDirectionOffset = floatSafe(self.referenceWindDirectionOffset.get())
                 self.config.turbineLocationWindSpeed = self.turbineLocationWindSpeed.get()
                 self.config.inflowAngle = self.inflowAngle.get()
-                #self.config.turbineAvailabilityCount = self.turbineAvailabilityCount.get()
                 
                 self.config.temperature = self.temperature.get()
                 self.config.pressure = self.pressure.get()
@@ -2616,85 +2074,41 @@ class DatasetConfigurationDialog(BaseConfigurationDialog):
                 self.config.hubWindSpeed = self.hubWindSpeed.get()
                 self.config.hubTurbulence = self.hubTurbulence.get()
 
-                self.config.windDirectionLevels = {}
-                self.config.windSpeedLevels = {}
+                #REWS
+                self.config.rewsDefined = bool(self.rewsDefined.get())
+                self.config.numberOfRotorLevels = intSafe(self.numberOfRotorLevels.get())
+                self.config.rotorMode = self.rotorMode.get()
+                self.config.hubMode = self.hubMode.get()
 
-                for i in range(self.rewsProfileLevelsListBoxEntry.listbox.size()):
-                        if i > 0:
-                                items = extractREWSLevelValuesFromText(self.rewsProfileLevelsListBoxEntry.listbox.get(i))
-                                self.config.windSpeedLevels[items[0]] = items[1]
-                                self.config.windDirectionLevels[items[0]] = items[2]
+                self.config.rewsProfileLevels = self.rewsGridBox.get_items()
 
-                self.config.shearMeasurements = {}
-                for i in range(self.shearProfileLevelsListBoxEntry.listbox.size()):
-                        if i > 0:
-                                items = extractShearMeasurementValuesFromText(self.shearProfileLevelsListBoxEntry.listbox.get(i))
-                                self.config.shearMeasurements[items[0]] = items[1]
+                #shear masurements
+                self.config.shearMeasurements = self.shearGridBox.get_items()
 
-                #for i in range(len(self.shearWindSpeedHeights)):
-                #        shearHeight = self.shearWindSpeedHeights[i].get()
-                #        shearColumn = self.shearWindSpeeds[i].get()
-                #        self.config.shearMeasurements[shearHeight] = shearColumn
-
-                self.config.calibrationDirections = {}
-                self.config.calibrationSlopes = {}
-                self.config.calibrationOffsets = {}
-                self.config.calibrationActives = {}
-
+                #calibrations
                 self.config.calibrationStartDate = getDateFromEntry(self.calibrationStartDate)
                 self.config.calibrationEndDate = getDateFromEntry(self.calibrationEndDate)
                 self.config.siteCalibrationNumberOfSectors = intSafe(self.siteCalibrationNumberOfSectors.get())
                 self.config.siteCalibrationCenterOfFirstSector = intSafe(self.siteCalibrationCenterOfFirstSector.get()) 
                 
                 #calbirations
-                for i in range(self.calibrationDirectionsListBoxEntry.listbox.size()):
-                        if i > 0:
-                                direction, slope, offset, active = extractCalibrationDirectionValuesFromText(self.calibrationDirectionsListBoxEntry.listbox.get(i))
-                                if not direction in self.config.calibrationDirections:
-                                        self.config.calibrationDirections[direction] = direction
-                                        self.config.calibrationSlopes[direction] = slope
-                                        self.config.calibrationOffsets[direction] = offset
-                                        self.config.calibrationActives[direction] = active
-                                else:
-                                        raise Exception("Duplicate calibration direction: %f" % direction)
+                self.config.calibrationSectors = self.calibrationSectorsGridBox.get_items()
                 
-                self.config.calibrationFilters = []
-                
-                for i in range(self.calibrationFiltersListBoxEntry.listbox.size()):
-                        if i > 0:
-                                try: # try simple Filter, if fails assume realtionship filter
-                                        calibrationFilterColumn, calibrationFilterValue, calibrationFilterType, calibrationFilterInclusive, calibrationFilterActive = extractFilterValuesFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
-                                        self.config.calibrationFilters.append(configuration.Filter(calibrationFilterActive, calibrationFilterColumn, calibrationFilterType, calibrationFilterInclusive, calibrationFilterValue))
-                                except:
-                                        filter = extractRelationshipFilterFromText(self.calibrationFiltersListBoxEntry.listbox.get(i))
-                                        self.config.calibrationFilters.append(filter)
+                #calibration filters                
+                self.config.calibrationFilters = self.calibrationFiltersGridBox.get_items()
 
                 #exclusions
-                self.config.exclusions = []
-                
-                for i in range(self.exclusionsListBoxEntry.listbox.size()):
-                    if i > 0:
-                        self.config.exclusions.append(extractExclusionValuesFromText(self.exclusionsListBoxEntry.listbox.get(i)))
+                self.config.exclusions = self.exclusionsGridBox.get_items()
 
                 #filters
-
-                self.config.filters = []
-                
-                for i in range(self.filtersListBoxEntry.listbox.size()):
-                        if i > 0:
-                                try:
-                                        filterColumn, filterValue, filterType, filterInclusive, filterActive = extractFilterValuesFromText(self.filtersListBoxEntry.listbox.get(i))
-                                        self.config.filters.append(configuration.Filter(filterActive, filterColumn, filterType, filterInclusive, filterValue))
-                                except:
-                                        filter = extractRelationshipFilterFromText(self.filtersListBoxEntry.listbox.get(i))
-                                        self.config.filters.append(filter)
+                self.config.filters = self.filtersGridBox.get_items()
 
 class PowerCurveConfigurationDialog(BaseConfigurationDialog):
 
         def getInitialFileName(self):
                 return "PowerCurve"
                 
-        def addFormElements(self, master):
+        def addFormElements(self, master, path):
 
                 self.name = self.addEntry(master, "Name:", None, self.config.name, width = 60)
 
@@ -2796,7 +2210,7 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
         def getInitialFileName(self):
                 return "Analysis"
         
-        def addFormElements(self, master):            
+        def addFormElements(self, master, path):            
                 self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", ValidatePositiveInteger(master), self.config.powerCurveMinimumCount, showHideCommand = self.generalShowHide)
 
                 filterModeOptions = ["All", "Inner", "Outer"]
@@ -3032,6 +2446,53 @@ class AnalysisConfigurationDialog(BaseConfigurationDialog):
                         dataset = relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
                         self.config.datasets.append(dataset) 
 
+class PortfolioGridBox(GridBox):
+
+    def __init__(self, master, parent_dialog, row, column):
+
+        self.parent_dialog = parent_dialog
+        self.relative_path = configuration.RelativePath(parent_dialog.filePath.get())
+
+        headers = ["Description","Diameter","HubHeight","RatedPower","CutOutWindSpeed","Datasets"]
+
+        GridBox.__init__(self, master, headers, row, column)
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["Description"] = item.description
+        values_dict["Diameter"] = item.diameter
+        values_dict["HubHeight"] = item.hubHeight
+        values_dict["RatedPower"] = item.ratedPower
+        values_dict["CutOutWindSpeed"] = item.ratedPower
+
+        if len(item.datasets) == 0:
+            values_dict["Datasets"] = ""
+        elif len(item.datasets) == 1:
+            values_dict["Datasets"] = item.datasets[0].relativePath
+        else:
+            values_dict["Datasets"] = "Multiple"
+
+        return values_dict
+
+    def new(self):
+
+        dialog = PortfolioItemDialog(self.master, self.relative_path, self.parent_dialog.status)
+        self.add_item(dialog.item)
+        self.parent_dialog.validateItems.validate()   
+        
+    def edit_item(self, item):                   
+                    
+        try:
+            dialog = PortfolioItemDialog(self.master, self.relative_path, self.parent_dialog.status, self.get_selected())                                
+        except ExceptionType as e:
+            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+
+    def remove(self):
+
+        GridBox.remove(self)
+        self.parent_dialog.validateItems.validate()   
 
 class PortfolioDialog(BaseConfigurationDialog):
         
@@ -3041,128 +2502,49 @@ class PortfolioDialog(BaseConfigurationDialog):
     def getInitialFolder(self):        
         return preferences.portfolio_last_opened_dir()
                 
-    def addFormElements(self, master):
+    def addFormElements(self, master, path):
 
         self.description = self.addEntry(master, "Description:", ValidateNotBlank(master), self.config.description)
+
+        self.add_portfolio_items(master)
+
+    def add_portfolio_items(self, master):
 
         #Items
         label = Label(master, text="Portfolio Items:")
         label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
         self.row += 1     
         
-        self.itemsListBoxEntry = self.addListBox(master, "Items ListBox", height = 10)   
+        self.items_grid_box = PortfolioGridBox(master, self, self.row, self.inputColumn)
 
-        self.validateItems = ValidatePortfolioItems(master, self.itemsListBoxEntry.listbox)
+        self.validateItems = ValidatePortfolioItems(master, self.items_grid_box)
         self.validations.append(self.validateItems)
         self.validateItems.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
-        
-        self.itemsListBoxEntry.listbox.insert(END, "Description,Diameter,HubHeight,RatedPower,CutOutWindSpeed,Datasets".replace(",", columnSeparator))                               
-        self.itemsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)              
 
-        self.newItemButton = Button(master, text="New", command = self.new_item, width=5, height=1)
-        self.newItemButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-        
-        self.editItemButton = Button(master, text="Edit", command = self.edit_item, width=5, height=1)
-        self.editItemButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-        self.itemsListBoxEntry.listbox.bind("<Double-Button-1>", self.edit_item)
-        
-        self.deleteItemButton = Button(master, text="Delete", command = self.remove_item, width=5, height=1)
-        self.deleteItemButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
-        self.row +=1
+        self.row += 1
 
-        if not self.isNew:
-                for item in self.config.items:
-                    
-                        text = encodePortfolioItemValuesAsText(description = item.description, \
-                                                                diameter = item.diameter, \
-                                                                hubHeight = item.hubHeight, \
-                                                                ratedPower = item.ratedPower, \
-                                                                cutOutWindSpeed = item.cutOutWindSpeed, \
-                                                                datasets = item.get_dataset_paths())
-                                    
-                        self.itemsListBoxEntry.listbox.insert(END, text)
+        self.items_grid_box.add_items(self.config.items)
 
         self.validateItems.validate()   
-                
+
     def setConfigValues(self):
         
         self.config.path = self.filePath.get()
         self.config.description = self.description.get()
-
-        #exclusions
-        self.config.items = []
-        
-        for i in range(self.itemsListBoxEntry.listbox.size()):
-            if i > 0:
-                values = extractPortfolioItemValuesFromText(self.itemsListBoxEntry.listbox.get(i))
-                self.config.addItem(description = values[0], \
-                                    diameter = values[1], \
-                                    hubHeight = values[2], \
-                                    ratedPower = values[3], \
-                                    cutOutWindSpeed = values[4], \
-                                    datasets = values[5])
-
-    def new_item(self):
-
-        PortfolioItemDialog(self, configuration.RelativePath(self.filePath.get()), self.status, self.addPortfolioItemFromText)
-        self.validateItems.validate()   
-        
-    def edit_item(self, event = None):
-
-        items = self.itemsListBoxEntry.listbox.curselection()
-
-        if len(items) == 1:
-
-                idx = int(items[0])
-
-                if idx > 0:
-
-                    text = self.itemsListBoxEntry.listbox.get(items[0])                        
-                    
-                    try:
-                        PortfolioItemDialog(self, configuration.RelativePath(self.filePath.get()), self.status, self.addPortfolioItemFromText, text, idx)                                
-                    except ExceptionType as e:
-                        self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
-        
-
-    def remove_item(self):
-
-        items = self.itemsListBoxEntry.listbox.curselection()
-        pos = 0
-        
-        for i in items:
-            
-            idx = int(i) - pos
-            
-            if idx > 0:
-                self.itemsListBoxEntry.listbox.delete(idx, idx)
-
-            pos += 1
-
-        self.validateItems.validate()   
-        
-    def addPortfolioItemFromText(self, text, index = None):
-
-            if index != None:
-                    self.itemsListBoxEntry.listbox.delete(index, index)
-                    self.itemsListBoxEntry.listbox.insert(index, text)
-            else:
-                    self.itemsListBoxEntry.listbox.insert(END, text)     
-
+        self.config.items = self.items_grid_box.get_items()
 
 class PortfolioItemDialog(BaseDialog):
         
-    def __init__(self, master, relativePath, status, callback, text = None, index = None):
+    def __init__(self, master, relative_path, status, item = None):
 
-        self.relativePath = relativePath
-        self.callback = callback
-        self.text = text
-        self.index = index
-        
-        self.callback = callback
+        self.relative_path = relative_path
+        self.isNew = (item == None)
 
-        self.isNew = (text == None)
-        
+        if self.isNew:
+            self.item = configuration.PortfolioItem()
+        else:
+            self.item = item
+
         BaseDialog.__init__(self, master, status)
                     
     def body(self, master):
@@ -3172,140 +2554,121 @@ class PortfolioItemDialog(BaseDialog):
         #dummy label to force width
         Label(master, text=" " * 275).grid(row = self.row, sticky=W, column=self.titleColumn, columnspan = 8)
         self.row += 1
-        
-        if not self.isNew:
-                
-            items = extractPortfolioItemValuesFromText(self.text)
-            
-            description = items[0]
-            diameter = items[1]
-            hubHeight = items[2]
-            ratedPower = items[3]
-            cutOutWindSpeed = items[4]                
-            datasets = items[5]                    
-
-        else:
-            
-            description = None
-            diameter = None
-            hubHeight = None
-            ratedPower = None
-            cutOutWindSpeed = None               
-            datasets = None
                 
         self.addTitleRow(master, "Portfolio Item Settings:")
         
-        self.description = self.addEntry(master, "Description:", ValidateNotBlank(master), description)
-        self.diameter = self.addEntry(master, "Diameter:", ValidateNonNegativeFloat(master), diameter)
-        self.hubHeight = self.addEntry(master, "Hub Height:", ValidateNonNegativeFloat(master), hubHeight)
-        self.ratedPower = self.addEntry(master, "Rated Power:", ValidateNonNegativeFloat(master), ratedPower)
-        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidateNonNegativeFloat(master), cutOutWindSpeed)
+        self.description = self.addEntry(master, "Description:", ValidateNotBlank(master), self.item.description)
+        self.diameter = self.addEntry(master, "Diameter:", ValidateNonNegativeFloat(master), self.item.diameter)
+        self.hubHeight = self.addEntry(master, "Hub Height:", ValidateNonNegativeFloat(master), self.item.hubHeight)
+        self.ratedPower = self.addEntry(master, "Rated Power:", ValidateNonNegativeFloat(master), self.item.ratedPower)
+        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidateNonNegativeFloat(master), self.item.cutOutWindSpeed)
 
-        self.datasetsListBoxEntry = self.addListBox(master, "Datasets ListBox")
-                        
-        if not self.isNew:
-                for dataset in datasets:
-                        self.datasetsListBoxEntry.listbox.insert(END, dataset)
-                        
-        self.datasetsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                
-        self.validateDatasets = ValidateDatasets(master, self.datasetsListBoxEntry.listbox)
-        self.validations.append(self.validateDatasets)
-        self.validateDatasets.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
-
-        self.newDatasetButton = Button(master, text="New", command = self.NewDataset, width=5, height=1)
-        self.newDatasetButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
-        
-        self.editDatasetButton = Button(master, text="Edit", command = self.EditDataset, width=5, height=1)
-        self.datasetsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditDataset)
-        self.editDatasetButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
-        
-        self.addDatasetButton = Button(master, text="+", command = self.addDataset, width=2, height=1)
-        self.addDatasetButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
-        
-        self.removeDatasetButton = Button(master, text="-", command = self.removeDatasets, width=2, height=1)
-        self.removeDatasetButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+        self.add_datasets(master)
 
         #dummy label to indent controls
         Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
 
-    def apply(self):
+    def add_datasets(self, master):
 
-        datasets = []
-        
-        for i in range(self.datasetsListBoxEntry.listbox.size()):
-                dataset = self.relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
-                datasets.append(dataset) 
-                    
-        self.text = encodePortfolioItemValuesAsText(self.description.get().strip(), \
-                                                    self.diameter.get(), \
-                                                    self.hubHeight.get(), \
-                                                    self.ratedPower.get(), \
-                                                    self.cutOutWindSpeed.get(), \
-                                                    datasets)
+        label = Label(master, text="Datasets:")
+        label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+        self.row += 1    
+
+        self.datasetGridBox = DatasetGridBox(master, self, self.row, self.inputColumn, self.relative_path)
+        self.row += 1
+
+        self.datasetGridBox.add_items(self.item.datasets)
+
+        self.validateDatasets = ValidateDatasets(master, self.datasetGridBox)
+        self.validations.append(self.validateDatasets)
+        self.validateDatasets.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
+
+    def apply(self):
+                           
+        self.item.description = self.description.get().strip()
+        self.item.diameter = float(self.diameter.get())
+        self.item.hubHeight = float(self.hubHeight.get())
+        self.item.ratedPower = float(self.ratedPower.get())
+        self.item.cutOutWindSpeed = float(self.cutOutWindSpeed.get())
+
+        self.item.datasets = self.datasetGridBox.get_items()
 
         if self.isNew:
                 self.status.addMessage("Portfolio Item created")
         else:
                 self.status.addMessage("Portfolio Item updated")
-
-        if self.index== None:
-                self.callback(self.text)
-        else:
-                self.callback(self.text, self.index)
-
-    def EditDataset(self, event = None):
-
-        items = self.datasetsListBoxEntry.listbox.curselection()
-        if len(items) == 1:
-            index = items[0]
-            path = self.datasetsListBoxEntry.listbox.get(index)
-            try:
-                datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(path))
-                DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)                                                                                     
-            except ExceptionType as e:
-                self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
                                     
-    def NewDataset(self):
+class DatasetGridBox(GridBox):
+
+    def __init__(self, master, parent_dialog, row, column, relative_path):
+
+        self.parent_dialog = parent_dialog
+        self.relative_path = relative_path
+
+        headers = ["Dataset"]
+
+        GridBox.__init__(self, master, headers, row, column)
+
+        self.pop_menu.add_command(label="Add Existing", command=self.add)
+        self.pop_menu_add.add_command(label="Add Existing", command=self.add)
+
+    def size(self):
+        return self.item_count()
+
+    def get(self, index):
+        return self.get_items()[index].path
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["Dataset"] = item.relativePath
+
+        return values_dict
+
+    def get_header_scale(self):
+        return 12
+
+    def new(self):
 
         try:
             config = configuration.DatasetConfiguration()
-            DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)                                         
+            DatasetConfigurationDialog(self.master, self.parent_dialog.status, self.add_from_file_path, config)                                         
         except ExceptionType as e:
             self.status.addMessage("ERROR creating dataset config: %s" % e)
 
-    def addDataset(self):
-        fileName = askopenfilename(parent=self.master, initialdir=preferences.dataset_last_opened_dir(), defaultextension=".xml")
-        if len(fileName) > 0: self.addDatasetFromPath(fileName)
+    def add(self):
 
-    def addDatasetFromPath(self, path, index = None):
+        file_name = askopenfilename(parent=self.master, initialdir=preferences.dataset_last_opened_dir(), defaultextension=".xml")
+        if len(file_name) > 0: self.add_from_file_path(file_name)
+
+    def add_from_file_path(self, path):
 
         try:
                 preferences.datasetLastOpened = path
                 preferences.save()
         except ExceptionType as e:
             self.addMessage("Cannot save preferences: %s" % e)
-                
-        path = self.relativePath.convertToRelativePath(path)
-
-        if index != None:
-            self.datasetsListBoxEntry.listbox.delete(index, index)
-            self.datasetsListBoxEntry.listbox.insert(index, path)
-        else:
-            self.datasetsListBoxEntry.listbox.insert(END, path)
-
-        self.validateDatasets.validate()               
-
-    def removeDatasets(self):
-            
-        items = self.datasetsListBoxEntry.listbox.curselection()
-        pos = 0
         
-        for i in items:
-            idx = int(i) - pos
-            self.datasetsListBoxEntry.listbox.delete(idx, idx)
-            pos += 1
-    
-        self.validateDatasets.validate()
+        relative_path = self.relative_path.convertToRelativePath(path)
+
+        dataset = configuration.PortfolioItemDataset(self.relative_path.baseFolder, relative_path)
+
+        self.add_item(dataset)
+
+        self.parent_dialog.validateDatasets.validate()   
+
+    def edit_item(self, item):                   
+
+        try:
+            datasetConfig = configuration.DatasetConfiguration(self.relative_path.convertToAbsolutePath(item.path))
+            dialog = DatasetConfigurationDialog(self.master, self.parent_dialog.status, None, datasetConfig, None)                                  
+        except ExceptionType as e:
+            self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+
+    def remove(self):
+        GridBox.remove(self)
+        self.parent_dialog.validateDatasets.validate()   
 
 class UserInterface:
 

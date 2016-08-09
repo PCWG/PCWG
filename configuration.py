@@ -7,7 +7,30 @@ import datetime
 import event
 
 isoDateFormat = "%Y-%m-%dT%H:%M:00"
-        
+
+class ShearMeasurement:
+
+    def __init__(self, height = 0.0, wind_speed_column = '', wind_direction_column = ''):
+        self.height = height
+        self.wind_speed_column = wind_speed_column
+        self.wind_direction_column = wind_direction_column
+
+class CalibrationSector:
+
+    def __init__(self, direction = 0.0, slope = 0.0, offset = 0.0, active = True):
+        self.direction = direction
+        self.slope = slope
+        self.offset = offset
+        self.active = active
+
+class Exclusion:
+
+    def __init__(self, startDate = None, endDate = None, active = True):
+
+        self.startDate = startDate
+        self.endDate = endDate
+        self.active = active
+
 class XmlBase(object):
 
     def readDoc(self, path):
@@ -230,8 +253,12 @@ class PortfolioConfiguration(XmlBase):
         
         self.path = path
         self.items = []
-        self.baseFolder = self.replaceFileSeparators(os.path.dirname(os.path.abspath(path)))
-        
+
+        if path != None:
+            self.baseFolder = self.replaceFileSeparators(os.path.dirname(os.path.abspath(path)))
+        else:
+            self.baseFolder =  None
+
         if path != None:
             
             doc = self.readDoc(path)
@@ -308,7 +335,7 @@ class PortfolioConfiguration(XmlBase):
                 
 class PortfolioItem:
 
-    def __init__(self, description, diameter, hubHeight, ratedPower, cutOutWindSpeed, datasets):
+    def __init__(self, description = None, diameter = None, hubHeight = None, ratedPower = None, cutOutWindSpeed = None, datasets = []):
         self.description = description
         self.diameter = diameter
         self.hubHeight = hubHeight
@@ -328,6 +355,7 @@ class PortfolioItem:
 class PortfolioItemDataset:
     
     def __init__(self, baseFolder, relativePath):
+        self.baseFolder = baseFolder
         self.path = os.path.join(baseFolder, relativePath)
         self.relativePath = relativePath
         
@@ -829,7 +857,7 @@ class TimeOfDayFilter(XmlBase):
                                                             months= strMonths)
 class Filter(XmlBase):
 
-    def __init__(self, active, column,filterType,inclusive,value,derived=False):
+    def __init__(self, active = False, column = '', filterType = 'Below', inclusive = False, value = 0.0, derived=False):
         self.active = active
         self.derived = derived
         self.column = column
@@ -987,9 +1015,8 @@ class DatasetConfiguration(XmlBase):
             self.density = ''
             self.inflowAngle = ''
 
-            self.shearMeasurements = {}
-            self.shearMeasurements[50.0] = ''
-            self.shearMeasurements[60.0] = ''
+            self.shearMeasurements = []
+            self.rewsProfileLevels = []
 
             self.filters = []
             self.calibrationDirections = {}
@@ -1001,9 +1028,8 @@ class DatasetConfiguration(XmlBase):
             self.siteCalibrationCenterOfFirstSector = 0
 
             self.calibrationFilters = []
-            self.calibrationSlopes = {}
-            self.calibrationOffsets = {}
-            self.calibrationActives = {}
+
+            self.calibractionSectors = {}
             
             self.invariant_rand_id = None
 
@@ -1093,22 +1119,22 @@ class DatasetConfiguration(XmlBase):
         self.addTextNode(doc, measurementsNode, "HubTurbulence", self.hubTurbulence)
 
         # todo - change for ref and turbine shears.
-        if 'ReferenceLocation' in self.shearMeasurements.keys() and 'TurbineLocation' in self.shearMeasurements.keys():
+        if 'ReferenceLocation' in self.get_shear_columns() and 'TurbineLocation' in self.get_shear_columns():
             raise NotImplementedError
         else:
             shearMeasurementsNode = self.addNode(doc, root, "ShearMeasurements")
-            for shearMeas in self.shearMeasurements.iteritems():
+            for shearMeas in self.shearMeasurements:
                 measNode = self.addNode(doc, shearMeasurementsNode, "ShearMeasurement")
-                self.addFloatNode(doc, measNode, "Height", shearMeas[0])
-                self.addTextNode(doc, measNode, "WindSpeed", shearMeas[1])
+                self.addFloatNode(doc, measNode, "Height", shearMeas.height)
+                self.addTextNode(doc, measNode, "WindSpeed", shearMeas.wind_speed_column)
 
         levelsNode = self.addNode(doc, root, "ProfileLevels")
 
-        for height in self.windSpeedLevels:
+        for level in self.rewsProfileLevels:
             levelNode = self.addNode(doc, levelsNode, "ProfileLevel")
-            self.addFloatNode(doc, levelNode, "Height", height)
-            self.addTextNode(doc, levelNode, "ProfileWindSpeed", self.windSpeedLevels[height])
-            self.addTextNode(doc, levelNode, "ProfileWindDirection", self.windDirectionLevels[height])
+            self.addFloatNode(doc, levelNode, "Height", level.height)
+            self.addTextNode(doc, levelNode, "ProfileWindSpeed", level.wind_speed_column)
+            self.addTextNode(doc, levelNode, "ProfileWindDirection", level.wind_direction_column)
 
         #write clibrations
         calibrationNode = self.addNode(doc, root, "Calibration")
@@ -1131,12 +1157,14 @@ class DatasetConfiguration(XmlBase):
     
             calibrationDirectionsNode = self.addNode(doc, calibrationNode, "CalibrationDirections")
 
-            for direction in self.calibrationDirections:
+            for calibrationSector in self.calibrationSectors:
+
                 calibrationDirectionNode = self.addNode(doc, calibrationDirectionsNode, "CalibrationDirection")
-                self.addFloatNode(doc, calibrationDirectionNode, "DirectionCentre", direction)
-                self.addFloatNode(doc, calibrationDirectionNode, "Slope", self.calibrationSlopes[direction])
-                self.addFloatNode(doc, calibrationDirectionNode, "Offset", self.calibrationOffsets[direction])
-                self.addBoolNode(doc, calibrationDirectionNode, "Active", self.calibrationActives[direction])
+
+                self.addFloatNode(doc, calibrationDirectionNode, "DirectionCentre", calibrationSector.direction)
+                self.addFloatNode(doc, calibrationDirectionNode, "Slope", calibrationSector.slope)
+                self.addFloatNode(doc, calibrationDirectionNode, "Offset", calibrationSector.offset)
+                self.addBoolNode(doc, calibrationDirectionNode, "Active", calibrationSector.active)
 
 
         #write filters
@@ -1155,10 +1183,18 @@ class DatasetConfiguration(XmlBase):
 
             exclusionNode = self.addNode(doc, exclusionsNode, "Exclusion")
         
-            self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion[2])
-            self.addDateNode(doc, exclusionNode, "ExclusionStartDate", exclusion[0])
-            self.addDateNode(doc, exclusionNode, "ExclusionEndDate", exclusion[1])
+            self.addBoolNode(doc, exclusionNode, "ExclusionActive", exclusion.active)
+            self.addDateNode(doc, exclusionNode, "ExclusionStartDate", exclusion.startDate)
+            self.addDateNode(doc, exclusionNode, "ExclusionEndDate", exclusion.endDate)
 
+    def get_shear_columns(self):
+
+        columns = []
+
+        for shear_measurement in self.shearMeasurements:
+            columns.append(shear_measurement.wind_speed_column)
+
+        return columns
 
     def readREWS(self, configurationNode):
 
@@ -1180,12 +1216,17 @@ class DatasetConfiguration(XmlBase):
 
     def readShearMeasurements(self, node):
 
-        measurements = {}
+        measurements = []
+        height_dict = {}
 
         for shearMeasureNode in self.getNodes(node,"ShearMeasurement"):
-               shearColName = self.getNodeValue(shearMeasureNode,"WindSpeed")
-               shearHeight = self.getNodeFloat(shearMeasureNode,"Height")
-               measurements[shearHeight] = shearColName
+
+            shearColName = self.getNodeValue(shearMeasureNode,"WindSpeed")
+            shearHeight = self.getNodeFloat(shearMeasureNode,"Height")
+
+            if not shearHeight in height_dict:               
+                measurements.append(ShearMeasurement(shearHeight, shearColName))
+                height_dict[shearHeight] = shearHeight
 
         #backwards compatibility
         if self.nodeValueExists(node, "LowerWindSpeedHeight"):
@@ -1193,8 +1234,9 @@ class DatasetConfiguration(XmlBase):
             shearColName = self.getNodeValue(node,"LowerWindSpeed")
             shearHeight = self.getNodeFloat(node,"LowerWindSpeedHeight")
 
-            if not shearHeight in measurements:
-                measurements[shearHeight] = shearColName
+            if not shearHeight in height_dict:
+                measurements.append(ShearMeasurement(shearHeight, shearColName))
+                height_dict[shearHeight] = shearHeight
 
         #backwards compatibility
         if self.nodeValueExists(node, "UpperWindSpeedHeight"):
@@ -1202,8 +1244,9 @@ class DatasetConfiguration(XmlBase):
             shearColName = self.getNodeValue(node,"UpperWindSpeed")
             shearHeight = self.getNodeFloat(node,"UpperWindSpeedHeight")
 
-            if not shearHeight in measurements:
-                measurements[shearHeight] = shearColName
+            if not shearHeight in height_dict:
+                measurements.append(ShearMeasurement(shearHeight, shearColName))
+                height_dict[shearHeight] = shearHeight
 
         return measurements
 
@@ -1250,24 +1293,30 @@ class DatasetConfiguration(XmlBase):
         self.powerSD  = self.getNodeValueIfExists(measurementsNode, 'PowerSD',None)
 
     def setUpShearMeasurements(self, measurementsNode):
-        self.shearMeasurements = {}
+        self.shearMeasurements = []
 
         if not self.nodeExists(measurementsNode,"ShearMeasurements"):
+            
             # backwards compatability
+            
             if self.nodeExists(measurementsNode, 'LowerWindSpeed'):
                 self.lowerWindSpeed = self.getNodeValue(measurementsNode, 'LowerWindSpeed')
                 self.lowerWindSpeedHeight = self.getNodeFloat(measurementsNode, 'LowerWindSpeedHeight')
             else:
                 self.lowerWindSpeed = ""
                 self.lowerWindSpeedHeight = 0.0
-            self.shearMeasurements[self.lowerWindSpeedHeight] = self.lowerWindSpeed
+            
+            self.shearMeasurements.append(ShearMeasurement(self.lowerWindSpeedHeight, self.lowerWindSpeed))
+
             if self.nodeExists(measurementsNode, 'UpperWindSpeed'):
                 self.upperWindSpeed = self.getNodeValue(measurementsNode, 'UpperWindSpeed')
                 self.upperWindSpeedHeight = self.getNodeFloat(measurementsNode, 'UpperWindSpeedHeight')
             else:
                 self.upperWindSpeed = ""
                 self.upperWindSpeedHeight = 0.0
-            self.shearMeasurements[self.upperWindSpeedHeight] = self.upperWindSpeed
+
+            self.shearMeasurements.append(ShearMeasurement(self.upperWindSpeedHeight, self.upperWindSpeed))
+
         else:
             allShearMeasurementsNode = self.getNode(measurementsNode,"ShearMeasurements")
             try:
@@ -1290,13 +1339,13 @@ class DatasetConfiguration(XmlBase):
 
     def readProfileLevels(self, profileNode):
 
-        self.windSpeedLevels = {}
-        self.windDirectionLevels = {}
+        self.rewsProfileLevels = []
 
         for node in self.getNodes(profileNode, 'ProfileLevel'):
             height = self.getNodeFloat(node, 'Height')
-            self.windSpeedLevels[height] = self.getNodeValue(node, 'ProfileWindSpeed')
-            self.windDirectionLevels[height] = self.getNodeValue(node, 'ProfileWindDirection')
+            speed = self.getNodeValue(node, 'ProfileWindSpeed')
+            direction = self.getNodeValue(node, 'ProfileWindDirection')
+            self.rewsProfileLevels.append(ShearMeasurement(height, speed, direction))
 
     def readSensitivityAnalysis(self, configurationNode):
 
@@ -1402,7 +1451,7 @@ class DatasetConfiguration(XmlBase):
             startDate = self.getNodeDate(node, 'ExclusionStartDate')
             endDate = self.getNodeDate(node, 'ExclusionEndDate')
 
-            self.exclusions.append((startDate, endDate, active))
+            self.exclusions.append(Exclusion(startDate, endDate, active))
 
         self.hasExclusions = (len(self.exclusions) > 0)
 
@@ -1416,10 +1465,7 @@ class DatasetConfiguration(XmlBase):
             self.siteCalibrationNumberOfSectors = None
             self.siteCalibrationCenterOfFirstSector = None
             self.calibrationFilters = []
-            self.calibrationSlopes = {}
-            self.calibrationOffsets = {}
-            self.calibrationActives = {}
-            self.calibrationDirections = {}
+            self.calibrationSectors = []
 
             return
 
@@ -1450,20 +1496,21 @@ class DatasetConfiguration(XmlBase):
         else:
             self.calibrationFilters = []
 
-        self.calibrationSlopes = {}
-        self.calibrationOffsets = {}
-        self.calibrationActives = {}
-        self.calibrationDirections = {}
+        self.calibrationSectors = []
 
         for node in self.getNodes(calibrationNode, 'CalibrationDirection'):
+
             if self.nodeExists(node, 'DirectionCentre'):
                 direction = self.getNodeFloat(node, 'DirectionCentre')
             else:
                 direction = self.getNodeFloat(node, 'Direction')
-            self.calibrationDirections[direction] = direction
-            self.calibrationActives[direction] = self.getNodeBool(node, 'Active')
-            self.calibrationSlopes[direction] = self.getNodeFloat(node, 'Slope')
-            self.calibrationOffsets[direction] = self.getNodeFloat(node, 'Offset')
+
+            calibrationSector = CalibrationSector(direction, \
+                                    self.getNodeFloat(node, 'Slope'), \
+                                    self.getNodeFloat(node, 'Offset'), \
+                                    self.getNodeBool(node, 'Active'))
+
+            self.calibrationSectors.append(calibrationSector)
 
 class PowerDeviationMatrixConfiguration(XmlBase):
 
