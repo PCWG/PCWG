@@ -910,11 +910,11 @@ class DatasetGridBox(GridBox):
         except exception_type.EXCEPTION_TYPE as e:
             self.addMessage("Cannot save preferences: %s" % e)
         
-        dataset = self.datasets_file_manager.add(path)
+        dataset = self.datasets_file_manager.append_absolute(path)
 
         self.add_item(dataset)
 
-        self.parent_dialog.validateDatasets.validate()   
+        self.parent_dialog.validate_datasets.validate()   
 
     def edit_item(self, item):                   
 
@@ -927,6 +927,8 @@ class DatasetGridBox(GridBox):
             self.parent_dialog.status.addMessage("ERROR editing: {0}".format(e))
 
     def remove(self):
+        selected = self.get_selected()
+        self.datasets_file_manager.remove(selected)
         GridBox.remove(self)
-        self.parent_dialog.validateDatasets.validate()   
+        self.parent_dialog.validate_datasets.validate()   
 

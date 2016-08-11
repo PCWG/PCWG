@@ -48,6 +48,7 @@ class PortfolioDialog(base_dialog.BaseConfigurationDialog):
         
         self.config.path = self.filePath.get()
         self.config.description = self.description.get()
+        print len(self.dataset_grid_box.datasets_file_manager)
         self.config.datasets = self.dataset_grid_box.datasets_file_manager
         
     def file_path_update(self, *args):

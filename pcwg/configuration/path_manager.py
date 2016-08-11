@@ -22,7 +22,7 @@ class PathManager(list):
         path_manager.set_base(self.base_path)
         
         for item in self:
-            path_manager.append(item.absolute_path)
+            path_manager.append_absolute(item.absolute_path)
         
         return path_manager
         
@@ -49,13 +49,16 @@ class PathManager(list):
         
         absolute_path = os.path.normpath(os.path.join(self.base_folder, relative_path))
         
-        self.append(absolute_path)
+        self.append_absolute(absolute_path)
         
-    def append(self, absolute_path):
+    def append_absolute(self, absolute_path):
         managed_path = ManagedPath(self, absolute_path)
         list.append(self, managed_path)
         return managed_path
     
+    def append(self, item):
+        raise Exception("Operation not permitted")
+
 class ManagedPath:
     
     def __init__(self, base, absolute_path):
