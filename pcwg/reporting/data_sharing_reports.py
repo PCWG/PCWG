@@ -130,7 +130,6 @@ class PortfolioReport(object):
             return
             
         df = analysis.binned_pcwg_err_metrics[analysis.pcwgFourCellMatrixGroup][analysis_key]
-        #print df.head(len(df))
         
         try:
 
@@ -140,6 +139,7 @@ class PortfolioReport(object):
 
         except Exception as e:
             print "Cannot write four cell information {0}".format(e)
+            print df.head(len(df))
         
     def write_range_errors(self, analysis, sh, row, base_column, analysis_key, range_type):
 

@@ -3,7 +3,9 @@ import numpy as np
 import datetime
 import math
 import os
-import configuration
+
+from ..configuration.base_configuration import RelativePath
+
 import rews
 import binning
 
@@ -242,7 +244,7 @@ class Dataset:
 
     def __init__(self, config, rotorGeometry, analysisConfig):
 
-        self.relativePath = configuration.RelativePath(config.path)
+        self.relativePath = RelativePath(config.path)
         self.nameColumn = "Dataset Name"
         self.name = config.name
 

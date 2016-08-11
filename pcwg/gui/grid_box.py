@@ -3,6 +3,8 @@ import Tkinter as tk
 import tkFont as tkFont
 import ttk as ttk
 
+import exception_type
+
 class GridBox(object):
 
     def __init__(self, master, headers, row, column):
@@ -34,6 +36,18 @@ class GridBox(object):
 
         self.tree.bind("<Button-2>", self.pop_up)
         self.tree.bind("<Button-3>", self.pop_up)
+        
+        self.tip = None
+        
+    def clearTip(self):
+        self.setTip("")
+    
+    def setTipNotRequired(self):
+        self.setTip("Not Required")
+    
+    def setTip(self, text):
+        if self.tip != None:
+            self.tip['text'] = text
 
     def item_count(self):
         return len(self.items_dict)
@@ -184,6 +198,39 @@ class GridBox(object):
         for ix, item in enumerate(data):
             tree.move(item[1], '', ix)
         # switch the heading so it will sort in the opposite direction
-        tree.heading(col, command=lambda col=col: sortby(tree, col, \
+        tree.heading(col, command=lambda col=col: self.sortby(tree, col, \
             int(not descending)))
 
+class DialogGridBox(GridBox):
+
+    def __init__(self, master, parent_dialog, row, column):
+
+        self.parent_dialog = parent_dialog
+
+        headers = self.get_headers()
+
+        GridBox.__init__(self, master, headers, row, column)
+
+    def get_headers(self):
+        pass
+
+    def get_item_values(self, item):
+        pass
+
+    def new_dialog(self, master, parent_dialog, item):
+        pass      
+
+    def new(self):
+
+        dialog = self.new_dialog(self.master, self.parent_dialog, None)
+        self.add_item(dialog.item)
+        
+    def edit_item(self, item):                   
+                    
+        try:
+            self.new_dialog(self.master, self.parent_dialog, self.get_selected())                                
+        except exception_type.EXCEPTION_TYPE as e:
+            self.status.addMessage("ERROR editing item: {0}".format(e))
+
+    def remove(self):
+        GridBox.remove(self)

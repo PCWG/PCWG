@@ -6,16 +6,16 @@ Created on Thu Apr 28 19:18:27 2016
 """
 import os
 import os.path
-
-import configuration
-import Analysis
 import zipfile
 from shutil import copyfile
 
-from data_sharing_reports import pcwg_share1_rpt
-from data_sharing_reports import PortfolioReport
+from analysis import Analysis
 
-class PcwgShare01Config(configuration.AnalysisConfiguration):
+from ..reporting import data_sharing_reports as reports
+from ..configuration.analysis_configuration import AnalysisConfiguration
+from ..configuration.base_configuration import RelativePath
+
+class PcwgShare01Config(AnalysisConfiguration):
 
     #pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
     #                 'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
@@ -24,7 +24,7 @@ class PcwgShare01Config(configuration.AnalysisConfiguration):
     pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25}}
 
     def __init__(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
-        configuration.AnalysisConfiguration.__init__(self)
+        AnalysisConfiguration.__init__(self)
         self.inner_range_id = inner_range_id
         self.set_config_values(hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets)
 
@@ -143,7 +143,7 @@ class PcwgShare01:
 
         try:
 
-            analysis = Analysis.Analysis(config, log, auto_activate_corrections = True, relativePath = self.relativePath)
+            analysis = Analysis(config, log, auto_activate_corrections = True, relativePath = self.relativePath)
             analysis.pcwg_share_metrics_calc()
 
             if not self._is_sufficient_complete_bins(analysis):
@@ -197,7 +197,7 @@ class PcwgShare01:
          
     def pcwg_data_share_report(self, version, output_fname):
                 
-        rpt = pcwg_share1_rpt(self.analysis, template = "Share_1_template.xls", version = version, output_fname = output_fname, pcwg_inner_ranges = PcwgShare01Config.pcwg_inner_ranges)
+        rpt = reports.pcwg_share1_rpt(self.analysis, template = "Share_1_template.xls", version = version, output_fname = output_fname, pcwg_inner_ranges = PcwgShare01Config.pcwg_inner_ranges)
         rpt.report()
         return rpt
 
@@ -214,7 +214,7 @@ class BaseSharePortfolio(object):
         
         self.version = version
         self.portfolio_path = portfolio_configuration.path
-        self.relativePath = configuration.RelativePath(self.portfolio_path)
+        self.relativePath = RelativePath(self.portfolio_path)
         self.results_base_path = os.path.join(os.path.dirname(self.portfolio_path), self.portfolio_path.split('/')[-1].split('.')[0])
         self.portfolio = portfolio_configuration
         self.log = log
@@ -254,7 +254,7 @@ class BaseSharePortfolio(object):
     def report_summary(self, summary_file, output_zip):
         
         self.log.addMessage("Exporting results to {0}".format(summary_file))                
-        report = PortfolioReport()
+        report = reports.PortfolioReport()
         report.report(self.shares, summary_file)
         self.log.addMessage("Report written to {0}".format(summary_file))
 
