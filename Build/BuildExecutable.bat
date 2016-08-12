@@ -7,13 +7,13 @@ rem Adding dp returns the drive and path to the file, instead of the file name i
 set INIFILE="%~dp0settings.ini"
  
 call:getvalue %INIFILE% "gitfolder" GitFolder
-call:getvalue %INIFILE% "pyinstallerfolder" PyInstallerFolder
+call:getvalue %INIFILE% "workingfolder" WorkingFolder
 call:getvalue %INIFILE% "helpdoc" HelpDoc
 call:getvalue %INIFILE% "version" Version
 call:getvalue %INIFILE% "sevenZipPath" SevenZipPath
 
 echo GitFolder: %gitfolder%
-echo PyInstallerFolder: %pyinstallerfolder%
+echo WorkingFolder: %workingfolder%
 echo HelpDoc: %helpdoc%
 echo Version: %version%
 echo SevenZipPath: %sevenZipPath%
@@ -24,8 +24,8 @@ set extractor=extractor
 set toolpath=%gitfolder%\%tool%.py
 set extractorpath=%gitfolder%\%extractor%.py
 
-set outputfolder=%pyinstallerfolder%\%tool%
-set outputZipPath=%pyinstallerfolder%\%tool%.zip
+set outputfolder=%workingfolder%\%tool%
+set outputZipPath=%workingfolder%\%tool%.zip
 set versionZip=%tool%-%version%.zip
 
 echo Checking version in %toolpath%
@@ -60,11 +60,11 @@ echo building executable
 mkdir %tool%
 
 rem build exectuable: -F option binds output into a single file
-python %pyinstallerfolder%\PyInstaller.py -F %toolpath%
+PyInstaller -F %toolpath%
 xcopy /s /Y /q dist\%tool%.exe %tool%\
 
 echo building launcher
-python %pyinstallerfolder%\PyInstaller.py -F %extractorpath%
+PyInstaller -F %extractorpath%
 xcopy /s /Y /q dist\%extractor%.exe %tool%\
 
 echo copying ancialliary files

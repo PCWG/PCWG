@@ -1,8 +1,10 @@
 import xlwt
-import colour
 import numpy as np
-from os.path import dirname, join
-from configuration import TimeOfDayFilter,Filter,RelationshipFilter
+
+import colour
+
+from ..configuration.base_configuration import Filter
+from ..configuration.base_configuration import TimeOfDayFilter
 
 class report:
     bold_style = xlwt.easyxf('font: bold 1')
@@ -200,7 +202,7 @@ class report:
             row += 1
 
             for filt in conf.calibrationFilters:
-                if isinstance(filt,TimeOfDayFilter):
+                if isinstance(Filter,TimeOfDayFilter):
                     sh.write(row, col, "Time Of Day Filter")
                     sh.write(row, col + 1, str(filt.startTime))
                     sh.write(row, col + 2, str(filt.endTime))
@@ -474,7 +476,7 @@ class report:
             row += 1
 
             for filter in datasetConfig.filters:
-                if isinstance(filter,TimeOfDayFilter):
+                if isinstance(Filter,TimeOfDayFilter):
                     sh.write(row, labelColumn, "Time Of Day Filter")
                     sh.write(row, dataColumn,     str(filter.startTime))
                     sh.write(row, dataColumn + 1, str(filter.endTime))

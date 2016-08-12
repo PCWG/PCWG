@@ -6,16 +6,16 @@ Created on Thu Apr 28 19:18:27 2016
 """
 import os
 import os.path
-
-import configuration
-import Analysis
 import zipfile
 from shutil import copyfile
 
-from data_sharing_reports import pcwg_share1_rpt
-from data_sharing_reports import PortfolioReport
+from analysis import Analysis
 
-class PcwgShare01Config(configuration.AnalysisConfiguration):
+from ..reporting import data_sharing_reports as reports
+from ..configuration.analysis_configuration import AnalysisConfiguration
+from ..configuration.dataset_configuration import DatasetConfiguration
+
+class PcwgShare01Config(AnalysisConfiguration):
 
     #pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
     #                 'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
@@ -24,7 +24,7 @@ class PcwgShare01Config(configuration.AnalysisConfiguration):
     pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25}}
 
     def __init__(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets, inner_range_id):
-        configuration.AnalysisConfiguration.__init__(self)
+        AnalysisConfiguration.__init__(self)
         self.inner_range_id = inner_range_id
         self.set_config_values(hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets)
 
@@ -60,7 +60,7 @@ class PcwgShare01Config(configuration.AnalysisConfiguration):
         self.specifiedPowerDeviationMatrix = os.getcwd() + os.sep + 'Data' + os.sep + 'HypothesisMatrix.xml'
 
         for dataset in datasets:
-            self.datasets.append(dataset)
+            self.datasets.append(dataset.path)
 
     def get_interpolation_mode(self):
         return "Cubic"
@@ -74,15 +74,14 @@ class PcwgShare01:
     
     MINIMUM_COMPLETE_BINS = 10
     
-    def __init__(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, datasets, log, relativePath, output_zip, version):
+    def __init__(self, dataset, log, output_zip, version):
         
-        self.hubHeight = hubHeight
-        self.diameter = diameter
-        self.ratedPower = ratedPower
-        self.cutOutWindSpeed = cutOutWindSpeed
-        self.datasets = datasets
+        self.hubHeight = dataset.hubHeight
+        self.diameter = dataset.diameter
+        self.ratedPower = dataset.ratedPower
+        self.cutOutWindSpeed = dataset.cutOutWindSpeed
+        self.datasets = [dataset]
         self.log = log
-        self.relativePath = relativePath
         self.version = version
         
         self.calculate()
@@ -143,7 +142,7 @@ class PcwgShare01:
 
         try:
 
-            analysis = Analysis.Analysis(config, log, auto_activate_corrections = True, relativePath = self.relativePath)
+            analysis = Analysis(config, log, auto_activate_corrections = True)
             analysis.pcwg_share_metrics_calc()
 
             if not self._is_sufficient_complete_bins(analysis):
@@ -197,7 +196,7 @@ class PcwgShare01:
          
     def pcwg_data_share_report(self, version, output_fname):
                 
-        rpt = pcwg_share1_rpt(self.analysis, template = "Share_1_template.xls", version = version, output_fname = output_fname, pcwg_inner_ranges = PcwgShare01Config.pcwg_inner_ranges)
+        rpt = reports.pcwg_share1_rpt(self.analysis, template = "Share_1_template.xls", version = version, output_fname = output_fname, pcwg_inner_ranges = PcwgShare01Config.pcwg_inner_ranges)
         rpt.report()
         return rpt
 
@@ -214,7 +213,6 @@ class BaseSharePortfolio(object):
         
         self.version = version
         self.portfolio_path = portfolio_configuration.path
-        self.relativePath = configuration.RelativePath(self.portfolio_path)
         self.results_base_path = os.path.join(os.path.dirname(self.portfolio_path), self.portfolio_path.split('/')[-1].split('.')[0])
         self.portfolio = portfolio_configuration
         self.log = log
@@ -242,9 +240,10 @@ class BaseSharePortfolio(object):
         
         with zipfile.ZipFile(zip_file, 'w') as output_zip:
             
-            for item in self.portfolio.items:                
-                self.log.addMessage("Running: {0}".format(item.description))
-                share = self.new_share(item.hubHeight, item.diameter, item.ratedPower, item.cutOutWindSpeed, item.get_dataset_paths(), output_zip)
+            for item in self.portfolio.datasets:
+                dataset = DatasetConfiguration(item.absolute_path)                
+                self.log.addMessage("Running: {0}".format(dataset.name))
+                share = self.new_share(dataset, output_zip)
                 self.shares.append(share)
 
             self.report_summary(summary_file, output_zip)       
@@ -254,7 +253,7 @@ class BaseSharePortfolio(object):
     def report_summary(self, summary_file, output_zip):
         
         self.log.addMessage("Exporting results to {0}".format(summary_file))                
-        report = PortfolioReport()
+        report = reports.PortfolioReport()
         report.report(self.shares, summary_file)
         self.log.addMessage("Report written to {0}".format(summary_file))
 
@@ -273,7 +272,7 @@ class BaseSharePortfolio(object):
         self.log.addMessage("Deleting {0}".format(summary_file_for_zip))
         os.remove(summary_file_for_zip)
         
-    def new_share(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, dataset_paths, output_zip):
+    def new_share(self, dataset, output_zip):
         raise Exception("Not implemented")
         
 class PcwgShare01Portfolio(BaseSharePortfolio):
@@ -282,8 +281,8 @@ class PcwgShare01Portfolio(BaseSharePortfolio):
         
         BaseSharePortfolio.__init__(self, portfolio_configuration, log, version)
     
-    def new_share(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, dataset_paths, output_zip):
-        return PcwgShare01(hubHeight, diameter, ratedPower, cutOutWindSpeed, dataset_paths, log = self.log, relativePath = self.relativePath, output_zip = output_zip, version = self.version)
+    def new_share(self, dataset, output_zip):
+        return PcwgShare01(dataset, log = self.log, output_zip = output_zip, version = self.version)
 
     def share_name(self):
         return "PCWG-Share-01"
@@ -297,6 +296,6 @@ class PcwgShare01dot1Portfolio(BaseSharePortfolio):
     def share_name(self):
         return "PCWG-Share-01.1"
     
-    def new_share(self, hubHeight, diameter, ratedPower, cutOutWindSpeed, dataset_paths, output_zip):
-        return PcwgShare01dot1(hubHeight, diameter, ratedPower, cutOutWindSpeed, dataset_paths, log = self.log, relativePath = self.relativePath, output_zip = output_zip, version = self.version)
+    def new_share(self, dataset, output_zip):
+        return PcwgShare01dot1(dataset, log = self.log, output_zip = output_zip, version = self.version)
     

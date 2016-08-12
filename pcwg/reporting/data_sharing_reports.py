@@ -130,7 +130,6 @@ class PortfolioReport(object):
             return
             
         df = analysis.binned_pcwg_err_metrics[analysis.pcwgFourCellMatrixGroup][analysis_key]
-        #print df.head(len(df))
         
         try:
 
@@ -140,6 +139,7 @@ class PortfolioReport(object):
 
         except Exception as e:
             print "Cannot write four cell information {0}".format(e)
+            print df.head(len(df))
         
     def write_range_errors(self, analysis, sh, row, base_column, analysis_key, range_type):
 
@@ -225,9 +225,18 @@ class pcwg_share1_rpt(object):
         for conf in self.analysis.datasetConfigs:
             sh.write(6, col, conf.invariant_rand_id)
             _apply_cell_style(dset_header_style, sh, 6, col)
-            wsl = len(conf.windSpeedLevels) if self.analysis.rewsActive else None
+
+            windSpeedLevels = {}
+            windDirectionLevels = {}
+            
+            for item in conf.rewsProfileLevels:
+                windSpeedLevels[item.height] = item.wind_speed_column
+                windDirectionLevels[item.height] = item.wind_direction_column
+                
+            wsl = len(windSpeedLevels) if self.analysis.rewsActive else None
+
             if self.analysis.rewsActive:
-                rews_has_veer = (conf.windDirectionLevels[conf.windDirectionLevels.keys()[0]] is not None and len(conf.windDirectionLevels[conf.windDirectionLevels.keys()[0]]) > 0)
+                rews_has_veer = (windDirectionLevels[windDirectionLevels.keys()[0]] is not None and len(windDirectionLevels[windDirectionLevels.keys()[0]]) > 0)
             else:
                 rews_has_veer = None
             sh.write(8, col, wsl)

@@ -2,13 +2,17 @@ import pandas as pd
 import numpy as np
 import hashlib
 import os
-import configuration
+
+from ..configuration.power_curve_configuration import PowerCurveConfiguration
+from ..configuration.dataset_configuration import DatasetConfiguration
+from ..configuration.power_deviation_matrix_configuration import PowerDeviationMatrixConfiguration
+from ..configuration.base_configuration import RelativePath
+
 import dataset
-from dataset import  DeviationMatrix
+from dataset import DeviationMatrix
 import binning
 import turbine
-import reporting
-
+from ..reporting import reporting
 
 def chckMake(path):
     """Make a folder if it doesn't exist"""
@@ -221,7 +225,7 @@ class Analysis:
         if relativePath != None:
             self.relativePath = relativePath
         else:
-            self.relativePath = configuration.RelativePath(config.path)
+            self.relativePath = RelativePath(config.path)
             
         self.status = status
 
@@ -249,7 +253,7 @@ class Analysis:
 
         if self.powerDeviationMatrixActive:
             self.status.addMessage("Loading power deviation matrix...")
-            self.specifiedPowerDeviationMatrix = configuration.PowerDeviationMatrixConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerDeviationMatrix))
+            self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerDeviationMatrix))
 
         self.powerCurveMinimumCount = config.powerCurveMinimumCount
         self.powerCurvePaddingMode = config.powerCurvePaddingMode
@@ -281,7 +285,7 @@ class Analysis:
         
         if config.specifiedPowerCurve != None and config.specifiedPowerCurve != '' :
 
-            powerCurveConfig = configuration.PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
+            powerCurveConfig = PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
             
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
                                                           self.rotorGeometry, actualPower = "Specified Power", hubTurbulence = "Specified Turbulence", \
@@ -539,8 +543,8 @@ class Analysis:
         for i in range(len(config.datasets)):
 
 
-            if not isinstance(config.datasets[i],configuration.DatasetConfiguration):
-                datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
+            if not isinstance(config.datasets[i],DatasetConfiguration):
+                datasetConfig = DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
             else:
                 datasetConfig = config.datasets[i]
 

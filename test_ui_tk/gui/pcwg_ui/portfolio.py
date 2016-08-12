@@ -1,0 +1,261 @@
+from grid_box import GridBox
+
+class PortfolioDialog:
+        
+    def getInitialFileName(self):
+        return "portfolio"
+            
+    def getInitialFolder(self):        
+        return preferences.portfolio_last_opened_dir()
+                
+    def addFormElements(self, master):
+
+        self.description = self.addEntry(master, "Description:", ValidateNotBlank(master), self.config.description)
+
+        #Items
+        label = Label(master, text="Portfolio Items:")
+        label.grid(row=self.row, sticky=W, column=self.titleColumn, columnspan = 2)
+        self.row += 1     
+        
+        self.itemsListBoxEntry = self.addListBox(master, "Items ListBox", height = 10)   
+
+        self.validateItems = ValidatePortfolioItems(master, self.itemsListBoxEntry.listbox)
+        self.validations.append(self.validateItems)
+        self.validateItems.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
+        
+        headers = ["Description","Diameter","HubHeight","RatedPower","CutOutWindSpeed","Datasets"]
+        self.items_grid_box = GridBox(master, headers)
+        self.items_grid_box.edit = self.edit_item
+
+        if not self.isNew:
+                for item in self.config.items:                    
+                        self.items_grid_box.add_item(item)
+
+        self.validateItems.validate()   
+                
+    def setConfigValues(self):
+        
+        self.config.path = self.filePath.get()
+        self.config.description = self.description.get()
+
+        #exclusions
+        self.config.items = []
+        
+        for i in range(self.itemsListBoxEntry.listbox.size()):
+            if i > 0:
+                values = extractPortfolioItemValuesFromText(self.itemsListBoxEntry.listbox.get(i))
+                self.config.addItem(description = values[0], \
+                                    diameter = values[1], \
+                                    hubHeight = values[2], \
+                                    ratedPower = values[3], \
+                                    cutOutWindSpeed = values[4], \
+                                    datasets = values[5])
+
+    def new_item(self):
+
+        PortfolioItemDialog(self, configuration.RelativePath(self.filePath.get()), self.status, self.addPortfolioItemFromText)
+        self.validateItems.validate()   
+        
+    def edit_item(self, event = None):
+
+        items = self.itemsListBoxEntry.listbox.curselection()
+
+        if len(items) == 1:
+
+                idx = int(items[0])
+
+                if idx > 0:
+
+                    text = self.itemsListBoxEntry.listbox.get(items[0])                        
+                    
+                    try:
+                        PortfolioItemDialog(self, configuration.RelativePath(self.filePath.get()), self.status, self.addPortfolioItemFromText, text, idx)                                
+                    except ExceptionType as e:
+                        self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+        
+
+    def remove_item(self):
+
+        items = self.itemsListBoxEntry.listbox.curselection()
+        pos = 0
+        
+        for i in items:
+            
+            idx = int(i) - pos
+            
+            if idx > 0:
+                self.itemsListBoxEntry.listbox.delete(idx, idx)
+
+            pos += 1
+
+        self.validateItems.validate()   
+        
+    def addPortfolioItemFromText(self, text, index = None):
+
+            if index != None:
+                    self.itemsListBoxEntry.listbox.delete(index, index)
+                    self.itemsListBoxEntry.listbox.insert(index, text)
+            else:
+                    self.itemsListBoxEntry.listbox.insert(END, text)     
+
+
+class PortfolioItemDialog(BaseDialog):
+        
+    def __init__(self, master, relativePath, status, callback, text = None, index = None):
+
+        self.relativePath = relativePath
+        self.callback = callback
+        self.text = text
+        self.index = index
+        
+        self.callback = callback
+
+        self.isNew = (text == None)
+        
+        BaseDialog.__init__(self, master, status)
+                    
+    def body(self, master):
+
+        self.prepareColumns(master)     
+
+        #dummy label to force width
+        Label(master, text=" " * 275).grid(row = self.row, sticky=W, column=self.titleColumn, columnspan = 8)
+        self.row += 1
+        
+        if not self.isNew:
+                
+            items = extractPortfolioItemValuesFromText(self.text)
+            
+            description = items[0]
+            diameter = items[1]
+            hubHeight = items[2]
+            ratedPower = items[3]
+            cutOutWindSpeed = items[4]                
+            datasets = items[5]                    
+
+        else:
+            
+            description = None
+            diameter = None
+            hubHeight = None
+            ratedPower = None
+            cutOutWindSpeed = None               
+            datasets = None
+                
+        self.addTitleRow(master, "Portfolio Item Settings:")
+        
+        self.description = self.addEntry(master, "Description:", ValidateNotBlank(master), description)
+        self.diameter = self.addEntry(master, "Diameter:", ValidateNonNegativeFloat(master), diameter)
+        self.hubHeight = self.addEntry(master, "Hub Height:", ValidateNonNegativeFloat(master), hubHeight)
+        self.ratedPower = self.addEntry(master, "Rated Power:", ValidateNonNegativeFloat(master), ratedPower)
+        self.cutOutWindSpeed = self.addEntry(master, "Cut Out Wind Speed:", ValidateNonNegativeFloat(master), cutOutWindSpeed)
+
+        self.datasetsListBoxEntry = self.addListBox(master, "Datasets ListBox")
+                        
+        if not self.isNew:
+                for dataset in datasets:
+                        self.datasetsListBoxEntry.listbox.insert(END, dataset)
+                        
+        self.datasetsListBoxEntry.listbox.grid(row=self.row, sticky=W+E+N+S, column=self.labelColumn, columnspan=2)                
+        self.validateDatasets = ValidateDatasets(master, self.datasetsListBoxEntry.listbox)
+        self.validations.append(self.validateDatasets)
+        self.validateDatasets.messageLabel.grid(row=self.row, sticky=W, column=self.messageColumn)
+
+        self.newDatasetButton = Button(master, text="New", command = self.NewDataset, width=5, height=1)
+        self.newDatasetButton.grid(row=self.row, sticky=E+N, column=self.secondButtonColumn)
+        
+        self.editDatasetButton = Button(master, text="Edit", command = self.EditDataset, width=5, height=1)
+        self.datasetsListBoxEntry.listbox.bind("<Double-Button-1>", self.EditDataset)
+        self.editDatasetButton.grid(row=self.row, sticky=E+S, column=self.secondButtonColumn)
+        
+        self.addDatasetButton = Button(master, text="+", command = self.addDataset, width=2, height=1)
+        self.addDatasetButton.grid(row=self.row, sticky=E+N, column=self.buttonColumn)
+        
+        self.removeDatasetButton = Button(master, text="-", command = self.removeDatasets, width=2, height=1)
+        self.removeDatasetButton.grid(row=self.row, sticky=E+S, column=self.buttonColumn)
+
+        #dummy label to indent controls
+        Label(master, text=" " * 5).grid(row = (self.row-1), sticky=W, column=self.titleColumn)                
+
+    def apply(self):
+
+        datasets = []
+        
+        for i in range(self.datasetsListBoxEntry.listbox.size()):
+                dataset = self.relativePath.convertToRelativePath(self.datasetsListBoxEntry.listbox.get(i))
+                datasets.append(dataset) 
+                    
+        self.text = encodePortfolioItemValuesAsText(self.description.get().strip(), \
+                                                    self.diameter.get(), \
+                                                    self.hubHeight.get(), \
+                                                    self.ratedPower.get(), \
+                                                    self.cutOutWindSpeed.get(), \
+                                                    datasets)
+
+        if self.isNew:
+                self.status.addMessage("Portfolio Item created")
+        else:
+                self.status.addMessage("Portfolio Item updated")
+
+        if self.index== None:
+                self.callback(self.text)
+        else:
+                self.callback(self.text, self.index)
+
+    def EditDataset(self, event = None):
+
+        items = self.datasetsListBoxEntry.listbox.curselection()
+        if len(items) == 1:
+            index = items[0]
+            path = self.datasetsListBoxEntry.listbox.get(index)
+            try:
+                datasetConfig = configuration.DatasetConfiguration(self.relativePath.convertToAbsolutePath(path))
+                DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, datasetConfig, index)                                                                                     
+            except ExceptionType as e:
+                self.status.addMessage("ERROR loading config (%s): %s" % (path, e))
+                                    
+    def NewDataset(self):
+
+        try:
+            config = configuration.DatasetConfiguration()
+            DatasetConfigurationDialog(self, self.status, self.addDatasetFromPath, config)                                         
+        except ExceptionType as e:
+            self.status.addMessage("ERROR creating dataset config: %s" % e)
+
+    def addDataset(self):
+        fileName = askopenfilename(parent=self.master, initialdir=preferences.dataset_last_opened_dir(), defaultextension=".xml")
+        if len(fileName) > 0: self.addDatasetFromPath(fileName)
+
+    def addDatasetFromPath(self, path, index = None):
+
+        try:
+                preferences.datasetLastOpened = path
+                preferences.save()
+        except ExceptionType as e:
+            self.addMessage("Cannot save preferences: %s" % e)
+                
+        path = self.relativePath.convertToRelativePath(path)
+
+        if index != None:
+            self.datasetsListBoxEntry.listbox.delete(index, index)
+            self.datasetsListBoxEntry.listbox.insert(index, path)
+        else:
+            self.datasetsListBoxEntry.listbox.insert(END, path)
+
+        self.validateDatasets.validate()               
+
+    def removeDatasets(self):
+            
+        items = self.datasetsListBoxEntry.listbox.curselection()
+        pos = 0
+        
+        for i in items:
+            idx = int(i) - pos
+            self.datasetsListBoxEntry.listbox.delete(idx, idx)
+            pos += 1
+    
+        self.validateDatasets.validate()
+
+if __name__ == "__main__":
+
+	dialog = PortfolioDialog(self.root, WindowStatus(self), self.LoadPortfolioFromPath, portfolioConfiguration)
