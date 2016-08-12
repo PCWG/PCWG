@@ -15,6 +15,8 @@ from ..reporting import data_sharing_reports as reports
 from ..configuration.analysis_configuration import AnalysisConfiguration
 from ..configuration.dataset_configuration import DatasetConfiguration
 
+import exception_type
+
 class PcwgShare01Config(AnalysisConfiguration):
 
     #pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
@@ -153,7 +155,7 @@ class PcwgShare01:
             log.addMessage("Analysis success using Inner Range definition %s." % inner_range_id)
             return (analysis, True)
         
-        except Exception as e:
+        except exception_type.EXCEPTION_TYPE as e:
             log.addMessage(str(e), red = True)
             os.remove(temp_path)
             log.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
@@ -191,7 +193,7 @@ class PcwgShare01:
                 self.log.addMessage("Deleting {0}.".format(temp_file_name))
                 os.remove(temp_file_name)
             
-        except Exception as e:
+        except exception_type.EXCEPTION_TYPE as e:
             self.log.addMessage("ERROR Exporting Report: %s" % e, red = True)
          
     def pcwg_data_share_report(self, version, output_fname):

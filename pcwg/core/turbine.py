@@ -312,6 +312,12 @@ class RotorGeometry:
 
     def __init__(self, diameter, hubHeight):
 
+        if diameter == None:
+            raise Exception('Diameter is not set')
+
+        if hubHeight == None:
+            raise Exception('Hub Height is not set')
+
         self.diameter = diameter
         self.radius = diameter / 2
         self.area = math.pi * self.radius ** 2

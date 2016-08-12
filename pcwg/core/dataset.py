@@ -222,6 +222,10 @@ class ShearExponentCalculator:
         self.shearMeasurements = shearMeasurements
 
     def calculateMultiPointShear(self, row):
+
+        if len(self.shearMeasurements) < 1:
+            raise Exception("No shear heights have been")
+
         # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
         windspeeds = np.array([np.log(row[item.wind_speed_column]) for item in self.shearMeasurements])
         heights = np.array([np.log(item.height) for item in self.shearMeasurements])
