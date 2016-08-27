@@ -246,7 +246,9 @@ class ShearExponentCalculator:
 
 class Dataset:
 
-    def __init__(self, config, rotorGeometry, analysisConfig):
+    def __init__(self, config, analysisConfig):
+
+        self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
 
         self.relativePath = RelativePath(config.path)
         self.nameColumn = "Dataset Name"

@@ -231,10 +231,8 @@ class Analysis:
 
         self.calibrations = []
         
-        self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
-
         self.status.addMessage("Loading dataset...")
-        self.loadData(config, self.rotorGeometry)
+        self.loadData(config)
 
         if auto_activate_corrections:            
             self.auto_activate_corrections()
@@ -535,20 +533,19 @@ class Analysis:
             self.innerRangeUpperShear = config.innerRangeUpperShear
             self.innerRangeCenterShear = 0.5 * self.innerRangeLowerShear + 0.5 * self.innerRangeUpperShear
 
-    def loadData(self, config, rotorGeometry):
+    def loadData(self, config):
 
         self.residualWindSpeedMatrices = {}
         self.datasetConfigs = []
 
         for i in range(len(config.datasets)):
 
-
             if not isinstance(config.datasets[i],DatasetConfiguration):
-                datasetConfig = DatasetConfiguration(self.relativePath.convertToAbsolutePath(config.datasets[i]))
+                datasetConfig = DatasetConfiguration(config.datasets[i].path)
             else:
                 datasetConfig = config.datasets[i]
 
-            data = dataset.Dataset(datasetConfig, rotorGeometry, config)
+            data = dataset.Dataset(datasetConfig, config)
 
             if hasattr(data,"calibrationCalculator"):
                 self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )
@@ -601,6 +598,13 @@ class Analysis:
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
+
+        self.rotorGeometry = self.datasetConfigs[0].rotorGeometry
+
+        for i in range(len(self.datasetConfigs)):
+            if self.datasetConfigs[0].rotorGeometry.diameter != self.rotorGeometry.diameter \
+                and self.datasetConfigs[0].rotorGeometry.hubHeight != self.rotorGeometry.hubHeight:
+                raise Exception("Inconsistent turbine geometries within analysis datasets.")
 
         self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
 
