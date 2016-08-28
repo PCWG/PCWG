@@ -6,7 +6,6 @@ import os
 from ..configuration.power_curve_configuration import PowerCurveConfiguration
 from ..configuration.dataset_configuration import DatasetConfiguration
 from ..configuration.power_deviation_matrix_configuration import PowerDeviationMatrixConfiguration
-from ..configuration.base_configuration import RelativePath
 
 import dataset
 from dataset import DeviationMatrix
@@ -196,7 +195,7 @@ class SubPower:
 
 class Analysis:
 
-    def __init__(self, config, status = NullStatus(), auto_activate_corrections = False, relativePath = None):
+    def __init__(self, config, status = NullStatus(), auto_activate_corrections = False):
 
         self.config = config
         self.nameColumn = "Dataset Name"
@@ -221,11 +220,6 @@ class Analysis:
         self.measuredTurbPowerCurveInterp = 'Measured TI Corrected Power Curve Interp'
         self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
         self.inflowAngle = 'Inflow Angle'
-        
-        if relativePath != None:
-            self.relativePath = relativePath
-        else:
-            self.relativePath = RelativePath(config.path)
             
         self.status = status
 
@@ -251,11 +245,10 @@ class Analysis:
 
         if self.powerDeviationMatrixActive:
             self.status.addMessage("Loading power deviation matrix...")
-            self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerDeviationMatrix))
+            self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(config.specified_power_deviation_matrix.absolute_path)
 
         self.powerCurveMinimumCount = config.powerCurveMinimumCount
         self.powerCurvePaddingMode = config.powerCurvePaddingMode
-        self.ratedPower = config.ratedPower
 
         self.baseLineMode = config.baseLineMode
         self.interpolationMode = config.interpolationMode
@@ -281,9 +274,9 @@ class Analysis:
         self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
         
-        if config.specifiedPowerCurve != None and config.specifiedPowerCurve != '' :
+        if config.specified_power_curve.absolute_path != None :
 
-            powerCurveConfig = PowerCurveConfiguration(self.relativePath.convertToAbsolutePath(config.specifiedPowerCurve))
+            powerCurveConfig = PowerCurveConfiguration(config.specified_power_curve.absolute_path)
             
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
                                                           self.rotorGeometry, actualPower = "Specified Power", hubTurbulence = "Specified Turbulence", \
@@ -324,18 +317,18 @@ class Analysis:
 
             self.status.addMessage("Calculating actual power curves...")
 
-            self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'All Measured')
+            self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'All Measured')
             
-            self.dayTimePowerCurve = self.calculateMeasuredPowerCurve(11, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Day Time')
-            self.nightTimePowerCurve = self.calculateMeasuredPowerCurve(12, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Night Time')
+            self.dayTimePowerCurve = self.calculateMeasuredPowerCurve(11, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Day Time')
+            self.nightTimePowerCurve = self.calculateMeasuredPowerCurve(12, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Night Time')
 
-            self.innerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Inner Turbulence')
-            self.outerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Outer Turbulence')
+            self.innerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Turbulence')
+            self.outerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Turbulence')
 
             if self.hasShear:
-                self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(1, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Inner Range', required = (self.powerCurveMode == 'InnerMeasured'))
+                self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(1, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', required = (self.powerCurveMode == 'InnerMeasured'))
                 #print "Exiting"; sys.exit()                
-                self.outerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(4, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.actualPower, 'Outer Range', required = (self.powerCurveMode == 'OuterMeasured'))
+                self.outerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(4, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', required = (self.powerCurveMode == 'OuterMeasured'))
 
             self.status.addMessage("Actual Power Curves Complete.")
 
@@ -359,7 +352,7 @@ class Analysis:
 
         if self.hasActualPower:
             self.normalisedPower = 'Normalised Power'
-            self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.config.ratedPower
+            self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.ratedPower
 
         if config.rewsActive:
             self.status.addMessage("Calculating REWS Correction...")
@@ -375,7 +368,7 @@ class Analysis:
             self.calculateTurbRenorm()
             self.status.addMessage("Turbulence Correction Complete.")
             if self.hasActualPower:
-                self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(0, config.cutInWindSpeed, config.cutOutWindSpeed, config.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected')
+                self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(0, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected')
 
         if config.turbRenormActive and config.rewsActive:
             self.status.addMessage("Calculating Combined (REWS + Turbulence) Correction...")
@@ -413,7 +406,7 @@ class Analysis:
 
             self.status.addMessage("Power Curve Deviation Matrices Complete.")
         self.hours = len(self.dataFrame.index)*1.0 / 6.0
-        if self.config.nominalWindSpeedDistribution is not None:
+        if self.config.nominal_wind_speed_distribution.absolute_path is not None:
             self.status.addMessage("Attempting AEP Calculation...")
             import aep
             if self.powerCurve is self.specifiedPowerCurve:
@@ -421,9 +414,9 @@ class Analysis:
             if hasattr(self.datasetConfigs[0].data,"analysedDirections"):
                 self.analysedDirectionSectors = self.datasetConfigs[0].data.analysedDirections # assume a single for now.
             if len(self.powerCurve.powerCurveLevels) != 0:
-                self.aepCalc,self.aepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredPowerCurve)
+                self.aepCalc,self.aepCalcLCB = aep.run(self,self.config.nominal_wind_speed_distribution.absolute_path, self.allMeasuredPowerCurve)
                 if self.turbRenormActive:
-                    self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.relativePath.convertToAbsolutePath(self.config.nominalWindSpeedDistribution), self.allMeasuredTurbCorrectedPowerCurve)
+                    self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.config.nominal_wind_speed_distribution.absolute_path, self.allMeasuredTurbCorrectedPowerCurve)
             else:
                 self.status.addMessage("A specified power curve is required for AEP calculation. No specified curve defined.")
         if len(self.sensitivityDataColumns) > 0:
@@ -541,7 +534,7 @@ class Analysis:
         for i in range(len(config.datasets)):
 
             if not isinstance(config.datasets[i],DatasetConfiguration):
-                datasetConfig = DatasetConfiguration(config.datasets[i].path)
+                datasetConfig = DatasetConfiguration(config.datasets[i].absolute_path)
             else:
                 datasetConfig = config.datasets[i]
 
@@ -599,21 +592,40 @@ class Analysis:
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
 
-        self.rotorGeometry = self.datasetConfigs[0].rotorGeometry
+        self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
+
+        #Derivce Turbine Parameters from Datasets
+        self.rotorGeometry = turbine.RotorGeometry(self.datasetConfigs[0].diameter, self.datasetConfigs[0].hubHeight)
 
         for i in range(len(self.datasetConfigs)):
-            if self.datasetConfigs[0].rotorGeometry.diameter != self.rotorGeometry.diameter \
-                and self.datasetConfigs[0].rotorGeometry.hubHeight != self.rotorGeometry.hubHeight:
+            if self.datasetConfigs[i].diameter != self.rotorGeometry.diameter \
+                and self.datasetConfigs[i].hubHeight != self.rotorGeometry.hubHeight:
                 raise Exception("Inconsistent turbine geometries within analysis datasets.")
 
-        self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
+        self.ratedPower = self.datasetConfigs[0].ratedPower
+
+        for i in range(len(self.datasetConfigs)):
+            if self.datasetConfigs[i].ratedPower != self.ratedPower:
+                raise Exception("Inconsistent turbine rated powers.")
+
+        self.cutInWindSpeed = self.datasetConfigs[0].cutInWindSpeed
+
+        for i in range(len(self.datasetConfigs)):
+            if self.datasetConfigs[i].cutInWindSpeed != self.cutInWindSpeed:
+                raise Exception("Inconsistent turbine cut in speeds.")
+
+        self.cutOutWindSpeed = self.datasetConfigs[0].cutOutWindSpeed
+
+        for i in range(len(self.datasetConfigs)):
+            if self.datasetConfigs[i].cutOutWindSpeed != self.cutOutWindSpeed:
+                raise Exception("Inconsistent turbine cut out speeds.")
 
     def generate_unique_dset_ids(self):
         dset_ids = {}
         for conf in self.datasetConfigs:
             ids = {}
             ids['Configuration'] = hash_file_contents(conf.path)
-            ids['Time Series'] = hash_file_contents(conf.data.relativePath.convertToAbsolutePath(conf.inputTimeSeriesPath))
+            ids['Time Series'] = hash_file_contents(conf.input_time_series.absolute_path)
             dset_ids[conf.name] = ids
         return dset_ids
 

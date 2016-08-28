@@ -4,12 +4,11 @@ import datetime
 import math
 import os
 
-from ..configuration.base_configuration import RelativePath
-
 import rews
 import binning
-
+import turbine
 import warnings
+
 warnings.simplefilter('ignore', np.RankWarning)
 
 
@@ -250,7 +249,6 @@ class Dataset:
 
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
 
-        self.relativePath = RelativePath(config.path)
         self.nameColumn = "Dataset Name"
         self.name = config.name
 
@@ -292,7 +290,7 @@ class Dataset:
         self.sensitivityDataColumns = config.sensitivityDataColumns
 
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
-        dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, \
+        dataFrame = pd.read_csv(config.input_time_series.absolute_path, index_col=config.timeStamp, \
                                 parse_dates = True, date_parser = dateConverter, sep = getSeparatorValue(config.separator), \
                                 skiprows = config.headerRows, decimal = getDecimalValue(config.decimal)).replace(config.badData, np.nan)
 
@@ -404,7 +402,7 @@ class Dataset:
         dataFrame = self.excludeData(dataFrame, config)
 
         if self.rewsDefined:
-            dataFrame = self.defineREWS(dataFrame, config, rotorGeometry)
+            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry)
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()

@@ -19,7 +19,6 @@ import dataset
 
 from ..configuration.power_curve_configuration import PowerCurveConfiguration
 from ..configuration.preferences_configuration import Preferences
-from ..configuration.base_configuration import RelativePath
 
 class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
@@ -47,11 +46,10 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         
         def add_datasets(self, master):
 
-            self.datasetGridBox = dataset.DatasetGridBox(master, self, self.row, self.inputColumn, None)
-            self.datasetGridBox.add_items(self.config.datasets)
+            self.dataset_grid_box = dataset.DatasetGridBox(master, self, self.row, self.inputColumn, self.config.datasets.clone())
             self.row += 1
             
-            self.validateDatasets = validation.ValidateDatasets(master, self.datasetGridBox)
+            self.validateDatasets = validation.ValidateDatasets(master, self.dataset_grid_box)
             self.validations.append(self.validateDatasets)
             self.validateDatasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
 
@@ -64,7 +62,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         def add_turbine(self, master):
             
-            self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", validation.ValidateSpecifiedPowerCurve(master, self.powerCurveMode), self.config.specifiedPowerCurve, self.filePath)
+            self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", validation.ValidateSpecifiedPowerCurve(master, self.powerCurveMode), self.config.specified_power_curve.absolute_path, self.filePath)
 
             self.addPowerCurveButton = tk.Button(master, text="New", command = self.NewPowerCurve, width=5, height=1)
             self.addPowerCurveButton.grid(row=(self.row-2), sticky=tk.E+tk.N, column=self.secondButtonColumn)
@@ -79,13 +77,13 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
             self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive)  
             self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive)               
             
-            self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", validation.ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specifiedPowerDeviationMatrix, self.filePath)
+            self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", validation.ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specified_power_deviation_matrix.absolute_path, self.filePath)
 
         def add_advanced(self, master):
 
             self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode)
             self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
-            self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominalWindSpeedDistribution, self.filePath)
+            self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
 
         def addFormElements(self, master, path):            
 
@@ -98,13 +96,15 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 inner_range_tab = tk.Frame(nb)
                 turbine_tab = tk.Frame(nb)
                 corrections_tab = tk.Frame(nb)
-                
+                advanced_tab = tk.Frame(nb)
+
                 nb.add(general_tab, text='General', padding=3)
                 nb.add(power_curve_tab, text='Power Curve', padding=3)
                 nb.add(datasets_tab, text='Datasets', padding=3)
                 nb.add(turbine_tab, text='Turbine', padding=3)
                 nb.add(corrections_tab, text='Corrections', padding=3)
-                
+                nb.add(advanced_tab, text='Advanced', padding=3)
+
                 nb.grid(row=self.row, sticky=tk.E+tk.W, column=self.titleColumn, columnspan=8)
                 self.row += 1
                 
@@ -114,6 +114,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.add_inner_range(inner_range_tab)
                 self.add_turbine(turbine_tab)  
                 self.add_corrections(corrections_tab)                                                                                                                 
+                self.add_advanced(advanced_tab) 
 
         def EditPowerCurve(self):
                 
@@ -155,15 +156,13 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 
         def setConfigValues(self):
     
-                relativePath = RelativePath(self.config.path)
-    
                 self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
                 self.config.filterMode = self.filterMode.get()
                 self.config.baseLineMode = self.baseLineMode.get()
                 self.config.interpolationMode = self.interpolationMode.get()
                 self.config.powerCurveMode = self.powerCurveMode.get()
                 self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
-                self.config.nominalWindSpeedDistribution = self.nominalWindSpeedDistribution.get()
+                self.config.nominal_wind_speed_distribution.absolute_path = self.nominalWindSpeedDistribution.get()
                 self.config.powerCurveFirstBin = self.powerCurveFirstBin.get()
                 self.config.powerCurveLastBin = self.powerCurveLastBin.get()
                 self.config.powerCurveBinSize = self.powerCurveBinSize.get()
@@ -172,11 +171,14 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.config.innerRangeLowerShear = float(self.innerRangeLowerShear.get())
                 self.config.innerRangeUpperShear = float(self.innerRangeUpperShear.get())
     
-                self.config.specifiedPowerCurve = relativePath.convertToRelativePath(self.specifiedPowerCurve.get())
+                self.config.specified_power_curve.absolute_path = self.specifiedPowerCurve.get()
     
                 self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
                 self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
                 self.config.rewsActive = bool(self.rewsCorrectionActive.get())
     
-                self.config.specifiedPowerDeviationMatrix = relativePath.convertToRelativePath(self.specifiedPowerDeviationMatrix.get())
+                self.config.specified_power_deviation_matrix.absolute_path = self.specifiedPowerDeviationMatrix.get()
                 self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
+
+                self.config.datasets = self.dataset_grid_box.datasets_file_manager
+

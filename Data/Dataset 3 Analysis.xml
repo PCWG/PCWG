@@ -3,6 +3,7 @@
 	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
 	<FilterMode>All</FilterMode>
 	<BaseLineMode>Hub</BaseLineMode>
+	<InterpolationMode>Linear</InterpolationMode>
 	<PowerCurveMode>Specified</PowerCurveMode>
 	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
 	<NominalWindSpeedDistribution></NominalWindSpeedDistribution>
@@ -21,11 +22,6 @@
 		<InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
 	</InnerRange>
 	<Turbine>
-		<CutInWindSpeed>3.000000</CutInWindSpeed>
-		<CutOutWindSpeed>25.000000</CutOutWindSpeed>
-		<RatedPower>2000.000000</RatedPower>
-		<HubHeight>96.000000</HubHeight>
-		<Diameter>90.000000</Diameter>
 		<SpecifiedPowerCurve>PowerCurve.xml</SpecifiedPowerCurve>
 	</Turbine>
 	<DensityCorrection>

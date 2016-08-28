@@ -9,6 +9,7 @@ import datetime
 import numpy as np
 
 import base_configuration
+import path_manager
 
 class ShearMeasurement:
 
@@ -37,10 +38,12 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
     def __init__(self, path = None):
 
+        self.input_time_series = path_manager.SinglePathManager()
+        self.path = path
+
         if path != None:
 
             self.isNew = False
-            self.path = path
 
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
@@ -58,6 +61,7 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.calculateHubWindSpeed = self.getCalculateMode(self.hubWindSpeedMode)
             self.densityMode = self.getNodeValue(collectorNode, 'DensityMode')
             self.calculateDensity = self.getCalculateMode(self.densityMode)
+
             if self.nodeExists(collectorNode, 'CalibrationMethod'):
                 try:
                     self.calibrationMethod = self.getNodeValue(collectorNode, 'CalibrationMethod')
@@ -163,6 +167,15 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
             self.invariant_rand_id = None
 
+    @property
+    def path(self): 
+        return self._path
+
+    @path.setter
+    def path(self, value): 
+        self._path = value
+        self.input_time_series.set_base(self._path)
+
     def parseDate(self, dateText):
         
         if dateText != None and len(dateText) > 0:
@@ -209,11 +222,13 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
         measurementsNode = self.addNode(doc, root, "Measurements")
 
-        self.addTextNode(doc, measurementsNode, "InputTimeSeriesPath", self.inputTimeSeriesPath)
+        self.addTextNode(doc, measurementsNode, "InputTimeSeriesPath", self.input_time_series.relative_path)
+        
         try:
             self.addFloatNode(doc, measurementsNode, "BadDataValue", self.badData)
         except:
             self.addTextNode(doc, measurementsNode, "BadDataValue", self.badData)
+
         self.addTextNode(doc, measurementsNode, "DateFormat", self.dateFormat)
         self.addTextNode(doc, measurementsNode, "Separator", self.separator)
         self.addTextNode(doc, measurementsNode, "Decimal", self.decimal)
@@ -322,14 +337,18 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
         if self.cutInWindSpeed != None:
             self.addFloatNode(doc, turbineNode, "CutInWindSpeed", self.cutInWindSpeed)
-            
-        self.addFloatNode(doc, turbineNode, "CutOutWindSpeed", self.cutOutWindSpeed)
+
+        if self.cutOutWindSpeed != None:            
+            self.addFloatNode(doc, turbineNode, "CutOutWindSpeed", self.cutOutWindSpeed)
 
         if self.ratedPower != None:
             self.addFloatNode(doc, turbineNode, "RatedPower", self.ratedPower)
-        
-        self.addFloatNode(doc, turbineNode, "HubHeight", self.hubHeight)
-        self.addFloatNode(doc, turbineNode, "Diameter", self.diameter)
+
+        if self.hubHeight != None:
+            self.addFloatNode(doc, turbineNode, "HubHeight", self.hubHeight)
+
+        if self.diameter != None:
+            self.addFloatNode(doc, turbineNode, "Diameter", self.diameter)
 
     def get_shear_columns(self):
 
@@ -345,17 +364,27 @@ class DatasetConfiguration(base_configuration.XmlBase):
         if self.nodeExists(configurationNode, 'Turbine'):
                 
             turbineNode = self.getNode(configurationNode, 'Turbine')
-    
-            self.hubHeight = self.getNodeFloat(turbineNode, 'HubHeight')
-            self.diameter = self.getNodeFloat(turbineNode, 'Diameter')
-    
+
+            if self.nodeExists(turbineNode, 'HubHeight'):     
+                self.hubHeight = self.getNodeFloat(turbineNode, 'HubHeight')
+            else:
+                self.hubHeight = None
+
+            if self.nodeExists(turbineNode, 'Diameter'):     
+                self.diameter = self.getNodeFloat(turbineNode, 'Diameter')
+            else:
+                self.diameter = None
+
             if self.nodeExists(turbineNode, 'CutInWindSpeed'): 
                 self.cutInWindSpeed = self.getNodeFloat(turbineNode, 'CutInWindSpeed')
             else:
                 self.cutInWindSpeed = None
-                
-            self.cutOutWindSpeed = self.getNodeFloat(turbineNode, 'CutOutWindSpeed')
-    
+
+            if self.nodeExists(turbineNode, 'CutOutWindSpeed'): 
+                self.cutOutWindSpeed = self.getNodeFloat(turbineNode, 'CutOutWindSpeed')
+            else:
+                self.cutOutWindSpeed = None
+                    
             if self.nodeExists(turbineNode, 'RatedPower'): 
                 self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
             else:
@@ -426,7 +455,8 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
         measurementsNode = self.getNode(configurationNode, 'Measurements')
 
-        self.inputTimeSeriesPath = self.getNodePath(measurementsNode, 'InputTimeSeriesPath')
+        self.input_time_series.relative_path = self.getNodePath(measurementsNode, 'InputTimeSeriesPath')
+
         self.dateFormat = self.getNodeValue(measurementsNode, 'DateFormat')
         self.timeStepInSeconds = self.getNodeInt(measurementsNode, 'TimeStepInSeconds')
 

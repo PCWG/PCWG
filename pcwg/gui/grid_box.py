@@ -116,7 +116,8 @@ class GridBox(object):
         
         item = self.get_selected()
 
-        self.edit_item(item)
+        if item != None:
+            self.edit_item(item)
 
     def add_item(self, item):
 
@@ -145,7 +146,9 @@ class GridBox(object):
         return self.items_dict.values()
 
     def double_click(self, event):
-        self.edit()
+        key = self.tree.identify('item',event.x,event.y)
+        item = self.items_dict[key]
+        self.edit_item(item)
 
     def _set_up_tree_widget(self):
 
