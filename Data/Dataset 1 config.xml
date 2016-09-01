@@ -30,7 +30,12 @@
 		<Temperature></Temperature>
 		<Pressure></Pressure>
 		<Density></Density>
+		<InflowAngle></InflowAngle>
 		<TurbineLocationWindSpeed></TurbineLocationWindSpeed>
+		<Power></Power>
+		<PowerMin></PowerMin>
+		<PowerMax></PowerMax>
+		<PowerSD></PowerSD>
 		<HubWindSpeed>Mast - 96.0m Wind Speed Mean</HubWindSpeed>
 		<HubTurbulence>Mast - 96.0m Turbulence Intensity</HubTurbulence>
 	</Measurements>
@@ -106,4 +111,11 @@
 	</Calibration>
 	<Filters/>
 	<Exclusions/>
+	<Turbine>
+		<CutInWindSpeed>3.000000</CutInWindSpeed>
+		<CutOutWindSpeed>25.000000</CutOutWindSpeed>
+		<RatedPower>2000.000000</RatedPower>
+		<HubHeight>96.000000</HubHeight>
+		<Diameter>90.000000</Diameter>
+	</Turbine>
 </Configuration>

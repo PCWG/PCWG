@@ -4,7 +4,7 @@
 	<Tolerance>0.0001</Tolerance>
 	<Benchmarks>
 		<Benchmark>
-			<AnalysisConfigPath>Data\Dataset 1 Analysis.xml</AnalysisConfigPath>
+			<AnalysisConfigPath>Dataset 1 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>
@@ -29,7 +29,7 @@
 			</ExpectedResults>
 		</Benchmark>
 		<Benchmark>
-			<AnalysisConfigPath>Data\Dataset 2 Analysis.xml</AnalysisConfigPath>
+			<AnalysisConfigPath>Dataset 2 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>
@@ -54,7 +54,7 @@
 			</ExpectedResults>
 		</Benchmark>
 		<Benchmark>
-			<AnalysisConfigPath>Data\Dataset 3 Analysis.xml</AnalysisConfigPath>
+			<AnalysisConfigPath>Dataset 3 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>

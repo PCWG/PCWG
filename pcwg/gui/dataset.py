@@ -17,7 +17,6 @@ import validation
 from grid_box import GridBox
 from grid_box import DialogGridBox
 
-from ..configuration.base_configuration import RelativePath
 from ..configuration.base_configuration import RelationshipFilter
 from ..configuration.base_configuration import Filter
 from ..configuration.dataset_configuration import Exclusion
@@ -400,13 +399,21 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         def addFilePath(self, master, path):
             pass
 
+        def file_path_update(self):
+            self.config.input_time_series.set_base(self.filePath.get())
+
+        def time_series_path_update(self):
+            self.config.input_time_series.absolute_path = self.inputTimeSeriesPath.get()
+
         def add_general(self, master, path):
 
             self.filePath = self.addFileSaveAsEntry(master, "Configuration XML File Path:", validation.ValidateDatasetFilePath(master), path)
+            self.filePath.variable.trace("w", self.file_path_update)
 
             self.name = self.addEntry(master, "Dataset Name:", validation.ValidateNotBlank(master), self.config.name)
                   
-            self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", validation.ValidateTimeSeriesFilePath(master), self.config.inputTimeSeriesPath, self.filePath)
+            self.inputTimeSeriesPath = self.addFileOpenEntry(master, "Input Time Series Path:", validation.ValidateTimeSeriesFilePath(master), self.config.input_time_series.absolute_path, self.filePath)
+            self.inputTimeSeriesPath.variable.trace("w", self.time_series_path_update)
                             
             self.separator = self.addOption(master, "Separator:", ["TAB", "COMMA", "SPACE", "SEMI-COLON"], self.config.separator)
             self.separator.trace("w", self.columnSeparatorChange)
@@ -664,7 +671,8 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                                 self.calibrationSectorsGridBox.clearTip()
                                 self.calibrationFiltersGridBox.setTip(specifiedCalibrationMethodComment)
                         else:
-                                raise Exception("Unknown calibration methods: %s" % self.calibrationMethod.get())
+                            if len(self.calibrationMethod.get()) > 0:
+                                raise Exception("Unknown calibration method: %s" % self.calibrationMethod.get())
      
                 elif self.hubWindSpeedMode.get() == "Specified":
 
@@ -715,19 +723,6 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
             for item in self.rewsGridBox.get_items():
                 self.shearGridBox.add_item(ShearMeasurement(item.height, item.wind_speed_column))
-
-        def getInputTimeSeriesRelativePath(self):
-
-                relativePath = RelativePath(self.filePath.get())
-                return relativePath.convertToRelativePath(self.inputTimeSeriesPath.get())
-
-        def getInputTimeSeriesAbsolutePath(self):
-
-                if len(self.inputTimeSeriesPath.get()) > 0:
-                        relativePath = RelativePath(self.filePath.get())
-                        return relativePath.convertToAbsolutePath(self.inputTimeSeriesPath.get())
-                else:
-                        return ""
                 
         def getHeaderRows(self):
 
@@ -740,7 +735,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
                 
-                if len(self.getInputTimeSeriesAbsolutePath()) < 1:
+                if self.config.input_time_series.absolute_path != None:
 
                         tk.tkMessageBox.showwarning(
                                 "InputTimeSeriesPath Not Set",
@@ -749,7 +744,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
                         return
 
-                inputTimeSeriesPath = self.getInputTimeSeriesAbsolutePath()
+                inputTimeSeriesPath = self.config.input_time_series.absolute_path
                 headerRows = self.getHeaderRows()
                                 
                 if self.columnsFileHeaderRows != headerRows or self.availableColumnsFile != inputTimeSeriesPath:
@@ -774,7 +769,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         
         def read_dataset(self):
              print 'reading dataSet'
-             inputTimeSeriesPath = self.getInputTimeSeriesAbsolutePath()
+             inputTimeSeriesPath = self.config.input_time_series.absolute_path
              headerRows = self.getHeaderRows()    
              dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows, decimal = getDecimalValue(self.decimal.get()))               
              self.availableColumns = []
@@ -790,7 +785,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.config.calibrationMethod = self.calibrationMethod.get()
                 self.config.densityMode = self.densityMode.get()
 
-                self.config.inputTimeSeriesPath = self.getInputTimeSeriesRelativePath()
+                self.config.input_time_series.absolute_path = self.inputTimeSeriesPath.get()
                 self.config.timeStepInSeconds = int(self.timeStepInSeconds.get())
                 self.config.badData = float(self.badData.get())
                 self.config.dateFormat = self.dateFormat.get()

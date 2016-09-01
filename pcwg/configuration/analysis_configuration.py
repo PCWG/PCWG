@@ -6,17 +6,24 @@ Created on Thu Aug 11 05:37:57 2016
 """
 
 import base_configuration
+import path_manager
 
 class AnalysisConfiguration(base_configuration.XmlBase):
 
     def __init__(self, path = None):
+
+        self.datasets = path_manager.PathManager()
+        self.specified_power_curve = path_manager.SinglePathManager()
+        self.nominal_wind_speed_distribution = path_manager.SinglePathManager()
+        self.specified_power_deviation_matrix = path_manager.SinglePathManager()
+
+        self.path = path
 
         defaultPaddingMode = 'None'
 
         if path != None:
 
             self.isNew = False
-            self.path = path
 
             doc = self.readDoc(path)
             configurationNode = self.getNode(doc, 'Configuration')
@@ -46,7 +53,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.readInnerRange(configurationNode)
             self.readTurbine(configurationNode)
 
-            self.nominalWindSpeedDistribution = self.getNodeValueIfExists(configurationNode,'NominalWindSpeedDistribution',None)
+            self.nominal_wind_speed_distribution.relative_path = self.getNodeValueIfExists(configurationNode,'NominalWindSpeedDistribution',None)
 
             self.readDensityCorrection(configurationNode)
             self.readREWS(configurationNode)
@@ -56,7 +63,6 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         else:
 
-            self.path = None
             self.isNew = True
             self.Name = ""
             self.powerCurveMinimumCount = 10
@@ -70,19 +76,25 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.setDefaultInnerRangeTurbulence()
             self.setDefaultInnerRangeShear()
 
-            self.specifiedPowerCurve = ''
-            self.nominalWindSpeedDistribution = None
-
             self.rewsActive = False
             self.turbRenormActive = False
             self.densityCorrectionActive = False
-
-            self.specifiedPowerDeviationMatrix = ""
             self.powerDeviationMatrixActive = False
 
             self.interpolationMode = 'Cubic'
-            self.datasets = []
-            
+
+    @property
+    def path(self): 
+        return self._path
+
+    @path.setter
+    def path(self, value): 
+        self._path = value
+        self.datasets.set_base(self._path)
+        self.specified_power_curve.set_base(self._path)
+        self.nominal_wind_speed_distribution.set_base(self._path)
+        self.specified_power_deviation_matrix.set_base(self._path)
+
     def setDefaultInnerRangeTurbulence(self):
         self.innerRangeLowerTurbulence = 0.08
         self.innerRangeUpperTurbulence = 0.12
@@ -92,9 +104,9 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.innerRangeUpperShear = 0.20
 
     def setDefaultPowerCurveBins(self):
-            self.powerCurveFirstBin = 1.0
-            self.powerCurveLastBin = 30.0
-            self.powerCurveBinSize = 1.0
+        self.powerCurveFirstBin = 1.0
+        self.powerCurveLastBin = 30.0
+        self.powerCurveBinSize = 1.0
 
     def save(self, path = None):
 
@@ -116,7 +128,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addTextNode(doc, root, "InterpolationMode", self.interpolationMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
-        self.addTextNode(doc, root, "NominalWindSpeedDistribution", self.nominalWindSpeedDistribution)
+        self.addTextNode(doc, root, "NominalWindSpeedDistribution", self.nominal_wind_speed_distribution.relative_path)
         
         powerCurveBinsNode = self.addNode(doc, root, "PowerCurveBins")
 
@@ -127,7 +139,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         datasetsNode = self.addNode(doc, root, "Datasets")
 
         for dataset in self.datasets:
-            self.addTextNode(doc, datasetsNode, "Dataset", dataset)
+            self.addTextNode(doc, datasetsNode, "Dataset", dataset.relative_path)
 
         innerRangeNode = self.addNode(doc, root, "InnerRange")
 
@@ -137,7 +149,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addFloatNode(doc, innerRangeNode, "InnerRangeUpperShear", self.innerRangeUpperShear)
 
         turbineNode = self.addNode(doc, root, "Turbine")
-        self.addTextNode(doc, turbineNode, "SpecifiedPowerCurve", self.specifiedPowerCurve)
+        self.addTextNode(doc, turbineNode, "SpecifiedPowerCurve", self.specified_power_curve.relative_path)
 
         densityCorrectionNode = self.addNode(doc, root, "DensityCorrection")
         self.addBoolNode(doc, densityCorrectionNode, "Active", self.densityCorrectionActive)
@@ -149,17 +161,16 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addBoolNode(doc, rewsNode, "Active", self.rewsActive)
 
         powerDeviationMatrixNode = self.addNode(doc, root, "PowerDeviationMatrix")
-        self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specifiedPowerDeviationMatrix)
+        self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specified_power_deviation_matrix.relative_path)
         self.addBoolNode(doc, powerDeviationMatrixNode, "Active", self.powerDeviationMatrixActive)
 
     def readDatasets(self, configurationNode):
 
         datasetsNode = self.getNode(configurationNode, 'Datasets')
 
-        self.datasets = []
-
-        for node in self.getNodes(datasetsNode, 'Dataset'):
-            self.datasets.append(base_configuration.ChildDataset(None, self.getPath(node)))
+        for datasetNode in self.getNodes(datasetsNode, 'Dataset'):
+            dataset_path = self.getValue(datasetNode)
+            self.datasets.append_relative(dataset_path)
 
     def readInnerRange(self, configurationNode):
 
@@ -177,17 +188,17 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         turbineNode = self.getNode(configurationNode, 'Turbine')
 
-        self.specifiedPowerCurve = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve','')
+        self.specified_power_curve.relative_path = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve','')
 
     def readPowerDeviationMatrix(self, configurationNode):
 
         if self.nodeExists(configurationNode, 'PowerDeviationMatrix'):
             powerDeviationMatrixNode = self.getNode(configurationNode, 'PowerDeviationMatrix')
             self.powerDeviationMatrixActive = self.getNodeBool(powerDeviationMatrixNode, 'Active')
-            self.specifiedPowerDeviationMatrix = self.getNodeValue(powerDeviationMatrixNode, 'SpecifiedPowerDeviationMatrix')
+            self.specified_power_deviation_matrix.relative_path = self.getNodeValue(powerDeviationMatrixNode, 'SpecifiedPowerDeviationMatrix')
         else:
             self.powerDeviationMatrixActive = False
-            self.specifiedPowerDeviationMatrix = ""
+            self.specified_power_deviation_matrix.relative_path = None
 
     def readREWS(self, configurationNode):
 

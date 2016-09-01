@@ -1,41 +1,40 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ns1:Configuration xmlns:ns1="http://www.pcwg.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	
-	<ns1:TimeStepInSeconds>600</ns1:TimeStepInSeconds>
-	<ns1:PowerCurveMinimumCount>6</ns1:PowerCurveMinimumCount>
-	
-	<ns1:FilterMode>All</ns1:FilterMode>
-	<ns1:BaseLineMode>Measured</ns1:BaseLineMode>
-	<ns1:PowerCurveMode>Specified</ns1:PowerCurveMode>		
-		
-	<ns1:Datasets>
-		<ns1:Dataset>Dataset 4.xml</ns1:Dataset>
-	</ns1:Datasets>
-	
-	<ns1:InnerRange>
-		<ns1:InnerRangeLowerTurbulence>0.10</ns1:InnerRangeLowerTurbulence>
-		<ns1:InnerRangeUpperTurbulence>0.14</ns1:InnerRangeUpperTurbulence>
-	</ns1:InnerRange>
-	
-	<ns1:Turbine>
-		<ns1:CutInWindSpeed>3.5</ns1:CutInWindSpeed>
-		<ns1:CutOutWindSpeed>25</ns1:CutOutWindSpeed>
-		<ns1:RatedPower>2000</ns1:RatedPower>
-		<ns1:HubHeight>58</ns1:HubHeight>
-		<ns1:Diameter>70</ns1:Diameter>
-		<ns1:SpecifiedPowerCurve>Dataset 4 PowerCurve.xml</ns1:SpecifiedPowerCurve>
-	</ns1:Turbine>
-
-	<ns1:DensityCorrection>
-		<ns1:Active>1</ns1:Active>
-	</ns1:DensityCorrection>
-	
-	<ns1:TurbulenceRenormalisation>
-		<ns1:Active>1</ns1:Active>
-	</ns1:TurbulenceRenormalisation>
-	
-	<ns1:RotorEquivalentWindSpeed>
-		<ns1:Active>0</ns1:Active>
-	</ns1:RotorEquivalentWindSpeed>
-
-</ns1:Configuration>
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<PowerCurveMinimumCount>6</PowerCurveMinimumCount>
+	<FilterMode>All</FilterMode>
+	<BaseLineMode>Measured</BaseLineMode>
+	<InterpolationMode>Linear</InterpolationMode>
+	<PowerCurveMode>Specified</PowerCurveMode>
+	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
+	<NominalWindSpeedDistribution></NominalWindSpeedDistribution>
+	<PowerCurveBins>
+		<FirstBinCentre>1.000000</FirstBinCentre>
+		<LastBinCentre>30.000000</LastBinCentre>
+		<BinSize>1.000000</BinSize>
+	</PowerCurveBins>
+	<Datasets>
+		<Dataset>Dataset 4.xml</Dataset>
+	</Datasets>
+	<InnerRange>
+		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
+		<InnerRangeUpperTurbulence>0.140000</InnerRangeUpperTurbulence>
+		<InnerRangeLowerShear>0.050000</InnerRangeLowerShear>
+		<InnerRangeUpperShear>0.200000</InnerRangeUpperShear>
+	</InnerRange>
+	<Turbine>
+		<SpecifiedPowerCurve>Dataset 4 PowerCurve.xml</SpecifiedPowerCurve>
+	</Turbine>
+	<DensityCorrection>
+		<Active>1</Active>
+	</DensityCorrection>
+	<TurbulenceRenormalisation>
+		<Active>1</Active>
+	</TurbulenceRenormalisation>
+	<RotorEquivalentWindSpeed>
+		<Active>0</Active>
+	</RotorEquivalentWindSpeed>
+	<PowerDeviationMatrix>
+		<SpecifiedPowerDeviationMatrix></SpecifiedPowerDeviationMatrix>
+		<Active>0</Active>
+	</PowerDeviationMatrix>
+</Configuration>

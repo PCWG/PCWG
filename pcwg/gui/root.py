@@ -299,7 +299,7 @@ class UserInterface:
                 for i in range(len(benchmarkConfig.benchmarks)):
                         benchmark = benchmarkConfig.benchmarks[i]
                         self.addMessage("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
-                        benchmarkResults = self.BenchmarkAnalysis(benchmark.analysisPath,  benchmarkConfig.tolerance, benchmark.expectedResults)
+                        benchmarkResults = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.expectedResults)
                         benchmarkPassed = benchmarkPassed & benchmarkResults[0]
                         totalTime += benchmarkResults[1]
 
@@ -596,9 +596,14 @@ class UserInterface:
             tk.tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
 
     def addMessage(self, message, red=False):
+
+        try:
             self.listbox.insert(tk.END, message)
             if red:
                  self.listbox.itemconfig(tk.END, {'bg':'red','foreground':"white"})
             self.listbox.see(tk.END)
             self.root.update()
+        except:
 
+            print "Can't write message: {0}".format(message)
+            

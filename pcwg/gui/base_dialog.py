@@ -13,7 +13,6 @@ import datetime
 import dateutil
 import os.path
 
-from ..configuration.base_configuration import RelativePath
 from ..configuration.preferences_configuration import Preferences
 
 import validation

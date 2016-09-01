@@ -4,12 +4,11 @@ import datetime
 import math
 import os
 
-from ..configuration.base_configuration import RelativePath
-
 import rews
 import binning
-
+import turbine
 import warnings
+
 warnings.simplefilter('ignore', np.RankWarning)
 
 
@@ -222,6 +221,10 @@ class ShearExponentCalculator:
         self.shearMeasurements = shearMeasurements
 
     def calculateMultiPointShear(self, row):
+
+        if len(self.shearMeasurements) < 1:
+            raise Exception("No shear heights have been")
+
         # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
         windspeeds = np.array([np.log(row[item.wind_speed_column]) for item in self.shearMeasurements])
         heights = np.array([np.log(item.height) for item in self.shearMeasurements])
@@ -242,9 +245,10 @@ class ShearExponentCalculator:
 
 class Dataset:
 
-    def __init__(self, config, rotorGeometry, analysisConfig):
+    def __init__(self, config, analysisConfig):
 
-        self.relativePath = RelativePath(config.path)
+        self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
+
         self.nameColumn = "Dataset Name"
         self.name = config.name
 
@@ -286,7 +290,7 @@ class Dataset:
         self.sensitivityDataColumns = config.sensitivityDataColumns
 
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
-        dataFrame = pd.read_csv(self.relativePath.convertToAbsolutePath(config.inputTimeSeriesPath), index_col=config.timeStamp, \
+        dataFrame = pd.read_csv(config.input_time_series.absolute_path, index_col=config.timeStamp, \
                                 parse_dates = True, date_parser = dateConverter, sep = getSeparatorValue(config.separator), \
                                 skiprows = config.headerRows, decimal = getDecimalValue(config.decimal)).replace(config.badData, np.nan)
 
@@ -398,7 +402,7 @@ class Dataset:
         dataFrame = self.excludeData(dataFrame, config)
 
         if self.rewsDefined:
-            dataFrame = self.defineREWS(dataFrame, config, rotorGeometry)
+            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry)
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
