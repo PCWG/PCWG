@@ -257,10 +257,6 @@ class report:
         sh.write(row, dataColumn, config.powerCurveMinimumCount)
         row += 1
 
-        sh.write(row, labelColumn, "Rated Power", self.bold_style)
-        sh.write(row, dataColumn, config.ratedPower)
-        row += 1
-
         sh.write(row, labelColumn, "Baseline Mode", self.bold_style)
         sh.write(row, dataColumn, config.baseLineMode)
         row += 1
@@ -299,28 +295,8 @@ class report:
         sh.write(row, labelColumn, "Turbine", self.bold_style)
         row += 1
 
-        sh.write(row, labelColumn, "HubHeight", self.bold_style)
-        sh.write(row, dataColumn, config.hubHeight)
-        row += 1
-
-        sh.write(row, labelColumn, "Diameter", self.bold_style)
-        sh.write(row, dataColumn, config.diameter)
-        row += 1
-
-        sh.write(row, labelColumn, "Cut In Wind Speed", self.bold_style)
-        sh.write(row, dataColumn, config.cutInWindSpeed)
-        row += 1
-
-        sh.write(row, labelColumn, "Cut Out Wind Speed", self.bold_style)
-        sh.write(row, dataColumn, config.cutOutWindSpeed)
-        row += 1
-
-        sh.write(row, labelColumn, "Rated Power", self.bold_style)
-        sh.write(row, dataColumn, config.ratedPower)
-        row += 1
-
         sh.write(row, labelColumn, "Specified Power Curve", self.bold_style)
-        sh.write(row, dataColumn, config.specifiedPowerCurve)
+        sh.write(row, dataColumn, config.specified_power_curve.absolute_path)
         row += 1
 
         #datasets
@@ -337,6 +313,27 @@ class report:
             sh.write(row, labelColumn, "Path", self.bold_style)
             sh.write(row, dataColumn, datasetConfig.path)
             row += 1
+
+            sh.write(row, labelColumn, "Rated Power", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.ratedPower)
+            row += 1
+
+            sh.write(row, labelColumn, "HubHeight", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.hubHeight)
+            row += 1
+    
+            sh.write(row, labelColumn, "Diameter", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.diameter)
+            row += 1
+    
+            sh.write(row, labelColumn, "Cut In Wind Speed", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.cutInWindSpeed)
+            row += 1
+    
+            sh.write(row, labelColumn, "Cut Out Wind Speed", self.bold_style)
+            sh.write(row, dataColumn, datasetConfig.cutOutWindSpeed)
+            row += 1
+
 
             sh.write(row, labelColumn, "Start Date", self.bold_style)
             sh.write(row, dataColumn, str(datasetConfig.startDate))
@@ -374,7 +371,7 @@ class report:
             row += 1   
 
             sh.write(row, labelColumn, "Input Time Series Path", self.bold_style)
-            sh.write(row, dataColumn, datasetConfig.inputTimeSeriesPath)
+            sh.write(row, dataColumn, datasetConfig.input_time_series.absolute_path)
             row += 1
 
             sh.write(row, labelColumn, "Date Format", self.bold_style)
