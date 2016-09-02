@@ -6,7 +6,9 @@ Created on Wed Aug 10 14:41:26 2016
 """
 
 import sys
+import os
 import datetime
+import traceback
 
 import Tkinter as tk
 import tkFileDialog
@@ -20,13 +22,14 @@ from ..configuration.benchmark_configuration import BenchmarkConfiguration
 from ..configuration.analysis_configuration import AnalysisConfiguration
 from ..configuration.portfolio_configuration import PortfolioConfiguration
 
+from ..exceptions.handling import ExceptionHandler
+
 import version as ver
 
 import base_dialog
 import analysis
 import portfolio
 
-import exception_type
 
 class ExportDataSetDialog(base_dialog.BaseDialog):
 
@@ -112,6 +115,8 @@ class ExportAnonReportPickerDialog(base_dialog.BaseDialog):
 class UserInterface:
 
     def __init__(self):
+
+            ExceptionHandler.initialize_handler(self.add_exception)
             
             self.analysis = None
             self.analysisConfiguration = None
@@ -119,6 +124,8 @@ class UserInterface:
             self.root = tk.Tk()
             self.root.geometry("860x400")
             self.root.title("PCWG")
+            
+            self.verbosity = Preferences.get().verbosity
 
             consoleframe = tk.Frame(self.root)
             commandframe = tk.Frame(self.root)
@@ -223,7 +230,7 @@ class UserInterface:
                        self.LoadAnalysisFromPath(preferences.analysisLastOpened)
                     except IOError:
                         self.addMessage("Couldn't load last analysis: File could not be found.")
-                    except exception_type.EXCEPTION_TYPE as e:
+                    except ExceptionHandler.ExceptionType as e:
                         self.addMessage("Couldn't load last analysis: {0}".format(e))
                         
             if len(preferences.portfolioLastOpened) > 0:
@@ -232,7 +239,7 @@ class UserInterface:
                        self.LoadPortfolioFromPath(preferences.portfolioLastOpened)
                     except IOError:
                         self.addMessage("Couldn't load last portfolio: File could not be found.")
-                    except exception_type.EXCEPTION_TYPE as e:
+                    except ExceptionHandler.ExceptionType as e:
                         self.addMessage("Couldn't load last portfolio: {0}".format(e))
                         
             self.update()
@@ -248,13 +255,13 @@ class UserInterface:
 
                 try:    
                     updator.download_latest_version()
-                except exception_type.EXCEPTION_TYPE as e:
+                except ExceptionHandler.ExceptionType as e:
                     self.addMessage("Failed to download latest version: {0}".format(e), red = True)
                     return
 
                 try:
                     updator.start_extractor()
-                except exception_type.EXCEPTION_TYPE as e:
+                except ExceptionHandler.ExceptionType as e:
                     self.addMessage("Cannot start extractor: {0}".format(e), red = True)
                     return
                     
@@ -284,7 +291,7 @@ class UserInterface:
                 try:
                         preferences.benchmarkLastOpened = path
                         preferences.save()
-                except exception_type.EXCEPTION_TYPE as e:
+                except ExceptionHandler.ExceptionType as e:
                     self.addMessage("Cannot save preferences: %s" % e)
 
                 self.addMessage("Loading benchmark configuration file: %s" % path)                
@@ -325,7 +332,7 @@ class UserInterface:
    
                     analysis = core_analysis.Analysis(AnalysisConfiguration(path))
 
-            except exception_type.EXCEPTION_TYPE as e:
+            except ExceptionHandler.ExceptionType as e:
 
                     analysis = None
                     self.addMessage(str(e))
@@ -401,7 +408,7 @@ class UserInterface:
                     preferences = Preferences.get()
                     preferences.analysisLastOpened = fileName
                     preferences.save()
-            except exception_type.EXCEPTION_TYPE as e:
+            except ExceptionHandler.ExceptionType as e:
                 self.addMessage("Cannot save preferences: %s" % e)
                 
             self.analysisFilePathTextBox.config(state=tk.NORMAL)
@@ -417,7 +424,7 @@ class UserInterface:
                     try:
                         self.analysisConfiguration = AnalysisConfiguration(fileName)
                         self.addMessage("Analysis config loaded: %s" % fileName)
-                    except exception_type.EXCEPTION_TYPE as e:
+                    except ExceptionHandler.ExceptionType as e:
                         self.addMessage("ERROR loading config: %s" % e, red = True)
 
     def LoadPortfolioFromPath(self, fileName):
@@ -426,7 +433,7 @@ class UserInterface:
                     preferences = Preferences.get()
                     preferences.portfolioLastOpened = fileName
                     preferences.save()
-            except exception_type.EXCEPTION_TYPE as e:
+            except ExceptionHandler.ExceptionType as e:
                 self.addMessage("Cannot save preferences: %s" % e)
                 
             self.portfolioFilePathTextBox.config(state=tk.NORMAL)
@@ -441,7 +448,7 @@ class UserInterface:
                     try:
                         self.portfolioConfiguration = PortfolioConfiguration(fileName)
                         self.addMessage("Portfolio config loaded: %s" % fileName)
-                    except exception_type.EXCEPTION_TYPE as e:
+                    except ExceptionHandler.ExceptionType as e:
                         self.addMessage("ERROR loading config: %s" % e, red = True)
                     
     def ExportReport(self):
@@ -461,8 +468,8 @@ class UserInterface:
                     fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.report(fileName, ver.version)
                     self.addMessage("Report written to %s" % fileName)
-            except exception_type.EXCEPTION_TYPE as e:
-                    self.addMessage("ERROR Exporting Report: %s" % e, red = True)
+            except ExceptionHandler.ExceptionType as e:
+                ExceptionHandler.add(e, "ERROR Exporting Report")                    
     
     def PCWG_Share_1_Portfolio(self):
 
@@ -471,7 +478,7 @@ class UserInterface:
                 return
         try:
             share.PcwgShare01Portfolio(self.portfolioConfiguration, log = self, version = ver.version)
-        except exception_type.EXCEPTION_TYPE as e:
+        except ExceptionHandler.ExceptionType as e:
             self.addMessage(str(e), red = True)
 
     def PCWG_Share_1_dot_1_Portfolio(self):
@@ -481,7 +488,7 @@ class UserInterface:
                 return
         try:
             share.PcwgShare01dot1Portfolio(self.portfolioConfiguration, log = self, version = ver.version)
-        except exception_type.EXCEPTION_TYPE as e:
+        except ExceptionHandler.ExceptionType as e:
             self.addMessage(str(e), red = True)
         
     def new_portfolio(self):
@@ -489,7 +496,7 @@ class UserInterface:
         try:
             portfolioConfiguration = PortfolioConfiguration()
             portfolio.PortfolioDialog(self.root, base_dialog.WindowStatus(self), self.LoadPortfolioFromPath, portfolioConfiguration)
-        except exception_type.EXCEPTION_TYPE as e:
+        except ExceptionHandler.ExceptionType as e:
             self.addMessage(str(e), red = True)
 
     def edit_portfolio(self):
@@ -500,8 +507,8 @@ class UserInterface:
 
         try:
             portfolio.PortfolioDialog(self.root, base_dialog.WindowStatus(self), self.LoadPortfolioFromPath, self.portfolioConfiguration)                    
-        except exception_type.EXCEPTION_TYPE as e:
-            self.addMessage(str(e), red = True)
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e)
 
     def load_portfolio(self):
         
@@ -516,7 +523,7 @@ class UserInterface:
 
             self.LoadPortfolioFromPath(portfolio_path)
             
-        except exception_type.EXCEPTION_TYPE as e:
+        except ExceptionHandler.ExceptionType as e:
 
             self.addMessage(str(e), red = True)
             
@@ -549,7 +556,7 @@ class UserInterface:
                     if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
                             self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
                             self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
-            except exception_type.EXCEPTION_TYPE as e:
+            except ExceptionHandler.ExceptionType as e:
                     self.addMessage("ERROR Exporting Anonymous Report: %s" % e, red = True)
 
     def ExportTimeSeries(self):
@@ -560,7 +567,7 @@ class UserInterface:
 
             try:
                 
-                    preferences = configuration.Preferences.get()
+                    preferences = Preferences.get()
                     selections = ExportDataSetDialog(self.root, None)
                     clean, full, calibration = selections.getSelections()
 
@@ -571,7 +578,7 @@ class UserInterface:
                     if any((full, calibration)):
                             self.addMessage("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
 
-            except exception_type.EXCEPTION_TYPE as e:
+            except ExceptionHandler.ExceptionType as e:
                     self.addMessage("ERROR Exporting Time Series: %s" % e, red = True)
 
     def Calculate(self):
@@ -584,7 +591,7 @@ class UserInterface:
         
                     self.analysis = core_analysis.Analysis(self.analysisConfiguration, base_dialog.WindowStatus(self))
 
-            except exception_type.EXCEPTION_TYPE as e:
+            except ExceptionHandler.ExceptionType as e:
                     
                     self.addMessage("ERROR Calculating Analysis: %s" % e, red = True)
 
@@ -595,15 +602,32 @@ class UserInterface:
     def About(self):
             tk.tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
 
-    def addMessage(self, message, red=False):
+    def addMessage(self, message, red=False, verbosity=1):
 
-        try:
-            self.listbox.insert(tk.END, message)
-            if red:
-                 self.listbox.itemconfig(tk.END, {'bg':'red','foreground':"white"})
-            self.listbox.see(tk.END)
-            self.root.update()
-        except:
+        if self.verbosity >= verbosity:
 
-            print "Can't write message: {0}".format(message)
+            try:
+                self.listbox.insert(tk.END, message)
+                if red:
+                     self.listbox.itemconfig(tk.END, {'bg':'red','foreground':"white"})
+                self.listbox.see(tk.END)
+                self.root.update()
+            except:
+    
+                print "Can't write message: {0}".format(message)
             
+    def add_exception(self, exception, custom_message = None):
+
+        if custom_message != None:
+            message = "{0}: {1}".format(custom_message, exception)
+        else:
+            message = "{0}".format(exception)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        if self.verbosity >  1: #print full traceback
+            tb = traceback.extract_tb(exc_tb)
+            tb_list = traceback.format_list(tb)
+            for line in tb_list:
+                self.addMessage(line, red = True)
+        self.addMessage("Exception Type {0} in {1} line {2}.".format(exc_type.__name__, fname, exc_tb.tb_lineno), red = True)
+        self.addMessage(message, red=True)

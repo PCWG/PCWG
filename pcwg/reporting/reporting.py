@@ -111,7 +111,7 @@ class report:
                     #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
                     #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
     
-                if analysis.config.nominalWindSpeedDistribution is not None:
+                if analysis.config.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
                     self.report_aep(sh,analysis)
         
@@ -434,33 +434,35 @@ class report:
             sh.write(row, dataColumn, datasetConfig.pressure)
             row += 1
 
-            if 'ReferenceLocation' in datasetConfig.shearMeasurements.keys() and 'TurbineLocation' in datasetConfig.shearMeasurements.keys():
-                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements['ReferenceLocation'],'Reference Location ')
-                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements['TurbineLocation'],'Turbine Location ')
+            if len(datasetConfig.turbineShearMeasurements) > 0:
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.referenceShearMeasurements,'Reference Location ')
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.turbineShearMeasurements,'Turbine Location ')
             else:
-                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.shearMeasurements)
+                row = self.writeShear(sh,labelColumn,dataColumn,row,datasetConfig.referenceShearMeasurements)
 
             sh.write(row, labelColumn, "Power", self.bold_style)
             sh.write(row, dataColumn, datasetConfig.power)
             row += 2
 
-            sh.write(row, labelColumn, "Profile Levels", self.bold_style)
-            row += 1
-
-            sh.write(row, labelColumn, "Height", self.bold_style)
-            sh.write(row, dataColumn, "Speed", self.bold_style)
-            sh.write(row, dataColumn + 1, "Direction", self.bold_style)
-            row += 1
-
-            for height in sorted(datasetConfig.windSpeedLevels):
-
-                sh.write(row, labelColumn, height)
-                sh.write(row, dataColumn, datasetConfig.windSpeedLevels[height])
-                
-                if height in datasetConfig.windDirectionLevels:
-                    sh.write(row, dataColumn + 1, datasetConfig.windDirectionLevels[height])
-
+            if datasetConfig.rewsDefined:
+                sh.write(row, labelColumn, "Profile Levels", self.bold_style)
                 row += 1
+    
+                sh.write(row, labelColumn, "Height", self.bold_style)
+                sh.write(row, dataColumn, "Speed", self.bold_style)
+                sh.write(row, dataColumn + 1, "Direction", self.bold_style)
+                row += 1            
+            
+                for height in sorted(datasetConfig.data.windSpeedLevels):
+    
+                    sh.write(row, labelColumn, height)
+                    sh.write(row, dataColumn, datasetConfig.data.windSpeedLevels[height])
+                    
+                    if hasattr(datasetConfig.data, 'windDirectionLevels'): # we are not using this in REWS yet
+                        if height in datasetConfig.data.windDirectionLevels:
+                            sh.write(row, dataColumn + 1, datasetConfig.data.windDirectionLevels[height])
+    
+                    row += 1
 
             sh.write(row, labelColumn, "Filters", self.bold_style)
             row += 1
@@ -488,14 +490,15 @@ class report:
 
                 row += 1
 
-    def writeShear(self,sh,labelColumn,dataColumn,row,shearDict,prefix=""):
-        for i, meas in enumerate(shearDict.keys()):
-                sh.write(row, labelColumn, prefix+"Shear Measurement " + str(i+1), self.bold_style)
-                sh.write(row, dataColumn, shearDict[meas])
-                row += 1
-                sh.write(row, labelColumn, prefix+"Shear Measurement {0} Height ".format(i+1), self.bold_style)
-                sh.write(row, dataColumn, str(meas))
-                row += 1
+    def writeShear(self,sh,labelColumn,dataColumn,row,shearList,prefix=""):
+        i=0
+        for sh_meas in shearList:
+            sh.write(row, labelColumn, prefix+"Shear Measurement " + str(i+1), self.bold_style)
+            sh.write(row, dataColumn, sh_meas.height)
+            row += 1
+            sh.write(row, labelColumn, prefix+"Shear Measurement {0} Height ".format(i+1), self.bold_style)
+            sh.write(row, dataColumn, sh_meas.wind_speed_column)
+            row += 1
         return row
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve, analysis):
@@ -539,7 +542,12 @@ class report:
         for windSpeed in powerCurveLevels.index:
             for colname in powerCurveLevels.columns:
                 if colname in styles.keys():
-                    sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], powerCurveLevels[colname][windSpeed], styles[colname])
+                    val = powerCurveLevels[colname][windSpeed]
+                    if type(val) is np.int64:
+                        #xlwt needs numbers to be recognisable as integers or floats; isinstance(np.int64(1), int) returns False. 
+                        #Other numpy types (int32, float64, etc) are recognised as int and float appropriately.
+                        val = int(val)
+                    sh.write(rowOffset + countRow + 1, columnOffset + rowOrders[colname], val, styles[colname])
             countRow += 1
         
         if hasattr(powerCurve, 'zeroTurbulencePowerCurve'):

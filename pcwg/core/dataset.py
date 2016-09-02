@@ -276,11 +276,20 @@ class Dataset:
         self.profileHubWindSpeed = "Profile Hub Wind Speed"
         self.profileHubToRotorRatio = "Hub to Rotor Ratio"
         self.profileHubToRotorDeviation = "Hub to Rotor Deviation"
-        self.residualWindSpeed = "Residual Wind Speed"
-
-        self.hasShear = len(config.shearMeasurements) > 1
+        self.residualWindSpeed = "Residual Wind Speed" 
+        
+        self.hasShear = len(config.referenceShearMeasurements) > 1
+        
         self.hasDirection = config.referenceWindDirection not in (None,'')
-        self.shearCalibration = "TurbineLocation" in config.get_shear_columns() and "ReferenceLocation" in config.get_shear_columns()
+
+        if config.shearCalibrationMethod.lower() == 'none':
+            self.shearCalibration = False
+        else:
+            if config.shearCalibrationMethod.lower() != 'leastsquares':
+                self.shearCalibration = True
+            else:
+                raise Exception("Unkown shear calibration method: {0}".format(config.shearCalibrationMethod))
+        
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
         self.turbRenormActive = analysisConfig.turbRenormActive
         self.turbulencePower = 'Turbulence Power'
@@ -308,12 +317,16 @@ class Dataset:
             dataFrame[self.windDirection] = dataFrame[config.referenceWindDirection]
 
         if self.hasShear:
+            
             if not self.shearCalibration:
-                dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements).shearExponent, axis=1)
+                dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
             else:
-                dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["TurbineLocation"]).shearExponent, axis=1)
-                dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.shearMeasurements["ReferenceLocation"]).shearExponent, axis=1)
-                dataFrame[self.shearExponent] = dataFrame[self.referenceShearExponent]
+
+                dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.turbineShearMeasurements).shearExponent, axis=1)
+                dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
+
+                self.shearCalibrationCalculator = self.createShearCalibration(dataFrame ,config, config.timeStepInSeconds)
+                dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
         
         if self.hasInflowAngle:
             dataFrame[self.inflowAngle] = dataFrame[config.inflowAngle]
@@ -371,11 +384,6 @@ class Dataset:
             else:
                 dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
             self.residualWindSpeedMatrix = None
-
-        if self.shearCalibration and config.shearCalibrationMethod != "Reference":
-            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame,config, config.timeStepInSeconds)
-            dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
-
 
         if config.calculateDensity:
             dataFrame[self.hubDensity] = 100.0 * dataFrame[config.pressure] / (273.15 + dataFrame[config.temperature]) / 287.058
@@ -795,7 +803,9 @@ class Dataset:
             windSpeedLevels[item.height] = item.wind_speed_column
             
         profileLevels = rews.ProfileLevels(rotorGeometry, windSpeedLevels)
-
+        
+        self.windSpeedLevels = windSpeedLevels
+        
         if config.rotorMode == "EvenlySpacedLevels":
             self.rotor = rews.EvenlySpacedRotor(rotorGeometry, config.numberOfRotorLevels)
         elif config.rotorMode == "ProfileLevels":

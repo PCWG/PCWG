@@ -43,6 +43,8 @@ class Preferences(base_configuration.XmlBase):
             self.portfolioLastOpened = ""
             self.powerCurveLastOpened = ""
             self.benchmarkLastOpened = ""
+            self.verbosity = 1
+            self.debug = False
             
     def loadPreferences(self):
 
@@ -57,6 +59,16 @@ class Preferences(base_configuration.XmlBase):
                 self.powerCurveLastOpened = self.getNodeValueIfExists(root, "PowerCurveLastOpened", "")
                 self.benchmarkLastOpened = self.getNodeValueIfExists(root, "BenchmarkLastOpened", "")
                 
+                if self.nodeExists(root, "Verbosity"):
+                    self.verbosity = self.getNodeInt(root, "Verbosity")
+                else:
+                    self.verbosity = 1
+
+                if self.nodeExists(root, "Debug"):
+                    self.debug = self.getNodeBool(root, "Debug")
+                else:
+                    self.debug = False
+                    
                 if self.nodeExists(root, "Recents"):
                     
                     recents = self.getNode(root, "Recents")
