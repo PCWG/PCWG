@@ -3,7 +3,8 @@ import Tkinter as tk
 import tkFont as tkFont
 import ttk as ttk
 
-import exception_type
+from ..exceptions.handling import ExceptionHandler
+
 
 class GridBox(object):
 
@@ -121,22 +122,41 @@ class GridBox(object):
 
     def add_item(self, item):
 
-        values = []
-        values_dict = self.get_item_values(item)
-
-        for header in self.headers:
-            values.append(values_dict[header])
-
-        key = self.tree.insert('', 'end', values=values)
+        values = self.get_tree_values(item)
+        key = self.tree.insert('', 'end', values = values)
 
         self.items_dict[key] = item
+        
+        self.adjust_width(values)
+
+    def redraw_item(self, key):
+        
+        item = self.items_dict[key]
+        
+        values = self.get_tree_values(item)
+        
+        self.tree.item(key, text='', values=values)
+
+        self.adjust_width(values)
+    
+    def adjust_width(self, values):
 
         # adjust column's width if necessary to fit each value
         for ix, val in enumerate(values):
             col_w = tkFont.Font().measure(val)
             if self.tree.column(self.headers[ix],width=None)<col_w:
                 self.tree.column(self.headers[ix], width=col_w)
+                
+    def get_tree_values(self, item):
 
+        values = []
+        values_dict = self.get_item_values(item)
+
+        for header in self.headers:
+            values.append(values_dict[header])
+            
+        return values
+        
     def add_items(self, items):
 
         for item in items:
@@ -203,7 +223,7 @@ class GridBox(object):
         # switch the heading so it will sort in the opposite direction
         tree.heading(col, command=lambda col=col: self.sortby(tree, col, \
             int(not descending)))
-
+    
 class DialogGridBox(GridBox):
 
     def __init__(self, master, parent_dialog, row, column):
@@ -231,8 +251,11 @@ class DialogGridBox(GridBox):
     def edit_item(self, item):                   
                     
         try:
-            self.new_dialog(self.master, self.parent_dialog, self.get_selected())                                
-        except exception_type.EXCEPTION_TYPE as e:
+            key = self.get_selected_key() 
+            item = self.items_dict[key]
+            self.new_dialog(self.master, self.parent_dialog, item)  
+            self.redraw_item(key)                             
+        except ExceptionHandler.ExceptionType as e:
             self.status.addMessage("ERROR editing item: {0}".format(e))
 
     def remove(self):

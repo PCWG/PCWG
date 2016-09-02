@@ -7,6 +7,8 @@ Created on Wed Aug 10 14:27:00 2016
 import Tkinter as tk
 import tkFileDialog
 import ttk
+import tkMessageBox
+
 import os.path
 
 import pandas as pd
@@ -28,9 +30,10 @@ from ..configuration.preferences_configuration import Preferences
 from ..core.dataset import getSeparatorValue
 from ..core.dataset import getDecimalValue
 
-import exception_type
+from ..exceptions.handling import ExceptionHandler
 
 columnSeparator = "|"
+
 
 def encodeRelationshipFilterValuesAsText(relationshipFilter):
         text = ""
@@ -58,7 +61,7 @@ def extractRelationshipFilterFromText(text):
                                 conjunction = subFilt.strip()
             return RelationshipFilter(True,conjunction,clauses)
 
-        except exception_type.EXCEPTION_TYPE as ex:
+        except ExceptionHandler.ExceptionType as ex:
                 raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
 
 
@@ -468,18 +471,31 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
             self.referenceWindDirection = self.addPickerEntry(master, "Reference Wind Direction:", None, self.config.referenceWindDirection, width = 60)
             self.referenceWindDirectionOffset = self.addEntry(master, "Reference Wind Direction Offset:", validation.ValidateFloat(master), self.config.referenceWindDirectionOffset)
 
-        def add_shear(self, master):
+        def add_reference_shear(self, master):
             
-            label = tk.Label(master, text="Shear Heights (Power Law):")
-            label.grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
+            self.shearCalibrationMethod = self.addOption(master, "Shear Calibration Method:", ["None", "LeastSquares"], self.config.shearCalibrationMethod)
             self.row += 1   
 
-            self.shearGridBox = ShearGridBox(master, self, self.row, self.inputColumn)
-            self.shearGridBox.add_items(self.config.shearMeasurements)
+            label = tk.Label(master, text="Reference Shear Heights (Power Law):")
+            label.grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
+            self.row += 1   
+           
+            self.referenceShearGridBox = ShearGridBox(master, self, self.row, self.inputColumn)
+            self.referenceShearGridBox.add_items(self.config.referenceShearMeasurements)
 
-            self.copyToREWSButton = tk.Button(master, text="Copy To REWS", command = self.copyToREWSShearProileLevels, width=12, height=1)
+            self.copyToREWSButton = tk.Button(master, text="Copy To REWS", command = self.copyToREWSShearProfileLevels, width=12, height=1)
             self.copyToREWSButton.grid(row=self.row, sticky=tk.E+tk.N, column=self.buttonColumn)     
 
+
+        def add_turbine_shear(self, master):
+            
+            label = tk.Label(master, text="Turbine Shear Heights (Power Law):")
+            label.grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
+            self.row += 1   
+                        
+            self.turbineShearGridBox = ShearGridBox(master, self, self.row, self.inputColumn)
+            self.turbineShearGridBox.add_items(self.config.turbineShearMeasurements)
+            
         def add_rews(self, master):
                         
             self.addTitleRow(master, "REWS Settings:")
@@ -495,7 +511,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
             self.rewsGridBox = REWSGridBox(master, self, self.row, self.inputColumn)
             self.rewsGridBox.add_items(self.config.rewsProfileLevels)
 
-            self.copyToShearButton = tk.Button(master, text="Copy To Shear", command = self.copyToShearREWSProileLevels, width=12, height=1)
+            self.copyToShearButton = tk.Button(master, text="Copy To Shear", command = self.copyToShearREWSProfileLevels, width=12, height=1)
             self.copyToShearButton.grid(row=self.row, sticky=tk.E+tk.N, column=self.buttonColumn)           
             
         def add_specified_calibration(self, master):
@@ -566,7 +582,8 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 measurements_tab = tk.Frame(nb)
                 power_tab = tk.Frame(nb)
                 reference_tab = tk.Frame(nb)
-                shear_tab = tk.Frame(nb)
+                reference_shear_tab = tk.Frame(nb)
+                turbine_shear_tab = tk.Frame(nb)
                 rews_tab = tk.Frame(nb)
                 calculated_calibration_tab = tk.Frame(nb)
                 specified_calibration_tab = tk.Frame(nb)
@@ -578,7 +595,8 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 nb.add(measurements_tab, text='Measurements', padding=3)
                 nb.add(power_tab, text='Power', padding=3)
                 nb.add(reference_tab, text='Reference', padding=3)
-                nb.add(shear_tab, text='Shear', padding=3)
+                nb.add(reference_shear_tab, text='Reference Shear', padding=3)
+                nb.add(turbine_shear_tab, text='Turbine Shear', padding=3)
                 nb.add(rews_tab, text='REWS', padding=3)
                 nb.add(calculated_calibration_tab, text='Calibration (Calculated)', padding=3)
                 nb.add(specified_calibration_tab, text='Calibration (Specified)', padding=3)
@@ -593,7 +611,8 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.add_measurements(measurements_tab)
                 self.add_power(power_tab)  
                 self.add_reference(reference_tab)
-                self.add_shear(shear_tab) 
+                self.add_reference_shear(reference_shear_tab) 
+                self.add_turbine_shear(turbine_shear_tab) 
                 self.add_rews(rews_tab)                          
                 self.add_calculated_calibration(calculated_calibration_tab)
                 self.add_specified_calibration(specified_calibration_tab)
@@ -710,19 +729,19 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 else:
                         raise Exception("Unknown hub wind speed mode: %s" % self.hubWindSpeedMode.get())
                     
-        def copyToREWSShearProileLevels(self):            
+        def copyToREWSShearProfileLevels(self):            
             
             self.rewsGridBox.remove_all()
 
-            for item in self.shearGridBox.get_items():
+            for item in self.referenceShearGridBox.get_items():
                 self.rewsGridBox.add_item(ShearMeasurement(item.height, item.wind_speed_column))
             
-        def copyToShearREWSProileLevels(self):            
+        def copyToShearREWSProfileLevels(self):            
             
-            self.shearGridBox.remove_all()
+            self.referenceShearGridBox.remove_all()
 
             for item in self.rewsGridBox.get_items():
-                self.shearGridBox.add_item(ShearMeasurement(item.height, item.wind_speed_column))
+                self.referenceShearGridBox.add_item(ShearMeasurement(item.height, item.wind_speed_column))
                 
         def getHeaderRows(self):
 
@@ -735,9 +754,9 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
                 
-                if self.config.input_time_series.absolute_path != None:
+                if self.config.input_time_series.absolute_path == None:
 
-                        tk.tkMessageBox.showwarning(
+                        tkMessageBox.showwarning(
                                 "InputTimeSeriesPath Not Set",
                                 "You must set the InputTimeSeriesPath before using the ColumnPicker"
                                 )
@@ -752,8 +771,8 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                                                 
                         try:
                               self.read_dataset()                              
-                        except exception_type.EXCEPTION_TYPE as e:
-                                tk.tkMessageBox.showwarning(
+                        except ExceptionHandler.ExceptionType as e:
+                                tkMessageBox.showwarning(
                                 "Column header error",
                                 "It was not possible to read column headers using the provided inputs.\rPlease check and amend 'Input Time Series Path' and/or 'Header Rows'.\r"
                                 )
@@ -764,7 +783,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
                 try:                                
                         base_dialog.ColumnPickerDialog(parentDialog, self.status, pick, self.availableColumns, selectedColumn)
-                except exception_type.EXCEPTION_TYPE as e:
+                except ExceptionHandler.ExceptionType as e:
                         self.status.addMessage("ERROR picking column: %s" % e)
         
         def read_dataset(self):
@@ -821,7 +840,9 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.config.rewsProfileLevels = self.rewsGridBox.get_items()
 
                 #shear masurements
-                self.config.shearMeasurements = self.shearGridBox.get_items()
+                self.config.referenceShearMeasurements = self.referenceShearGridBox.get_items()
+                self.config.turbineShearMeasurements = self.turbineShearGridBox.get_items()
+                self.config.shearCalibrationMethod = self.shearCalibrationMethod.get()
 
                 #calibrations
                 self.config.calibrationStartDate = base_dialog.getDateFromEntry(self.calibrationStartDate)
@@ -887,7 +908,7 @@ class DatasetGridBox(GridBox):
         try:
             config = DatasetConfiguration()
             DatasetConfigurationDialog(self.master, self.parent_dialog.status, self.add_from_file_path, config)                                         
-        except exception_type.EXCEPTION_TYPE as e:
+        except ExceptionHandler.ExceptionType as e:
             self.status.addMessage("ERROR creating dataset config: %s" % e)
 
     def add(self):
@@ -902,7 +923,7 @@ class DatasetGridBox(GridBox):
                 preferences = Preferences.get()
                 preferences.datasetLastOpened = path
                 preferences.save()
-        except exception_type.EXCEPTION_TYPE as e:
+        except ExceptionHandler.ExceptionType as e:
             self.addMessage("Cannot save preferences: %s" % e)
         
         dataset = self.datasets_file_manager.append_absolute(path)
@@ -918,7 +939,7 @@ class DatasetGridBox(GridBox):
             datasetConfig = DatasetConfiguration(item.absolute_path)
             DatasetConfigurationDialog(self.master, self.parent_dialog.status, None, datasetConfig, None)  
                                 
-        except exception_type.EXCEPTION_TYPE as e:
+        except ExceptionHandler.ExceptionType as e:
             self.parent_dialog.status.addMessage("ERROR editing: {0}".format(e))
 
     def remove(self):
