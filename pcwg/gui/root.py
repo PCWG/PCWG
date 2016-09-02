@@ -453,12 +453,12 @@ class UserInterface:
                     return
             if not self.analysis.hasActualPower:
                     self.addMessage("No Power Signal in Dataset. Exporting report without power curve results.", red = True)
-                    fileName = tk.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.analysis_last_opened_dir())
+                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.report(fileName, ver.version, report_power_curve = False)
                     self.addMessage("Report written to %s" % fileName)
                     return
             try:
-                    fileName = tk.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.analysis_last_opened_dir())
+                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="report.xls", title="Save Report", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.report(fileName, ver.version)
                     self.addMessage("Report written to %s" % fileName)
             except exception_type.EXCEPTION_TYPE as e:
@@ -543,7 +543,7 @@ class UserInterface:
                     return
             
             try:
-                    fileName = tk.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.analysis_last_opened_dir())
+                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.anonym_report(fileName, ver.version, scatter = scatter, deviationMatrix = deviationMatrix)
                     self.addMessage("Anonymous report written to %s" % fileName)
                     if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
@@ -564,7 +564,7 @@ class UserInterface:
                     selections = ExportDataSetDialog(self.root, None)
                     clean, full, calibration = selections.getSelections()
 
-                    fileName = tk.asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.analysis_last_opened_dir())
+                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.analysis_last_opened_dir())
                     self.analysis.export(fileName, clean, full, calibration)
                     if clean:
                             self.addMessage("Time series written to %s" % fileName)
