@@ -157,7 +157,7 @@ class PcwgShare01:
             return (analysis, True)
         
         except ExceptionHandler.ExceptionType as e:
-            log.addMessage(str(e), red = True)
+            ExceptionHandler.add(e)
             os.remove(temp_path)
             log.addMessage("Analysis failed using Inner Range definition %s." % inner_range_id, red = True)
             return (None, False)
@@ -195,7 +195,7 @@ class PcwgShare01:
                 os.remove(temp_file_name)
             
         except ExceptionHandler.ExceptionType as e:
-            self.log.addMessage("ERROR Exporting Report: %s" % e, red = True)
+            ExceptionHandler.add(e, "Error exporting Report")
          
     def pcwg_data_share_report(self, version, output_fname):
                 

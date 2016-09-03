@@ -256,7 +256,7 @@ class DialogGridBox(GridBox):
             self.new_dialog(self.master, self.parent_dialog, item)  
             self.redraw_item(key)                             
         except ExceptionHandler.ExceptionType as e:
-            self.status.addMessage("ERROR editing item: {0}".format(e))
+            ExceptionHandler.add(e, "ERROR editing item")
 
     def remove(self):
         GridBox.remove(self)

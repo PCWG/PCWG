@@ -46,23 +46,23 @@ def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
     return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
 
 def extractRelationshipFilterFromText(text):
-        try:
-            clauses = []
-            for i, subFilt in enumerate(text.split(base_dialog.filterSeparator)):
-                if i%2 == 0:
-                        items = subFilt.split(base_dialog.columnSeparator)
-                        column = items[0].strip()
-                        value = float(items[1].strip())
-                        filterType = items[2].strip()
-                        inclusive = base_dialog.getBoolFromText(items[3].strip())
-                        clauses.append(Filter(True,column,filterType,inclusive,value))
-                else:
-                        if len(subFilt.strip()) > 1:
-                                conjunction = subFilt.strip()
-            return RelationshipFilter(True,conjunction,clauses)
+    try:
+        clauses = []
+        for i, subFilt in enumerate(text.split(base_dialog.filterSeparator)):
+            if i%2 == 0:
+                items = subFilt.split(base_dialog.columnSeparator)
+                column = items[0].strip()
+                value = float(items[1].strip())
+                filterType = items[2].strip()
+                inclusive = base_dialog.getBoolFromText(items[3].strip())
+                clauses.append(Filter(True,column,filterType,inclusive,value))
+            else:
+                if len(subFilt.strip()) > 1:
+                        conjunction = subFilt.strip()
+        return RelationshipFilter(True,conjunction,clauses)
 
-        except ExceptionHandler.ExceptionType as ex:
-                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
+    except ExceptionHandler.ExceptionType as ex:
+        ExceptionHandler.add(ex, "Cannot parse values from filter text")
 
 
 class FilterDialog(base_dialog.BaseDialog):
@@ -776,7 +776,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                                 "Column header error",
                                 "It was not possible to read column headers using the provided inputs.\rPlease check and amend 'Input Time Series Path' and/or 'Header Rows'.\r"
                                 )
-                                self.status.addMessage("ERROR reading columns from %s: %s" % (inputTimeSeriesPath, e))
+                                ExceptionHandler.add(e, "ERROR reading columns from {0}".format(inputTimeSeriesPath))
 
                         self.columnsFileHeaderRows = headerRows
                         self.availableColumnsFile = inputTimeSeriesPath
@@ -784,7 +784,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 try:                                
                         base_dialog.ColumnPickerDialog(parentDialog, self.status, pick, self.availableColumns, selectedColumn)
                 except ExceptionHandler.ExceptionType as e:
-                        self.status.addMessage("ERROR picking column: %s" % e)
+                    ExceptionHandler.add(e, "Error picking column")
         
         def read_dataset(self):
              print 'reading dataSet'
@@ -909,7 +909,7 @@ class DatasetGridBox(GridBox):
             config = DatasetConfiguration()
             DatasetConfigurationDialog(self.master, self.parent_dialog.status, self.add_from_file_path, config)                                         
         except ExceptionHandler.ExceptionType as e:
-            self.status.addMessage("ERROR creating dataset config: %s" % e)
+            ExceptionHandler.add(e, "ERROR creating dataset config")
 
     def add(self):
 
@@ -920,11 +920,11 @@ class DatasetGridBox(GridBox):
     def add_from_file_path(self, path):
 
         try:    
-                preferences = Preferences.get()
-                preferences.datasetLastOpened = path
-                preferences.save()
+            preferences = Preferences.get()
+            preferences.datasetLastOpened = path
+            preferences.save()
         except ExceptionHandler.ExceptionType as e:
-            self.addMessage("Cannot save preferences: %s" % e)
+            ExceptionHandler.add(e, "Cannot save preferences")
         
         dataset = self.datasets_file_manager.append_absolute(path)
 
@@ -940,7 +940,7 @@ class DatasetGridBox(GridBox):
             DatasetConfigurationDialog(self.master, self.parent_dialog.status, None, datasetConfig, None)  
                                 
         except ExceptionHandler.ExceptionType as e:
-            self.parent_dialog.status.addMessage("ERROR editing: {0}".format(e))
+            ExceptionHandler.add(e, "ERROR editing")
 
     def remove(self):
         selected = self.get_selected()

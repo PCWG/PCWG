@@ -231,7 +231,7 @@ class UserInterface:
                     except IOError:
                         self.addMessage("Couldn't load last analysis: File could not be found.")
                     except ExceptionHandler.ExceptionType as e:
-                        self.addMessage("Couldn't load last analysis: {0}".format(e))
+                        ExceptionHandler.add(e, "Couldn't load last analysis")
                         
             if len(preferences.portfolioLastOpened) > 0:
                     try:
@@ -240,7 +240,7 @@ class UserInterface:
                     except IOError:
                         self.addMessage("Couldn't load last portfolio: File could not be found.")
                     except ExceptionHandler.ExceptionType as e:
-                        self.addMessage("Couldn't load last portfolio: {0}".format(e))
+                        ExceptionHandler.add(e, "Couldn't load last portfolio")
                         
             self.update()
             self.root.mainloop()        
@@ -256,13 +256,13 @@ class UserInterface:
                 try:    
                     updator.download_latest_version()
                 except ExceptionHandler.ExceptionType as e:
-                    self.addMessage("Failed to download latest version: {0}".format(e), red = True)
+                    ExceptionHandler.add(e, "Failed to download latest version")
                     return
 
                 try:
                     updator.start_extractor()
                 except ExceptionHandler.ExceptionType as e:
-                    self.addMessage("Cannot start extractor: {0}".format(e), red = True)
+                    ExceptionHandler.add(e, "Cannot start extractor.")
                     return
                     
                 self.addMessage("Exiting")
@@ -292,7 +292,7 @@ class UserInterface:
                         preferences.benchmarkLastOpened = path
                         preferences.save()
                 except ExceptionHandler.ExceptionType as e:
-                    self.addMessage("Cannot save preferences: %s" % e)
+                    ExceptionHandler.add(e, "Cannot save preferences")
 
                 self.addMessage("Loading benchmark configuration file: %s" % path)                
                 benchmarkConfig = BenchmarkConfiguration(path)
@@ -335,7 +335,7 @@ class UserInterface:
             except ExceptionHandler.ExceptionType as e:
 
                     analysis = None
-                    self.addMessage(str(e))
+                    ExceptionHandler.add(e)
                     benchmarkPassed = False
 
             if analysis != None:
@@ -409,7 +409,7 @@ class UserInterface:
                     preferences.analysisLastOpened = fileName
                     preferences.save()
             except ExceptionHandler.ExceptionType as e:
-                self.addMessage("Cannot save preferences: %s" % e)
+                ExceptionHandler.add(e, "Cannot save preferences")
                 
             self.analysisFilePathTextBox.config(state=tk.NORMAL)
             self.analysisFilePathTextBox.delete(0, tk.END)
@@ -425,7 +425,7 @@ class UserInterface:
                         self.analysisConfiguration = AnalysisConfiguration(fileName)
                         self.addMessage("Analysis config loaded: %s" % fileName)
                     except ExceptionHandler.ExceptionType as e:
-                        self.addMessage("ERROR loading config: %s" % e, red = True)
+                        ExceptionHandler.add(e, "Error loading config")
 
     def LoadPortfolioFromPath(self, fileName):
 
@@ -434,7 +434,7 @@ class UserInterface:
                     preferences.portfolioLastOpened = fileName
                     preferences.save()
             except ExceptionHandler.ExceptionType as e:
-                self.addMessage("Cannot save preferences: %s" % e)
+                ExceptionHandler.add(e, "Cannot save preferences")
                 
             self.portfolioFilePathTextBox.config(state=tk.NORMAL)
             self.portfolioFilePathTextBox.delete(0, tk.END)
@@ -449,7 +449,7 @@ class UserInterface:
                         self.portfolioConfiguration = PortfolioConfiguration(fileName)
                         self.addMessage("Portfolio config loaded: %s" % fileName)
                     except ExceptionHandler.ExceptionType as e:
-                        self.addMessage("ERROR loading config: %s" % e, red = True)
+                        ExceptionHandler.add(e, "Error loading config")
                     
     def ExportReport(self):
 
@@ -479,7 +479,7 @@ class UserInterface:
         try:
             share.PcwgShare01Portfolio(self.portfolioConfiguration, log = self, version = ver.version)
         except ExceptionHandler.ExceptionType as e:
-            self.addMessage(str(e), red = True)
+            ExceptionHandler.add(e)
 
     def PCWG_Share_1_dot_1_Portfolio(self):
         
@@ -489,7 +489,7 @@ class UserInterface:
         try:
             share.PcwgShare01dot1Portfolio(self.portfolioConfiguration, log = self, version = ver.version)
         except ExceptionHandler.ExceptionType as e:
-            self.addMessage(str(e), red = True)
+            ExceptionHandler.add(e)
         
     def new_portfolio(self):
 
@@ -497,7 +497,7 @@ class UserInterface:
             portfolioConfiguration = PortfolioConfiguration()
             portfolio.PortfolioDialog(self.root, base_dialog.WindowStatus(self), self.LoadPortfolioFromPath, portfolioConfiguration)
         except ExceptionHandler.ExceptionType as e:
-            self.addMessage(str(e), red = True)
+            ExceptionHandler.add(e)
 
     def edit_portfolio(self):
         
@@ -524,8 +524,7 @@ class UserInterface:
             self.LoadPortfolioFromPath(portfolio_path)
             
         except ExceptionHandler.ExceptionType as e:
-
-            self.addMessage(str(e), red = True)
+            ExceptionHandler.add(e)
             
     def _is_sufficient_complete_bins(self, analysis):        
         #Todo refine to be fully consistent with PCWG-Share-01 definition document
@@ -533,74 +532,71 @@ class UserInterface:
     
     def ExportAnonymousReport(self):
 
-            preferences = Preferences.get()
-            scatter = True
-            deviationMatrix = True
-            
-            selections = ExportAnonReportPickerDialog(self.root, None)                    
-            scatter, deviationMatrix  = selections.getSelections() 
+        preferences = Preferences.get()
+        scatter = True
+        deviationMatrix = True
+        
+        selections = ExportAnonReportPickerDialog(self.root, None)                    
+        scatter, deviationMatrix  = selections.getSelections() 
 
-            if self.analysis == None:
-                    self.addMessage("ERROR: Analysis not yet calculated", red = True)
-                    return
-            
-            if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
-                    self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
-                    deviationMatrix = False
-                    return
-            
-            try:
-                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.analysis_last_opened_dir())
-                    self.analysis.anonym_report(fileName, ver.version, scatter = scatter, deviationMatrix = deviationMatrix)
-                    self.addMessage("Anonymous report written to %s" % fileName)
-                    if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
-                            self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
-                            self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
-            except ExceptionHandler.ExceptionType as e:
-                    self.addMessage("ERROR Exporting Anonymous Report: %s" % e, red = True)
+        if self.analysis == None:
+            self.addMessage("ERROR: Analysis not yet calculated", red = True)
+            return
+        
+        if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
+            self.addMessage("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
+            deviationMatrix = False
+            return
+        
+        try:
+            fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".xls", initialfile="anonym_report.xls", title="Save Anonymous Report", initialdir=preferences.analysis_last_opened_dir())
+            self.analysis.anonym_report(fileName, ver.version, scatter = scatter, deviationMatrix = deviationMatrix)
+            self.addMessage("Anonymous report written to %s" % fileName)
+            if hasattr(self.analysis,"observedRatedWindSpeed") and  hasattr(self.analysis,"observedRatedPower"):
+                self.addMessage("Wind speeds have been normalised to {ws}".format(ws=self.analysis.observedRatedWindSpeed))
+                self.addMessage("Powers have been normalised to {pow}".format(pow=self.analysis.observedRatedPower))
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "Couldn't load last analysis")
 
     def ExportTimeSeries(self):
 
-            if self.analysis == None:
-                    self.addMessage("ERROR: Analysis not yet calculated", red = True)
-                    return
+        if self.analysis == None:
+            self.addMessage("ERROR: Analysis not yet calculated", red = True)
+            return
 
-            try:
-                
-                    preferences = Preferences.get()
-                    selections = ExportDataSetDialog(self.root, None)
-                    clean, full, calibration = selections.getSelections()
+        try:
+            
+            preferences = Preferences.get()
+            selections = ExportDataSetDialog(self.root, None)
+            clean, full, calibration = selections.getSelections()
 
-                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.analysis_last_opened_dir())
-                    self.analysis.export(fileName, clean, full, calibration)
-                    if clean:
-                            self.addMessage("Time series written to %s" % fileName)
-                    if any((full, calibration)):
-                            self.addMessage("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+            fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.analysis_last_opened_dir())
+            self.analysis.export(fileName, clean, full, calibration)
+            if clean:
+                self.addMessage("Time series written to %s" % fileName)
+            if any((full, calibration)):
+                self.addMessage("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
 
-            except ExceptionHandler.ExceptionType as e:
-                    self.addMessage("ERROR Exporting Time Series: %s" % e, red = True)
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "Error exporting Time Series")
 
     def Calculate(self):
 
-            if self.analysisConfiguration == None:
-                    self.addMessage("ERROR: Analysis Config file not specified", red = True)
-                    return
+        if self.analysisConfiguration == None:
+            self.addMessage("ERROR: Analysis Config file not specified", red = True)
+            return
 
-            try:
-        
-                    self.analysis = core_analysis.Analysis(self.analysisConfiguration, base_dialog.WindowStatus(self))
-
-            except ExceptionHandler.ExceptionType as e:
-                    
-                    self.addMessage("ERROR Calculating Analysis: %s" % e, red = True)
+        try:
+            self.analysis = core_analysis.Analysis(self.analysisConfiguration, base_dialog.WindowStatus(self))
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "Error calculating Analysis")
 
     def ClearConsole(self):
-            self.listbox.delete(0, tk.END)
-            self.root.update()
+        self.listbox.delete(0, tk.END)
+        self.root.update()
 
     def About(self):
-            tk.tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
+        tk.tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
 
     def addMessage(self, message, red=False, verbosity=1):
 
