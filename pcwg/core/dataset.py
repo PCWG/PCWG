@@ -9,8 +9,9 @@ import binning
 import turbine
 import warnings
 
-warnings.simplefilter('ignore', np.RankWarning)
+from ..core.status import Status
 
+warnings.simplefilter('ignore', np.RankWarning)
 
 def getSeparatorValue(separator):
     try:
@@ -127,7 +128,6 @@ class York(CalibrationBase):
         covarianceXY = self.covariance(df, self.x, self.y)
         varianceX = self.variance(df, self.x)
 
-        print covarianceXY,varianceX,xYorkVariance
         return math.atan2(covarianceXY ** 2.0 / varianceX ** 2.0 * xYorkVariance, yYorkVariance)
 
 class RatioOfMeans(CalibrationBase):
@@ -195,7 +195,7 @@ class SiteCalibrationCalculator:
             self.calibrationSectorDataframe['LowerLimit'] = np.maximum(self.calibrationSectorDataframe['LowerLimitPrevious'], self.calibrationSectorDataframe['LowerLimitNext'])
             self.calibrationSectorDataframe['UpperLimit'] = np.minimum(self.calibrationSectorDataframe['UpperLimitPrevious'], self.calibrationSectorDataframe['UpperLimitNext'])
             self.calibrationSectorDataframe['IECValid'] = np.logical_and(self.calibrationSectorDataframe['pctSpeedUp'] >  self.calibrationSectorDataframe['LowerLimit'], self.calibrationSectorDataframe['pctSpeedUp'] <  self.calibrationSectorDataframe['UpperLimit'])
-            print self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']]
+            Status.add(self.calibrationSectorDataframe[['pctSpeedUp','LowerLimit','UpperLimit','IECValid']], verbosity=2)
         return True
     
     def getTotalHoursValidity(self, key, timeStep):
@@ -223,16 +223,20 @@ class ShearExponentCalculator:
     def calculateMultiPointShear(self, row):
 
         if len(self.shearMeasurements) < 1:
-            raise Exception("No shear heights have been")
+            raise Exception("No shear heights have been defined")
 
         # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
         windspeeds = np.array([np.log(row[item.wind_speed_column]) for item in self.shearMeasurements])
         heights = np.array([np.log(item.height) for item in self.shearMeasurements])
+        
         deg = 1 # linear
+        
         if len(windspeeds[~np.isnan(windspeeds)]) < 2:
             return np.nan
+
         polyfitResult = np.polyfit(windspeeds[~np.isnan(windspeeds)], heights[~np.isnan(windspeeds)], deg, rcond=None, full=False)
-        shearThreePT = 1/ polyfitResult[0]
+        shearThreePT = 1.0 / polyfitResult[0]
+        
         return shearThreePT
 
     def calculateTwoPointShear(self,row):
@@ -317,7 +321,13 @@ class Dataset:
             dataFrame[self.windDirection] = dataFrame[config.referenceWindDirection]
 
         if self.hasShear:
-            
+
+            for measurement in config.referenceShearMeasurements:
+                self.verify_column_datatype(dataFrame, measurement.wind_speed_column)
+
+            for measurement in config.turbineShearMeasurements:
+                self.verify_column_datatype(dataFrame, measurement.wind_speed_column)
+
             if not self.shearCalibration:
                 dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
             else:
@@ -335,7 +345,10 @@ class Dataset:
 
         if config.calculateHubWindSpeed:
 
+            self.verify_column_datatype(dataFrame, config.referenceWindSpeed)
+
             dataFrame[self.referenceWindSpeed] = dataFrame[config.referenceWindSpeed]
+
             if config.turbineLocationWindSpeed not in ('', None):
                 dataFrame[self.turbineLocationWindSpeed] = dataFrame[config.turbineLocationWindSpeed]
             
@@ -378,6 +391,8 @@ class Dataset:
 
         else:
 
+            self.verify_column_datatype(dataFrame, config.hubWindSpeed)
+
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
             if (config.hubTurbulence != ''):
                 dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
@@ -417,6 +432,13 @@ class Dataset:
         if self.windDirection in self.dataFrame.columns:
             self.fullDataFrame[self.windDirection] = self.fullDataFrame[self.windDirection].astype(float)
             self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
+
+    def verify_column_datatype(self, data_frame, column):
+
+        data_type = data_frame[column].dtype
+
+        if(data_type == np.object):
+              raise Exception("Unexpected data type '{0}' in 'column': {1}. Hint: check colmn mappings and Decimal setting (full stop or comma?) in dataset.".format(data_type.name, column))
 
     def createShearCalibration(self, dataFrame, config, timeStepInSeconds):
         df = dataFrame.copy()
@@ -467,13 +489,13 @@ class Dataset:
                 calibrationActives[item.direction] = item.active
                 
             if all([dir in calibrationSlopes.keys() for dir in calibrationActives.keys()]):
-                print "Applying Specified calibration"
-                print "Direction\tSlope\tOffset\tApplicable Datapoints"
+                Status.add("Applying Specified calibration", verbosity=2)
+                Status.add("Direction\tSlope\tOffset\tApplicable Datapoints", verbosity=2)
                 for direction in calibrationSlopes:
                     if calibrationActives[direction]:
                         mask = (dataFrame[self.referenceDirectionBin] == direction)
                         dataCount = dataFrame[mask][self.referenceDirectionBin].count()
-                        print "%0.2f\t%0.2f\t%0.2f\t%d" % (direction, calibrationSlopes[direction], calibrationOffsets[direction], dataCount)
+                        Status.add("%0.2f\t%0.2f\t%0.2f\t%d" % (direction, calibrationSlopes[direction], calibrationOffsets[direction], dataCount), verbosity=2)
                 df = pd.DataFrame([calibrationSlopes, calibrationOffsets], index=['Slope','Offset']).T
                 return SiteCalibrationCalculator( self.referenceDirectionBin, config.referenceWindSpeed,df, actives = calibrationActives)
             else:
@@ -507,7 +529,7 @@ class Dataset:
         dirs = df[self.referenceDirectionBin].dropna().unique()
         dirs.sort()
         for dir_bin in dirs:
-            print "Checking convergence of %s deg sector" % dir_bin
+            Status.add("Checking convergence of %s deg sector" % dir_bin, verbosity=2)
             sect_df = df[df[self.referenceDirectionBin] == dir_bin].reset_index().loc[:, [self.referenceWindSpeed, self.turbineLocationWindSpeed]]
             sect_df['vRatio'] = sect_df[self.turbineLocationWindSpeed] / sect_df[self.referenceWindSpeed]
             sect_df = sect_df[~np.isnan(sect_df['vRatio'])].reset_index()
@@ -573,9 +595,9 @@ class Dataset:
                     belowAbove[directionBinCenter] = (sectorDataFrame[sectorDataFrame[valueColumn] <= 8.0][valueColumn].count(),sectorDataFrame[sectorDataFrame[valueColumn] > 8.0][valueColumn].count())
                 
         calibrationSectorDataframe = pd.DataFrame([slopes,intercepts,counts, sigA, sigB, cov, corr, vRatio], ["Slope","Offset","Count","SigA","SigB","Cov","Corr","vRatio"] ).T
+        
         if len(belowAbove.keys()):
             calibrationSectorDataframe['belowAbove'] = pd.Series(belowAbove)
-        print calibrationSectorDataframe
 
         return SiteCalibrationCalculator(self.referenceDirectionBin, valueColumn, calibrationSectorDataframe)
 
@@ -586,7 +608,7 @@ class Dataset:
     def excludeData(self, dataFrame, config):
 
         mask = pd.Series([True]*len(dataFrame),index=dataFrame.index)
-        print "Data set length prior to exclusions: {0}".format(len(mask[mask]))
+        Status.add("Data set length prior to exclusions: {0}".format(len(mask[mask])), verbosity=2)
 
         for exclusion in config.exclusions:
 
@@ -597,9 +619,10 @@ class Dataset:
             if active:
                 subMask = (dataFrame[self.timeStamp] >= startDate) & (dataFrame[self.timeStamp] <= endDate)
                 mask = mask & ~subMask
-                print "Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion.startDate.strftime("%Y-%m-%d %H:%M"),exclusion.endDate.strftime("%Y-%m-%d %H:%M"),len(mask[mask]))
+                Status.add("Applied exclusion: {0} to {1}\n\t- data set length: {2}".format(exclusion.startDate.strftime("%Y-%m-%d %H:%M"),exclusion.endDate.strftime("%Y-%m-%d %H:%M"),len(mask[mask])), verbosity=2)
 
-        print "Data set length after exclusions: {0}".format(len(mask[mask]))
+        Status.add("Data set length after exclusions: {0}".format(len(mask[mask])), verbosity=2)
+
         return dataFrame[mask]
 
     def extractColumns(self, dataFrame):
@@ -654,8 +677,7 @@ class Dataset:
 
         else:
 
-            print "Number of null columns:"
-            print dataFrame[requiredCols].isnull().sum()
+            Status.add("Number of null columns: {0}".format(dataFrame[requiredCols].isnull().sum()))
 
             text = "One of the required columns is empty.\n"
 
@@ -672,21 +694,28 @@ class Dataset:
             d['Derived'] *= ((df[col[0]]*float(col[1]))+float(col[2]))**float(col[3])
         return d['Derived']
 
-    def applyToDFilter(self,mask,componentFilter,dataFrame,printMsg=True):
+    def applyToDFilter(self,mask,componentFilter,dataFrame):
+
         startTime = (dataFrame.index - datetime.timedelta(seconds=self.timeStepInSeconds))
-        endTime =  dataFrame.index # explicit assumption is that we're using end format data.
+        endTime =  dataFrame.index
+
+        # explicit assumption is that we're using end format data.
         dayMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.isoweekday() in d else False, args=[componentFilter.daysOfTheWeek] )
         todMask = np.logical_and( startTime.time >= componentFilter.startTime.time(),
                                   endTime.time   <= componentFilter.endTime.time() )
+
         if len(componentFilter.months) > 0:
             monthMask = dataFrame[self.timeStamp].apply(lambda x,d : True if x.month in d else False, args=[componentFilter.months] )
             dayMask = dayMask & monthMask
         totalMask = dayMask & todMask
         mask = mask | totalMask
-        if printMsg: print "Applied filter:", str(componentFilter)
+
+        Status.add("Applied filter: {0}".format(componentFilter), verbosity=2)
+
         return mask.copy()
 
-    def applySimpleFilter(self,mask,componentFilter,dataFrame,printMsg=True):
+    def applySimpleFilter(self,mask,componentFilter,dataFrame):
+
         filterColumn = componentFilter.column
         filterType = componentFilter.filterType
         filterInclusive = componentFilter.inclusive
@@ -695,7 +724,6 @@ class Dataset:
             filterValue = componentFilter.value
         else:
             filterValue = self.createDerivedColumn(dataFrame,componentFilter.value)
-        #print (filterColumn, filterType, filterInclusive, filterValue)
 
         if filterType.lower() == "below":
              mask = self.addFilterBelow(dataFrame, mask, filterColumn, filterValue, filterInclusive)
@@ -709,9 +737,12 @@ class Dataset:
 
         else:
             raise Exception("Filter type not recognised: %s" % filterType)
-        if printMsg:
-            print "Applied Filter:{col}-{typ}-{val}\n\tData set length:{leng}".format(
+
+        message = "Applied Filter:{col}-{typ}-{val}\n\tData set length:{leng}".format(
                                 col=filterColumn,typ=filterType,val="Derived Column" if type(filterValue) == pd.Series else filterValue,leng=len(mask[~mask]))
+        
+        Status.add(message, verbosity=2)
+
         return mask.copy()
 
     def applyRelationshipFilter(self, mask, componentFilter, dataFrame):
@@ -730,7 +761,7 @@ class Dataset:
             raise Exception("Number of clauses in a relationship must be > 1")
 
         for filter in componentFilter.clauses:
-            filterMask = self.applySimpleFilter(newMask,filter,dataFrame,printMsg=False)
+            filterMask = self.applySimpleFilter(newMask,filter,dataFrame)
             masks.append(filterMask)
 
         baseMask = masks[0]
@@ -738,7 +769,8 @@ class Dataset:
             baseMask = filterConjuction(baseMask,filterMask) # only if commutative (e.g. AND / OR)
 
         mask = np.logical_or(mask,baseMask)
-        print "Applied Relationship (AND/OR) Filter:\n\tData set length:{leng}".format(leng=len(mask[~mask]))
+        Status.add("Applied Relationship (AND/OR) Filter:\n\tData set length:{leng}".format(leng=len(mask[~mask])), verbosity=2)
+
         return mask.copy()
 
 
@@ -746,38 +778,42 @@ class Dataset:
 
         if len(filters) < 1: return dataFrame
 
-        print ""
-        print "Filter Details"
-        print "Derived\tColumn\tFilterType\tInclusive\tValue"
+        Status.add("", verbosity=2)
+        Status.add("Filter Details", verbosity=2)
+        Status.add("Derived\tColumn\tFilterType\tInclusive\tValue", verbosity=2)
 
         for componentFilter in filters:
             if componentFilter.active:
                 componentFilter.printSummary()
 
-        print ""
+        Status.add("", verbosity=2)
 
         mask = pd.Series([False]*len(dataFrame),index=dataFrame.index)
 
-        print "Data set length prior to filtering: {0}".format(len(mask[~mask]))
-        print ""
+        Status.add("Data set length prior to filtering: {0}".format(len(mask[~mask])), verbosity=2)
+        Status.add("", verbosity=2)
 
         for componentFilter in filters:
 
             if componentFilter.active:
                 if not componentFilter.applied:
                     try:
+                        
                         if hasattr(componentFilter,"startTime"):
                             mask = self.applyToDFilter(mask,componentFilter,dataFrame)
                         elif hasattr(componentFilter, "clauses"):
                             mask = self.applyRelationshipFilter(mask, componentFilter, dataFrame)
                         else:
                             mask = self.applySimpleFilter(mask,componentFilter,dataFrame)
-                        print dataFrame[~mask][self.timeStamp].min() , " to " , dataFrame[~mask][self.timeStamp].max()
+                        
+                        Status.add("{0} to {1}".format(dataFrame[~mask][self.timeStamp].min(), dataFrame[~mask][self.timeStamp].max()))
                         componentFilter.applied = True
+
                     except:
+
                         componentFilter.applied = False
 
-        print ""
+        Status.add("", verbosity=2)
 
         return dataFrame[~mask]
 

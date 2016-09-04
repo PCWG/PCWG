@@ -17,6 +17,9 @@ from ..configuration.preferences_configuration import Preferences
 
 import validation
 
+from ..exceptions.handling import ExceptionHandler
+from ..core.status import Status
+
 columnSeparator = "|"
 filterSeparator = "#"
 
@@ -54,14 +57,6 @@ def floatSafe(text, valueIfBlank = 0.):
         return float(text)
     except:
         return valueIfBlank
-        
-class WindowStatus:
-    def __nonzero__(self):
-        return True
-    def __init__(self, gui):
-        self.gui = gui
-    def addMessage(self, message):
-        self.gui.addMessage(message)
 
 class VariableEntry:
 
@@ -134,9 +129,7 @@ class ClearEntry:
                 
 class BaseDialog(tkSimpleDialog.Dialog):
 
-        def __init__(self, master, status):
-
-                self.status = status
+        def __init__(self, master):
 
                 self.titleColumn = 0
                 self.labelColumn = 1
@@ -361,13 +354,13 @@ class ColumnPicker:
 
 class DateFormatPickerDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, availableFormats, selectedFormat):
+        def __init__(self, master, callback, availableFormats, selectedFormat):
 
                 self.callback = callback
                 self.availableFormats = availableFormats
                 self.selectedFormat = selectedFormat
                 
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master)
                         
         def body(self, master):
 
@@ -390,9 +383,9 @@ class DateFormatPicker:
         def __call__(self):
                         
                 try:                                
-                        DateFormatPickerDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableFormats, self.entry.get())
+                        DateFormatPickerDialog(self.parentDialog, self.pick, self.availableFormats, self.entry.get())
                 except Exception as e:
-                        self.status.addMessage("ERROR picking dateFormat: %s" % e)
+                        ExceptionHandler.add(e, "ERROR picking dateFormat")
 
         def pick(self, column):
                 
@@ -402,13 +395,13 @@ class DateFormatPicker:
                         
 class ColumnSeparatorDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, availableSeparators, selectedSeparator):
+        def __init__(self, master, callback, availableSeparators, selectedSeparator):
 
                 self.callback = callback
                 self.availableSeparators = availableSeparators
                 self.selectedSeparator = selectedSeparator
                 
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master)
                         
         def body(self, master):
 
@@ -431,9 +424,9 @@ class ColumnSeparatorPicker:
         def __call__(self):
                         
                 try:                                
-                        ColumnSeparatorDialog(self.parentDialog, self.parentDialog.status, self.pick, self.availableSeparators, self.entry.get())
+                        ColumnSeparatorDialog(self.parentDialog, self.pick, self.availableSeparators, self.entry.get())
                 except Exception as e:
-                        self.status.addMessage("ERROR picking separator: %s" % e)
+                        ExceptionHandler.add(e, "ERROR picking separator")
 
         def pick(self, column):
                 
@@ -442,13 +435,13 @@ class ColumnSeparatorPicker:
 
 class ColumnPickerDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, availableColumns, column):
+        def __init__(self, master, callback, availableColumns, column):
 
                 self.callback = callback
                 self.availableColumns = availableColumns
                 self.column = column
                 
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master)
                         
         def body(self, master):
 
@@ -476,7 +469,7 @@ class DatePicker:
                 else:
                         date = None
 
-                DatePickerDialog(self.parentDialog, self.parentDialog.status, self.pick, date, self.dateFormat)
+                DatePickerDialog(self.parentDialog, self.pick, date, self.dateFormat)
 
         def pick(self, date):
                 
@@ -484,13 +477,13 @@ class DatePicker:
 
 class DatePickerDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, date, dateFormat):
+        def __init__(self, master, callback, date, dateFormat):
 
                 self.callback = callback
                 self.date = date
                 self.dateFormat = dateFormat
                 
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master)
 
         def validate(self):
                 valid = False
@@ -591,7 +584,7 @@ class ParseClipBoard:
             
 class BaseConfigurationDialog(BaseDialog):
 
-        def __init__(self, master, status, callback, config, index = None):
+        def __init__(self, master, callback, config, index = None):
 
                 self.index = index
                 self.callback = callback
@@ -606,7 +599,7 @@ class BaseConfigurationDialog(BaseDialog):
                 else:
                         self.originalPath = None
    
-                BaseDialog.__init__(self, master, status)
+                BaseDialog.__init__(self, master)
                 
         def body(self, master):
 
@@ -677,9 +670,9 @@ class BaseConfigurationDialog(BaseDialog):
                 self.isSaved = True
 
                 if self.isNew:
-                        self.status.addMessage("Config created")
+                        Status.add("Config created")
                 else:
-                        self.status.addMessage("Config updated")
+                        Status.add("Config updated")
 
                 if self.callback != None:
                     if self.index == None:

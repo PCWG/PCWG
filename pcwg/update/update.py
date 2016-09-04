@@ -11,12 +11,9 @@ import urllib
 import subprocess
 import os.path
 import zipfile
+from ..core.status import Status
+import version as ver
 
-class Log:
-        
-    def addMessage(self, text):
-        print text
-        
 class Version:
     
     def __init__(self, tag):
@@ -80,17 +77,15 @@ class Updator:
     extractor_path = "extractor.exe"
     update_zip = "update.zip"
     
-    def __init__(self, current_version, log = Log()):
-        
-        self.log = log
-        
-        self.current_version = Version(current_version)
+    def __init__(self):
+
+        self.current_version = Version(ver.version)
         self.latest_version = self.get_lastest_version()
         self.is_update_available = self.latest_version.isNewerThan(self.current_version) 
 
-        log.addMessage("Current Version: {0}".format(self.current_version))
-        log.addMessage("Latest Version: {0}".format(self.latest_version))
-        log.addMessage("Update available: {0}".format(self.is_update_available))
+        Status.add("Current Version: {0}".format(self.current_version))
+        Status.add("Latest Version: {0}".format(self.latest_version))
+        Status.add("Update available: {0}".format(self.is_update_available))
         
         self.version_downloaded = False
         
@@ -105,7 +100,7 @@ class Updator:
             if Updator.extractor_path in z.namelist():
                 self.extract_file(z, "pcwg_tool/{0}".format(Updator.extractor_path), Updator.extractor_path)
             else:
-                self.log.addMessage("Cannot update extractor: {0} not found".format(Updator.extractor_path), red = True)
+                Status.add("Cannot update extractor: {0} not found".format(Updator.extractor_path), red = True)
                             
         self.version_downloaded = True
         
@@ -122,7 +117,7 @@ class Updator:
         if not os.path.isfile(Updator.extractor_path):
             raise Exception("{0} not found".format(Updator.extractor_path))
             
-        self.log.addMessage("Starting extractor")
+        Status.add("Starting extractor")
 
         subprocess.Popen([Updator.extractor_path])
 
@@ -139,14 +134,15 @@ class Updator:
             
         except Exception as e:
     
-            self.log.addMessage("Cannot determine latest version: {0}".format(e))
+            Status.add("Cannot determine latest version: {0}".format(e))
+
             return Version(None)
             
     def download_version(self, version):
         
         try:    
             
-            self.log.addMessage("Downloading latest version")
+            Status.add("Downloading latest version")
             
             zip_file = "pcwg_tool-{0}.zip".format(version.version)
             url = "https://github.com/peterdougstuart/PCWG/releases/download/{0}/{1}".format(version.tag, zip_file)
@@ -154,8 +150,8 @@ class Updator:
             
             urllib.urlretrieve (url, Updator.update_zip)
                 
-            self.log.addMessage("Download complete")
+            Status.add("Download complete")
             
         except Exception as e:
     
-            self.log.addMessage("Cannot download latest version: {0}".format(e))
+            Status.add("Cannot download latest version: {0}".format(e))

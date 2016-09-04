@@ -31,9 +31,9 @@ from ..core.dataset import getSeparatorValue
 from ..core.dataset import getDecimalValue
 
 from ..exceptions.handling import ExceptionHandler
+from ..core.status import Status
 
 columnSeparator = "|"
-
 
 def encodeRelationshipFilterValuesAsText(relationshipFilter):
         text = ""
@@ -46,23 +46,23 @@ def encodeFilterValuesAsText(column, value, filterType, inclusive, active):
     return "{column}{sep}{value}{sep}{FilterType}{sep}{inclusive}{sep}{active}".format(column = column, sep = columnSeparator,value = value, FilterType = filterType, inclusive =inclusive, active = active)
 
 def extractRelationshipFilterFromText(text):
-        try:
-            clauses = []
-            for i, subFilt in enumerate(text.split(base_dialog.filterSeparator)):
-                if i%2 == 0:
-                        items = subFilt.split(base_dialog.columnSeparator)
-                        column = items[0].strip()
-                        value = float(items[1].strip())
-                        filterType = items[2].strip()
-                        inclusive = base_dialog.getBoolFromText(items[3].strip())
-                        clauses.append(Filter(True,column,filterType,inclusive,value))
-                else:
-                        if len(subFilt.strip()) > 1:
-                                conjunction = subFilt.strip()
-            return RelationshipFilter(True,conjunction,clauses)
+    try:
+        clauses = []
+        for i, subFilt in enumerate(text.split(base_dialog.filterSeparator)):
+            if i%2 == 0:
+                items = subFilt.split(base_dialog.columnSeparator)
+                column = items[0].strip()
+                value = float(items[1].strip())
+                filterType = items[2].strip()
+                inclusive = base_dialog.getBoolFromText(items[3].strip())
+                clauses.append(Filter(True,column,filterType,inclusive,value))
+            else:
+                if len(subFilt.strip()) > 1:
+                        conjunction = subFilt.strip()
+        return RelationshipFilter(True,conjunction,clauses)
 
-        except ExceptionHandler.ExceptionType as ex:
-                raise Exception("Cannot parse values from filter text: %s (%s)" % (text, ex.message))
+    except ExceptionHandler.ExceptionType as ex:
+        ExceptionHandler.add(ex, "Cannot parse values from filter text")
 
 
 class FilterDialog(base_dialog.BaseDialog):
@@ -77,7 +77,7 @@ class FilterDialog(base_dialog.BaseDialog):
                 else:
                     self.item = item
 
-                base_dialog.BaseDialog.__init__(self, master, parent_dialog.status)
+                base_dialog.BaseDialog.__init__(self, master)
 
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
                 return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)
@@ -122,9 +122,9 @@ class FilterDialog(base_dialog.BaseDialog):
                 self.item.filterType = self.filterType.get()
 
                 if self.isNew:
-                        self.status.addMessage("Filter created")
+                        Status.add("Filter created")
                 else:
-                        self.status.addMessage("Filter updated")
+                        Status.add("Filter updated")
 
 class ExclusionDialog(base_dialog.BaseDialog):
 
@@ -137,7 +137,7 @@ class ExclusionDialog(base_dialog.BaseDialog):
                 else:
                     self.item = item
                 
-                base_dialog.BaseDialog.__init__(self, master, parent_dialog.status)
+                base_dialog.BaseDialog.__init__(self, master)
                         
         def body(self, master):
 
@@ -172,9 +172,9 @@ class ExclusionDialog(base_dialog.BaseDialog):
                 self.item.endDate = pd.to_datetime(self.endDate.get().strip(), dayfirst =True)
 
                 if self.isNew:
-                        self.status.addMessage("Exclusion created")
+                        Status.add("Exclusion created")
                 else:
-                        self.status.addMessage("Exclusion updated")
+                        Status.add("Exclusion updated")
                         
 class CalibrationDirectionDialog(base_dialog.BaseDialog):
 
@@ -187,7 +187,7 @@ class CalibrationDirectionDialog(base_dialog.BaseDialog):
                 else:
                     self.item = item
 
-                base_dialog.BaseDialog.__init__(self, master, parent_dialog.status)
+                base_dialog.BaseDialog.__init__(self, master)
                         
         def body(self, master):
 
@@ -219,9 +219,9 @@ class CalibrationDirectionDialog(base_dialog.BaseDialog):
                 self.item.offset = float(self.offset.get().strip())
 
                 if self.isNew:
-                        self.status.addMessage("Calibration direction created")
+                        Status.add("Calibration direction created")
                 else:
-                        self.status.addMessage("Calibration direction updated")
+                        Status.add("Calibration direction updated")
 
 class ShearMeasurementDialog(base_dialog.BaseDialog):
     
@@ -235,7 +235,7 @@ class ShearMeasurementDialog(base_dialog.BaseDialog):
                 else:
                     self.item = item
 
-                base_dialog.BaseDialog.__init__(self, master, parent_dialog.status)
+                base_dialog.BaseDialog.__init__(self, master)
         
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
                 return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)        
@@ -258,9 +258,9 @@ class ShearMeasurementDialog(base_dialog.BaseDialog):
                 self.item.wind_speed_column = self.windSpeed.get().strip()
 
                 if self.isNew:
-                        self.status.addMessage("Shear measurement created")
+                        Status.add("Shear measurement created")
                 else:
-                        self.status.addMessage("Shear measurement updated")
+                        Status.add("Shear measurement updated")
 
 class REWSProfileLevelDialog(base_dialog.BaseDialog):
 
@@ -274,7 +274,7 @@ class REWSProfileLevelDialog(base_dialog.BaseDialog):
             else:
                 self.item = item
 
-            base_dialog.BaseDialog.__init__(self, master, parent_dialog.status)
+            base_dialog.BaseDialog.__init__(self, master)
 
         def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
                 return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)
@@ -298,9 +298,9 @@ class REWSProfileLevelDialog(base_dialog.BaseDialog):
                 self.item.wind_direction_column = self.windDirection.get().strip()
 
                 if self.isNew:
-                        self.status.addMessage("Rotor level created")
+                        Status.add("Rotor level created")
                 else:
-                        self.status.addMessage("Rotor level updated")
+                        Status.add("Rotor level updated")
 
 class ExclusionsGridBox(DialogGridBox):
 
@@ -776,15 +776,16 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                                 "Column header error",
                                 "It was not possible to read column headers using the provided inputs.\rPlease check and amend 'Input Time Series Path' and/or 'Header Rows'.\r"
                                 )
-                                self.status.addMessage("ERROR reading columns from %s: %s" % (inputTimeSeriesPath, e))
+
+                                ExceptionHandler.add(e, "ERROR reading columns from {0}".format(inputTimeSeriesPath))
 
                         self.columnsFileHeaderRows = headerRows
                         self.availableColumnsFile = inputTimeSeriesPath
 
                 try:                                
-                        base_dialog.ColumnPickerDialog(parentDialog, self.status, pick, self.availableColumns, selectedColumn)
+                        base_dialog.ColumnPickerDialog(parentDialog, pick, self.availableColumns, selectedColumn)
                 except ExceptionHandler.ExceptionType as e:
-                        self.status.addMessage("ERROR picking column: %s" % e)
+                    ExceptionHandler.add(e, "Error picking column")
         
         def read_dataset(self):
              print 'reading dataSet'
@@ -907,9 +908,9 @@ class DatasetGridBox(GridBox):
 
         try:
             config = DatasetConfiguration()
-            DatasetConfigurationDialog(self.master, self.parent_dialog.status, self.add_from_file_path, config)                                         
+            DatasetConfigurationDialog(self.master, self.add_from_file_path, config)                                         
         except ExceptionHandler.ExceptionType as e:
-            self.status.addMessage("ERROR creating dataset config: %s" % e)
+            ExceptionHandler.add(e, "ERROR creating dataset config")
 
     def add(self):
 
@@ -920,11 +921,11 @@ class DatasetGridBox(GridBox):
     def add_from_file_path(self, path):
 
         try:    
-                preferences = Preferences.get()
-                preferences.datasetLastOpened = path
-                preferences.save()
+            preferences = Preferences.get()
+            preferences.datasetLastOpened = path
+            preferences.save()
         except ExceptionHandler.ExceptionType as e:
-            self.addMessage("Cannot save preferences: %s" % e)
+            ExceptionHandler.add(e, "Cannot save preferences")
         
         dataset = self.datasets_file_manager.append_absolute(path)
 
@@ -937,10 +938,11 @@ class DatasetGridBox(GridBox):
         try:
                 
             datasetConfig = DatasetConfiguration(item.absolute_path)
-            DatasetConfigurationDialog(self.master, self.parent_dialog.status, None, datasetConfig, None)  
+            DatasetConfigurationDialog(self.master, None, datasetConfig, None)  
                                 
         except ExceptionHandler.ExceptionType as e:
-            self.parent_dialog.status.addMessage("ERROR editing: {0}".format(e))
+
+            ExceptionHandler.add(e, "ERROR editing")
 
     def remove(self):
         selected = self.get_selected()

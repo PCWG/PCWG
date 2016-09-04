@@ -12,6 +12,7 @@ from dataset import DeviationMatrix
 import binning
 import turbine
 from ..reporting import reporting
+from ..core.status import Status
 
 def chckMake(path):
     """Make a folder if it doesn't exist"""
@@ -22,14 +23,6 @@ def hash_file_contents(file_path):
     with open(file_path, 'r') as f:
         uid = hashlib.sha1(''.join(f.read().split())).hexdigest()
     return uid
-
-class NullStatus:
-    def __nonzero__(self):
-        return False
-
-    def addMessage(self, message):
-        pass
-
 
 class DensityCorrectionCalculator:
 
@@ -84,14 +77,9 @@ class PowerDeviationMatrixPowerCalculator:
             column = self.parameterColumns[dimension.parameter]
             value = row[column]
             parameters[dimension.parameter] = value
-            #print dimension.parameter, value
 
         deviation = self.powerDeviationMatrix[parameters]
-        
-        #power = self.powerCurve.power(row[self.windSpeedColumn])
-        #print power, deviation
-        #raise Exception("Stop")
-    
+
         return self.powerCurve.power(row[self.windSpeedColumn]) * (1.0 + deviation)
 
 class SubPower:
@@ -107,7 +95,8 @@ class SubPower:
         self.data_count = "Data Count"
         self.wind_speed_sub_bin_col = "Wind Speed Sub Bin"
              
-        print "Creating sub-power bins"
+        Status.add("Creating sub-power bins", verbosity=2)
+
         self.wind_speed_sub_bins = binning.Bins(self.center_of_first_sub_bin(wind_speed_bins), \
                             self.sub_width(wind_speed_bins), \
                             self.center_of_last_sub_bin(wind_speed_bins))
@@ -115,14 +104,14 @@ class SubPower:
         self.unfiltered_sub_power = self.calculate_sub_power(unfiltered_data_frame)   
         self.filtered_sub_power = self.calculate_sub_power(filtered_data_frame)
 
-        print "Creating cut-in wind speed"
+        Status.add("Creating cut-in wind speed", verbosity=2)
         self.cut_in_wind_speed = self.calculate_cut_in_speed(self.unfiltered_sub_power)
     
     def calculate_sub_power(self, data_frame):
 
         data_frame[self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
 
-        print "Creating sub-power distribution"
+        Status.add("Creating sub-power distribution", verbosity=2)
 
         sub_distribution = data_frame[self.power_polumn].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.data_count:'count'})
         sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.power_polumn:'mean'})
@@ -189,13 +178,13 @@ class SubPower:
 
         cut_in = first_center - 0.5 * self.wind_speed_sub_bins.binWidth
         
-        print "Cut-in: {0}".format(cut_in)
+        Status.add("Cut-in: {0}".format(cut_in), verbosity=2)
         
         return cut_in
 
 class Analysis:
 
-    def __init__(self, config, status = NullStatus(), auto_activate_corrections = False):
+    def __init__(self, config):
 
         self.config = config
         self.nameColumn = "Dataset Name"
@@ -221,15 +210,10 @@ class Analysis:
         self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
         self.inflowAngle = 'Inflow Angle'
             
-        self.status = status
-
         self.calibrations = []
         
-        self.status.addMessage("Loading dataset...")
+        Status.add("Loading dataset...")
         self.loadData(config)
-
-        if auto_activate_corrections:            
-            self.auto_activate_corrections()
             
         self.densityCorrectionActive = config.densityCorrectionActive
         self.rewsActive = config.rewsActive
@@ -237,14 +221,19 @@ class Analysis:
         self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
         
         self.uniqueAnalysisId = hash_file_contents(self.config.path)
-        self.status.addMessage("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
-        self.status.addMessage("Calculating (please wait)...")
+        Status.add("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
+        Status.add("Calculating (please wait)...")
 
         if len(self.datasetConfigs) > 0:
             self.datasetUniqueIds = self.generate_unique_dset_ids()
 
         if self.powerDeviationMatrixActive:
-            self.status.addMessage("Loading power deviation matrix...")
+            
+            Status.add("Loading power deviation matrix...")
+            
+            if config.specified_power_deviation_matrix.absolute_path is None:
+                raise Exception("Power deviation matrix path not set.")
+
             self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(config.specified_power_deviation_matrix.absolute_path)
 
         self.powerCurveMinimumCount = config.powerCurveMinimumCount
@@ -257,10 +246,10 @@ class Analysis:
 
         self.defineInnerRange(config)
 
-        self.status.addMessage("Baseline Mode: %s" % self.baseLineMode)
-        self.status.addMessage("Interpolation Mode: %s" % self.interpolationMode)
-        self.status.addMessage("Filter Mode: %s" % self.filterMode)
-        self.status.addMessage("Power Curve Mode: %s" % self.powerCurveMode)
+        Status.add("Baseline Mode: %s" % self.baseLineMode)
+        Status.add("Interpolation Mode: %s" % self.interpolationMode)
+        Status.add("Filter Mode: %s" % self.filterMode)
+        Status.add("Power Curve Mode: %s" % self.powerCurveMode)
 
         self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
         
@@ -291,9 +280,9 @@ class Analysis:
         
         if self.densityCorrectionActive:
             if self.hasDensity:
-                self.status.addMessage("Performing Density Correction")
-                self.status.addMessage("Mean measured density is %.4f kg/m^3" % self.dataFrame[self.hubDensity].mean())
-                self.status.addMessage("Correcting to reference density of %.4f kg/m^3" % self.referenceDensity)
+                Status.add("Performing Density Correction")
+                Status.add("Mean measured density is %.4f kg/m^3" % self.dataFrame[self.hubDensity].mean())
+                Status.add("Correcting to reference density of %.4f kg/m^3" % self.referenceDensity)
                 self.dataFrame[self.densityCorrectedHubWindSpeed] = self.dataFrame.apply(DensityCorrectionCalculator(self.referenceDensity, self.hubWindSpeed, self.hubDensity).densityCorrectedHubWindSpeed, axis=1)
                 self.dataFrame[self.inputHubWindSpeed] = self.dataFrame[self.densityCorrectedHubWindSpeed]
                 self.inputHubWindSpeedSource = self.densityCorrectedHubWindSpeed
@@ -315,7 +304,7 @@ class Analysis:
                
         if self.hasActualPower:
 
-            self.status.addMessage("Calculating actual power curves...")
+            Status.add("Calculating actual power curves...")
 
             self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(0, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'All Measured')
             
@@ -326,26 +315,25 @@ class Analysis:
             self.outerTurbulenceMeasuredPowerCurve = self.calculateMeasuredPowerCurve(2, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Turbulence')
 
             if self.hasShear:
-                self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(1, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', required = (self.powerCurveMode == 'InnerMeasured'))
-                #print "Exiting"; sys.exit()                
+                self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(1, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', required = (self.powerCurveMode == 'InnerMeasured'))            
                 self.outerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(4, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', required = (self.powerCurveMode == 'OuterMeasured'))
 
-            self.status.addMessage("Actual Power Curves Complete.")
+            Status.add("Actual Power Curves Complete.")
 
         self.powerCurve = self.selectPowerCurve(self.powerCurveMode)
 
         self.calculateBase()
         self.calculateHub()
 
-        #Normalisation Parameters
+        # Normalisation Parameters
         if self.turbRenormActive:
             self.normalisingRatedPower = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
             self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
             self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
 
-            print "normalisation"
-            print self.normalisingRatedWindSpeed
-            print self.normalisingCutInWindSpeed
+            Status.add("normalisation", verbosity=2)
+            Status.add(self.normalisingRatedWindSpeed, verbosity=2)
+            Status.add(self.normalisingCutInWindSpeed, verbosity=2)
             
             self.normalisedWS = 'Normalised WS'
             self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.normalisingCutInWindSpeed) / (self.normalisingRatedWindSpeed - self.normalisingCutInWindSpeed)
@@ -355,33 +343,33 @@ class Analysis:
             self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.ratedPower
 
         if config.rewsActive:
-            self.status.addMessage("Calculating REWS Correction...")
+            Status.add("Calculating REWS Correction...")
             self.calculateREWS()
-            self.status.addMessage("REWS Correction Complete.")
+            Status.add("REWS Correction Complete.")
 
             self.rewsMatrix = self.calculateREWSMatrix(0)
             if self.hasShear: self.rewsMatrixInnerShear = self.calculateREWSMatrix(3)
             if self.hasShear: self.rewsMatrixOuterShear = self.calculateREWSMatrix(6)
 
         if config.turbRenormActive:
-            self.status.addMessage("Calculating Turbulence Correction...")
+            Status.add("Calculating Turbulence Correction...")
             self.calculateTurbRenorm()
-            self.status.addMessage("Turbulence Correction Complete.")
+            Status.add("Turbulence Correction Complete.")
             if self.hasActualPower:
                 self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(0, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected')
 
         if config.turbRenormActive and config.rewsActive:
-            self.status.addMessage("Calculating Combined (REWS + Turbulence) Correction...")
+            Status.add("Calculating Combined (REWS + Turbulence) Correction...")
             self.calculationCombined()
 
         if config.powerDeviationMatrixActive:
-            self.status.addMessage("Calculating Power Deviation Matrix Correction...")
+            Status.add("Calculating Power Deviation Matrix Correction...")
             self.calculatePowerDeviationMatrixCorrection()
-            self.status.addMessage("Power Deviation Matrix Correction Complete.")
+            Status.add("Power Deviation Matrix Correction Complete.")
 
         if self.hasActualPower:
 
-            self.status.addMessage("Calculating power deviation matrices...")
+            Status.add("Calculating power deviation matrices...")
 
             allFilterMode = 0
             innerShearFilterMode = 3
@@ -404,10 +392,12 @@ class Analysis:
             if config.powerDeviationMatrixActive:
                 self.powerDeviationMatrixDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
 
-            self.status.addMessage("Power Curve Deviation Matrices Complete.")
+            Status.add("Power Curve Deviation Matrices Complete.")
+        
         self.hours = len(self.dataFrame.index)*1.0 / 6.0
+
         if self.config.nominal_wind_speed_distribution.absolute_path is not None:
-            self.status.addMessage("Attempting AEP Calculation...")
+            Status.add("Attempting AEP Calculation...")
             import aep
             if self.powerCurve is self.specifiedPowerCurve:
                 self.windSpeedAt85pctX1pnt5 = self.specifiedPowerCurve.getThresholdWindSpeed()
@@ -418,72 +408,50 @@ class Analysis:
                 if self.turbRenormActive:
                     self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.config.nominal_wind_speed_distribution.absolute_path, self.allMeasuredTurbCorrectedPowerCurve)
             else:
-                self.status.addMessage("A specified power curve is required for AEP calculation. No specified curve defined.")
+                Status.add("A specified power curve is required for AEP calculation. No specified curve defined.")
+
         if len(self.sensitivityDataColumns) > 0:
             sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
             sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
             sens_pow_interp_column = self.measuredTurbPowerCurveInterp if self.turbRenormActive else self.measuredPowerCurveInterp
             self.interpolatePowerCurve(sens_pow_curve, self.inputHubWindSpeedSource, sens_pow_interp_column)
-            self.status.addMessage("Attempting power curve sensitivty analysis for %s power curve..." % sens_pow_curve.name)
+            Status.add("Attempting power curve sensitivty analysis for %s power curve..." % sens_pow_curve.name)
             self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column, sens_pow_interp_column)
         
         if self.hasActualPower:
-            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index, print_to_console = True)
+            self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index)
             self.dayTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.dayTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(11)])
             self.nightTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.nightTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(12)])
             if self.turbRenormActive:
-                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index, print_to_console = True)
+                self.powerCurveScatterMetricAfterTiRenorm = self.calculatePowerCurveScatterMetric(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower, self.dataFrame.index)
             self.powerCurveScatterMetricByWindSpeed = self.calculateScatterMetricByWindSpeed(self.allMeasuredPowerCurve, self.actualPower)
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
                 
-        self.status.addMessage("Total of %.3f hours of data used in analysis." % self.hours)
-        self.status.addMessage("Complete")
-
-    def auto_activate_corrections(self):
-        self.status.addMessage("Automatically activating corrections based on available data.")
-        save_conf = False
-        if self.hasDensity:
-            self.config.densityCorrectionActive = True
-            self.status.addMessage("Density Correction activated.")
-            save_conf = True
-        if self.hubTurbulence in self.dataFrame.columns:
-            self.config.turbRenormActive = True
-            self.status.addMessage("TI Renormalisation activated.")
-            save_conf = True
-        if self.rewsDefined:
-            self.config.rewsActive = True
-            self.status.addMessage("REWS activated.")
-            save_conf = True
-        if (type(self.config.specifiedPowerDeviationMatrix) in (str, unicode)) and (len(self.config.specifiedPowerDeviationMatrix) > 0):
-            self.config.powerDeviationMatrixActive = True
-            self.status.addMessage("PDM activated.")
-            save_conf = True
-        if save_conf:
-            self.config.save()
+        Status.add("Total of %.3f hours of data used in analysis." % self.hours)
+        Status.add("Complete")
 
     def applyRemainingFilters(self):
 
-        print "Apply derived filters (filters which depend on calculated columns)"
+        Status.add("Apply derived filters (filters which depend on calculated columns)", verbosity=2)
 
         for dataSetConf in self.datasetConfigs:
 
-            print dataSetConf.name
+            Status.add(dataSetConf.name, verbosity=2)
 
             if self.anyFiltersRemaining(dataSetConf):
 
-                print "Applying Remaining Filters"
+                Status.add("Applying Remaining Filters", verbosity=2)
+                Status.add("Extracting dataset data", verbosity=2)
 
-                print "Extracting dataset data"
-
-                #print "KNOWN BUG FOR CONCURRENT DATASETS"
+                #Status.add("KNOWN BUG FOR CONCURRENT DATASETS")
 
                 datasetStart = dataSetConf.timeStamps[0]
                 datasetEnd = dataSetConf.timeStamps[-1]
 
-                print "Start: %s" % datasetStart
-                print "End: %s" % datasetEnd
+                Status.add("Start: %s" % datasetStart, verbosity=2)
+                Status.add("End: %s" % datasetEnd, verbosity=2)
 
                 mask = self.dataFrame[self.timeStamp] > datasetStart
                 mask = mask & (self.dataFrame[self.timeStamp] < datasetEnd)
@@ -493,19 +461,23 @@ class Analysis:
 
                 self.dataFrame = self.dataFrame.drop(dateRangeDataFrame.index)
 
-                print "Filtering Extracted Data"
+                Status.add("Filtering Extracted Data", verbosity=2)
                 d = dataSetConf.data.filterDataFrame(dateRangeDataFrame, dataSetConf.filters)
 
-                print "(Re)inserting filtered data "
+                Status.add("(Re)inserting filtered data", verbosity=2)
                 self.dataFrame = self.dataFrame.append(d)
 
                 if len([filter for filter in dataSetConf.filters if ((not filter.applied) & (filter.active))]) > 0:
-                    print [str(filter) for filter in dataSetConf.filters if ((not filter.applied) & (filter.active))]
+                    
+                    for filter in dataSetConf.filters:
+                        if ((not filter.applied) & (filter.active)):
+                            Status.add(str(filter)) 
+
                     raise Exception("Filters have not been able to be applied!")
 
             else:
 
-                print "No filters left to apply"
+                Status.add("No filters left to apply", verbosity=2) 
 
     def anyFiltersRemaining(self, dataSetConf):
 
@@ -526,6 +498,9 @@ class Analysis:
             self.innerRangeUpperShear = config.innerRangeUpperShear
             self.innerRangeCenterShear = 0.5 * self.innerRangeLowerShear + 0.5 * self.innerRangeUpperShear
 
+    def load_dataset(self, dataset_config, analysis_config):
+        return dataset.Dataset(dataset_config, analysis_config)
+
     def loadData(self, config):
 
         self.residualWindSpeedMatrices = {}
@@ -538,7 +513,7 @@ class Analysis:
             else:
                 datasetConfig = config.datasets[i]
 
-            data = dataset.Dataset(datasetConfig, config)
+            data = self.load_dataset(datasetConfig, config)
 
             if hasattr(data,"calibrationCalculator"):
                 self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )
@@ -789,15 +764,19 @@ class Analysis:
         
         #calculate significance threshold based on generated random variable
         rand_columns, rand_sensitivity_results = [], []
+
         for i in range(n_random_tests):
             rand_columns.append('Random ' + str(i + 1))
+
         filteredDataFrame[rand_columns] = pd.DataFrame(np.random.rand(len(filteredDataFrame),n_random_tests), columns=rand_columns, index = filteredDataFrame.index)
+
         for col in rand_columns:
             variation_metric = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column, interp_pow_column)[1]
             rand_sensitivity_results.append(variation_metric)
+
         self.sensitivityAnalysisThreshold = np.mean(rand_sensitivity_results)
-        print "\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.)
-        self.status.addMessage("\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.))
+
+        Status.add("\nSignificance threshold for power curve variation metric is %.2f%%."  % (self.sensitivityAnalysisThreshold * 100.), verbosity=2)
         filteredDataFrame.drop(rand_columns, axis = 1, inplace = True)
         
         #sensitivity to time of day, time of year, time elapsed in test
@@ -810,14 +789,15 @@ class Analysis:
         
         #for col in (self.sensitivityDataColumns + ['Days Elapsed In Test','Hours From Noon','Days From 182nd Day Of Year']):
         for col in (list(filteredDataFrame.columns)): # if we want to do the sensitivity analysis for all columns in the dataframe...
-            print "\nAttempting to compute sensitivity of power curve to %s..." % col
+            Status.add("\nAttempting to compute sensitivity of power curve to %s..." % col, verbosity=2)
             try:
                 self.powerCurveSensitivityResults[col], self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] = self.calculatePowerCurveSensitivity(filteredDataFrame, power_curve, col, power_column, interp_pow_column)
-                print "Variation of power curve with respect to %s is %.2f%%." % (col, self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] * 100.)
+                Status.add("Variation of power curve with respect to %s is %.2f%%." % (col, self.powerCurveSensitivityVariationMetrics.loc[col, 'Power Curve Variation Metric'] * 100.), verbosity=2)
                 if self.powerCurveSensitivityVariationMetrics.loc[col,'Power Curve Variation Metric'] == 0:
                     self.powerCurveSensitivityVariationMetrics.drop(col, axis = 1, inplace = True)
             except:
-                print "Could not run sensitivity analysis for %s." % col
+                Status.add("Could not run sensitivity analysis for %s." % col, verbosity=2)
+
         self.powerCurveSensitivityVariationMetrics.loc['Significance Threshold', 'Power Curve Variation Metric'] = self.sensitivityAnalysisThreshold
         self.powerCurveSensitivityVariationMetrics.sort('Power Curve Variation Metric', ascending = False, inplace = True)
     
@@ -844,19 +824,15 @@ class Analysis:
                     filt = dataFrame['Wind Speed Bin'] == wsBin
                     dataFrame.loc[filt,'Bin'] = pd.qcut(dataFrame[dataColumn][filt], cutOffForCategories, labels = self.sensitivityLabels.keys())
                 except:
-                    print "\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin)
+                    Status.add("\tCould not categorise data by %s for WS bin %s." % (dataColumn, wsBin))
         
         sensitivityResults = dataFrame[[power_column, 'Energy MWh', 'Wind Speed Bin','Bin', 'Power Delta kW', 'Energy Delta MWh']].groupby(['Wind Speed Bin','Bin']).agg({power_column: np.mean, 'Energy MWh': np.sum, 'Wind Speed Bin': len, 'Power Delta kW': np.mean, 'Energy Delta MWh': np.sum})
-#        sensitivityResults['Energy Delta MWh'], sensitivityResults['Power Delta kW'] = np.nan, np.nan #pre-allocate
-#        for i in sensitivityResults.index:
-#            #sensitivityResults.loc[i, 'Power Delta kW'] = sensitivityResults.loc[i, power_column] - power_curve.powerCurveLevels.loc[i[0], power_column]
-#            sensitivityResults.loc[i, 'Energy Delta MWh'] = sensitivityResults.loc[i, 'Power Delta kW'] * power_curve.powerCurveLevels.loc[i[0], 'Data Count'] * (float(self.timeStepInSeconds) / 3600.)
-        
+
         return sensitivityResults.rename(columns = {'Wind Speed Bin':'Data Count'}), np.abs(sensitivityResults['Energy Delta MWh']).sum() / (power_curve.powerCurveLevels[power_column] * power_curve.powerCurveLevels['Data Count'] * (float(self.timeStepInSeconds) / 3600.)).sum()
 
     def calculateMeasuredPowerCurve(self, mode, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name, required = False):
         
-        print "Calculating %s power curve." % name        
+        Status.add("Calculating %s power curve." % name, verbosity=2)       
         
         mask = (self.dataFrame[powerColumn] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
         
@@ -865,7 +841,7 @@ class Analysis:
         if mode == 0 or mode == 1:        
             filteredDataFrame.to_csv("debug ({0}).dat".format(name))
         
-        print "%s rows of data being used for %s power curve." % (len(filteredDataFrame), name)
+        Status.add("%s rows of data being used for %s power curve." % (len(filteredDataFrame), name), verbosity=2)
 
         #storing power curve in a dataframe as opposed to dictionary
         dfPowerLevels = filteredDataFrame[[powerColumn, self.inputHubWindSpeed, self.hubTurbulence]].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
@@ -900,28 +876,28 @@ class Analysis:
             if dfPowerCoeff is not None:
                 powerLevels[self.powerCoeff] = dfPowerCoeff
 
-            print "Calculating power curve, from levels:"
-            print powerLevels.head(len(powerLevels))
+            Status.add("Calculating power curve, from levels:", verbosity=2)
+            Status.add(powerLevels.head(len(powerLevels)), verbosity=2)
             
-            print "Calculating sub-power"
+            Status.add("Calculating sub-power", verbosity=2)
             sub_power = SubPower(self.dataFrame, filteredDataFrame, self.aggregations, self.inputHubWindSpeed, powerColumn, self.windSpeedBins)
                             
-            print "Creating turbine"            
+            Status.add("Creating turbine", verbosity=2)     
+
             turb = turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, inputHubWindSpeed = self.inputHubWindSpeed, 
                                             hubTurbulence = self.hubTurbulence, actualPower = powerColumn,
                                             turbulenceRenormalisation = (self.turbRenormActive if powerColumn != self.turbulencePower else False), 
                                             name = name, interpolationMode = self.interpolationMode, 
                                             required = required, xLimits = self.windSpeedBins.limits, 
                                             sub_power = sub_power)
-
-            #if mode == 1:
-            #    raw_input("Turbine Created ({0})".format(name))
                 
             return turb
 
     def calculatePowerDeviationMatrix(self, power, filterMode, windBin = None, turbBin = None):
+
         if windBin is None:
             windBin = self.windSpeedBin
+
         if turbBin is None:
             turbBin = self.turbulenceBin
 
@@ -949,18 +925,23 @@ class Analysis:
 
         return rewsMatrix
 
-    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows, print_to_console = False): #this calculates a metric for the scatter of the all measured PC
+    def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows):
+
+        #this calculates a metric for the scatter of the all measured PC
         
         try:
+            
             energyDiffMWh = np.abs((self.dataFrame.loc[rows, powerColumn] - self.dataFrame.loc[rows, self.inputHubWindSpeed].apply(measuredPowerCurve.power)) * (float(self.timeStepInSeconds) / 3600.))
             energyMWh = self.dataFrame.loc[rows, powerColumn] * (float(self.timeStepInSeconds) / 3600.)
             powerCurveScatterMetric = energyDiffMWh.sum() / energyMWh.sum()
-            print "%s NMAE is %.2f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.)
-            if print_to_console:
-                self.status.addMessage("\n%s Normalised Mean Absolute Error is %.3f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.))
+
+            Status.add("\n%s Normalised Mean Absolute Error is %.3f%%." % (measuredPowerCurve.name, powerCurveScatterMetric * 100.), verbosity=2)
+            
             return powerCurveScatterMetric
+
         except:
-            print "Could not calculate power curve NMAE."
+
+            Status.add("Could not calculate power curve NMAE.", verbosity=2)
             return np.nan
             
     def calculateScatterMetricByWindSpeed(self, measuredPowerCurve, powerColumn):
@@ -972,108 +953,6 @@ class Analysis:
                 rows = self.dataFrame[self.inputHubWindSpeed] == ws
                 df.loc[ws, 'Scatter Metric'] = self.calculatePowerCurveScatterMetric(measuredPowerCurve, powerColumn, rows)
         return df.dropna()
-
-    def calculate_pcwg_error_fields(self):
-        self.calculate_anonymous_values()
-        self.pcwgErrorBaseline = 'Baseline Error'
-        self.pcwgErrorCols = [self.pcwgErrorBaseline]
-        self.dataFrame[self.pcwgErrorBaseline] = self.dataFrame[self.hubPower] - self.dataFrame[self.actualPower]
-        if self.turbRenormActive:
-            self.pcwgErrorTurbRenor = 'TI Renormalisation Error'
-            self.dataFrame[self.pcwgErrorTurbRenor] = self.dataFrame[self.turbulencePower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorTurbRenor)
-        if self.rewsActive:
-            self.pcwgErrorRews = 'REWS Error'
-            self.dataFrame[self.pcwgErrorRews] = self.dataFrame[self.rewsPower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorRews)
-        if (self.turbRenormActive and self.rewsActive):
-            self.pcwgErrorTiRewsCombined = 'Combined TI Renorm and REWS Error'
-            self.dataFrame[self.pcwgErrorTiRewsCombined] = self.dataFrame[self.combinedPower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorTiRewsCombined)
-        if self.powerDeviationMatrixActive:
-            self.pcwgErrorPdm = 'PDM Error'
-            self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorPdm)
-        self.powerCurveCompleteBins = self.powerCurve.powerCurveLevels.index[self.powerCurve.powerCurveLevels[self.dataCount] > 0]
-        self.number_of_complete_bins = len(self.powerCurveCompleteBins)
-        self.pcwgErrorValid = 'Baseline Power Curve WS Bin Complete'
-        self.dataFrame[self.pcwgErrorValid] = self.dataFrame[self.windSpeedBin].isin(self.powerCurveCompleteBins)
-    
-    def calculate_pcwg_overall_metrics(self):
-        self.overall_pcwg_err_metrics = {}
-        NME, NMAE, data_count = self._calculate_pcwg_error_metric(self.pcwgErrorBaseline)
-        self.overall_pcwg_err_metrics[self.dataCount] = data_count
-        self.overall_pcwg_err_metrics['Baseline NME'] = NME
-        self.overall_pcwg_err_metrics['Baseline NMAE'] = NMAE
-        if self.turbRenormActive:
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTurbRenor)
-            self.overall_pcwg_err_metrics['TI Renorm NME'] = NME
-            self.overall_pcwg_err_metrics['TI Renorm NMAE'] = NMAE
-        if self.rewsActive:
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorRews)
-            self.overall_pcwg_err_metrics['REWS NME'] = NME
-            self.overall_pcwg_err_metrics['REWS NMAE'] = NMAE
-        if (self.turbRenormActive and self.rewsActive):
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTiRewsCombined)
-            self.overall_pcwg_err_metrics['REWS and TI Renorm NME'] = NME
-            self.overall_pcwg_err_metrics['REWS and TI Renorm NMAE'] = NMAE
-        if self.powerDeviationMatrixActive:
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorPdm)
-            self.overall_pcwg_err_metrics['PDM NME'] = NME
-            self.overall_pcwg_err_metrics['PDM NMAE'] = NMAE
-            
-    def calculate_pcwg_binned_metrics(self):
-        reporting_bins = [self.normalisedWSBin, self.hourOfDay, self.calendarMonth, self.pcwgFourCellMatrixGroup, self.pcwgRange]
-        if self.hasDirection:
-            reporting_bins.append(self.pcwgDirectionBin)
-        self.binned_pcwg_err_metrics = {}
-        for bin_col_name in reporting_bins:
-            self.binned_pcwg_err_metrics[bin_col_name] = {}
-            self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorBaseline] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name)
-            if self.turbRenormActive:
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorTurbRenor] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTurbRenor, bin_col_name)
-            if self.rewsActive:
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorRews] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorRews, bin_col_name)
-            if (self.turbRenormActive and self.rewsActive):
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorTiRewsCombined] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTiRewsCombined, bin_col_name)
-            if self.powerDeviationMatrixActive:
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name)
-        #Using Inner and Outer range data only to calculate error metrics binned by normalised WS
-        bin_col_name = self.normalisedWSBin
-        for pcwg_range in ['Inner', 'Outer']:
-            dict_key = bin_col_name + ' ' + pcwg_range + ' Range'
-            self.binned_pcwg_err_metrics[dict_key] = {}
-            self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorBaseline] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name, pcwg_range = pcwg_range)
-            if self.turbRenormActive:
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorTurbRenor] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTurbRenor, bin_col_name, pcwg_range = pcwg_range)
-            if self.rewsActive:
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorRews] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorRews, bin_col_name, pcwg_range = pcwg_range)
-            if (self.turbRenormActive and self.rewsActive):
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorTiRewsCombined] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTiRewsCombined, bin_col_name, pcwg_range = pcwg_range)
-            if self.powerDeviationMatrixActive:
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name, pcwg_range = pcwg_range)
-            
-    def _calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name, pcwg_range = 'All'):
-        def sum_abs(x):
-            return x.abs().sum()
-        if pcwg_range == 'All':
-            grouped = self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], :].groupby(bin_col_name)
-        elif pcwg_range == 'Inner':
-            grouped = self.dataFrame.loc[np.logical_and(self.dataFrame[self.pcwgErrorValid], (self.dataFrame[self.pcwgRange] == 'Inner')), :].groupby(bin_col_name)
-        elif pcwg_range == 'Outer':
-            grouped = self.dataFrame.loc[np.logical_and(self.dataFrame[self.pcwgErrorValid], (self.dataFrame[self.pcwgRange] == 'Outer')), :].groupby(bin_col_name)
-        else:
-            raise Exception('Unrecognised pcwg_range argument %s passed to Analysis._calculate_pcwg_error_metric_by_bin() method. Must be Inner, Outer or All.' % pcwg_range)
-        agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count'], self.actualPower: 'sum'})
-        agg.loc[:, (candidate_error, 'NME')] = agg.loc[:, (candidate_error, 'sum')] / agg.loc[:, (self.actualPower, 'sum')]
-        agg.loc[:, (candidate_error, 'NMAE')] = agg.loc[:, (candidate_error, 'sum_abs')] / agg.loc[:, (self.actualPower, 'sum')]
-        return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis = 1).rename(columns = {'count': self.dataCount})
-    
-    def _calculate_pcwg_error_metric(self, candidate_error):
-        data_count = len(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].dropna())
-        NME = (self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
-        NMAE = (np.abs(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error]).sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
-        return NME, NMAE, data_count
 
     def iec_2005_cat_A_power_curve_uncertainty(self):
         if self.turbRenormActive:
@@ -1087,7 +966,7 @@ class Analysis:
         unc_MWh = (np.abs(pc['s_i']) * (pc[self.dataCount] / 6.)).sum()
         test_MWh = (np.abs(pc[pow_col]) * (pc[self.dataCount] / 6.)).sum()
         self.categoryAUncertainty = unc_MWh / test_MWh
-        self.status.addMessage("Power curve category A uncertainty (assuming measured wind speed distribution for test): %.3f%%" % (self.categoryAUncertainty * 100.0))
+        Status.add("Power curve category A uncertainty (assuming measured wind speed distribution for test): %.3f%%" % (self.categoryAUncertainty * 100.0), verbosity=2)
 
     def report(self, path,version="unknown", report_power_curve = True):
 
@@ -1110,14 +989,6 @@ class Analysis:
                                       version= version)
 
         report.report(path, self, powerDeviationMatrix = deviationMatrix, scatterMetric= scatter)
-
-    def pcwg_share_metrics_calc(self):
-        if self.powerCurveMode != "InnerMeasured":
-            raise Exception("Power Curve Mode must be set to Inner to export PCWG Sharing Initiative 1 Report.")
-        else:
-            self.calculate_pcwg_error_fields()
-            self.calculate_pcwg_overall_metrics()
-            self.calculate_pcwg_binned_metrics()
 
     def calculate_anonymous_values(self):
 
@@ -1175,31 +1046,45 @@ class Analysis:
     def calculateBase(self):
 
         if self.baseLineMode == "Hub":
+            
             if self.powerCurve is None:
+            
                 exc_str = "%s Power Curve has not been calculated successfully." % self.powerCurveMode
+            
                 if self.powerCurveMode == 'InnerMeasured':
                     exc_str += " Check Inner Range settings."
+            
                 raise Exception(exc_str)
+            
             self.dataFrame[self.basePower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
+
         elif self.baseLineMode == "Measured":
+            
             if self.hasActualPower:
                 self.dataFrame[self.basePower] = self.dataFrame[self.actualPower]
             else:
                 raise Exception("You must specify a measured power data column if using the 'Measured' baseline mode")
+
         else:
+
             raise Exception("Unkown baseline mode: % s" % self.baseLineMode)
 
         self.baseYield = self.dataFrame[self.getFilter()][self.basePower].sum() * self.timeStampHours
 
     def calculateCp(self):
+        
         area = np.pi*(self.config.diameter/2.0)**2
         a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
         b = 1000*self.dataFrame[self.actualPower]/(0.5*self.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
+        
         betzExceed = (len(a[a>16.0/27])*100.0)/len(a)
+        
         if betzExceed > 0.5:
-            print "{0:.02}% data points slightly exceed Betz limit - if this number is high, investigate...".format(betzExceed)
+            Status.add("{0:.02}% data points slightly exceed Betz limit - if this number is high, investigate...".format(betzExceed), verbosity=2)
+
         if (abs(a-b) > 0.005).any():
             raise Exception("Density correction has not been applied consistently.")
+        
         return a
 
     def calculateHub(self):
@@ -1207,7 +1092,7 @@ class Analysis:
         self.hubYield = self.dataFrame[self.getFilter()][self.hubPower].sum() * self.timeStampHours
         self.hubYieldCount = self.dataFrame[self.getFilter()][self.hubPower].count()
         self.hubDelta = self.hubYield / self.baseYield - 1.0
-        self.status.addMessage("Hub Delta: %.3f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))
+        Status.add("Hub Delta: %.3f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))
 
     def calculateREWS(self):
         self.dataFrame[self.rotorEquivalentWindSpeed] = self.dataFrame[self.inputHubWindSpeed] * self.dataFrame[self.profileHubToRotorRatio]
@@ -1215,7 +1100,7 @@ class Analysis:
         self.rewsYield = self.dataFrame[self.getFilter()][self.rewsPower].sum() * self.timeStampHours
         self.rewsYieldCount = self.dataFrame[self.getFilter()][self.rewsPower].count()
         self.rewsDelta = self.rewsYield / self.baseYield - 1.0
-        self.status.addMessage("REWS Delta: %.3f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
+        Status.add("REWS Delta: %.3f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
 
     def calculateTurbRenorm(self):
         self.dataFrame[self.turbulencePower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.inputHubWindSpeed, self.hubTurbulence).power, axis=1)
@@ -1224,14 +1109,14 @@ class Analysis:
         self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
         if self.hasActualPower:
             self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]).astype('float')
-        self.status.addMessage("Turb Delta: %.3f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
+        Status.add("Turb Delta: %.3f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
 
     def calculationCombined(self):
         self.dataFrame[self.combinedPower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.rotorEquivalentWindSpeed, self.hubTurbulence).power, axis=1)
         self.combinedYield = self.dataFrame[self.getFilter()][self.combinedPower].sum() * self.timeStampHours
         self.combinedYieldCount = self.dataFrame[self.getFilter()][self.combinedPower].count()
         self.combinedDelta = self.combinedYield / self.baseYield - 1.0
-        self.status.addMessage("Comb Delta: %.3f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
+        Status.add("Comb Delta: %.3f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
 
     def calculatePowerDeviationMatrixCorrection(self):
 
@@ -1256,7 +1141,7 @@ class Analysis:
         self.powerDeviationMatrixYield = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].sum() * self.timeStampHours
         self.powerDeviationMatrixYieldCount = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].count()
         self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
-        self.status.addMessage("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
+        Status.add("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
 
     def export(self, path,clean = True,  full = True, calibration = True ):
         op_path = os.path.dirname(path)

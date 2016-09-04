@@ -111,6 +111,9 @@ class Preferences(base_configuration.XmlBase):
         self.addTextNode(doc, root, "BenchmarkLastOpened", self.benchmarkLastOpened)
         self.addTextNode(doc, root, "VersionLastOpened", self.versionLastOpened)
         
+        self.addIntNode(doc, root, "Verbosity", self.verbosity)
+        self.addBoolNode(doc, root, "Debug", self.debug)
+
         recentsNode = self.addNode(doc, root, "Recents")
         
         for recent in self.recents:

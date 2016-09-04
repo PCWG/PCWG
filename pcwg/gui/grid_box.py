@@ -4,7 +4,7 @@ import tkFont as tkFont
 import ttk as ttk
 
 from ..exceptions.handling import ExceptionHandler
-
+from ..core.status import Status
 
 class GridBox(object):
 
@@ -166,9 +166,12 @@ class GridBox(object):
         return self.items_dict.values()
 
     def double_click(self, event):
-        key = self.tree.identify('item',event.x,event.y)
-        item = self.items_dict[key]
-        self.edit_item(item)
+
+        key = self.tree.identify('item', event.x, event.y)
+
+        if key in self.items_dict:
+            item = self.items_dict[key]
+            self.edit_item(item)
 
     def _set_up_tree_widget(self):
 
@@ -256,7 +259,7 @@ class DialogGridBox(GridBox):
             self.new_dialog(self.master, self.parent_dialog, item)  
             self.redraw_item(key)                             
         except ExceptionHandler.ExceptionType as e:
-            self.status.addMessage("ERROR editing item: {0}".format(e))
+            ExceptionHandler.add(e, "ERROR editing item")
 
     def remove(self):
         GridBox.remove(self)

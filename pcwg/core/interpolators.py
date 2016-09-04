@@ -2,12 +2,13 @@ from scipy import interpolate
 import numpy as np
 from math import pow, sqrt
 
+from ..core.status import Status
+
 class BaseInterpolator(object):
 
     def printSummary(self, x, y):
-        
         for i in range(len(x)):
-            print x[i], y[i]
+            Status.add("{0} {1}".format(x[i], y[i]), verbosity=3)
     
     def removeNans(self, x, y):
 
@@ -18,13 +19,13 @@ class BaseInterpolator(object):
         
         for i in range(len(x)):
 
-            print x[i], y[i]
+            Status.add("{0} {1}".format(x[i], y[i]), verbosity=3)
             
             if not np.isnan(y[i]):
                 xNew.append(x[i])
                 yNew.append(y[i])
             else:
-                print "Excluding power curve NaN at {0}".format(x[i])
+                Status.add("Excluding power curve NaN at {0}".format(x[i]), verbosity=3)
                 
         return (xNew, yNew)
     
@@ -33,7 +34,6 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
     PostCutOutStep = 0.01
     ConvergenceConstant = 1.0
     MaximumNumberOfIterations = 20
- #   MaximumNumberOfIterations = 5
     Tolerance = 0.01
     
     ##
@@ -49,42 +49,38 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         self.sub_power = sub_power
 
         if xLimits == None:
-            print "Calculating bin limts"
+            Status.add("Calculating bin limts", verbosity=3)
             limits_dict = self.calculate_limits(x, sub_power)
-            print "Bin limits calculated"
+            Status.add("Bin limits calculated", verbosity=3)
         else: 
-            print "Preparing bin limits"
+            Status.add("Preparing bin limits", verbosity=3)
             limits_dict = self.prepare_limits_dict(x, xLimits, sub_power)
-            print "Bin limits prepared"
+            Status.add("Bin limits prepared", verbosity=3)
 
         try:
-            print "Pre-processing bins"
+            Status.add("Pre-processing bins", verbosity=3)
             self.x, y, adjust, self.cutInWindSpeed, self.ratedWindSpeed = self.preprocessBins(x, y, limits_dict, cutOutWindSpeed)        
-            print "Bins pre-processed"
+            Status.add("Bins pre-processed", verbosity=3)
         except Exception as e:
             error = "Cannot pre-process bins: {0}".format(e)
-            print error
+            Status.add(error, verbosity=3)
             raise Exception(error)
         
-        print "Fitting Curve"
+        Status.add("Fitting Curve", verbosity=3)
         self.interpolator, self.adjustedBinPowers, self.errors = self.fitpower(self.x, limits_dict, y, adjust)
         
-        print "Adjusted data points" 
-        print "X Y Error" 
-        for i in range(len(x)):
-            print "{0} {1} {2}".format(self.x[i], self.adjustedBinPowers[i], self.errors[i])
+        Status.add("Adjusted data points", verbosity=3)
+        Status.add("X Y Error", verbosity=3)
 
-        print "Final Power Function:" 
+        for i in range(len(x)):
+            Status.add("{0} {1} {2}".format(self.x[i], self.adjustedBinPowers[i], self.errors[i]), verbosity=3)
+
+        Status.add("Final Power Function:", verbosity=3)
+
         speed = 0
         while speed < 30.0:
-            print "{0} {1}".format(speed,  self.interpolator(speed))
-            speed += 0.1
-
-        with open('power_cruve.dat', 'w') as f:
-            speed = 0
-            while speed < 30.0:
-                f.write("{0} {1}\n".format(speed,  self.interpolator(speed)))
-                speed += 0.01                        
+            Status.add("{0} {1}".format(speed,  self.interpolator(speed)), verbosity=3)
+            speed += 0.1                    
                 
     def __call__(self, x):
         
@@ -104,7 +100,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
              
         except Exception as e:
             error = "Cannot create limits dictionary: {0}".format(e)
-            print(error)
+            Status.add(error, verbosity=3)
             raise Exception(error)
     
     def find_limit(self, speed, x_limits):
@@ -115,7 +111,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
             end = limit[1]
 
             if speed >= start and speed < end:
-                print "Limit found for center {0} -> {1} to {2}".format(speed, start, end)
+                Status.add("Limit found for center {0} -> {1} to {2}".format(speed, start, end), verbosity=3)
                 return limit
                      
         raise Exception("Cannot determine limit for {0}".format(speed))
@@ -176,10 +172,6 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
 
             is_rated = (roundedY[i] == roundedRatedPower)
             rated.append(is_rated)
-
-        #output power curve for debugging
-        #for i in range(numberOfBins):
-        #    print inputX[i], inputY[i], operating[i], rated[i]
 
         #establish First Operating Bin, Last Operating Bin and First Bin Before Rated
         for i in range(numberOfBins):
@@ -278,17 +270,17 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                 
         if cutInWindSpeed == None:
             
-            print "ERROR"
+            Status.add("ERROR", verbosity=3)
             for i in range(inputX):
-                print inputY[i], inputY[i]
+                Status.add("{0} {1}".format(inputX[i], inputY[i]), verbosity=3)
             
             raise Exception("Could not determine cut-in wind speed")
 
         if ratedWindSpeed == None:
 
-            print "ERROR"
+            Status.add("ERROR", verbosity=3)
             for i in range(inputX):
-                print inputY[i], inputY[i]
+                Status.add("{0} {1}".format(inputX[i], inputY[i]), verbosity=3)
 
             raise Exception("Could not determine rated wind speed")
         
@@ -296,8 +288,8 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         numberOfNewBins = len(ynew)
         adjust = []
 
-        print "Pre-processed Bins"        
-        print "Speed Power Adjust"
+        Status.add("Pre-processed Bins", verbosity=3)        
+        Status.add("Speed Power Adjust", verbosity=3)
         
         for i in range(numberOfNewBins):
 
@@ -306,7 +298,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
             else:
                 adjust.append(False)
             
-            print "{0} {1} {2}".format(xnew[i], ynew[i], adjust[i])
+            Status.add("{0} {1} {2}".format(xnew[i], ynew[i], adjust[i]), verbosity=3)
             
         return xnew,ynew,adjust,cutInWindSpeed,ratedWindSpeed
     
@@ -371,7 +363,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                 
         rmse = sqrt(rmse/float(rmse_count))
 
-        print "Iteration: {0} {1}".format(iteration, rmse)
+        Status.add("Iteration: {0} {1}".format(iteration, rmse), verbosity=3)
         
         if rmse > MarmanderPowerCurveInterpolator.Tolerance:
 
@@ -380,7 +372,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                 self.debugText = "Maximum number of iterations exceeded\n"
                 self.debugText += self.prepareDebugText(binCenters, binLimits,binAverages, adjustedBinPowers, adjust, intergatedPowers, errors, f)
 
-                print self.debugText
+                Status.add(self.debugText, verbosity=3)
 
                 raise Exception("Could not converge fitted power curve (RMSE = {0}).".format(rmse))
 
@@ -405,7 +397,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         if total_weight > 0.0:
 
             for partition in limit.partitions:
-                print "{0} {1} {2}".format(partition.start, partition.end, partition.weight)
+                Status.add("{0} {1} {2}".format(partition.start, partition.end, partition.weight), verbosity=3)
                 integrated_power += self.integrate_partition(f, partition.start, partition.end) * partition.weight
                 
             return integrated_power / total_weight
@@ -550,11 +542,8 @@ class CubicPowerCurveInterpolator(BaseInterpolator):
 
         highestNonZero = 0.0
         self.lastCubicWindSpeed = 0.0
-
-        #print "cubic power curve"
         
         for i in range(len(x)):
-            #print x[i], y[i]
             if y[i] > 0 and x[i] > highestNonZero:
                 self.lastCubicWindSpeed = x[i - 3]
                 highestNonZero = x[i]
