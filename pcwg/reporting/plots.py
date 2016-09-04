@@ -1,8 +1,12 @@
 import os
 import pandas as pd
-from Analysis import chckMake
+
 np = pd.np
 
+def chckMake(path):
+    """Make a folder if it doesn't exist"""
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 def _is_save_path_valid(full_path):
     if ((os.name == 'nt') and (len(full_path)>=260)):

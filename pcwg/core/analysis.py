@@ -1070,7 +1070,7 @@ class Analysis:
 
     def calculateCp(self):
         
-        area = np.pi*(self.config.diameter/2.0)**2
+        area = np.pi*(self.rotorGeometry.diameter/2.0)**2
         a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
         b = 1000*self.dataFrame[self.actualPower]/(0.5*self.referenceDensity*area*np.power(self.dataFrame[self.densityCorrectedHubWindSpeed],3))
         
