@@ -400,12 +400,14 @@ class UserInterface:
                 try:
                     updator.download_latest_version()
                 except ExceptionHandler.ExceptionType as e:
+
                     Status.add("Failed to download latest version: {0}".format(e), red=True)
                     return
 
                 try:
                     updator.start_extractor()
                 except ExceptionHandler.ExceptionType as e:
+
                     Status.add("Cannot start extractor: {0}".format(e), red=True)
                     return
 
@@ -575,6 +577,7 @@ class UserInterface:
                         self.analysisConfiguration = AnalysisConfiguration(fileName)
                         Status.add("Analysis config loaded: %s" % fileName)
                     except ExceptionHandler.ExceptionType as e:
+
                         ExceptionHandler.add(e, "ERROR loading config")
 
     def LoadPortfolioFromPath(self, fileName):
@@ -599,6 +602,7 @@ class UserInterface:
                         self.portfolioConfiguration = PortfolioConfiguration(fileName)
                         Status.add("Portfolio config loaded: %s" % fileName)
                     except ExceptionHandler.ExceptionType as e:
+
                         ExceptionHandler.add(e, "ERROR loading config")
 
     def ExportReport(self):
@@ -762,7 +766,7 @@ class UserInterface:
     def ExportTimeSeries(self):
 
         if self.analysis == None:
-            self.addMessage("ERROR: Analysis not yet calculated", red = True)
+            Status.add("ERROR: Analysis not yet calculated", red = True)
             return
 
         try:
@@ -774,9 +778,9 @@ class UserInterface:
             fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.analysis_last_opened_dir())
             self.analysis.export(fileName, clean, full, calibration)
             if clean:
-                self.addMessage("Time series written to %s" % fileName)
+                Status.add("Time series written to %s" % fileName)
             if any((full, calibration)):
-                self.addMessage("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+                Status.add("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
 
         except ExceptionHandler.ExceptionType as e:
             ExceptionHandler.add(e, "Error exporting Time Series")
@@ -784,7 +788,7 @@ class UserInterface:
     def Calculate(self):
 
         if self.analysisConfiguration == None:
-            self.addMessage("ERROR: Analysis Config file not specified", red = True)
+            Status.add("ERROR: Analysis Config file not specified", red = True)
             return
 
         try:
@@ -798,11 +802,9 @@ class UserInterface:
 
     def About(self):
 
-            tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
+        tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
 
     def add_message(self, message, red=False, verbosity=1):
-
-        tk.tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
 
         try:
 

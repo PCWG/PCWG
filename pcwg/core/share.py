@@ -317,6 +317,7 @@ class PcwgShare01:
         if not self.analysis.hasActualPower or not self.analysis.config.turbRenormActive:
             Status.add("ERROR: Anonymous report can only be generated if analysis has actual power and turbulence renormalisation is active.", red = True)
             return
+
         try:
 
             self.analysis.pcwg_share_metrics_calc()
@@ -341,6 +342,7 @@ class PcwgShare01:
         except ExceptionHandler.ExceptionType as e:
 
             Status.add("ERROR Exporting Report: %s" % e, red = True)
+
          
     def pcwg_data_share_report(self, output_fname):
                 
