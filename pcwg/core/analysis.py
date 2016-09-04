@@ -837,9 +837,6 @@ class Analysis:
         mask = (self.dataFrame[powerColumn] > (self.ratedPower * -.25)) & (self.dataFrame[self.inputHubWindSpeed] > 0) & (self.dataFrame[self.hubTurbulence] > 0) & self.getFilter(mode)
         
         filteredDataFrame = self.dataFrame[mask]
-
-        if mode == 0 or mode == 1:        
-            filteredDataFrame.to_csv("debug ({0}).dat".format(name))
         
         Status.add("%s rows of data being used for %s power curve." % (len(filteredDataFrame), name), verbosity=2)
 
@@ -1159,7 +1156,7 @@ class Analysis:
 
     def png_plots(self,path):
         chckMake(path)
-        from plots import MatplotlibPlotter
+        from ..reporting.plots import MatplotlibPlotter
         plotter = MatplotlibPlotter(path,self)
         if self.hasActualPower:
             plotter.plotPowerCurve(self.inputHubWindSpeed, self.actualPower, self.allMeasuredPowerCurve, specified_title = 'Warranted', mean_title = 'Measured Mean', gridLines = True)

@@ -35,12 +35,12 @@ import portfolio
 
 class ExportDataSetDialog(base_dialog.BaseDialog):
 
-        def __init__(self, master, status):
+        def __init__(self, master):
 
                 self.cleanDataset = True
                 self.allDatasets = False
                 self.calibrationDatasets = False
-                base_dialog.BaseDialog.__init__(self, master, status)
+                base_dialog.BaseDialog.__init__(self, master)
 
         def validate(self):
 
@@ -72,8 +72,7 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
 
                 self.cleanDataset = self.addCheckBox(master,
                                                      "Clean Combined Dataset:",
-                                                     cleanDataset,
-                                                     showHideCommand=None)
+                                                     cleanDataset)
 
                 spacer = tk.Label(master, text="Extra Time Series:")
 
@@ -85,13 +84,11 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
 
                 self.allDatasets = self.addCheckBox(master,
                                                     "    Filtered Individual Datasets:",
-                                                    allDatasets,
-                                                    showHideCommand=None)
+                                                    allDatasets)
 
                 self.calibrationDatasets = self.addCheckBox(master,
                                                             "    Calibration Datasets:",
-                                                            calibrationDatasets,
-                                                            showHideCommand=None)
+                                                            calibrationDatasets)
 
         def getSelections(self):
 
@@ -102,58 +99,6 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
         def apply(self):
 
                 return self.getSelections()
-
-
-class ExportAnonReportPickerDialog(base_dialog.BaseDialog):
-
-        def __init__(self, master, status):
-
-                self.scatter = True
-                self.deviationMatrix = True
-                base_dialog.BaseDialog.__init__(self, master, status)
-
-        def validate(self):
-
-                valid = any(self.getSelections())
-
-                if valid:
-                        return 1
-                else:
-                        return 0
-
-        def body(self, master):
-
-                spacer = tk.Label(master, text=" " * 30)
-
-                spacer.grid(row=self.row,
-                            column=self.titleColumn,
-                            columnspan=2)
-
-                spacer = tk.Label(master, text=" " * 30)
-                spacer.grid(row=self.row,
-                            column=self.secondButtonColumn,
-                            columnspan=2)
-
-                self.row += 1
-                scatter = self.scatter
-                deviationMatrix = self.deviationMatrix
-
-                self.deviationMatrix = self.addCheckBox(master,
-                                                        "Power Deviation Matrix:",
-                                                        deviationMatrix,
-                                                        showHideCommand=None)
-
-                self.scatter = self.addCheckBox(master,
-                                                "Scatter metric:",
-                                                scatter,
-                                                showHideCommand=None)
-
-        def getSelections(self):
-                return (bool(self.scatter.get()), bool(self.deviationMatrix.get()))
-
-        def apply(self):
-                return self.getSelections()
-
 
 class UserInterface:
 
@@ -615,7 +560,7 @@ class UserInterface:
 
             if not self.analysis.hasActualPower:
 
-                    Status.add("No Power Signal in Dataset. Exporting report without power curve results.", red=True)
+                    Status.add("No Power Signal in Dataset. Exporting report without power curve results.")
 
                     fileName = tkFileDialog.asksaveasfilename(parent=self.root,
                                                               defaultextension=".xls",
@@ -729,7 +674,7 @@ class UserInterface:
             try:
 
                     preferences = Preferences.get()
-                    selections = ExportDataSetDialog(self.root, None)
+                    selections = ExportDataSetDialog(self.root)
                     clean, full, calibration = selections.getSelections()
 
                     fileName = tkFileDialog.asksaveasfilename(parent=self.root,
@@ -762,39 +707,6 @@ class UserInterface:
             except ExceptionHandler.ExceptionType as e:
 
                     ExceptionHandler.add(e, "ERROR Calculating Analysis")
-
-    def ExportTimeSeries(self):
-
-        if self.analysis == None:
-            Status.add("ERROR: Analysis not yet calculated", red = True)
-            return
-
-        try:
-            
-            preferences = Preferences.get()
-            selections = ExportDataSetDialog(self.root, None)
-            clean, full, calibration = selections.getSelections()
-
-            fileName = tkFileDialog.asksaveasfilename(parent=self.root,defaultextension=".dat", initialfile="timeseries.dat", title="Save Time Series", initialdir=preferences.analysis_last_opened_dir())
-            self.analysis.export(fileName, clean, full, calibration)
-            if clean:
-                Status.add("Time series written to %s" % fileName)
-            if any((full, calibration)):
-                Status.add("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
-
-        except ExceptionHandler.ExceptionType as e:
-            ExceptionHandler.add(e, "Error exporting Time Series")
-
-    def Calculate(self):
-
-        if self.analysisConfiguration == None:
-            Status.add("ERROR: Analysis Config file not specified", red = True)
-            return
-
-        try:
-            self.analysis = core_analysis.Analysis(self.analysisConfiguration, base_dialog.WindowStatus(self))
-        except ExceptionHandler.ExceptionType as e:
-            ExceptionHandler.add(e, "Error calculating Analysis")
 
     def ClearConsole(self):
         self.listbox.delete(0, tk.END)
