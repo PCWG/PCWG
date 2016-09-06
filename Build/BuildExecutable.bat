@@ -1,5 +1,19 @@
 @echo off
 
+rem To ensure compatibility with both 32bit and 64bit end users, building the executable requires that Anaconda 32 bit is installed.
+rem The script assumes that two versions of anaconda are installed in side-by-side folders 
+rem e.g C:\Users\UserName\AppData\Local\Continuum\Anaconda32 and C:\Users\UserName\AppData\Local\Continuum\Anaconda64
+rem this script with temporarily redirect the PATH variable to the 32 anaconda installation
+
+rem you also need to install PyInstaller (in your 32bit Anaconda installaion), which can be achieved as follows:
+rem SET PATH=%PATH:Anaconda64=Anaconda32%
+rem pip install pyinstaller
+rem Note: pyinstaller seems to be packaged with Anaconda these days 
+
+echo "Set path to 32 bit Anaconda32 (for duration of this BAT script)"
+
+SET PATH=%PATH:Anaconda64=Anaconda32%
+
 echo "Reading settings.ini"
 
 rem %0 is the script file name (with path), %~0 removes the surrounding " " ("%~0" == %0)
@@ -7,13 +21,11 @@ rem Adding dp returns the drive and path to the file, instead of the file name i
 set INIFILE="%~dp0settings.ini"
  
 call:getvalue %INIFILE% "gitfolder" GitFolder
-call:getvalue %INIFILE% "workingfolder" WorkingFolder
 call:getvalue %INIFILE% "helpdoc" HelpDoc
 call:getvalue %INIFILE% "version" Version
 call:getvalue %INIFILE% "sevenZipPath" SevenZipPath
 
 echo GitFolder: %gitfolder%
-echo WorkingFolder: %workingfolder%
 echo HelpDoc: %helpdoc%
 echo Version: %version%
 echo SevenZipPath: %sevenZipPath%
@@ -22,29 +34,20 @@ set tool=pcwg_tool
 set extractor=extractor
 
 set toolpath=%gitfolder%\%tool%.py
+set versionpath=%gitfolder%\version.py
 set extractorpath=%gitfolder%\%extractor%.py
 
 set outputfolder=%workingfolder%\%tool%
 set outputZipPath=%workingfolder%\%tool%.zip
 set versionZip=%tool%-%version%.zip
 
-echo Checking version in %toolpath%
-findstr /c:"version = ""%version%""" "%toolpath%" 
+echo Checking version in %versionpath%
+findstr /c:"version = ""%version%""" "%versionpath%" 
 
 if %errorlevel%==0 (
-echo "Correct version (%version%) detected in %toolpath%"
+echo "Correct version (%version%) detected in %versionpath%"
 ) else (
-echo "Error: correct version (%version%) not detected in %toolpath%"
-goto:eof
-)
-
-echo Checking exception handling in %toolpath%
-findstr /c:"#ExceptionType = None" "%toolpath%" 
-
-if %errorlevel%==0 (
-echo "Correct exception handling detected in %toolpath%"
-) else (
-echo "Error: incorrect exception handling detected in %toolpath%"
+echo "Error: correct version (%version%) not detected in %versionpath%"
 goto:eof
 )
 
