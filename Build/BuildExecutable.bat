@@ -3,6 +3,9 @@
 rem To ensure compatibility with both 32bit and 64bit end users, building the executable requires that Anaconda 32 bit is installed.
 rem The script assumes that two versions of anaconda are installed in side-by-side folders 
 rem e.g C:\Users\UserName\AppData\Local\Continuum\Anaconda32 and C:\Users\UserName\AppData\Local\Continuum\Anaconda64
+rem when installing Anaconda32 parallel to Anaconda32 select the following options:
+rem 'use as default python' = No
+rem 'add to PATH' = No
 rem this script with temporarily redirect the PATH variable to the 32 anaconda installation
 
 rem you also need to install PyInstaller (in your 32bit Anaconda installaion), which can be achieved as follows:
