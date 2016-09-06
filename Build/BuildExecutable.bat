@@ -7,8 +7,8 @@ rem this script with temporarily redirect the PATH variable to the 32 anaconda i
 
 rem you also need to install PyInstaller (in your 32bit Anaconda installaion), which can be achieved as follows:
 rem SET PATH=%PATH:Anaconda64=Anaconda32%
-rem pip install pyinstaller
-rem Note: pyinstaller seems to be packaged with Anaconda these days 
+rem pip install pyinstaller==3.1 
+rem Note: issue related to pyinstaller 3.2 https://github.com/pyinstaller/pyinstaller/issues/1767
 
 echo "Set path to 32 bit Anaconda32 (for duration of this BAT script)"
 
@@ -62,12 +62,11 @@ echo building executable
 
 mkdir %tool%
 
-rem build exectuable: -F option binds output into a single file
-PyInstaller -F %toolpath%
+PyInstaller --onefile --windowed %toolpath%
 xcopy /s /Y /q dist\%tool%.exe %tool%\
 
 echo building launcher
-PyInstaller -F %extractorpath%
+PyInstaller --onefile %extractorpath%
 xcopy /s /Y /q dist\%extractor%.exe %tool%\
 
 echo copying ancialliary files
