@@ -573,13 +573,13 @@ class ParseClipBoard:
                                                 date = dateutil.parser.parse(clipboard)
                                         except Exception as e:
                                                 date = None
-                                                print "Can't parse clipboard (%s)" % e.message
+                                                Status.add("Can't parse clipboard (%s)" % e.message)
 
                                 if date != None:
                                         self.callback(date)
                                         
                 except Exception as e:
-                        print "Can't parse clipboard (%s)" % e.message
+                        Status.add("Can't parse clipboard (%s)" % e.message)
                         
             
 class BaseConfigurationDialog(BaseDialog):
@@ -660,23 +660,27 @@ class BaseConfigurationDialog(BaseDialog):
                 return 1
         
         def apply(self):
-                        
-                self.config.path = self.filePath.get()
-
-                self.setConfigValues()                
                 
-                self.config.save()
-                
-                self.isSaved = True
-
-                if self.isNew:
-                        Status.add("Config created")
-                else:
-                        Status.add("Config updated")
-
-                if self.callback != None:
-                    if self.index == None:
-                            self.callback(self.config.path)
+                try:
+                    
+                    self.config.path = self.filePath.get()
+    
+                    self.setConfigValues()                
+                    
+                    self.config.save()
+                    
+                    self.isSaved = True
+    
+                    if self.isNew:
+                            Status.add("Config created")
                     else:
-                            self.callback(self.config.path, self.index)
+                            Status.add("Config updated")
+    
+                    if self.callback != None:
+                        if self.index == None:
+                                self.callback(self.config.path)
+                        else:
+                                self.callback(self.config.path, self.index)
 
+                except ExceptionHandler.ExceptionType as e:
+                    ExceptionHandler.add(e, "Cannot create/update config")

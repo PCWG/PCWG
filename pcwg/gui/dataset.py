@@ -643,13 +643,13 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                         raise Exception("Unknown density methods: %s" % self.densityMode.get())
 
         def columnSeparatorChange(self, *args):
-            print 'reading separator'            
+            Status.add('reading separator', verbosity=2)          
             sep = getSeparatorValue(self.separator.get())
             self.read_dataset()
             return sep
             
         def decimalChange(self, *args):
-            print 'reading decimal'
+            Status.add('reading decimal', verbosity=2)
             decimal = getDecimalValue(self.decimal.get())
             self.read_dataset()
             return decimal
@@ -788,7 +788,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                     ExceptionHandler.add(e, "Error picking column")
         
         def read_dataset(self):
-             print 'reading dataSet'
+             Status.add('reading dataSet', verbosity=2)
              inputTimeSeriesPath = self.config.input_time_series.absolute_path
              headerRows = self.getHeaderRows()    
              dataFrame = pd.read_csv(inputTimeSeriesPath, sep = getSeparatorValue(self.separator.get()), skiprows = headerRows, decimal = getDecimalValue(self.decimal.get()))               

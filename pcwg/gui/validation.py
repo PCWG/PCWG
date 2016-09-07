@@ -5,6 +5,7 @@ Created on Tue Aug 09 23:51:59 2016
 @author: Stuart
 """
 import Tkinter as tk
+from ..exceptions.handling import ExceptionHandler
 
 class ValidationResult:
 
@@ -58,8 +59,8 @@ class ValidateBase:
                                 self.setMessage("")
                         else:
                                 self.setMessage(result.message)
-                except Exception as ex:
-                        print "Error reporting validation message: %s" % ex.message
+                except Exception as e:
+                        ExceptionHandler.add(e, "Error reporting validation message")
 
                 return permitInput       
 

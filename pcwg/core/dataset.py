@@ -784,7 +784,7 @@ class Dataset:
 
         for componentFilter in filters:
             if componentFilter.active:
-                componentFilter.printSummary()
+                componentFilter.write_summary()
 
         Status.add("", verbosity=2)
 

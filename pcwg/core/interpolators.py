@@ -6,7 +6,7 @@ from ..core.status import Status
 
 class BaseInterpolator(object):
 
-    def printSummary(self, x, y):
+    def write_summary(self, x, y):
         for i in range(len(x)):
             Status.add("{0} {1}".format(x[i], y[i]), verbosity=3)
     
@@ -15,7 +15,7 @@ class BaseInterpolator(object):
         xNew = []
         yNew = []
 
-        print "Removing NaNs"
+        Status.add("Removing NaNs")
         
         for i in range(len(x)):
 

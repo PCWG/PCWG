@@ -11,29 +11,31 @@ from ..gui.event import EventHook
 import base_configuration
 import version as ver
 
+from ..core.status import Status
+
 class Preferences(base_configuration.XmlBase):
 
     Instance = None
-    
+
     @classmethod
     def get(cls):
-        
+
         if cls.Instance == None:
             cls.Instance = Preferences(ver.version)
-        
+
         return cls.Instance
-        
+
     def __init__(self, version):
 
         self.path = "preferences.xml"
         self.versionLastOpened = version
         self.recents = []
-        self.onRecentChange = EventHook()         
+        self.onRecentChange = EventHook()
 
         try:
             loaded = self.loadPreferences()
         except Exception as e:
-            print e
+            Status.add(str(e))
             loaded = False
 
         if not loaded:
@@ -45,7 +47,7 @@ class Preferences(base_configuration.XmlBase):
             self.benchmarkLastOpened = ""
             self.verbosity = 1
             self.debug = False
-            
+
     def loadPreferences(self):
 
             if os.path.isfile(self.path):
@@ -58,7 +60,7 @@ class Preferences(base_configuration.XmlBase):
                 self.portfolioLastOpened = self.getNodeValueIfExists(root, "PortfolioLastOpened", "")
                 self.powerCurveLastOpened = self.getNodeValueIfExists(root, "PowerCurveLastOpened", "")
                 self.benchmarkLastOpened = self.getNodeValueIfExists(root, "BenchmarkLastOpened", "")
-                
+
                 if self.nodeExists(root, "Verbosity"):
                     self.verbosity = self.getNodeInt(root, "Verbosity")
                 else:
@@ -68,11 +70,11 @@ class Preferences(base_configuration.XmlBase):
                     self.debug = self.getNodeBool(root, "Debug")
                 else:
                     self.debug = False
-                    
+
                 if self.nodeExists(root, "Recents"):
-                    
+
                     recents = self.getNode(root, "Recents")
-                    
+
                     for node in self.getNodes(recents, "Recent"):
                         recent = self.getValue(node)
                         self.addRecent(recent, False)
@@ -82,23 +84,23 @@ class Preferences(base_configuration.XmlBase):
                 if len(self.portfolioLastOpened) >  1: self.addRecent(self.portfolioLastOpened)
                 if len(self.powerCurveLastOpened) >  1: self.addRecent(self.powerCurveLastOpened)
                 if len(self.benchmarkLastOpened) >  1: self.addRecent(self.benchmarkLastOpened)
-                
+
                 return True
 
             else:
 
                 return False
-    
+
     def addRecent(self, path, raiseEvents = True):
-        
+
         if path in self.recents:
             return
-            
+
         if len(path) > 0:
             if not path in self.recents:
                 self.recents.append(path)
                 if raiseEvents: self.onRecentChange.fire()
-        
+
     def save(self):
 
         doc = self.createDocument()
@@ -110,47 +112,47 @@ class Preferences(base_configuration.XmlBase):
         self.addTextNode(doc, root, "PowerCurveLastOpened", self.powerCurveLastOpened)
         self.addTextNode(doc, root, "BenchmarkLastOpened", self.benchmarkLastOpened)
         self.addTextNode(doc, root, "VersionLastOpened", self.versionLastOpened)
-        
+
         self.addIntNode(doc, root, "Verbosity", self.verbosity)
         self.addBoolNode(doc, root, "Debug", self.debug)
 
         recentsNode = self.addNode(doc, root, "Recents")
-        
+
         for recent in self.recents:
             self.addTextNode(doc, recentsNode, "Recent", recent)
-        
+
         self.saveDocument(doc, self.path)
 
     def benchmark_last_opened_dir(self):
         return self.get_last_opened_dir(self.benchmarkLastOpened)
-            
+
     def benchmark_last_opened_file(self):
         return self.get_last_opened_file(self.benchmarkLastOpened)
-        
+
     def power_curve_last_opened_dir(self):
         return self.get_last_opened_dir(self.powerCurveLastOpened)
-            
+
     def power_curve_last_opened_file(self):
         return self.get_last_opened_file(self.powerCurveLastOpened)
-        
+
     def portfolio_last_opened_dir(self):
         return self.get_last_opened_dir(self.portfolioLastOpened)
-            
+
     def portfolio_last_opened_file(self):
         return self.get_last_opened_file(self.portfolioLastOpened)
 
     def dataset_last_opened_dir(self):
         return self.get_last_opened_dir(self.datasetLastOpened)
-            
+
     def dataset_last_opened_file(self):
         return self.get_last_opened_file(self.datasetLastOpened)
 
     def analysis_last_opened_dir(self):
         return self.get_last_opened_dir(self.analysisLastOpened)
-            
+
     def analysis_last_opened_file(self):
         return self.get_last_opened_file(self.analysisLastOpened)
-                
+
     def get_last_opened_dir(self, path):
         if len(path) > 0:
             return os.path.dirname(path)

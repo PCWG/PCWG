@@ -4,7 +4,6 @@ import tkFont as tkFont
 import ttk as ttk
 
 from ..exceptions.handling import ExceptionHandler
-from ..core.status import Status
 
 class GridBox(object):
 
@@ -115,11 +114,16 @@ class GridBox(object):
 
     def edit(self):
         
-        item = self.get_selected()
-
-        if item != None:
-            self.edit_item(item)
-
+        try:
+            
+            item = self.get_selected()
+            
+            if item != None:
+                self.edit_item(item)
+        
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "Cannot edit item")
+        
     def add_item(self, item):
 
         values = self.get_tree_values(item)

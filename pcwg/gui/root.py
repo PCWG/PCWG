@@ -7,6 +7,7 @@ Created on Wed Aug 10 14:41:26 2016
 
 import sys
 import os
+import os.path
 import datetime
 import traceback
 
@@ -113,7 +114,12 @@ class UserInterface:
             self.root = tk.Tk()
             self.root.geometry("860x400")
             self.root.title("PCWG")
-
+            
+            try:
+                self.root.iconbitmap(os.path.join("Resources", "logo.ico"))
+            except:
+                Status.add("Can't set icon")
+                
             self.verbosity = Preferences.get().verbosity
 
             consoleframe = tk.Frame(self.root)
@@ -561,15 +567,21 @@ class UserInterface:
             if not self.analysis.hasActualPower:
 
                     Status.add("No Power Signal in Dataset. Exporting report without power curve results.")
+                    
+                    try:
 
-                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                              defaultextension=".xls",
-                                                              initialfile="report.xls",
-                                                              title="Save Report",
-                                                              initialdir=preferences.analysis_last_opened_dir())
+                        fileName = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                                  defaultextension=".xls",
+                                                                  initialfile="report.xls",
+                                                                  title="Save Report",
+                                                                  initialdir=preferences.analysis_last_opened_dir())
+    
+                        self.analysis.report(fileName, ver.version, report_power_curve=False)
+                        Status.add("Report written to %s" % fileName)
 
-                    self.analysis.report(fileName, ver.version, report_power_curve=False)
-                    Status.add("Report written to %s" % fileName)
+                    except ExceptionHandler.ExceptionType as e:
+        
+                        ExceptionHandler.add(e, "ERROR Exporting Report")
 
                     return
 
@@ -744,7 +756,7 @@ class UserInterface:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
 
-            # print full traceback
+            # write full traceback
             tb = traceback.extract_tb(exc_tb)
             tb_list = traceback.format_list(tb)
 

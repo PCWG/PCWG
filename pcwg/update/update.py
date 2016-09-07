@@ -146,7 +146,7 @@ class Updator:
             
             zip_file = "pcwg_tool-{0}.zip".format(version.version)
             url = "https://github.com/peterdougstuart/PCWG/releases/download/{0}/{1}".format(version.tag, zip_file)
-            print url
+            Status.add(url)
             
             urllib.urlretrieve (url, Updator.update_zip)
                 

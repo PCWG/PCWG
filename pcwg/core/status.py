@@ -1,4 +1,3 @@
-from ..configuration.preferences_configuration import Preferences
 import pandas as pd
 
 class Status:
@@ -10,8 +9,14 @@ class Status:
         cls.get().add_message(message, red, verbosity)
         
     @classmethod
-    def initialize_status(cls, status_method):
-        cls.get().status_method = status_method
+    def initialize_status(cls, status_method, verbosity = 1):
+
+        # Note: verbosity must be passed (amd not read directly form preferencecs)
+        # in to avoid circulate reference
+    
+        status = cls.get()
+        status.status_method = status_method
+        status.verbosity = verbosity
         
     @classmethod
     def get(cls):
@@ -23,7 +28,7 @@ class Status:
         
     def __init__(self):
 
-        self.verbosity = Preferences.get().verbosity
+        self.verbosity = 1
     
     def add_message(self, message, red, verbosity):
 
