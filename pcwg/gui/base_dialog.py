@@ -331,11 +331,7 @@ class SetFileOpenCommand:
                 fileName = tkFileDialog.askopenfilename(parent=self.master, initialdir=initial_folder)
                 
                 if len(fileName) > 0:
-                        if self.basePathVariable != None:
-                                relativePath = RelativePath(self.basePathVariable.get())
-                                self.variable.set(relativePath.convertToRelativePath(fileName))
-                        else:
-                                self.variable.set(fileName)
+                    self.variable.set(fileName)
 
 class ColumnPicker:
 

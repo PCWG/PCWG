@@ -152,7 +152,7 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.rewsProfileLevels = []
 
             self.filters = []
-            self.calibrationDirections = {}
+
             self.exclusions = []
 
             self.calibrationStartDate = None
@@ -161,8 +161,8 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.siteCalibrationCenterOfFirstSector = 0
 
             self.calibrationFilters = []
-            self.calibractionSectors = {}
-
+            self.calibrationSectors = []
+            
             self.hubHeight = None
             self.diameter = None
             self.cutInWindSpeed = None
