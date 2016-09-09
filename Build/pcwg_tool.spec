@@ -5,8 +5,8 @@ block_cipher = None
 
 a = Analysis(['C:\\Git\\PCWG\\pcwg_tool.py'],
              pathex=['C:\\GIT\\PCWG\\Build'],
-             binaries=None,
-             datas=None,
+             binaries=[],
+             datas=[],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],

@@ -1,7 +1,5 @@
 @echo off
 
-rem enable dynamic find and replace http://scripts.dragon-it.co.uk/scripts.nsf/docs/batch-search-replace-substitute!OpenDocument&ExpandSection=3&BaseTarget=East&AutoFramed
-
 rem To ensure compatibility with both 32bit and 64bit end users, building the executable requires that Anaconda 32 bit is installed.
 rem The script assumes that two versions of anaconda are installed in side-by-side folders 
 rem e.g C:\Users\UserName\AppData\Local\Continuum\Anaconda32 and C:\Users\UserName\AppData\Local\Continuum\Anaconda64
@@ -59,7 +57,7 @@ echo "Anaconda64 Folder Found (%anacondaFolder64%)"
 )
 
 echo Set path to 32 bit Anaconda32 (for duration of this BAT script)
-set PATH=%PATH:Anaconda32=Anaconda32%
+set PATH=%PATH:Anaconda64=Anaconda32%
 echo %Path%
 
 set tool=pcwg_tool
@@ -119,6 +117,7 @@ mkdir %tool%\Resources
 copy %gitfolder%\Resources\logo.ico %tool%\Resources\logo.ico
 
 PyInstaller --onefile --windowed --icon="%tool%\Resources\logo.ico" %toolpath%
+
 xcopy /s /Y /q dist\%tool%.exe %tool%\
 
 rem restore original gui code
