@@ -402,10 +402,10 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         def addFilePath(self, master, path):
             pass
 
-        def file_path_update(self):
+        def file_path_update(self, *args):
             self.config.input_time_series.set_base(self.filePath.get())
 
-        def time_series_path_update(self):
+        def time_series_path_update(self, *args):
             self.config.input_time_series.absolute_path = self.inputTimeSeriesPath.get()
 
         def add_general(self, master, path):

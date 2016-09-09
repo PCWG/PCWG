@@ -108,6 +108,13 @@ class SubPower:
         self.cut_in_wind_speed = self.calculate_cut_in_speed(self.unfiltered_sub_power)
     
     def calculate_sub_power(self, data_frame):
+        
+        # TODO this line generates the following pandas warning
+        # data_frame[self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
+        # SettingWithCopyWarning: 
+        # A value is trying to be set on a copy of a slice from a DataFrame.
+        # Try using .loc[row_indexer,col_indexer] = value instead
+        # See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
 
         data_frame[self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
 
@@ -115,9 +122,7 @@ class SubPower:
 
         sub_distribution = data_frame[self.power_polumn].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.data_count:'count'})
         sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.power_polumn:'mean'})
-        
-        #sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).aggregate(self.aggregations.average)
-        
+                
         sub_power = sub_power.join(sub_distribution, how = 'inner')
         sub_power.dropna(inplace = True)                           
 

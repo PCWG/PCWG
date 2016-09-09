@@ -5,4 +5,4 @@ Created on Wed Aug 10 14:55:16 2016
 @author: Stuart
 """
 
-version = "0.6.0"
+version = "0.6.1"
