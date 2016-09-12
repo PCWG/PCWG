@@ -5,7 +5,6 @@ import ttk as ttk
 
 from ..exceptions.handling import ExceptionHandler
 
-
 class GridBox(object):
 
     def __init__(self, master, headers, row, column):
@@ -115,11 +114,16 @@ class GridBox(object):
 
     def edit(self):
         
-        item = self.get_selected()
-
-        if item != None:
-            self.edit_item(item)
-
+        try:
+            
+            item = self.get_selected()
+            
+            if item != None:
+                self.edit_item(item)
+        
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "Cannot edit item")
+        
     def add_item(self, item):
 
         values = self.get_tree_values(item)
@@ -166,9 +170,12 @@ class GridBox(object):
         return self.items_dict.values()
 
     def double_click(self, event):
-        key = self.tree.identify('item',event.x,event.y)
-        item = self.items_dict[key]
-        self.edit_item(item)
+
+        key = self.tree.identify('item', event.x, event.y)
+
+        if key in self.items_dict:
+            item = self.items_dict[key]
+            self.edit_item(item)
 
     def _set_up_tree_widget(self):
 

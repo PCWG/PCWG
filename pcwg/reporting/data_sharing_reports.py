@@ -7,6 +7,8 @@ from shutil import rmtree
 import numpy as np
 import xlwt
 
+from ..core.status import Status
+
 template_name = 'Share_1_template.xls'
 
 sheet_map = {'Submission': 0,
@@ -138,8 +140,8 @@ class PortfolioReport(object):
                     sh.write(row, base_column + index, df.loc[key, error_type], self.percent_style)            
 
         except Exception as e:
-            print "Cannot write four cell information {0}".format(e)
-            print df.head(len(df))
+            Status.add("Cannot write four cell information {0}".format(e), verbosity=2)
+            Status.add(df.head(len(df)), verbosity=2)
         
     def write_range_errors(self, analysis, sh, row, base_column, analysis_key, range_type):
 
@@ -156,7 +158,7 @@ class PortfolioReport(object):
                 sh.write(row, base_column + 2, df.loc[range_type, 'NMAE'], self.percent_style)
             
         except Exception as e:
-            print "Cannot write summary information {0}".format(e)
+            Status.add("Cannot write summary information {0}".format(e), verbosity=2)
 
     def write_by_ws_metric(self, analysis, sh, row, base_column, analysis_key, range_type):
 
@@ -174,7 +176,6 @@ class PortfolioReport(object):
                 if df.loc[i, 'Data Count'] > 0:
                     sh.write(row, base_column + col, df.loc[i, 'NME'], self.percent_style)
                     col += 1
-                    #print "Column: {0}".format(base_column + col)
             except:
                 col += 1
 
@@ -245,11 +246,11 @@ class pcwg_share1_rpt(object):
             _apply_cell_style(calculated_style, sh, 9, col)
             sh.write(10, col, range_id)
             _apply_cell_style(calculated_style, sh, 10, col)
-            sh.write(23, col, self.analysis.config.diameter)
+            sh.write(23, col, self.analysis.rotorGeometry.diameter)
             _apply_cell_style(calculated_style, sh, 23, col)
-            sh.write(24, col, self.analysis.config.hubHeight)
+            sh.write(24, col, self.analysis.rotorGeometry.hubHeight)
             _apply_cell_style(calculated_style, sh, 24, col)
-            specific_power = self.analysis.config.ratedPower / (np.pi * (self.analysis.config.diameter / 2.) ** 2.)
+            specific_power = self.analysis.ratedPower / (np.pi * (self.analysis.rotorGeometry.diameter / 2.) ** 2.)
             sh.write(25, col, specific_power)
             _apply_cell_style(calculated_style, sh, 25, col)
             sh.write(27, col, int(min(self.analysis.dataFrame.loc[self.analysis.dataFrame[self.analysis.nameColumn] == conf.name, self.analysis.timeStamp].dt.year)))
@@ -496,11 +497,11 @@ class pcwg_share1_rpt(object):
         try:
             rmtree(plt_path)
         except:
-            print 'Could not delete folder %s' % (os.getcwd() + os.sep + plt_path)
+            Status.add('Could not delete folder %s' % (os.getcwd() + os.sep + plt_path), verbosity=2)
             
     def export(self):
         self._write_confirmation_of_export()
-        print "Exporting the PCWG Share 1 report to:\n\t%s" % (self.output_fname)
+        Status.add("Exporting the PCWG Share 1 report to:\n\t%s" % (self.output_fname))
         self.workbook.save(self.output_fname)
 
     def _write_confirmation_of_export(self):

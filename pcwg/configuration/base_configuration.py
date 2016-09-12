@@ -9,6 +9,8 @@ import xml.dom.minidom
 import dateutil
 import os
 
+from ..core.status import Status
+
 isoDateFormat = "%Y-%m-%dT%H:%M:00"
 
 class XmlBase(object):
@@ -145,7 +147,7 @@ class XmlBase(object):
             value = self.getNodeValue(node, 'FilterValue')
             if not "," in value:
                 value = float(value)
-            return Filter(active, column, filterType, inclusive, value)
+            return Filter(active, column, filterType, inclusive, value, derived=False)
         else:
             valueNode = self.getNode(node, 'FilterValue')
             columnFactors = []
@@ -188,8 +190,8 @@ class TimeOfDayFilter(XmlBase):
         self.months  = months
         self.column = "TimeStamp"
 
-    def printSummary(self):
-        print str(self)
+    def write_summary(self):
+        Status.add(str(self), verbosity=2)
 
     def __str__(self):
         strMonths = "" if len(self.months) == 0 else "in months {0}".format(self.months)
@@ -208,13 +210,13 @@ class Filter(XmlBase):
         self.value = value
         self.applied = False
 
-    def printSummary(self):
+    def write_summary(self):
 
-        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev=self.derived,
+        Status.add("{dev}\t{col}\t{typ}\t{incl}\t{desc}".format (dev=self.derived,
                                                             col=   self.column,
                                                             typ=self.filterType,
                                                             incl=self.inclusive,
-                                                            desc=self.__str__())
+                                                            desc=self.__str__()), verbosity=2)
 
         if not self.derived:
             return str(self.value)
@@ -228,15 +230,17 @@ class Filter(XmlBase):
             return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])
 
 class RelationshipFilter(XmlBase):
+    
     def __str__(self):
         return " - ".join([" {0} ".format(self.conjunction).join(["{0}:{1} ".format(c.filterType,c.value) for c in self.clauses])])
-    def printSummary(self):
-        print "{dev}\t{col}\t{typ}\t{incl}\t{desc}\t{conj}".format (dev="\t",
+        
+    def write_summary(self):
+        Status.add("{dev}\t{col}\t{typ}\t{incl}\t{desc}\t{conj}".format (dev="\t",
                                                             col= self.column,
                                                             typ=self.filterType,
                                                             incl=self.inclusive,
                                                             desc=self.__str__(),
-                                                            conj=self.conjunction)
+                                                            conj=self.conjunction), verbosity=2)
         return self.__str__()
 
     def __init__(self, active,  conjunction, filters):

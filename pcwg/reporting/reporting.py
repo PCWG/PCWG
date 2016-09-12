@@ -6,6 +6,8 @@ import colour
 from ..configuration.base_configuration import Filter
 from ..configuration.base_configuration import TimeOfDayFilter
 
+from ..core.status import Status
+
 class report:
     bold_style = xlwt.easyxf('font: bold 1')
     no_dp_style = xlwt.easyxf(num_format_str='0')
@@ -567,7 +569,7 @@ class report:
                 countRow+=1
         else:
             countRow += 3
-            print "Not reporting zero TI power curve for %s as it is not defined." % (name)
+            Status.add("Not reporting zero TI power curve for %s as it is not defined." % (name), verbosity=2)
             sh.write(rowOffset + countRow, columnOffset + 2,"Not reporting zero TI power curve for %s as it is not defined." % (name))
             countRow+=1
             
@@ -798,9 +800,9 @@ class report:
             sh.write(row,10,analysis.aepCalc.energy_distribution.loc[binNum,"Measured_Energy"] ,self.four_dp_style)
         row+=3
 
-    def printPowerCurves(self):
+    def write_power_curves(self):
 
-        print("Wind Speed\tSpecified\tInner\tOuter\tAll")
+        Status.add("Wind Speed\tSpecified\tInner\tOuter\tAll", verbosity=2)
 
         for i in range(self.windSpeedBins.numberOfBins):
 
@@ -828,9 +830,9 @@ class report:
             else:
                 text += "\t"
                 
-            print(text)
+            Status.add(text, verbosity=2)
 
-    def printPowerDeviationMatrix(self):
+    def write_power_deviation_matrix(self):
 
         for j in reversed(range(self.turbulenceBins.numberOfBins)):        
 
@@ -850,14 +852,14 @@ class report:
                 else:
                     text += "\t"
 
-            print text
+            Status.add(text, verbosity=2)
 
         text = "\t"
         
         for i in range(self.windSpeedBins.numberOfBins):
             text += "%f\t" % self.windSpeedBins.binCenterByIndex(i)
 
-        print text        
+        Status.add(text, verbosity=2)     
         
     def report_scatter_metric(self,sh,analysis,row, turbRenormActive):
         row += 5

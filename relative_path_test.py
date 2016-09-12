@@ -7,19 +7,17 @@ class TestPathManager(unittest.TestCase):
         
         path_manager = PathManager()
 
-        dataset_path = "C:\Data\Datasets\data.xml"   
-        
-        dataset = path_manager.add(dataset_path)
-
-        self.assertTrue(dataset.absolute_path == dataset_path)
-        self.assertTrue(dataset.display_path == dataset_path)
-        self.assertTrue(dataset.relative_path == None)
-
         portfolio_path = "C:\Data\portolio.xml"  
         
-        path_manager.set_base(portfolio_path)
+        dataset_path_rel = "Datasets\data.xml"   
+        dataset_path_abs = "C:\Data\Datasets\data.xml"   
 
-        self.assertTrue(dataset.absolute_path == dataset_path)
+        path_manager.set_base(portfolio_path)
+        
+        path_manager.append_relative(dataset_path_rel)
+        dataset = path_manager[0]
+        
+        self.assertTrue(dataset.absolute_path == dataset_path_abs)
         self.assertTrue(dataset.display_path == dataset.relative_path)
         self.assertTrue(dataset.relative_path == "Datasets\data.xml")
 

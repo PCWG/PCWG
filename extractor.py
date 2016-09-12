@@ -90,4 +90,3 @@ def extract():
         print "Cannot start tool: {0}".format(e)    
         return
         
-extract()

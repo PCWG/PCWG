@@ -1,9 +1,6 @@
 #for Python 2
 import Tkinter as tk
 import ttk
-#for Python 3
-#import tkinter as tk
-#from tkinter import ttk
  
 import platform
  

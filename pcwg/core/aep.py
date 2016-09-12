@@ -6,6 +6,8 @@ import pandas as pd
 from scipy.interpolate import interp1d
 import rebin
 
+from ..core.status import Status
+
 def run(analysis,fileName, measuredPowerCurve):
     aepCalc = AEPCalculator(analysis.powerCurve,measuredPowerCurve,distributionPath=fileName)
     ans = aepCalc.calculate_AEP()
@@ -58,7 +60,9 @@ class AEPCalculator:
             self.totalUncertainty = ((typeAVariance+typeBVariance)**0.5)/self.measuredYield
         else:
             self.totalUncertainty = np.nan
-        print self.energy_distribution
+
+        Status.add(str(self.energy_distribution), verbosity=2)
+        
         return self.AEP
 
     def getCurve(self,curveType):

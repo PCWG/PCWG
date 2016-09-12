@@ -1,13 +1,20 @@
 import os
 import pandas as pd
-from Analysis import chckMake
+
+from ..core.status import Status
+from ..core.turbine import PowerCurve
+
 np = pd.np
 
+def chckMake(path):
+    """Make a folder if it doesn't exist"""
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 def _is_save_path_valid(full_path):
     if ((os.name == 'nt') and (len(full_path)>=260)):
-        print "Cannot save following file as path exceeds the Windows character limit of 259:"
-        print full_path
+        Status.add("Cannot save following file as path exceeds the Windows character limit of 259:")
+        Status.add(full_path)
         return False
     else:
         return True
@@ -44,7 +51,7 @@ class MatplotlibPlotter(object):
             plt.close()
             return file_out
         except:
-            print "Tried to make a power curve scatter chart for multiple data source (%s). Couldn't." % meanPowerCurveObj.name
+            Status.add("Tried to make a power curve scatter chart for multiple data source (%s). Couldn't." % meanPowerCurveObj.name, verbosity=2)
 
     def plotPowerCurveSensitivityVariationMetrics(self):
         try:
@@ -56,7 +63,7 @@ class MatplotlibPlotter(object):
             plt.savefig(file_out)
             plt.close('all')
         except:
-            print "Tried to plot summary of Power Curve Sensitivity Analysis Variation Metric. Couldn't."
+            Status.add("Tried to plot summary of Power Curve Sensitivity Analysis Variation Metric. Couldn't.", verbosity=2)
         self.analysis.powerCurveSensitivityVariationMetrics.to_csv(self.path + os.sep + 'Power Curve Sensitivity Analysis Variation Metric.csv')
 
     def plotPowerCurveSensitivity(self, sensCol):
@@ -92,11 +99,11 @@ class MatplotlibPlotter(object):
             fig.savefig(file_out)
             plt.close()
         except:
-            print "Tried to make a plot of power curve sensitivity to %s. Couldn't." % sensCol
+            Status.add("Tried to make a plot of power curve sensitivity to %s. Couldn't." % sensCol, verbosity=2)
 
     def plotBy(self,by,variable,df, gridLines = False):
-        import turbine
-        if not isinstance(df,turbine.PowerCurve):
+
+        if not isinstance(df,PowerCurve):
             kind = 'scatter'
         else:
             kind = 'line'
@@ -116,7 +123,7 @@ class MatplotlibPlotter(object):
             plt.close()
             return file_out
         except:
-            print "Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't."
+            Status.add("Tried to make a " + variable.replace(" ","_") + "_By_"+by.replace(" ","_")+" chart. Couldn't.", verbosity=2)
 
     def plotPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj, show_scatter = True, anon = False, row_filt = None, fname = None, show_analysis_pc = True, specified_title = 'Specified', mean_title = 'Mean Power Curve', mean_pc_color = '#00FF00', gridLines = False):
         try:
@@ -162,7 +169,7 @@ class MatplotlibPlotter(object):
             return file_out
         except:
             raise
-            print "Tried to make a power curve scatter chart for %s. Couldn't." % meanPowerCurveObj.name
+            Status.add("Tried to make a power curve scatter chart for %s. Couldn't." % meanPowerCurveObj.name)
 
     def plotTurbCorrectedPowerCurve(self, windSpeedCol, powerCol, meanPowerCurveObj):
         try:
@@ -204,7 +211,7 @@ class MatplotlibPlotter(object):
             plt.close()
             return file_out
         except:
-            print "Tried to make a TI corrected power curve scatter chart for %s. Couldn't." % meanPowerCurveObj.name
+            Status.add("Tried to make a TI corrected power curve scatter chart for %s. Couldn't." % meanPowerCurveObj.name, verbosity=2)
 
     def plotPowerLimits(self, specified_title = 'Specified', gridLines = False):
         try:
@@ -228,7 +235,7 @@ class MatplotlibPlotter(object):
             plt.close()
             return file_out
         except:
-            print "Tried to make a full power scatter chart. Couldn't."
+            Status.add("Tried to make a full power scatter chart. Couldn't.", verbosity=2)
 
     def plotCalibrationSectors(self):
         from matplotlib import pyplot as plt
@@ -263,7 +270,7 @@ class MatplotlibPlotter(object):
                     plt.savefig(file_out)
                     plt.close('all')
                 except:
-                    print "Tried to plot variation of wind speed ratio with direction. Couldn't."
+                    Status.add("Tried to plot variation of wind speed ratio with direction. Couldn't.", verbosity=2)
                 xlim_u = datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceWindSpeed].max()
                 ylim_u = datasetConf.data.filteredCalibrationDataframe[datasetConf.data.turbineLocationWindSpeed].max()
                 for directionBinCenter in datasetConf.data.filteredCalibrationDataframe[datasetConf.data.referenceDirectionBin].unique():
@@ -287,4 +294,4 @@ class MatplotlibPlotter(object):
                         plt.savefig(file_out)
                         plt.close()
                     except:
-                        print "Tried to plot reference vs turbine location wind speed for sector %s. Couldn't." % directionBinCenter
+                        Status.add("Tried to plot reference vs turbine location wind speed for sector %s. Couldn't." % directionBinCenter, verbosity=2)

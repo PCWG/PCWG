@@ -7,6 +7,8 @@ Created on Thu Aug 11 05:39:02 2016
 import base_configuration
 import pandas as pd
 
+from ..core.status import Status
+
 class PowerCurveConfiguration(base_configuration.XmlBase):
 
     def __init__(self, path = None):
@@ -61,7 +63,8 @@ class PowerCurveConfiguration(base_configuration.XmlBase):
             self.powerCurveLevels['Specified Turbulence'] = self.powerCurveTurbulence
 
     def save(self):
-        print"saving power curve"
+        
+        Status.add("saving power curve")
         doc = self.createDocument()
 
         root = self.addRootNode(doc, "PowerCurve", "http://www.pcwg.org")

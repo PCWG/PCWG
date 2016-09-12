@@ -20,6 +20,8 @@ import dataset
 from ..configuration.power_curve_configuration import PowerCurveConfiguration
 from ..configuration.preferences_configuration import Preferences
 
+from ..exceptions.handling import ExceptionHandler
+
 class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         def getInitialFileName(self):
@@ -128,13 +130,13 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                     
                         try:
                                 config = PowerCurveConfiguration(path)
-                                power_curve.PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
+                                power_curve.PowerCurveConfigurationDialog(self, self.setSpecifiedPowerCurveFromPath, config)
                         except Exception as e:
-                                self.status.addMessage("ERROR loading config (%s): %s" % (specifiedPowerCurve, e))
+                                ExceptionHandler.add(e, "ERROR loading config ({0})".format(specifiedPowerCurve))
                         
         def NewPowerCurve(self):
                 config = PowerCurveConfiguration()
-                power_curve.PowerCurveConfigurationDialog(self, self.status, self.setSpecifiedPowerCurveFromPath, config)
+                power_curve.PowerCurveConfigurationDialog(self, self.setSpecifiedPowerCurveFromPath, config)
                                                         
         def setSpecifiedPowerCurve(self):
                 preferences = Preferences.get()
@@ -150,7 +152,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                             preferences.powerCurveLastOpened = fileName
                             preferences.save()
                     except Exception as e:
-                        self.addMessage("Cannot save preferences: %s" % e)
+                        ExceptionHandler.add(e, "Cannot save preferences")
 
                     self.specifiedPowerCurve.set(fileName)
                 

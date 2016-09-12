@@ -4,6 +4,8 @@ import scipy.interpolate
 import numpy as np
 import pandas as pd
 
+from ..core.status import Status
+
 class RelaxationFactory:
     
     def __init__(self, lws_lti, lws_hti, hws_lti, hws_hti):
@@ -37,7 +39,7 @@ class Relaxation:
         self.hws_hti = hws_hti
 
         self.inflection_point = self.calculate_inflection_point(power_function, lower_wind_speed, upper_wind_speed)
-        print "Inflection point: {0}".format(self.inflection_point)
+        Status.add("Inflection point: {0}".format(self.inflection_point), verbosity=3)
 
     def relax(self, correction, wind_speed, reference_turbulence, target_turbulence):
         
@@ -118,9 +120,9 @@ class PowerCurve:
         else:
             ws_data = powerCurveLevels[self.inputHubWindSpeed]
 
-        print "calculating power function ({0})".format(self.interpolationMode)
+        Status.add("calculating power function ({0})".format(self.interpolationMode), verbosity=3)
         self.powerFunction = self.createPowerFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
-        print "power function calculated ({0})".format(type(self.powerFunction))
+        Status.add("power function calculated ({0})".format(type(self.powerFunction)), verbosity=3)
 
         self.relaxation = relaxation_factory.new_relaxation(self.powerFunction, self.cutInWindSpeed, self.cutOutWindSpeed) if has_pc else NoRelaxation()
             
@@ -135,22 +137,22 @@ class PowerCurve:
 
         if (turbulenceRenormalisation and has_pc):
 
-            print "Calculating zero turbulence curve for {0} Power Curve".format(self.name)
+            Status.add("Calculating zero turbulence curve for {0} Power Curve".format(self.name), verbosity=3)
 
             try:
 
                 self.calcZeroTurbulencePowerCurve()
-                print "Calculation of zero turbulence curve for {0} Power Curve successful".format(self.name)
+                Status.add("Calculation of zero turbulence curve for {0} Power Curve successful".format(self.name), verbosity=3)
 
             except Exception as error:
                 err_msg ="Calculation of zero turbulence curve for {0} Power Curve unsuccessful: {1}".format(self.name, error) 
-                print self.required                
+                Status.add(self.required, verbosity=3)          
                 if not self.required:
-                    print err_msg
+                    Status.add(err_msg, verbosity=3)
                 else:
                     raise Exception(err_msg)
         
-        print "Turbine Created Successfully"
+        Status.add("Turbine Created Successfully", verbosity=3)
         
     def calcZeroTurbulencePowerCurve(self):
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
@@ -215,7 +217,8 @@ class PowerCurve:
         
         x, y = [], []
 
-        print "Preparing input points"
+        Status.add("Preparing input points", verbosity=3)
+        
         for i in y_data.index:
             
             if i in x_data.index and not np.isnan(x_data[i]):
@@ -224,14 +227,14 @@ class PowerCurve:
                 x.append(i)
 
             if y_data[i] < 0.0:
-                print "Supressing negative value {0} ({1})".format(y_data[i], x[-1])
+                Status.add("Supressing negative value {0} ({1})".format(y_data[i], x[-1]), verbosity=3)
                 y.append(0.0)
             else:                
                 y.append(y_data[i])
 
-            print i, x[-1], y[-1]
+            Status.add("{0} {1} {2}".format(i, x[-1], y[-1]), verbosity=3)
         
-        print "Creating interpolator"
+        Status.add("Creating interpolator", verbosity=3)
         
         if self.interpolationMode == 'Linear':
             return interpolators.LinearPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
@@ -399,7 +402,6 @@ class ZeroTurbulencePowerCurve:
             correct_to_zero_turbulence = (-simulatedReferencePowerCurve.powers[i] + self.initialZeroTurbulencePowerCurve.powers[i])
             power = referencePowers[i] + relaxation.relax(correct_to_zero_turbulence, self.windSpeeds[i], referenceTurbulences[i], 0.0)
             self.powers.append(power)
-            #print "%f %f" % (self.windSpeeds[i], self.powers[i])
 
         self.powerFunction = scipy.interpolate.interp1d(self.windSpeeds, self.powers)
         
@@ -431,8 +433,6 @@ class InitialZeroTurbulencePowerCurve:
         
         self.referencePowerCurveStats = IterationPowerCurveStats(referenceWindSpeeds, referencePowers, availablePower)        
 
-        #print "%f %f %f" % (self.referencePowerCurveStats.ratedPower, self.referencePowerCurveStats.cutInWindSpeed, self.referencePowerCurveStats.cpMax)
-
         self.selectedStats = self.solve(self.referencePowerCurveStats)
 
         selectedIteration = InitialZeroTurbulencePowerCurveIteration(referenceWindSpeeds,
@@ -461,9 +461,6 @@ class InitialZeroTurbulencePowerCurve:
         iterationSimulatedCurveStats = IterationPowerCurveStats(iterationSimulatedCurve.windSpeeds, iterationSimulatedCurve.powers, self.availablePower)
         
         convergenceCheck = IterationPowerCurveConvergenceCheck(self.referencePowerCurveStats, iterationSimulatedCurveStats)
-
-        #print "%f %f %f" % (iterationSimulatedCurveStats.ratedPower, iterationSimulatedCurveStats.cutInWindSpeed, iterationSimulatedCurveStats.cpMax)
-        #print "%s %s %s" % (convergenceCheck.ratedPowerConverged, convergenceCheck.cutInConverged, convergenceCheck.cpMaxConverged)
 
         if convergenceCheck.isConverged:
             return previousIterationStats

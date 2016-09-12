@@ -11,6 +11,8 @@ import numpy as np
 import base_configuration
 import path_manager
 
+from ..core.status import Status
+
 class ShearMeasurement:
 
     def __init__(self, height = 0.0, wind_speed_column = '', wind_direction_column = ''):
@@ -150,7 +152,7 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.rewsProfileLevels = []
 
             self.filters = []
-            self.calibrationDirections = {}
+
             self.exclusions = []
 
             self.calibrationStartDate = None
@@ -159,8 +161,8 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.siteCalibrationCenterOfFirstSector = 0
 
             self.calibrationFilters = []
-            self.calibractionSectors = {}
-
+            self.calibrationSectors = []
+            
             self.hubHeight = None
             self.diameter = None
             self.cutInWindSpeed = None
@@ -184,7 +186,7 @@ class DatasetConfiguration(base_configuration.XmlBase):
             try:
                 return datetime.datetime.strptime(dateText, base_configuration.isoDateFormat)
             except Exception as e:
-                print "Cannot parse date (%s) using isoformat (%s): %s. Attemping parse with %s" % (dateText, base_configuration.isoDateFormat, e.message, self.dateFormat)
+                Status.add("Cannot parse date (%s) using isoformat (%s): %s. Attemping parse with %s" % (dateText, base_configuration.isoDateFormat, e.message, self.dateFormat), verbosity=2)
                 try:
                     return datetime.datetime.strptime(dateText, self.dateFormat)
                 except Exception as e:
@@ -564,13 +566,17 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
         filterNode = self.addNode(doc, filtersNode, nodeName)
         if hasattr(filterItem, 'startTime'):
+
             self._writeTimeOfDayFilter(doc, filterNode, filterItem, nodeName)
+
         else:
+
             self.addTextNode(doc, filterNode, "DataColumn", filterItem.column)
             self.addTextNode(doc, filterNode, "FilterType", filterItem.filterType)
             self.addBoolNode(doc, filterNode, "Inclusive", filterItem.inclusive)
     
             if not filterItem.derived:
+
                 if filterItem.filterType == 'Between':
                     self.addTextNode(doc, filterNode, "FilterValue", str(filterItem.value))
                 else:
@@ -584,10 +590,10 @@ class DatasetConfiguration(base_configuration.XmlBase):
     
                     columnFactorNode = self.addNode(doc, valueNode, "ColumnFactor")
     
-                    self.addTextNode(doc, filterNode, "DataColumn", columnFactorNode.valueItem[0])
-                    self.addFloatNode(doc, filterNode, "A", columnFactorNode.valueItem[1])
-                    self.addFloatNode(doc, filterNode, "B", columnFactorNode.valueItem[2])
-                    self.addFloatNode(doc, filterNode, "C", columnFactorNode.valueItem[3])
+                    self.addTextNode(doc, columnFactorNode, "DataColumn", valueItem[0])
+                    self.addFloatNode(doc, columnFactorNode, "A", valueItem[1])
+                    self.addFloatNode(doc, columnFactorNode, "B", valueItem[2])
+                    self.addFloatNode(doc, columnFactorNode, "C", valueItem[3])
     
             if not nodeName.lower() == 'clause':
                 self.addBoolNode(doc, filterNode, "Active", filterItem.active)

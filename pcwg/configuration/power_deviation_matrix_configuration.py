@@ -1,5 +1,6 @@
 
 import base_configuration
+from ..core.status import Status
 
 class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
@@ -29,6 +30,9 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
                 numberOfBins = self.getNodeFloat(node, 'NumberOfBins')
 
                 self.dimensions.append(PowerDeviationMatrixDimension(parameter, centerOfFirstBin, binWidth, numberOfBins))
+
+            if len(self.dimensions) < 1:
+                raise Exception("Matrix has zero dimensions")
 
             cellsNode = self.getNode(doc, 'Cells')
 
@@ -81,6 +85,9 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
     
     def __getitem__(self, parameters):
 
+        if len(self.dimensions) < 1:
+            raise Exception("Matrix has zero dimensions")
+
         keyList = []
 
         for dimension in self.dimensions:
@@ -103,7 +110,9 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             for dimension in self.dimensions:
                 value = parameters[dimension.parameter]
                 message += "%s: %f (%f) - (%f to %f)\n" % (dimension.parameter, value, self.getBin(dimension, value), dimension.centerOfFirstBin, dimension.centerOfLastBin)
-                
+            
+            Status.add(message)
+
             raise Exception(message)
         
         return self.cells[key]

@@ -1,8 +1,6 @@
 from Tkinter import *
 from tkFileDialog import *
 
-#http://effbot.org/tkinterbook/menu.htm
-
 class Preferences:
 
 	def __init__(self):

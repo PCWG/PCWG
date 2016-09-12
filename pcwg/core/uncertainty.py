@@ -4,6 +4,8 @@ import datetime
 import math
 import binning
 
+from ..core.status import Status
+
 class Config:
 
 	def __init__(self):
@@ -116,7 +118,7 @@ class Analysis:
 				power = powers[windSpeed]
 
 				catBPowerUncertainty[windSpeed] = CategoryBPowerUncertainty(power, uPdyn_Applied = uPdyn_Applied, uPVT_Applied = uPVT_Applied)
-				print catBPowerUncertainty[windSpeed].catBPowerUncertainty
+				Status.add("{0}".format(catBPowerUncertainty[windSpeed].catBPowerUncertainty))
 
 config = Config()
 analysis = Analysis(config)

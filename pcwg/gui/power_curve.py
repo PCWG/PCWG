@@ -9,6 +9,9 @@ import base_dialog
 import Tkinter as tk
 import validation
 
+from ..exceptions.handling import ExceptionHandler
+from ..core.status import Status
+
 def encodePowerLevelValueAsText(windSpeed, power):
     return "%f%s%f" % (windSpeed, base_dialog.columnSeparator, power)
 
@@ -20,7 +23,7 @@ def extractPowerLevelValuesFromText(text):
 
 class PowerCurveLevelDialog(base_dialog.BaseDialog):
 
-        def __init__(self, master, status, callback, text = None, index = None):
+        def __init__(self, master, callback, text = None, index = None):
 
                 self.callback = callback
                 self.text = text
@@ -30,7 +33,7 @@ class PowerCurveLevelDialog(base_dialog.BaseDialog):
 
                 self.isNew = (text == None)
                 
-                base_dialog.BaseDialog.__init__(self, master, status)
+                base_dialog.BaseDialog.__init__(self, master)
                         
         def body(self, master):
 
@@ -57,9 +60,9 @@ class PowerCurveLevelDialog(base_dialog.BaseDialog):
                 self.text = "%f|%f" % (float(self.windSpeed.get()), float(self.power.get()))
 
                 if self.isNew:
-                        self.status.addMessage("Power curve level created")
+                        Status.add("Power curve level created")
                 else:
-                        self.status.addMessage("Power curve level updated")
+                        Status.add("Power curve level updated")
 
                 if self.index== None:
                         self.callback(self.text)
@@ -109,12 +112,12 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
                         idx = items[0]
                         text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])
                         try:                                
-                                PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText, text, idx)
-                        except Exception as e:
-                               self.status.addMessage("ERROR loading config (%s): %s" % (text, e))
+                                PowerCurveLevelDialog(self, self.addPowerCurveLevelFromText, text, idx)
+                        except Exception as e: 
+                               ExceptionHandler.add(e, "ERROR loading config (%s)".format(text))
                                         
         def NewPowerCurveLevel(self):
-                PowerCurveLevelDialog(self, self.status, self.addPowerCurveLevelFromText)
+                PowerCurveLevelDialog(self, self.addPowerCurveLevelFromText)
                 
         def addPowerCurveLevelFromText(self, text, index = None):
 
