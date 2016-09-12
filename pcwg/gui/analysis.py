@@ -51,9 +51,9 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
             self.dataset_grid_box = dataset.DatasetGridBox(master, self, self.row, self.inputColumn, self.config.datasets.clone())
             self.row += 1
             
-            self.validateDatasets = validation.ValidateDatasets(master, self.dataset_grid_box)
-            self.validations.append(self.validateDatasets)
-            self.validateDatasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
+            self.validate_datasets = validation.ValidateDatasets(master, self.dataset_grid_box)
+            self.validations.append(self.validate_datasets)
+            self.validate_datasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
 
         def add_inner_range(self, master):
             
