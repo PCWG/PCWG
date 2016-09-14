@@ -189,6 +189,8 @@ class TimeOfDayFilter(XmlBase):
         self.applied = False
         self.months  = months
         self.column = "TimeStamp"
+        self.filterType = "Time of Day"
+        self.inclusive = False
 
     def write_summary(self):
         Status.add(str(self), verbosity=2)
