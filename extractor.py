@@ -90,3 +90,6 @@ def extract():
         print "Cannot start tool: {0}".format(e)    
         return
         
+
+if __name__ == "__main__":
+    extract()

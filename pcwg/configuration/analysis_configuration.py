@@ -188,7 +188,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         turbineNode = self.getNode(configurationNode, 'Turbine')
 
-        self.specified_power_curve.relative_path = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve','')
+        self.specified_power_curve.relative_path = self.getNodeValueIfExists(turbineNode, 'SpecifiedPowerCurve', None)
 
     def readPowerDeviationMatrix(self, configurationNode):
 
