@@ -10,6 +10,7 @@ import ttk
 import tkMessageBox
 
 import os.path
+import re
 
 import pandas as pd
 
@@ -285,11 +286,31 @@ class REWSProfileLevelDialog(base_dialog.BaseDialog):
                 self.addTitleRow(master, "REWS Level Settings:")
 
                 self.height = self.addEntry(master, "Height:", validation.ValidatePositiveFloat(master), self.item.height)
+
+                parse_button = tk.Button(master, text="Parse", command = self.parse_height, width=3, height=1)
+                parse_button.grid(row=(self.row-1), sticky=tk.N, column=self.inputColumn, padx = 160)
+
                 self.windSpeed = self.addPickerEntry(master, "Wind Speed:", validation.ValidateNotBlank(master), self.item.wind_speed_column, width = 60)
                 self.windDirection = self.addPickerEntry(master, "Wind Direction:", None, self.item.wind_direction_column, width = 60)
 
                 #dummy label to indent controls
                 tk.Label(master, text=" " * 5).grid(row = (self.row-1), sticky=tk.W, column=self.titleColumn)
+
+        def parse_height(self):
+            
+            wind_speed_text = self.windSpeed.get()
+
+            if len(wind_speed_text) > 0:
+
+                numbers = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", wind_speed_text)
+                print numbers
+
+                if len(numbers) > 0:
+
+                    try:
+                        self.height.set("{0}".format(float(numbers[0])))
+                    except:
+                        Status.add("Cannot parse height")
 
         def apply(self):
                         
