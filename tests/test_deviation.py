@@ -1,5 +1,8 @@
-import configuration
+import pcwg.configuration as configuration
 import unittest
+from os.path import join, abspath, dirname
+
+PACKAGE_ROOT = abspath(join(dirname(__file__), '..'))
 
 #https://docs.python.org/2/library/unittest.html
 
@@ -13,7 +16,7 @@ class PowerDeviationMatrixConfigurationTest(unittest.TestCase):
 
     def test_matrix_value(self):
     	
-    	matrix = configuration.PowerDeviationMatrixConfiguration("/Users/stuart/PCWG/Data/PowerDeviationMatrix.xml")
+    	matrix = configuration.PowerDeviationMatrixConfiguration(join(PACKAGE_ROOT, 'Data', 'PowerDeviationMatrix.xml'))
 
         self.assertEqual(matrix[(0.011, 0.55)], 0.01)
 

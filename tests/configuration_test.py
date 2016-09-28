@@ -2,7 +2,7 @@ import unittest
 import tempfile
 import os
 
-import configuration
+from pcwg import configuration
 
 class TestPortfolioConfiguration(unittest.TestCase):
 

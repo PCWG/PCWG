@@ -1,4 +1,4 @@
-import interpolators
+import pcwg.core.interpolators as interpolators
 import unittest
 
 class TestMarmanderPowerCurveInterpolator(unittest.TestCase):
