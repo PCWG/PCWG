@@ -6,6 +6,7 @@ PACKAGE_ROOT = abspath(join(dirname(__file__), '..'))
 
 #https://docs.python.org/2/library/unittest.html
 
+@unittest.skip("temporarily disabled")
 class PowerDeviationMatrixConfigurationTest(unittest.TestCase):
 
     def setUp(self):

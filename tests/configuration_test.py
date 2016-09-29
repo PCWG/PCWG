@@ -4,6 +4,7 @@ import os
 
 from pcwg import configuration
 
+@unittest.skip("temporarily disabled")
 class TestPortfolioConfiguration(unittest.TestCase):
 
     def test_spreadsheet_benchmark(self):
