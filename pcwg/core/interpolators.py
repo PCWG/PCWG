@@ -105,7 +105,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
     
     def find_limit(self, speed, x_limits):
     
-        for limit in x_limits.values():
+        for limit in x_limits:
 
             start = limit[0]
             end = limit[1]
