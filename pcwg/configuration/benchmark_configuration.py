@@ -45,6 +45,8 @@ class BenchmarkConfiguration(base_configuration.XmlBase):
             for enode in self.getNodes(self.getNode(bnode, 'ExpectedResults'), 'ExpectedResult'):
                 benchmark.expectedResults[self.getNodeValue(enode, 'Field')] = self.getNodeFloat(enode, 'Value')
 
+            benchmark.base_line_mode =  self.getNodeValueIfExists(configurationNode, 'BaseLineMode', 'Hub')
+
             self.benchmarks.append(benchmark)
 
 class Benchmark(SinglePathManager):

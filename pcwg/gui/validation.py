@@ -97,6 +97,15 @@ class ValidatePositiveInteger(ValidateBase):
         def mask(self, text, value):
                 return (text in '0123456789')
 
+class ValidateOptionalPositiveInteger(ValidatePositiveInteger):
+
+        def validate(self, value):
+
+            if len(value) < 1:
+                return ValidationResult(True, "")
+            else:
+                return ValidatePositiveInteger.validate(self, value)
+
 class ValidateFloat(ValidateBase):
 
         def validate(self, value):
@@ -112,6 +121,14 @@ class ValidateFloat(ValidateBase):
         def mask(self, text, value):
                 return (text in '0123456789.-')
 
+class ValidateOptionalFloat(ValidateFloat):
+
+    def validate(self, value):
+
+        if len(value) < 1:
+            return ValidationResult(True, "")
+        else:
+            return ValidateFloat.validate(self, value)
 
 class ValidateNonNegativeFloat(ValidateBase):
 

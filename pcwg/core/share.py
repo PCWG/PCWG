@@ -29,6 +29,18 @@ class ShareAnalysis(Analysis):
         Analysis.__init__(self, config)
         self.pcwg_share_metrics_calc()
 
+    def calculate_power_deviation_matrices(self):
+        #speed optimisation (output power deviation matrices not required for PCWG-Share-X)
+        pass
+
+    def calculate_sensitivity_analysis(self):
+        #speed optimisation (sensitivity analysis not required for PCWG-Share-X)
+        pass
+
+    def calculate_scatter_metric(self):
+        #speed optimisation (scatter metric not required for PCWG-Share-X)
+        pass
+
     def load_dataset(self, dataset_config, analysis_config):
 
         power_filter = Filter(True, dataset_config.power, 'Below', False, 0.0)

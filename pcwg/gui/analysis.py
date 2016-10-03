@@ -76,14 +76,19 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                                             
             self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive)
             self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive)
-            self.rewsCorrectionActive = self.addCheckBox(master, "REWS Correction Active", self.config.rewsActive)  
             self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive)               
             
             self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", validation.ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specified_power_deviation_matrix.absolute_path, self.filePath)
 
+        def add_rews(self, master):
+                                            
+            self.rewsCorrectionActive = self.addCheckBox(master, "REWS Active", self.config.rewsActive)  
+
+            self.rewsVeer = self.addCheckBox(master, "REWS Veer", self.config.rewsVeer)  
+            self.rewsUpflow = self.addCheckBox(master, "REWS Upflow", self.config.rewsUpflow)  
+
         def add_advanced(self, master):
 
-            self.baseLineMode = self.addOption(master, "Base Line Mode:", ["Hub", "Measured"], self.config.baseLineMode)
             self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
             self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
 
@@ -97,6 +102,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 datasets_tab = tk.Frame(nb)
                 inner_range_tab = tk.Frame(nb)
                 turbine_tab = tk.Frame(nb)
+                rews_tab = tk.Frame(nb)
                 corrections_tab = tk.Frame(nb)
                 advanced_tab = tk.Frame(nb)
 
@@ -104,17 +110,20 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 nb.add(power_curve_tab, text='Power Curve', padding=3)
                 nb.add(datasets_tab, text='Datasets', padding=3)
                 nb.add(turbine_tab, text='Turbine', padding=3)
+                nb.add(rews_tab, text='REWS', padding=3)
                 nb.add(corrections_tab, text='Corrections', padding=3)
                 nb.add(advanced_tab, text='Advanced', padding=3)
 
-                nb.grid(row=self.row, sticky=tk.E+tk.W, column=self.titleColumn, columnspan=8)
+                nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
+                master.grid_rowconfigure(self.row, weight=1)
                 self.row += 1
                 
                 self.add_general(general_tab, path)
                 self.add_power_curve(power_curve_tab)
                 self.add_datasets(datasets_tab)
                 self.add_inner_range(inner_range_tab)
-                self.add_turbine(turbine_tab)  
+                self.add_turbine(turbine_tab)
+                self.add_rews(rews_tab)
                 self.add_corrections(corrections_tab)                                                                                                                 
                 self.add_advanced(advanced_tab) 
 
@@ -160,7 +169,6 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     
                 self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
                 self.config.filterMode = self.filterMode.get()
-                self.config.baseLineMode = self.baseLineMode.get()
                 self.config.interpolationMode = self.interpolationMode.get()
                 self.config.powerCurveMode = self.powerCurveMode.get()
                 self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
@@ -177,7 +185,10 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     
                 self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
                 self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
+
                 self.config.rewsActive = bool(self.rewsCorrectionActive.get())
+                self.config.rewsVeer = bool(self.rewsVeer.get())
+                self.config.rewsUpflow = bool(self.rewsUpflow.get())
     
                 self.config.specified_power_deviation_matrix.absolute_path = self.specifiedPowerDeviationMatrix.get()
                 self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())

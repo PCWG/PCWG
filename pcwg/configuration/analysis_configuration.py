@@ -30,7 +30,6 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.Name = self.getNodeValueIfExists(configurationNode, 'Name',None)
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
-            self.baseLineMode = self.getNodeValue(configurationNode, 'BaseLineMode')
             
             if self.nodeExists(configurationNode, 'InterpolationMode'):
                 self.interpolationMode = self.getNodeValue(configurationNode, 'InterpolationMode')
@@ -66,7 +65,6 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.isNew = True
             self.Name = ""
             self.powerCurveMinimumCount = 10
-            self.baseLineMode = 'Hub'
             self.filterMode = 'All'
             self.powerCurveMode = 'Specified'
             self.powerCurvePaddingMode = defaultPaddingMode
@@ -77,6 +75,9 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.setDefaultInnerRangeShear()
 
             self.rewsActive = False
+            self.rewsVeer = True
+            self.rewsUpflow = False
+
             self.turbRenormActive = False
             self.densityCorrectionActive = False
             self.powerDeviationMatrixActive = False
@@ -124,7 +125,6 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addIntNode(doc, root, "PowerCurveMinimumCount", self.powerCurveMinimumCount)
 
         self.addTextNode(doc, root, "FilterMode", self.filterMode)
-        self.addTextNode(doc, root, "BaseLineMode", self.baseLineMode)
         self.addTextNode(doc, root, "InterpolationMode", self.interpolationMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
@@ -158,7 +158,10 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addBoolNode(doc, turbulenceRenormNode, "Active", self.turbRenormActive)
 
         rewsNode = self.addNode(doc, root, "RotorEquivalentWindSpeed")
+
         self.addBoolNode(doc, rewsNode, "Active", self.rewsActive)
+        self.addBoolNode(doc, rewsNode, "Veer", self.rewsVeer)
+        self.addBoolNode(doc, rewsNode, "Upflow", self.rewsUpflow)
 
         powerDeviationMatrixNode = self.addNode(doc, root, "PowerDeviationMatrix")
         self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specified_power_deviation_matrix.relative_path)
@@ -203,9 +206,22 @@ class AnalysisConfiguration(base_configuration.XmlBase):
     def readREWS(self, configurationNode):
 
         if self.nodeExists(configurationNode, 'RotorEquivalentWindSpeed'):
+            
             rewsNode = self.getNode(configurationNode, 'RotorEquivalentWindSpeed')
             self.rewsActive = self.getNodeBool(rewsNode, 'Active')
+
+            if self.nodeExists(rewsNode, 'Veer'):
+                self.rewsVeer = self.getNodeBool(rewsNode, 'Veer')
+            else:
+                self.rewsVeer = False
+
+            if self.nodeExists(rewsNode, 'Upflow'):
+                self.rewsUpflow = self.getNodeBool(rewsNode, 'Upflow')
+            else:
+                self.rewsUpflow = False
+
         else:
+
             self.rewsActive = False
 
     def readTurbRenorm(self, configurationNode):

@@ -4,7 +4,7 @@ Created on Wed Aug 10 01:28:28 2016
 
 @author: Stuart
 """
-import tkSimpleDialog
+import tk_simple_dialog
 import Tkinter as tk
 import tkFileDialog
 import tkMessageBox
@@ -127,7 +127,7 @@ class ClearEntry:
         def __call__(self):
                 self.entry.set("")
                 
-class BaseDialog(tkSimpleDialog.Dialog):
+class BaseDialog(tk_simple_dialog.Dialog):
 
         def __init__(self, master):
 
@@ -146,7 +146,7 @@ class BaseDialog(tkSimpleDialog.Dialog):
                 
                 self.master = master
 
-                tkSimpleDialog.Dialog.__init__(self, master)
+                tk_simple_dialog.Dialog.__init__(self, master)
         
         def prepareColumns(self, master):
 
@@ -599,17 +599,7 @@ class BaseConfigurationDialog(BaseDialog):
                 
         def body(self, master):
 
-                self.prepareColumns(master)
-
-                #add spacer labels
-                #spacer = " "
-                #tk.Label(master, text=spacer * 10).grid(row = self.row, sticky=tk.W, column=self.titleColumn)
-                #tk.Label(master, text=spacer * 40).grid(row = self.row, sticky=tk.W, column=self.labelColumn)
-                #tk.Label(master, text=spacer * 80).grid(row = self.row, sticky=tk.W, column=self.inputColumn)
-                #tk.Label(master, text=spacer * 10).grid(row = self.row, sticky=tk.W, column=self.buttonColumn)
-                #tk.Label(master, text=spacer * 10).grid(row = self.row, sticky=tk.W, column=self.secondButtonColumn)
-                #tk.Label(master, text=spacer * 40).grid(row = self.row, sticky=tk.W, column=self.messageColumn)
-                #self.row += 1            
+                self.prepareColumns(master)         
 
                 if self.config.isNew:
                         path = None
