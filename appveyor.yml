@@ -1,0 +1,33 @@
+environment:
+
+  matrix:
+    - PYTHON_VERSION: "2.7"
+      PYTHON_ARCH: "64"
+      CONDA_PY: "27"
+      CONDA_NPY: "111"
+
+#    - PYTHON_VERSION: "3.5"
+#      PYTHON_ARCH: "64"
+#      CONDA_PY: "35"
+#      CONDA_NPY: "111"
+
+init:
+  - "ECHO %PYTHON_VERSION%"
+
+install:
+  - set PATH=C:\Miniconda3;C:\Miniconda3\Scripts;%PATH%
+  - cmd: conda config --set always_yes true
+  - cmd: conda create -q --yes -n pcwg python=%PYTHON_VERSION% nose
+  - cmd: activate pcwg
+  - cmd: conda install -n pcwg -q --yes --file=requirements.txt
+
+build: false
+
+test_script:
+  - cmd: conda info -a
+
+  - cd C:\projects\pcwg
+  - cmd: activate pcwg
+  - cmd: conda list
+  - cmd: nosetests --exe -A "not gui and not disabled" tests
+

@@ -4,6 +4,8 @@ Created on Thu Aug 11 05:37:02 2016
 
 @author: Stuart
 """
+import os
+
 import base_configuration
 from path_manager import SinglePathManager
 
@@ -59,3 +61,6 @@ class Benchmark(SinglePathManager):
 
         self.set_base(base_path)
         self.relative_path = relative_path
+
+    def __repr__(self):
+        return "<Benchmark {}>".format(os.path.basename(self.relative_path))

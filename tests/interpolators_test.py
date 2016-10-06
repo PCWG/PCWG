@@ -1,5 +1,8 @@
-import interpolators
+import pcwg.core.interpolators as interpolators
 import unittest
+
+from pcwg.core.binning import Bins
+
 
 class TestMarmanderPowerCurveInterpolator(unittest.TestCase):
 
@@ -69,39 +72,7 @@ class TestMarmanderPowerCurveInterpolator(unittest.TestCase):
 
         cutOutWindSpeed = 25.0
 
-        limits = {}
-        
-        limits[1.00] = (0.5,1.5)
-        limits[2.00] = (1.5,2.5)
-        limits[3.00] = (2.5,3.5)
-        limits[4.10] = (3.5,4.5)
-        limits[5.06] = (4.5,5.5)
-        limits[6.04] = (5.5,6.5)
-        limits[7.00] = (6.5,7.5)
-        limits[8.00] = (7.5,8.5)
-        limits[9.01] = (8.5,9.5)
-        limits[9.98] = (9.5,10.5)
-        limits[10.97] = (10.5,11.5)
-        limits[12.00] = (11.5,12.5)
-        limits[12.99] = (12.5,13.5)
-        limits[13.95] = (13.5,14.5)
-        limits[14.99] = (14.5,15.5)
-        limits[16.01] = (15.5,16.5)
-        limits[16.98] = (16.5,17.5)
-        limits[17.84] = (17.5,18.5)
-        limits[19.00] = (18.5,19.5)
-        limits[20.00] = (19.5,20.5)
-        limits[21.00] = (20.5,21.5)
-        limits[22.00] = (21.5,22.5)
-        limits[23.00] = (22.5,23.5)
-        limits[24.00] = (23.5,24.5)
-        limits[25.00] = (24.5,25.5)
-        limits[26.00] = (25.5,26.5)
-        limits[27.00] = (26.5,27.5)
-        limits[28.00] = (27.5,28.5)
-        limits[29.00] = (28.5,29.5)
-        limits[30.00] = (29.5,30.5)
-
+        limits = Bins(0.0,1.0, 30.0).limits
 
         expectedX = [1.00,
                     2.00,
