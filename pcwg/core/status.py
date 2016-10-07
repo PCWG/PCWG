@@ -31,13 +31,13 @@ class Status:
         self.verbosity = 1
     
     def add_message(self, message, red, verbosity):
-
+               
         if verbosity <= self.verbosity:
 
             if isinstance(message, pd.DataFrame) or isinstance(message, pd.core.frame.DataFrame):
                 text = str(message.head())
             else:
-                text = message
+                text = str(message)
 
             lines = text.split("\n")
     

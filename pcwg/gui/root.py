@@ -104,10 +104,10 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
 
 class UserInterface:
 
-    def __init__(self):
+    def __init__(self, preferences):
 
             ExceptionHandler.initialize_handler(self.add_exception)
-            Status.initialize_status(self.add_message)
+            Status.initialize_status(self.add_message, preferences.verbosity)
 
             self.analysis = None
             self.analysisConfiguration = None
