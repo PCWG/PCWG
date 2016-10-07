@@ -1,11 +1,11 @@
-from Tkinter import *
+import Tkinter as tk
 import os
 
-class Dialog(Toplevel):
+class Dialog(tk.Toplevel):
 
     def __init__(self, parent, title = None):
 
-        Toplevel.__init__(self, parent)
+        tk.Toplevel.__init__(self, parent)
         self.transient(parent)
 
         if title:
@@ -15,11 +15,19 @@ class Dialog(Toplevel):
 
         self.result = None
 
-        body = Frame(self)
+        body = tk.Frame(self)
         self.initial_focus = self.body(body)
-        body.pack(padx=5, pady=5)
+        #body.pack(padx=5, pady=5)
 
-        self.buttonbox()
+        box = tk.Frame(self)
+        self.buttonbox(box)
+
+        body.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+        box.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
 
         self.grab_set()
 
@@ -44,21 +52,19 @@ class Dialog(Toplevel):
 
         pass
 
-    def buttonbox(self):
+    def buttonbox(self, box):
         # add standard button box. override if you don't want the
         # standard buttons
+        frame = tk.Frame(box)
+        frame.pack()
 
-        box = Frame(self)
-
-        w = Button(box, text="OK", width=10, command=self.ok, default=ACTIVE)
-        w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Cancel", width=10, command=self.cancel)
-        w.pack(side=LEFT, padx=5, pady=5)
+        w = tk.Button(frame, text="OK", width=10, command=self.ok, default=tk.ACTIVE)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w = tk.Button(frame, text="Cancel", width=10, command=self.cancel)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
-
-        box.pack()
 
     #
     # standard button semantics

@@ -29,6 +29,18 @@ class ShareAnalysis(Analysis):
         Analysis.__init__(self, config)
         self.pcwg_share_metrics_calc()
 
+    def calculate_power_deviation_matrices(self):
+        #speed optimisation (output power deviation matrices not required for PCWG-Share-X)
+        pass
+
+    def calculate_sensitivity_analysis(self):
+        #speed optimisation (sensitivity analysis not required for PCWG-Share-X)
+        pass
+
+    def calculate_scatter_metric(self):
+        #speed optimisation (scatter metric not required for PCWG-Share-X)
+        pass
+
     def load_dataset(self, dataset_config, analysis_config):
 
         power_filter = Filter(True, dataset_config.power, 'Below', False, 0.0)
@@ -40,7 +52,7 @@ class ShareAnalysis(Analysis):
     def loadData(self, config):
         Analysis.loadData(self, config)
         self.auto_activate_corrections()
-
+        
     def auto_activate_corrections(self):
         
         Status.add("Automatically activating corrections based on available data.")
@@ -388,14 +400,27 @@ class BaseSharePortfolio(object):
         
         with zipfile.ZipFile(zip_file, 'w') as output_zip:
             
-            for item in self.portfolio.datasets:
-    
+            for index, item in enumerate(self.portfolio.datasets):
+
+                Status.add("Loading dataset {0}".format(index + 1)) 
                 dataset = DatasetConfiguration(item.absolute_path)                
-                Status.add("Running: {0}".format(dataset.name))
-                share = self.new_share(dataset, output_zip)
+                Status.add("Dataset {0} loaded = ".format(index + 1, dataset.name)) 
+                
+                Status.add("Verifying dataset {0}".format(dataset.name))
+                
+                if self.verify_share_configs(dataset) == False:
+
+                    Status.add("Dataset Verification Failed for {0}".format(dataset.name), red=True)
+                    
+                else:
+                    
+                    Status.add("Dataset {0} Verified".format(dataset.name))
+                    
+                    Status.add("Running: {0}".format(dataset.name))
+                    share = self.new_share(dataset, output_zip)
     
-                if share.success:
-                    self.shares.append(share)
+                    if share.success:
+                        self.shares.append(share)
 
             if len(self.shares) < 1:
                 Status.add("No successful results to summarise")
@@ -404,6 +429,72 @@ class BaseSharePortfolio(object):
        
         Status.add("Portfolio Run Complete")
             
+    def verify_share_configs(self, config):
+        
+        valid = True
+        
+        if self.is_invalid_float(config.cutInWindSpeed):
+            Status.add("Cut in wind speed not defined", red=True)
+            valid = False
+
+        if self.is_invalid_float(config.cutOutWindSpeed):
+            Status.add("Cut out wind speed not defined", red=True)
+            valid = False
+
+        if self.is_invalid_float(config.ratedPower):
+            Status.add("Rated Power not defined", red=True)
+            valid = False
+            
+        if self.is_invalid_float(config.diameter):
+            Status.add("Diameter not defined", red=True)
+            valid = False
+            
+        if self.is_invalid_float(config.hubHeight):
+            Status.add("Hub height not defined", red=True)
+            valid = False
+            
+        if self.is_invalid_string(config.power):
+            Status.add("Power not defined", red=True)
+            valid = False
+            
+        if self.is_invalid_string(config.hubTurbulence):
+            if self.is_invalid_string(config.referenceWindSpeedStdDev):
+                Status.add("No turbulence defined", red=True)        
+                valid = False
+            
+        if self.is_invalid_list(config.referenceShearMeasurements):
+            Status.add("No shear defined", red=True)
+            valid = False
+            
+        return valid
+
+    def is_invalid_list(self, value):
+
+        if value is None:
+            return True
+
+        if len(value) < 1:
+            return True
+            
+        return False
+                
+    def is_invalid_string(self, value):
+
+        if value is None:
+            return True
+
+        if len(value.strip()) < 1:
+            return True
+            
+        return False
+
+    def is_invalid_float(self, value):
+
+        if value is None:
+            return True
+            
+        return False
+
     def report_summary(self, summary_file, output_zip):
         
         Status.add("Exporting results to {0}".format(summary_file))                

@@ -10,6 +10,7 @@ import ttk
 import tkMessageBox
 
 import os.path
+import re
 
 import pandas as pd
 
@@ -223,48 +224,9 @@ class CalibrationDirectionDialog(base_dialog.BaseDialog):
                 else:
                         Status.add("Calibration direction updated")
 
-class ShearMeasurementDialog(base_dialog.BaseDialog):
-    
-        def __init__(self, master, parent_dialog, item):
+class ShearDialogBase(base_dialog.BaseDialog):
 
-                self.parent_dialog = parent_dialog
-                self.isNew = (item == None)
-                
-                if self.isNew:
-                    self.item = ShearMeasurement()
-                else:
-                    self.item = item
-
-                base_dialog.BaseDialog.__init__(self, master)
-        
-        def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
-                return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)        
-        
-        def body(self, master):
-
-                self.prepareColumns(master)                       
-                        
-                self.addTitleRow(master, "Shear measurement:")
-                
-                self.height = self.addEntry(master, "Height:", validation.ValidatePositiveFloat(master), self.item.height)                
-                self.windSpeed = self.addPickerEntry(master, "Wind Speed:", validation.ValidateNotBlank(master), self.item.wind_speed_column, width = 60)
-                
-                #dummy label to indent controls
-                tk.Label(master, text=" " * 5).grid(row = (self.row-1), sticky=tk.W, column=self.titleColumn)                
-
-        def apply(self):
-                        
-                self.item.height = float(self.height.get())
-                self.item.wind_speed_column = self.windSpeed.get().strip()
-
-                if self.isNew:
-                        Status.add("Shear measurement created")
-                else:
-                        Status.add("Shear measurement updated")
-
-class REWSProfileLevelDialog(base_dialog.BaseDialog):
-
-        def __init__(self, master, parent_dialog, item):
+    def __init__(self, master, parent_dialog, item):
 
             self.parent_dialog = parent_dialog
             self.isNew = (item == None)
@@ -276,31 +238,85 @@ class REWSProfileLevelDialog(base_dialog.BaseDialog):
 
             base_dialog.BaseDialog.__init__(self, master)
 
-        def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
-                return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn)
+    def ShowColumnPicker(self, parentDialog, pick, selectedColumn):
+            return self.parent_dialog.ShowColumnPicker(parentDialog, pick, selectedColumn) 
+
+    def parse_height(self):
         
-        def body(self, master):
+        wind_speed_text = self.windSpeed.get()
 
-                self.prepareColumns(master)
-                self.addTitleRow(master, "REWS Level Settings:")
+        if len(wind_speed_text) > 0:
 
-                self.height = self.addEntry(master, "Height:", validation.ValidatePositiveFloat(master), self.item.height)
-                self.windSpeed = self.addPickerEntry(master, "Wind Speed:", validation.ValidateNotBlank(master), self.item.wind_speed_column, width = 60)
-                self.windDirection = self.addPickerEntry(master, "Wind Direction:", None, self.item.wind_direction_column, width = 60)
+            numbers = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", wind_speed_text)
+            print numbers
 
-                #dummy label to indent controls
-                tk.Label(master, text=" " * 5).grid(row = (self.row-1), sticky=tk.W, column=self.titleColumn)
+            if len(numbers) > 0:
 
-        def apply(self):
-                        
-                self.item.height = float(self.height.get())
-                self.item.wind_speed_column = self.windSpeed.get().strip()
-                self.item.wind_direction_column = self.windDirection.get().strip()
+                try:
+                    self.height.set("{0}".format(float(numbers[0])))
+                except:
+                    Status.add("Cannot parse height")
 
-                if self.isNew:
-                        Status.add("Rotor level created")
-                else:
-                        Status.add("Rotor level updated")
+class ShearMeasurementDialog(ShearDialogBase):
+    
+    def __init__(self, master, parent_dialog, item):
+        ShearDialogBase.__init__(self, master, parent_dialog, item)               
+        
+    def body(self, master):
+
+            self.prepareColumns(master)                       
+                    
+            self.addTitleRow(master, "Shear measurement:")
+            
+            self.height = self.addEntry(master, "Height:", validation.ValidatePositiveFloat(master), self.item.height)                
+            self.windSpeed = self.addPickerEntry(master, "Wind Speed:", validation.ValidateNotBlank(master), self.item.wind_speed_column, width = 60)
+            
+            #dummy label to indent controls
+            tk.Label(master, text=" " * 5).grid(row = (self.row-1), sticky=tk.W, column=self.titleColumn)                
+
+    def apply(self):
+                    
+            self.item.height = float(self.height.get())
+            self.item.wind_speed_column = self.windSpeed.get().strip()
+
+            if self.isNew:
+                    Status.add("Shear measurement created")
+            else:
+                    Status.add("Shear measurement updated")
+
+class REWSProfileLevelDialog(ShearDialogBase):
+
+    def __init__(self, master, parent_dialog, item):
+        ShearDialogBase.__init__(self, master, parent_dialog, item)  
+
+    def body(self, master):
+
+            self.prepareColumns(master)
+            self.addTitleRow(master, "REWS Level Settings:")
+
+            self.height = self.addEntry(master, "Height:", validation.ValidatePositiveFloat(master), self.item.height)
+
+            parse_button = tk.Button(master, text="Parse", command = self.parse_height, width=3, height=1)
+            parse_button.grid(row=(self.row-1), sticky=tk.N, column=self.inputColumn, padx = 160)
+
+            self.windSpeed = self.addPickerEntry(master, "Wind Speed:", validation.ValidateNotBlank(master), self.item.wind_speed_column, width = 60)
+            self.windDirection = self.addPickerEntry(master, "Wind Direction:", None, self.item.wind_direction_column, width = 60)
+            self.upflow = self.addPickerEntry(master, "Upflow:", None, self.item.upflow_column, width = 60)
+
+            #dummy label to indent controls
+            tk.Label(master, text=" " * 5).grid(row = (self.row-1), sticky=tk.W, column=self.titleColumn)
+
+    def apply(self):
+                    
+            self.item.height = float(self.height.get())
+            self.item.wind_speed_column = self.windSpeed.get().strip()
+            self.item.wind_direction_column = self.windDirection.get().strip()
+            self.item.upflow_column = self.upflow.get().strip()
+
+            if self.isNew:
+                    Status.add("Rotor level created")
+            else:
+                    Status.add("Rotor level updated")
 
 class ExclusionsGridBox(DialogGridBox):
 
@@ -402,10 +418,10 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         def addFilePath(self, master, path):
             pass
 
-        def file_path_update(self):
+        def file_path_update(self, *args):
             self.config.input_time_series.set_base(self.filePath.get())
 
-        def time_series_path_update(self):
+        def time_series_path_update(self, *args):
             self.config.input_time_series.absolute_path = self.inputTimeSeriesPath.get()
 
         def add_general(self, master, path):
@@ -556,7 +572,35 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
             
             self.filtersGridBox = FiltersGridBox(master, self, self.row, self.inputColumn)
             self.filtersGridBox.add_items(self.config.filters)
+
+        def add_meta_data(self, master):  
             
+            self.data_type = self.addOption(master, "Data Type:", ["Mast", "LiDAR", "SoDAR", "Mast & LiDAR", "Mast & SoDAR", "Spinner"], self.config.data_type)                
+            self.outline_site_classification = self.addOption(master, "Outline Site Classification:", ["Flat", "Complex", "Offshore"], self.config.outline_site_classification)                
+            self.outline_forestry_classification = self.addOption(master, "Outline Forestry Classification:", ["Forested", "Non-Forested"], self.config.outline_forestry_classification)                
+            
+            #IEC Site Classification [• As described by Annex B of IEC 61400-12-1 (2006)]
+            self.iec_terrain_classification = self.addEntry(master, "IEC Terrain Classification:", None, self.config.iec_terrain_classification)
+
+            self.latitude = self.addEntry(master, "Latitude:", validation.ValidateOptionalFloat(master), self.config.latitude)
+            self.longitude = self.addEntry(master, "Longitude:", validation.ValidateOptionalFloat(master), self.config.longitude)
+            self.continent = self.addOption(master, "Continent:", ["Europe", "North America", "Asia", "South America", "Africa", "Antarctica"], self.config.continent) 
+            self.country = self.addOption(master, "Country:", self.get_countries(), self.config.country) 
+
+            self.elevation_above_sea_level = self.addEntry(master, "Elevation Above Sea Level:", validation.ValidateOptionalFloat(master), self.config.elevation_above_sea_level)
+            self.measurement_compliance = self.addOption(master, "Measurement Compliance:", ["IEC 61400-12-1 (2006) Compliant", "None", "Unknown"], self.config.measurement_compliance)                
+            self.anemometry_type = self.addOption(master, "Anemometry Type:", ["Sonic", "Cups", "Spinner", "Not Applicable"], self.config.anemometry_type)                
+            self.anemometry_heating = self.addOption(master, "Anemometry Heating:", ["Heated", "Unheated", "Unknown", "Not Applicable"], self.config.anemometry_heating)
+            self.turbulence_measurement_type = self.addOption(master, "Turbulence Measurement Type", ["LiDAR", "SoDAR", "Cups", "Sonic"], self.config.turbulence_measurement_type)               
+            self.power_measurement_type = self.addOption(master, "Power Measurement Type:", ["Transducer", "SCADA", "Unknown"], self.config.power_measurement_type)                
+            self.turbine_control_type = self.addOption(master, "Turbine Control Type:", ["Pitch", "Stall", "Active Stall"], self.config.turbine_control_type)    
+            self.turbine_technology_vintage = self.addEntry(master, "Turbine Technology Vintage:", validation.ValidateOptionalPositiveInteger(master), self.config.turbine_technology_vintage)                  
+
+            self.time_zone = self.addOption(master, "Time Zone:", ["Local", "UTC"], self.config.time_zone)                
+
+        def get_countries(self):
+            return ["Åland Islands","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antarctica","Antigua and Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Bouvet Island","Brazil","British Indian Ocean Territory","Brunei Darussalam","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Caribbean Netherlands ","Cayman Islands","Central African Republic","Chad","Chile","China","Christmas Island","Cocos (Keeling) Islands","Colombia","Comoros","Congo","Congo, Democratic Republic of","Cook Islands","Costa Rica","Côte d'Ivoire","Croatia","Cuba","Curaçao","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","English Name","Equatorial Guinea","Eritrea","Estonia","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Guiana","French Polynesia","French Southern Territories","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guadeloupe","Guam","Guatemala","Guernsey","Guinea","Guinea-Bissau","Guyana","Haiti","Heard and McDonald Islands","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan","Lao People's Democratic Republic","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Macedonia","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Martinique","Mauritania","Mauritius","Mayotte","Mexico","Micronesia, Federated States of","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","Niue","Norfolk Island","North Korea","Northern Mariana Islands","Norway","Oman","Pakistan","Palau","Palestine, State of","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Pitcairn","Poland","Portugal","Puerto Rico","Qatar","Réunion","Romania","Russian Federation","Rwanda","Saint Barthélemy","Saint Helena","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Saint-Martin (France)","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Sint Maarten (Dutch part)","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Georgia and the South Sandwich Islands","South Korea","South Sudan","Spain","Sri Lanka","St. Pierre and Miquelon","Sudan","Suriname","Svalbard and Jan Mayen Islands","Swaziland","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","The Netherlands","Timor-Leste","Togo","Tokelau","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Turks and Caicos Islands","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","United States Minor Outlying Islands","Uruguay","Uzbekistan","Vanuatu","Vatican","Venezuela","Vietnam","Virgin Islands (British)","Virgin Islands (U.S.)","Wallis and Futuna Islands","Western Sahara","Yemen","Zambia","Zimbabwe"]
+
         def add_turbine(self, master):
             
             self.cutInWindSpeed = self.addEntry(master, "Cut In Wind Speed:", validation.ValidatePositiveFloat(master), self.config.cutInWindSpeed)
@@ -589,6 +633,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 specified_calibration_tab = tk.Frame(nb)
                 exclusions_tab = tk.Frame(nb)
                 filters_tab = tk.Frame(nb)
+                meta_data_tab = tk.Frame(nb)
 
                 nb.add(general_tab, text='General', padding=3)
                 nb.add(turbines_tab, text='Turbine', padding=3)
@@ -602,8 +647,10 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 nb.add(specified_calibration_tab, text='Calibration (Specified)', padding=3)
                 nb.add(exclusions_tab, text='Exclusions', padding=3)
                 nb.add(filters_tab, text='Filters', padding=3)
+                nb.add(meta_data_tab, text='Meta Data', padding=3)
 
-                nb.grid(row=self.row, sticky=tk.E+tk.W, column=self.titleColumn, columnspan=8)
+                nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
+                master.grid_rowconfigure(self.row, weight=1)
                 self.row += 1
                 
                 self.add_general(general_tab, path)
@@ -618,6 +665,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.add_specified_calibration(specified_calibration_tab)
                 self.add_exclusions(exclusions_tab)
                 self.add_filters(filters_tab)
+                self.add_meta_data(meta_data_tab)
 
                 self.calibrationMethodChange()
                 self.densityMethodChange()
@@ -869,6 +917,46 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.config.ratedPower = float(self.ratedPower.get())
                 self.config.hubHeight = float(self.hubHeight.get())
                 self.config.diameter = float(self.diameter.get())
+
+                #meta data
+
+                self.config.data_type = self.data_type.get()
+                self.config.outline_site_classification = self.outline_site_classification.get()
+                self.config.outline_forestry_classification = self.outline_forestry_classification.get() 
+                
+                self.config.iec_terrain_classification = self.iec_terrain_classification.get()
+
+                if len(self.latitude.get()) > 0:
+                    self.config.latitude = float(self.latitude.get())
+                else:
+                    self.config.latitude = None
+
+                if len(self.longitude.get()) > 0:
+                    self.config.longitude = float(self.longitude.get())
+                else:
+                    self.config.longitude = None
+
+                self.config.continent = self.continent.get()
+                self.config.country = self.country.get()
+
+                if len(self.elevation_above_sea_level.get()) > 0:
+                    self.config.elevation_above_sea_level = float(self.elevation_above_sea_level.get())
+                else:
+                    self.config.elevation_above_sea_level = None
+
+                self.config.measurement_compliance = self.measurement_compliance.get()
+                self.config.anemometry_type = self.anemometry_type.get()
+                self.config.anemometry_heating = self.anemometry_heating.get()
+                self.config.turbulence_measurement_type = self.turbulence_measurement_type.get()    
+                self.config.power_measurement_type = self.power_measurement_type.get()      
+                self.config.turbine_control_type = self.turbine_control_type.get()
+
+                if len(self.turbine_technology_vintage.get()) > 0:
+                    self.config.turbine_technology_vintage = int(self.turbine_technology_vintage.get())
+                else:
+                    self.config.turbine_technology_vintage = None
+
+                self.config.time_zone = self.time_zone.get()           
 
 class DatasetGridBox(GridBox):
 

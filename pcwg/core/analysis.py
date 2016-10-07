@@ -108,6 +108,13 @@ class SubPower:
         self.cut_in_wind_speed = self.calculate_cut_in_speed(self.unfiltered_sub_power)
     
     def calculate_sub_power(self, data_frame):
+        
+        # TODO this line generates the following pandas warning
+        # data_frame[self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
+        # SettingWithCopyWarning: 
+        # A value is trying to be set on a copy of a slice from a DataFrame.
+        # Try using .loc[row_indexer,col_indexer] = value instead
+        # See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
 
         data_frame[self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
 
@@ -115,9 +122,7 @@ class SubPower:
 
         sub_distribution = data_frame[self.power_polumn].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.data_count:'count'})
         sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.power_polumn:'mean'})
-        
-        #sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).aggregate(self.aggregations.average)
-        
+                
         sub_power = sub_power.join(sub_distribution, how = 'inner')
         sub_power.dropna(inplace = True)                           
 
@@ -191,7 +196,6 @@ class Analysis:
         self.inputHubWindSpeed = "Input Hub Wind Speed"
         self.densityCorrectedHubWindSpeed = "Density Corrected Hub Wind Speed"
         self.rotorEquivalentWindSpeed = "Rotor Equivalent Wind Speed"
-        self.basePower = "Simulated Reference TI Power"
         self.hubPower = "Hub Power"
         self.rewsPower = "REWS Power"
         self.powerDeviationMatrixPower = "Power Deviation Matrix Power"
@@ -216,7 +220,32 @@ class Analysis:
         self.loadData(config)
             
         self.densityCorrectionActive = config.densityCorrectionActive
+        
         self.rewsActive = config.rewsActive
+        self.rewsVeer = config.rewsVeer
+        self.rewsUpflow = config.rewsUpflow
+
+        if self.rewsActive:
+
+            self.rewsToHubRatio = "REWS To Hub Ratio"
+            self.rewsToHubRatioDeviation = "REWS To Hub Ratio Deviation"
+
+            if self.rewsVeer:
+
+                if self.rewsUpflow:
+                    self.rewsToHubRatio = self.rewsToHubRatioFull
+                else:
+                    self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeedAndVeer
+
+            else:
+
+                if self.rewsUpflow:
+                    self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeedAndUpflow
+                else:
+                    self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeed
+
+            self.dataFrame[self.rewsToHubRatioDeviation] = self.dataFrame[self.rewsToHubRatio] - 1.0
+
         self.turbRenormActive = config.turbRenormActive
         self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
         
@@ -239,14 +268,12 @@ class Analysis:
         self.powerCurveMinimumCount = config.powerCurveMinimumCount
         self.powerCurvePaddingMode = config.powerCurvePaddingMode
 
-        self.baseLineMode = config.baseLineMode
         self.interpolationMode = config.interpolationMode
         self.filterMode = config.filterMode
         self.powerCurveMode = config.powerCurveMode
 
         self.defineInnerRange(config)
 
-        Status.add("Baseline Mode: %s" % self.baseLineMode)
         Status.add("Interpolation Mode: %s" % self.interpolationMode)
         Status.add("Filter Mode: %s" % self.filterMode)
         Status.add("Power Curve Mode: %s" % self.powerCurveMode)
@@ -322,7 +349,6 @@ class Analysis:
 
         self.powerCurve = self.selectPowerCurve(self.powerCurveMode)
 
-        self.calculateBase()
         self.calculateHub()
 
         # Normalisation Parameters
@@ -367,6 +393,19 @@ class Analysis:
             self.calculatePowerDeviationMatrixCorrection()
             Status.add("Power Deviation Matrix Correction Complete.")
 
+        self.hours = len(self.dataFrame.index)*1.0 / 6.0
+
+        self.calculate_power_deviation_matrices()
+        self.calculate_aep()
+        
+        self.calculate_sensitivity_analysis()
+        self.calculate_scatter_metric()
+
+        Status.add("Total of %.3f hours of data used in analysis." % self.hours)
+        Status.add("Complete")
+
+    def calculate_power_deviation_matrices(self):
+
         if self.hasActualPower:
 
             Status.add("Calculating power deviation matrices...")
@@ -393,8 +432,8 @@ class Analysis:
                 self.powerDeviationMatrixDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
 
             Status.add("Power Curve Deviation Matrices Complete.")
-        
-        self.hours = len(self.dataFrame.index)*1.0 / 6.0
+
+    def calculate_aep(self):
 
         if self.config.nominal_wind_speed_distribution.absolute_path is not None:
             Status.add("Attempting AEP Calculation...")
@@ -410,6 +449,8 @@ class Analysis:
             else:
                 Status.add("A specified power curve is required for AEP calculation. No specified curve defined.")
 
+    def calculate_sensitivity_analysis(self):
+
         if len(self.sensitivityDataColumns) > 0:
             sens_pow_curve = self.allMeasuredTurbCorrectedPowerCurve if self.turbRenormActive else self.allMeasuredPowerCurve
             sens_pow_column = self.measuredTurbulencePower if self.turbRenormActive else self.actualPower
@@ -417,7 +458,9 @@ class Analysis:
             self.interpolatePowerCurve(sens_pow_curve, self.inputHubWindSpeedSource, sens_pow_interp_column)
             Status.add("Attempting power curve sensitivty analysis for %s power curve..." % sens_pow_curve.name)
             self.performSensitivityAnalysis(sens_pow_curve, sens_pow_column, sens_pow_interp_column)
-        
+
+    def calculate_scatter_metric(self):
+
         if self.hasActualPower:
             self.powerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.allMeasuredPowerCurve, self.actualPower, self.dataFrame.index)
             self.dayTimePowerCurveScatterMetric = self.calculatePowerCurveScatterMetric(self.dayTimePowerCurve, self.actualPower, self.dataFrame.index[self.getFilter(11)])
@@ -428,9 +471,6 @@ class Analysis:
             if self.turbRenormActive:
                 self.powerCurveScatterMetricByWindSpeedAfterTiRenorm = self.calculateScatterMetricByWindSpeed(self.allMeasuredTurbCorrectedPowerCurve, self.measuredTurbulencePower)
             self.iec_2005_cat_A_power_curve_uncertainty()
-                
-        Status.add("Total of %.3f hours of data used in analysis." % self.hours)
-        Status.add("Complete")
 
     def applyRemainingFilters(self):
 
@@ -534,11 +574,14 @@ class Analysis:
                 self.hubDensity = data.hubDensity
                 self.shearExponent = data.shearExponent
 
+                self.rewsDefined = data.rewsDefined
+
                 if data.rewsDefined:
-                    self.profileRotorWindSpeed = data.profileRotorWindSpeed
-                    self.profileHubWindSpeed = data.profileHubWindSpeed
-                    self.profileHubToRotorRatio = data.profileHubToRotorRatio
-                    self.profileHubToRotorDeviation = data.profileHubToRotorDeviation
+
+                    self.rewsToHubRatioFull = data.rewsToHubRatioFull
+                    self.rewsToHubRatioJustWindSpeed = data.rewsToHubRatioJustWindSpeed
+                    self.rewsToHubRatioJustWindSpeedAndVeer = data.rewsToHubRatioJustWindSpeedAndVeer
+                    self.rewsToHubRatioJustWindSpeedAndUpflow = data.rewsToHubRatioJustWindSpeedAndUpflow
 
                 self.actualPower = data.actualPower
                 self.residualWindSpeed = data.residualWindSpeed
@@ -549,7 +592,6 @@ class Analysis:
                 self.hasShear = data.hasShear
                 self.hasDensity = data.hasDensity
                 self.hasDirection = data.hasDirection
-                self.rewsDefined = data.rewsDefined
                 self.sensitivityDataColumns = data.sensitivityDataColumns
 
             else:
@@ -650,17 +692,15 @@ class Analysis:
         else:
             raise Exception("Unrecognised power curve mode: %s" % powerCurveMode)
 
+    def get_base_filter(self):
+        return self.dataFrame[self.actualPower] > 0
+
     def getFilter(self, mode = None):
 
         if mode == None:
             mode = self.getFilterMode()
 
-        if self.baseLineMode == "Hub":
-            mask = self.dataFrame[self.inputHubWindSpeed].notnull()
-        elif self.baseLineMode == "Measured":
-            mask = self.dataFrame[self.actualPower] > 0
-        else:
-            raise Exception("Unrecognised baseline mode: %s" % self.baseLineMode)
+        mask = self.get_base_filter()
 
         innerTurbMask = (self.dataFrame[self.hubTurbulence] >= self.innerRangeLowerTurbulence) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeUpperTurbulence)
         if self.hasShear: innerShearMask = (self.dataFrame[self.shearExponent] >= self.innerRangeLowerShear) & (self.dataFrame[self.shearExponent] <= self.innerRangeUpperShear)
@@ -917,8 +957,8 @@ class Analysis:
 
         filteredDataFrame = self.dataFrame[mask]
 
-        rewsMatrix = DeviationMatrix(filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average),
-                                    filteredDataFrame[self.profileHubToRotorDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).count())
+        rewsMatrix = DeviationMatrix(filteredDataFrame[self.rewsToHubRatioDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average),
+                                    filteredDataFrame[self.rewsToHubRatioDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).count())
 
         return rewsMatrix
 
@@ -1039,35 +1079,6 @@ class Analysis:
         else:
             self.normalisedTurbPowerDeviations = None
 
-
-    def calculateBase(self):
-
-        if self.baseLineMode == "Hub":
-            
-            if self.powerCurve is None:
-            
-                exc_str = "%s Power Curve has not been calculated successfully." % self.powerCurveMode
-            
-                if self.powerCurveMode == 'InnerMeasured':
-                    exc_str += " Check Inner Range settings."
-            
-                raise Exception(exc_str)
-            
-            self.dataFrame[self.basePower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
-
-        elif self.baseLineMode == "Measured":
-            
-            if self.hasActualPower:
-                self.dataFrame[self.basePower] = self.dataFrame[self.actualPower]
-            else:
-                raise Exception("You must specify a measured power data column if using the 'Measured' baseline mode")
-
-        else:
-
-            raise Exception("Unkown baseline mode: % s" % self.baseLineMode)
-
-        self.baseYield = self.dataFrame[self.getFilter()][self.basePower].sum() * self.timeStampHours
-
     def calculateCp(self):
         
         area = np.pi*(self.rotorGeometry.diameter/2.0)**2
@@ -1086,34 +1097,23 @@ class Analysis:
 
     def calculateHub(self):
         self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
-        self.hubYield = self.dataFrame[self.getFilter()][self.hubPower].sum() * self.timeStampHours
-        self.hubYieldCount = self.dataFrame[self.getFilter()][self.hubPower].count()
-        self.hubDelta = self.hubYield / self.baseYield - 1.0
-        Status.add("Hub Delta: %.3f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))
 
     def calculateREWS(self):
-        self.dataFrame[self.rotorEquivalentWindSpeed] = self.dataFrame[self.inputHubWindSpeed] * self.dataFrame[self.profileHubToRotorRatio]
+        self.dataFrame[self.rotorEquivalentWindSpeed] = self.dataFrame[self.inputHubWindSpeed] * self.dataFrame[self.rewsToHubRatio]
         self.dataFrame[self.rewsPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.rotorEquivalentWindSpeed).power, axis=1)
-        self.rewsYield = self.dataFrame[self.getFilter()][self.rewsPower].sum() * self.timeStampHours
-        self.rewsYieldCount = self.dataFrame[self.getFilter()][self.rewsPower].count()
-        self.rewsDelta = self.rewsYield / self.baseYield - 1.0
-        Status.add("REWS Delta: %.3f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
 
     def calculateTurbRenorm(self):
+
         self.dataFrame[self.turbulencePower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.inputHubWindSpeed, self.hubTurbulence).power, axis=1)
-        self.turbulenceYield = self.dataFrame[self.getFilter()][self.turbulencePower].sum() * self.timeStampHours
-        self.turbulenceYieldCount = self.dataFrame[self.getFilter()][self.turbulencePower].count()
-        self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
+
         if self.hasActualPower:
-            self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]).astype('float')
-        Status.add("Turb Delta: %.3f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
+            if self.rewsActive:
+                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.rewsPower])
+            else:
+                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.hubPower])
 
     def calculationCombined(self):
         self.dataFrame[self.combinedPower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.rotorEquivalentWindSpeed, self.hubTurbulence).power, axis=1)
-        self.combinedYield = self.dataFrame[self.getFilter()][self.combinedPower].sum() * self.timeStampHours
-        self.combinedYieldCount = self.dataFrame[self.getFilter()][self.combinedPower].count()
-        self.combinedDelta = self.combinedYield / self.baseYield - 1.0
-        Status.add("Comb Delta: %.3f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
 
     def calculatePowerDeviationMatrixCorrection(self):
 
@@ -1134,11 +1134,6 @@ class Analysis:
                                                                                                                   self.inputHubWindSpeed, \
                                                                                                                   parameterColumns).power, \
                                                                                                                   axis=1)
-
-        self.powerDeviationMatrixYield = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].sum() * self.timeStampHours
-        self.powerDeviationMatrixYieldCount = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].count()
-        self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
-        Status.add("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
 
     def export(self, path,clean = True,  full = True, calibration = True ):
         op_path = os.path.dirname(path)

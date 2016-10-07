@@ -15,10 +15,23 @@ from ..core.status import Status
 
 class ShearMeasurement:
 
-    def __init__(self, height = 0.0, wind_speed_column = '', wind_direction_column = ''):
+    def __init__(self, height = 0.0, wind_speed_column = None, wind_direction_column = None, upflow_column = None):
+        
         self.height = height
-        self.wind_speed_column = wind_speed_column
-        self.wind_direction_column = wind_direction_column
+        
+        self.wind_speed_column = self.get_column(wind_speed_column)
+        self.wind_direction_column = self.get_column(wind_direction_column)
+        self.upflow_column = self.get_column(upflow_column)
+
+    def get_column(self, column):
+        
+        if column is None:
+            return None
+
+        if len(column) < 1:
+            return None
+        else:
+            return column
 
 class CalibrationSector:
 
@@ -98,6 +111,8 @@ class DatasetConfiguration(base_configuration.XmlBase):
                 self.sensitivityDataColumns = []
 
             self.readTurbine(configurationNode)
+
+            self.read_meta_data(configurationNode)
             
             self.invariant_rand_id = self.getNodeValueIfExists(configurationNode, 'InvariantRandomID', None)
 
@@ -171,6 +186,8 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
             self.invariant_rand_id = None
 
+            self.initialize_meta_data()  
+
     @property
     def path(self): 
         return self._path
@@ -179,6 +196,71 @@ class DatasetConfiguration(base_configuration.XmlBase):
     def path(self, value): 
         self._path = value
         self.input_time_series.set_base(self._path)
+
+    def initialize_meta_data(self):
+
+        self.data_type = None          
+        self.outline_site_classification = None           
+        self.outline_forestry_classification = None
+        self.iec_terrain_classification = None
+        self.latitude = None
+        self.longitude = None
+        self.continent = None
+        self.country = None
+        self.elevation_above_sea_level = None
+        self.measurement_compliance = None
+        self.anemometry_type = None
+        self.anemometry_heating = None
+        self.turbulence_measurement_type = None
+        self.power_measurement_type = None
+        self.turbine_control_type = None
+        self.turbine_technology_vintage = None
+        self.time_zone = None    
+
+    def read_meta_data(self, configurationNode):
+
+        if not self.nodeExists(configurationNode, "MetaData"):
+            self.initialize_meta_data()
+            return 
+
+        meta_data_node = self.getNode(configurationNode, "MetaData")
+
+        self.data_type = self.getNodeValue(meta_data_node, "DataType")
+        self.outline_site_classification = self.getNodeValue(meta_data_node, "OutlineSiteClassification")        
+        self.outline_forestry_classification = self.getNodeValue(meta_data_node, "OutlineForestryClassification")
+        self.iec_terrain_classification = self.getNodeValue(meta_data_node, "IECTerrainClassification")
+        
+        if self.nodeExists(meta_data_node, "Latitude"):
+            self.latitude = self.getNodeValue(meta_data_node, "Latitude")
+        else:
+            self.latitude = None
+
+        if self.nodeExists(meta_data_node, "Longitude"):           
+            self.longitude = self.getNodeValue(meta_data_node, "Longitude")
+        else:
+            self.longitude = None
+
+        self.continent = self.getNodeValue(meta_data_node, "Continent")
+        self.country = self.getNodeValue(meta_data_node, "Country")
+
+        if self.nodeExists(meta_data_node, "ElevationAboveSeaLevel"):           
+            self.elevation_above_sea_level = self.getNodeFloat(meta_data_node, "ElevationAboveSeaLevel")
+        else:
+            self.elevation_above_sea_level = None
+
+        self.measurement_compliance = self.getNodeValue(meta_data_node, "MeasurementCompliance")
+        self.anemometry_type = self.getNodeValue(meta_data_node, "AnemometryType")
+        self.anemometry_heating = self.getNodeValue(meta_data_node, "AnemometryHeating")
+        self.turbulence_measurement_type = self.getNodeValue(meta_data_node, "TurbulenceMeasurementType")
+        self.power_measurement_type = self.getNodeValue(meta_data_node, "PowerMeasurementType")
+        self.turbine_control_type = self.getNodeValue(meta_data_node, "TurbineControlType")
+
+        if self.nodeExists(meta_data_node, "TurbineTechnologyVintage"):           
+            self.turbine_technology_vintage = self.getNodeInt(meta_data_node, "TurbineTechnologyVintage") 
+        else:
+            self.turbine_technology_vintage = None
+            
+        self.time_zone = self.getNodeValue(meta_data_node, "TimeZone")
 
     def parseDate(self, dateText):
         
@@ -281,6 +363,7 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.addFloatNode(doc, levelNode, "Height", level.height)
             self.addTextNode(doc, levelNode, "ProfileWindSpeed", level.wind_speed_column)
             self.addTextNode(doc, levelNode, "ProfileWindDirection", level.wind_direction_column)
+            self.addTextNode(doc, levelNode, "ProfileUpflow", level.upflow_column)
 
         #write clibrations
         calibrationNode = self.addNode(doc, root, "Calibration")
@@ -350,6 +433,42 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
         if self.diameter != None:
             self.addFloatNode(doc, turbineNode, "Diameter", self.diameter)
+
+        #write meta dat
+        self.write_meta_data(doc, root)
+
+    def write_meta_data(self, doc, root):
+
+        meta_data_node = self.addNode(doc, root, "MetaData")
+
+        self.addTextNode(doc, meta_data_node, "DataType", self.data_type)
+        self.addTextNode(doc, meta_data_node, "OutlineSiteClassification", self.outline_site_classification)
+        self.addTextNode(doc, meta_data_node, "OutlineForestryClassification", self.outline_forestry_classification)
+        self.addTextNode(doc, meta_data_node, "IECTerrainClassification", self.iec_terrain_classification)
+        
+        if not self.latitude is None:
+            self.addFloatNode(doc, meta_data_node, "Latitude", self.latitude)
+
+        if not self.latitude is None:
+            self.addFloatNode(doc, meta_data_node, "Longitude", self.longitude)
+
+        self.addTextNode(doc, meta_data_node, "Continent", self.continent)
+        self.addTextNode(doc, meta_data_node, "Country", self.country)
+
+        if not self.elevation_above_sea_level is None:
+            self.addFloatNode(doc, meta_data_node, "ElevationAboveSeaLevel", self.elevation_above_sea_level)
+
+        self.addTextNode(doc, meta_data_node, "MeasurementCompliance", self.measurement_compliance)
+        self.addTextNode(doc, meta_data_node, "AnemometryType", self.anemometry_type)
+        self.addTextNode(doc, meta_data_node, "AnemometryHeating", self.anemometry_heating)
+        self.addTextNode(doc, meta_data_node, "TurbulenceMeasurementType", self.turbulence_measurement_type)
+        self.addTextNode(doc, meta_data_node, "PowerMeasurementType", self.power_measurement_type)
+        self.addTextNode(doc, meta_data_node, "TurbineControlType", self.turbine_control_type)
+
+        if not self.turbine_technology_vintage is None:
+            self.addIntNode(doc, meta_data_node, "TurbineTechnologyVintage", self.turbine_technology_vintage)
+
+        self.addTextNode(doc, meta_data_node, "TimeZone", self.time_zone)
 
     def write_shear(self, doc, parent_node, node_name, shear_measurements):
         
@@ -522,10 +641,17 @@ class DatasetConfiguration(base_configuration.XmlBase):
         self.rewsProfileLevels = []
 
         for node in self.getNodes(profileNode, 'ProfileLevel'):
+
             height = self.getNodeFloat(node, 'Height')
             speed = self.getNodeValue(node, 'ProfileWindSpeed')
             direction = self.getNodeValue(node, 'ProfileWindDirection')
-            self.rewsProfileLevels.append(ShearMeasurement(height, speed, direction))
+
+            if self.nodeExists(node, 'ProfileUpflow'):
+                upflow = self.getNodeValue(node, 'ProfileUpflow')
+            else:
+                upflow = ''
+
+            self.rewsProfileLevels.append(ShearMeasurement(height, speed, direction, upflow))
 
     def readSensitivityAnalysis(self, configurationNode):
 

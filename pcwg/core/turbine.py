@@ -313,7 +313,7 @@ class PowerCurve:
 
 class RotorGeometry:
 
-    def __init__(self, diameter, hubHeight):
+    def __init__(self, diameter, hubHeight, tilt=None):
 
         if diameter == None:
             raise Exception('Diameter is not set')
@@ -326,7 +326,8 @@ class RotorGeometry:
         self.area = math.pi * self.radius ** 2
         self.hubHeight = hubHeight
         self.lowerTip = self.hubHeight - self.radius
-        self.upperTip = self.hubHeight + self.radius        
+        self.upperTip = self.hubHeight + self.radius
+        self.tilt = tilt        
 
     def withinRotor(self, height):
         return height > self.lowerTip and height < self.upperTip

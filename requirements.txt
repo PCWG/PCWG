@@ -1,0 +1,9 @@
+numpy=1.11.1
+pandas=0.18.1
+pil=1.1.7
+python=2.7.12
+requests=2.11.1
+scipy=0.18.1
+xlrd=1.0.0
+xlutils=2.0.0
+xlwt=1.1.2

@@ -1,28 +1,48 @@
 import math
 from scipy import interpolate
 
+class NoneInterpolator:
+
+    def __call__(self, level):
+        return None
+
 class ProfileLevels:
 
-    def __init__(self, rotorGeometry, windSpeedLevels):
+    def __init__(self, rotorGeometry, windSpeedLevels, windDirectionLevels=None, upflowLevels=None):
 
         self.windSpeedLevels = windSpeedLevels
+        self.windDirectionLevels = windDirectionLevels
+        self.upflowLevels = upflowLevels
+
         self.rotorGeometry = rotorGeometry
 
     def getWindSpeedProfile(self, row):
+        return self.create_interpolator(row, self.windSpeedLevels)
+    
+    def getDirectionProfile(self, row):
+        return self.create_interpolator(row, self.windDirectionLevels)
+
+    def getUpflowProfile(self, row):
+        return self.create_interpolator(row, self.upflowLevels)
+
+    def create_interpolator(self, row, levels_dict):
 
         values = []
 
-        for level in self.windSpeedLevels:
+        for level in levels_dict:
             
-            column = self.windSpeedLevels[level]
-            speed = row[column]
-            
-            values.append((level, speed))
+            column = levels_dict[level]
 
-        xy = zip(*sorted(values))
-        
-        return interpolate.interp1d(xy[0], xy[1], kind='linear')
-        
+            if not column is None:
+                value = row[column]
+                values.append((level, value))
+
+        if len(values) >= 3:
+            xy = zip(*sorted(values))            
+            return interpolate.interp1d(xy[0], xy[1], kind='linear')
+        else:
+            return NoneInterpolator()
+
     def findLowestAbove(self, level):
 
         lowest = None
@@ -151,31 +171,46 @@ class RotorLevel:
  
             return 0.5 * (angle - math.sin(angle)) * radius ** 2
     
-class HubWindSpeedBase:
+class HubParameterBase:
 
     def __init__(self, profileLevels, rotorGeometry):
 
         self.rotorGeometry = rotorGeometry
         self.profileLevels = profileLevels
 
-class InterpolatedHubWindSpeed(HubWindSpeedBase):
+class InterpolatedHubDirection:
 
     def __init__(self, profileLevels, rotorGeometry):        
 
-        HubWindSpeedBase.__init__(self, profileLevels, rotorGeometry)
+        HubParameterBase.__init__(self, profileLevels, rotorGeometry)
+
+    def hubDirection(self, row):
+        raise Exception("Not implemented")
+
+class InterpolatedHubWindSpeed(HubParameterBase):
+
+    def __init__(self, profileLevels, rotorGeometry):        
+
+        HubParameterBase.__init__(self, profileLevels, rotorGeometry)
 
     def hubWindSpeed(self, row):
 
         return self.profileLevels.getWindSpeedProfile(row)(self.rotorGeometry.hubHeight)  
 
-class PiecewiseExponentHubWindSpeed(HubWindSpeedBase):
+class PiecewiseHubBase(HubParameterBase):
 
     def __init__(self, profileLevels, rotorGeometry):        
 
-        HubWindSpeedBase.__init__(self, profileLevels, rotorGeometry)
+        HubParameterBase.__init__(self, profileLevels, rotorGeometry)
 
         self.highestBelow = profileLevels.findHighestBelow(self.rotorGeometry.hubHeight)
         self.lowestAbove = profileLevels.findLowestAbove(self.rotorGeometry.hubHeight)
+
+class PiecewiseExponentHubWindSpeed(PiecewiseHubBase):
+
+    def __init__(self, profileLevels, rotorGeometry):        
+
+        PiecewiseHubBase.__init__(self, profileLevels, rotorGeometry)
         
     def hubWindSpeed(self, row):
 
@@ -188,21 +223,144 @@ class PiecewiseExponentHubWindSpeed(HubWindSpeedBase):
 
         return speedBelow * (self.rotorGeometry.hubHeight / self.highestBelow) ** exponent
 
+class PiecewiseInterpolationHubDirection(PiecewiseHubBase):
+
+    def __init__(self, profileLevels, rotorGeometry):        
+
+        PiecewiseHubBase.__init__(self, profileLevels, rotorGeometry)
+
+        self.direction_above_col = self.profileLevels.windDirectionLevels[self.lowestAbove]
+        self.direction_below_col = self.profileLevels.windDirectionLevels[self.highestBelow]
+
+        self.x = [self.highestBelow, self.lowestAbove]
+
+    def bound_direction(self, direction):
+
+        while direction < 0:
+            direction += 360.0
+
+        while direction > 360.0:
+            direction -= 360.0
+
+        return direction
+
+    def hubDirection(self, row):
+
+        profile = self.profileLevels.getWindSpeedProfile(row)
+
+        below_direction = row[self.direction_below_col]
+        above_direction = row[self.direction_above_col]
+
+        if below_direction is None or above_direction is None:
+            return None
+        else:
+
+            below_direction = self.bound_direction(below_direction)
+            above_direction = self.bound_direction(above_direction)
+
+            if abs(below_direction - above_direction) > 180.0:
+
+                if below_direction > above_direction:
+                    below_direction -= 360.0
+                else:
+                    above_direction -= 360.0
+
+            y = [below_direction, above_direction]
+            
+            inter = interpolate.interp1d(self.x, y, kind='linear')
+
+            return inter(self.rotorGeometry.hubHeight)
+
 class RotorEquivalentWindSpeed:
 
-    def __init__(self, profileLevels, rotor):        
+    def __init__(self, profileLevels, rotor, hubWindSpeedCalculator):        
 
         self.profileLevels = profileLevels
         self.rotor = rotor
-                        
-    def rotorWindSpeed(self, row):
+        self.hubWindSpeedCalculator = hubWindSpeedCalculator
+        self.hubDirectionCalculator = PiecewiseInterpolationHubDirection(profileLevels, self.rotor.rotorGeometry)
 
-        profile = self.profileLevels.getWindSpeedProfile(row)
-        
+        if self.rotor.rotorGeometry.tilt != None:
+            self.tilt_rad = self.to_radians(self.rotor.rotorGeometry.tilt)
+        else:
+            self.tilt_rad = None
+
+    def rews(self, row):
+
+        speed_profile = self.profileLevels.getWindSpeedProfile(row)
+        direction_profile = self.profileLevels.getDirectionProfile(row)
+        upflow_profile = self.profileLevels.getUpflowProfile(row)
+
         equivalentWindSpeed = 0
 
+        hub_direction = self.hubDirectionCalculator.hubDirection(row)
+
         for level in self.rotor.levels:
-            windSpeed = profile(level.level)
-            equivalentWindSpeed += windSpeed ** 3.0 * level.areaFraction
-            
+
+            speed = speed_profile(level.level)
+
+            if speed is None:
+                
+                #TODO consider enforcing minimum level count
+                #(instead of forcing pre-filters to remove data with any level missing)
+                #this would be good fo rnacelle LiDARs (where there is always some data missing)
+
+                raise Exception("Speed cannot be None")
+
+            level_value = speed \
+                             * self.direction_term(level, hub_direction, direction_profile) \
+                             * self.upflow_term(level, upflow_profile)
+
+            equivalentWindSpeed += level_value ** 3.0 * level.areaFraction
+
         return equivalentWindSpeed ** (1.0 / 3.0)
+
+        
+    def rewsToHubRatio(self, row):
+
+        hub_speed = self.hubWindSpeedCalculator.hubWindSpeed(row)
+
+        return self.rews(row) / hub_speed
+
+    def direction_term(self, level, hub_direction, direction_profile):
+
+        direction = direction_profile(level.level)
+
+        if direction is None or hub_direction is None:
+            return 1.0
+        else:
+            direction_rad = self.to_radians(direction)
+            hub_direction_rad = self.to_radians(hub_direction)
+            return math.cos(direction_rad - hub_direction_rad)
+
+    def upflow_term(self, level, upflow_profile):
+
+        upflow = upflow_profile(level.level)
+
+        if upflow is None or self.tilt_rad is None:
+            return 1.0
+        else:
+            upflow_rad = self.to_radians(direction)
+            hub_direction_rad = self.to_radians(hub_direction)
+            return math.cos(upflow_rad + self.tilt_rad) / (math.cos(upflow_rad) + math.cos(self.tilt_rad))
+
+    def to_radians(self, direction):
+        return direction * math.pi / 180.0
+
+class RotorEquivalentJustWindSpeed(RotorEquivalentWindSpeed):
+
+    def direction_term(self, level, hub_direction, direction_profile):
+        return 1.0
+
+    def upflow_term(self, level, direction_profile):
+        return 1.0     
+           
+class RotorEquivalentJustWindSpeedAndVeer(RotorEquivalentWindSpeed):
+
+    def upflow_term(self, level, direction_profile):
+        return 1.0     
+
+class RotorEquivalentJustWindSpeedAndUpflow(RotorEquivalentWindSpeed):
+
+    def upflow_term(self, level, direction_profile):
+        return 1.0     

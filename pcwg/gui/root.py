@@ -18,6 +18,7 @@ import tkMessageBox
 from ..update import update
 from ..core import analysis as core_analysis
 from ..core import share
+from ..core import benchmark
 
 from ..configuration.preferences_configuration import Preferences
 from ..configuration.benchmark_configuration import BenchmarkConfiguration
@@ -103,10 +104,10 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
 
 class UserInterface:
 
-    def __init__(self):
+    def __init__(self, preferences):
 
             ExceptionHandler.initialize_handler(self.add_exception)
-            Status.initialize_status(self.add_message)
+            Status.initialize_status(self.add_message, preferences.verbosity)
 
             self.analysis = None
             self.analysisConfiguration = None
@@ -403,7 +404,7 @@ class UserInterface:
                 for i in range(len(benchmarkConfig.benchmarks)):
                         benchmark = benchmarkConfig.benchmarks[i]
                         Status.add("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
-                        benchmarkResults = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.expectedResults)
+                        benchmarkResults = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.base_line_mode, benchmark.expectedResults)
                         benchmarkPassed = benchmarkPassed & benchmarkResults[0]
                         totalTime += benchmarkResults[1]
 
@@ -418,7 +419,7 @@ class UserInterface:
 
                 Status.add("No benchmark loaded", red=True)
 
-    def BenchmarkAnalysis(self, path, tolerance, dictExpectedResults):
+    def BenchmarkAnalysis(self, path, tolerance, base_line_mode, dictExpectedResults):
 
             Status.add("Calculating %s (please wait)..." % path)
 
@@ -429,7 +430,7 @@ class UserInterface:
 
             try:
 
-                    analysis = core_analysis.Analysis(AnalysisConfiguration(path))
+                    analysis = benchmark.BenchmarkAnalysis(AnalysisConfiguration(path), base_line_mode)
 
             except ExceptionHandler.ExceptionType as e:
 

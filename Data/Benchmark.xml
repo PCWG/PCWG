@@ -29,6 +29,32 @@
 			</ExpectedResults>
 		</Benchmark>
 		<Benchmark>
+			<AnalysisConfigPath>Dataset 1 Analysis (REWS with Veer).xml</AnalysisConfigPath>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>hubDelta</Field>
+					<Value>0.000000</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>rewsDelta</Field>
+					<Value>0.004019</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+		<Benchmark>
+			<AnalysisConfigPath>Dataset 1 Analysis (REWS with Veer and Upflow).xml</AnalysisConfigPath>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>hubDelta</Field>
+					<Value>0.000000</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>rewsDelta</Field>
+					<Value>0.00578763</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+		<Benchmark>
 			<AnalysisConfigPath>Dataset 2 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>
 				<ExpectedResult>
