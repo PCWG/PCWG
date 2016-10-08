@@ -19,3 +19,4 @@ Build/pcwg_tool.spec
 Build/pcwg_tool/Data/Dataset 4 PowerCurve.xml
 Build/pcwg_tool/Data/Dataset 4 Analysis.xml
 .idea
+.DS_Store
