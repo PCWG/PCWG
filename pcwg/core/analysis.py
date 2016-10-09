@@ -233,15 +233,19 @@ class Analysis:
             if self.rewsVeer:
 
                 if self.rewsUpflow:
+                    Status.add("REWS Full")
                     self.rewsToHubRatio = self.rewsToHubRatioFull
                 else:
+                    Status.add("REWS Wind Speed & Veer")
                     self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeedAndVeer
 
             else:
 
                 if self.rewsUpflow:
+                    Status.add("REWS Wind Speed & Upflow")
                     self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeedAndUpflow
                 else:
+                    Status.add("REWS Wind Speed Only")
                     self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeed
 
             self.dataFrame[self.rewsToHubRatioDeviation] = self.dataFrame[self.rewsToHubRatio] - 1.0
@@ -693,7 +697,11 @@ class Analysis:
             raise Exception("Unrecognised power curve mode: %s" % powerCurveMode)
 
     def get_base_filter(self):
-        return self.dataFrame[self.actualPower] > 0
+        if self.hasActualPower:
+            return self.dataFrame[self.actualPower] > 0
+        else:
+            #dummy line to create all true
+            return self.dataFrame[self.timeStamp].dt.hour >= 0
 
     def getFilter(self, mode = None):
 

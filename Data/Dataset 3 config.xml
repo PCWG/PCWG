@@ -39,62 +39,76 @@
 		<HubWindSpeed>Mast_WindSpeed_96m_Mean</HubWindSpeed>
 		<HubTurbulence>Mast_WindSpeed_96m_Turbulence_Intensity</HubTurbulence>
 	</Measurements>
-	<ShearMeasurements>
-		<ShearMeasurement>
-			<Height>0.000000</Height>
-			<WindSpeed></WindSpeed>
-		</ShearMeasurement>
-	</ShearMeasurements>
+	<Shear>
+		<ShearCalibrationMethod>None</ShearCalibrationMethod>
+		<ReferenceShearMeasurements>
+			<ShearMeasurement>
+				<Height>0.000000</Height>
+				<WindSpeed></WindSpeed>
+			</ShearMeasurement>
+		</ReferenceShearMeasurements>
+		<TurbineShearMeasurements/>
+	</Shear>
 	<ProfileLevels>
 		<ProfileLevel>
-			<Height>50.000000</Height>
-			<ProfileWindSpeed>LiDAR_WindSpeed_50m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_50m_Mean</ProfileWindDirection>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>80.000000</Height>
-			<ProfileWindSpeed>LiDAR_WindSpeed_80m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_80m_Mean</ProfileWindDirection>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>110.000000</Height>
-			<ProfileWindSpeed>LiDAR_WindSpeed_110m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_110m_Mean</ProfileWindDirection>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>140.000000</Height>
-			<ProfileWindSpeed>LiDAR_WindSpeed_140m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_140m_Mean</ProfileWindDirection>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>40.000000</Height>
-			<ProfileWindSpeed>LiDAR_WindSpeed_40m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_40m_Mean</ProfileWindDirection>
+			<Height>100.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_100m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>70.000000</Height>
 			<ProfileWindSpeed>LiDAR_WindSpeed_70m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_70m_Mean</ProfileWindDirection>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>100.000000</Height>
-			<ProfileWindSpeed>LiDAR_WindSpeed_100m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_100m_Mean</ProfileWindDirection>
+			<Height>40.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_40m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>90.000000</Height>
-			<ProfileWindSpeed>LiDAR_WindSpeed_90m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_90m_Mean</ProfileWindDirection>
+			<Height>140.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_140m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>110.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_110m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>80.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_80m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>50.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_50m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>120.000000</Height>
 			<ProfileWindSpeed>LiDAR_WindSpeed_120m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_120m_Mean</ProfileWindDirection>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>90.000000</Height>
+			<ProfileWindSpeed>LiDAR_WindSpeed_90m_Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>60.000000</Height>
 			<ProfileWindSpeed>LiDAR_WindSpeed_60m_Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR_WindDirection_60m_Mean</ProfileWindDirection>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
 		</ProfileLevel>
 	</ProfileLevels>
 	<Calibration>
@@ -114,4 +128,19 @@
 		<HubHeight>96.000000</HubHeight>
 		<Diameter>90.000000</Diameter>
 	</Turbine>
+	<MetaData>
+		<DataType></DataType>
+		<OutlineSiteClassification></OutlineSiteClassification>
+		<OutlineForestryClassification></OutlineForestryClassification>
+		<IECTerrainClassification></IECTerrainClassification>
+		<Continent></Continent>
+		<Country></Country>
+		<MeasurementCompliance></MeasurementCompliance>
+		<AnemometryType></AnemometryType>
+		<AnemometryHeating></AnemometryHeating>
+		<TurbulenceMeasurementType></TurbulenceMeasurementType>
+		<PowerMeasurementType></PowerMeasurementType>
+		<TurbineControlType></TurbineControlType>
+		<TimeZone></TimeZone>
+	</MetaData>
 </Configuration>

@@ -27,6 +27,9 @@ class ProfileLevels:
 
     def create_interpolator(self, row, levels_dict):
 
+        if levels_dict is None:
+            return NoneInterpolator()
+
         values = []
 
         for level in levels_dict:
@@ -278,7 +281,11 @@ class RotorEquivalentWindSpeed:
         self.profileLevels = profileLevels
         self.rotor = rotor
         self.hubWindSpeedCalculator = hubWindSpeedCalculator
-        self.hubDirectionCalculator = PiecewiseInterpolationHubDirection(profileLevels, self.rotor.rotorGeometry)
+
+        if not profileLevels.windDirectionLevels is None:
+            self.hubDirectionCalculator = PiecewiseInterpolationHubDirection(profileLevels, self.rotor.rotorGeometry)
+        else:
+            self.hubDirectionCalculator = None
 
         if self.rotor.rotorGeometry.tilt != None:
             self.tilt_rad = self.to_radians(self.rotor.rotorGeometry.tilt)
@@ -293,7 +300,10 @@ class RotorEquivalentWindSpeed:
 
         equivalentWindSpeed = 0
 
-        hub_direction = self.hubDirectionCalculator.hubDirection(row)
+        if not self.hubDirectionCalculator is None:
+            hub_direction = self.hubDirectionCalculator.hubDirection(row)
+        else:
+            hub_direction = None
 
         for level in self.rotor.levels:
 
@@ -309,7 +319,7 @@ class RotorEquivalentWindSpeed:
 
             level_value = speed \
                              * self.direction_term(level, hub_direction, direction_profile) \
-                             * self.upflow_term(level, upflow_profile)
+                             * self.upflow_term(level, speed, upflow_profile)
 
             equivalentWindSpeed += level_value ** 3.0 * level.areaFraction
 
@@ -333,16 +343,15 @@ class RotorEquivalentWindSpeed:
             hub_direction_rad = self.to_radians(hub_direction)
             return math.cos(direction_rad - hub_direction_rad)
 
-    def upflow_term(self, level, upflow_profile):
+    def upflow_term(self, level, speed, upflow_profile):
 
         upflow = upflow_profile(level.level)
 
         if upflow is None or self.tilt_rad is None:
             return 1.0
         else:
-            upflow_rad = self.to_radians(direction)
-            hub_direction_rad = self.to_radians(hub_direction)
-            return math.cos(upflow_rad + self.tilt_rad) / (math.cos(upflow_rad) + math.cos(self.tilt_rad))
+            upflow_rad = math.atan2(upflow, speed)
+            return math.cos(upflow_rad + self.tilt_rad) / (math.cos(upflow_rad) * math.cos(self.tilt_rad))
 
     def to_radians(self, direction):
         return direction * math.pi / 180.0
@@ -352,15 +361,15 @@ class RotorEquivalentJustWindSpeed(RotorEquivalentWindSpeed):
     def direction_term(self, level, hub_direction, direction_profile):
         return 1.0
 
-    def upflow_term(self, level, direction_profile):
+    def upflow_term(self, level, speed, direction_profile):
         return 1.0     
            
 class RotorEquivalentJustWindSpeedAndVeer(RotorEquivalentWindSpeed):
 
-    def upflow_term(self, level, direction_profile):
+    def upflow_term(self, level, speed, direction_profile):
         return 1.0     
 
 class RotorEquivalentJustWindSpeedAndUpflow(RotorEquivalentWindSpeed):
 
-    def upflow_term(self, level, direction_profile):
+    def upflow_term(self, level, speed, direction_profile):
         return 1.0     

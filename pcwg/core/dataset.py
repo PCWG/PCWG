@@ -251,7 +251,7 @@ class Dataset:
 
     def __init__(self, config, analysisConfig):
 
-        self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
+        self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight, config.rotor_tilt)
 
         self.nameColumn = "Dataset Name"
         self.name = config.name
@@ -411,7 +411,7 @@ class Dataset:
             else:
                 self.hasDensity = False
 
-        if config.power != None:
+        if config.power != None and len(config.power) > 0:
             dataFrame[self.actualPower] = dataFrame[config.power]
             self.hasActualPower = True
         else:
@@ -834,6 +834,16 @@ class Dataset:
         else:
             return mask | (dataFrame[filterColumn] > filterValue)
 
+    def valid_column(self, column):
+        
+        if column is None:
+            return False
+
+        if len(column) < 1:
+            return False
+
+        return True
+
     def defineREWS(self, dataFrame, config, rotorGeometry):
 
         windSpeedLevels = {}
@@ -841,10 +851,19 @@ class Dataset:
         upflowLevels = {}
 
         for item in config.rewsProfileLevels:
-            windSpeedLevels[item.height] = item.wind_speed_column
-            directionLevels[item.height] = item.wind_direction_column
-            upflowLevels[item.height] = item.upflow_column
-            
+            if self.valid_column(item.wind_speed_column): windSpeedLevels[item.height] = item.wind_speed_column
+            if self.valid_column(item.wind_direction_column): directionLevels[item.height] = item.wind_direction_column
+            if self.valid_column(item.upflow_column): upflowLevels[item.height] = item.upflow_column
+        
+        if len(windSpeedLevels) < 3:
+            raise Exception("Insufficient levels to define REWS")
+
+        if len(directionLevels) < 3:
+            directionLevels = None
+
+        if len(upflowLevels) < 3:
+            upflowLevels = None
+
         profileLevels = rews.ProfileLevels(rotorGeometry, windSpeedLevels, directionLevels, upflowLevels)
         
         self.windSpeedLevels = windSpeedLevels
