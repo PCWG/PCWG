@@ -9,7 +9,7 @@ v0.5.12
 A full history of release versions can be found at https://github.com/peterdougstuart/PCWG/releases)
 
 ## Builds
-[![Build status](https://ci.appveyor.com/api/projects/status/6xtxoxggmbnf4n4r?svg=true)](https://ci.appveyor.com/project/lcameron05/pcwg)
+[![Build status](https://ci.appveyor.com/api/projects/status/v7385dr5ina75l6x?svg=true)](https://ci.appveyor.com/project/peterdougstuart/pcwg)
 
 
 ### AEP:
