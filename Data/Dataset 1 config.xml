@@ -43,46 +43,22 @@
 		<ShearCalibrationMethod>None</ShearCalibrationMethod>
 		<ReferenceShearMeasurements>
 			<ShearMeasurement>
-				<Height>89.100000</Height>
-				<WindSpeed>Mast - 89.1m Wind Speed Mean</WindSpeed>
-			</ShearMeasurement>
-			<ShearMeasurement>
 				<Height>40.000000</Height>
 				<WindSpeed>Mast - 40.0m Wind Speed Mean</WindSpeed>
+			</ShearMeasurement>
+			<ShearMeasurement>
+				<Height>89.100000</Height>
+				<WindSpeed>Mast - 89.1m Wind Speed Mean</WindSpeed>
 			</ShearMeasurement>
 		</ReferenceShearMeasurements>
 		<TurbineShearMeasurements/>
 	</Shear>
 	<ProfileLevels>
 		<ProfileLevel>
-			<Height>142.500000</Height>
-			<ProfileWindSpeed>LiDAR - 142.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 142.5m Windvane Mean</ProfileWindDirection>
-			<ProfileUpflow>LiDAR - 142.5m Vertical Speed</ProfileUpflow>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>87.500000</Height>
-			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 87.5m Windvane Mean</ProfileWindDirection>
-			<ProfileUpflow>LiDAR - 87.5m Vertical Speed</ProfileUpflow>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>127.500000</Height>
-			<ProfileWindSpeed>LiDAR - 127.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 127.5m Windvane Mean</ProfileWindDirection>
-			<ProfileUpflow>LiDAR - 127.5m Vertical Speed</ProfileUpflow>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>137.500000</Height>
-			<ProfileWindSpeed>LiDAR - 137.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 137.5m Windvane Mean</ProfileWindDirection>
-			<ProfileUpflow>LiDAR - 137.5m Vertical Speed</ProfileUpflow>
-		</ProfileLevel>
-		<ProfileLevel>
-			<Height>77.500000</Height>
-			<ProfileWindSpeed>LiDAR - 77.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 77.5m Windvane Mean</ProfileWindDirection>
-			<ProfileUpflow>LiDAR - 77.5m Vertical Speed</ProfileUpflow>
+			<Height>52.500000</Height>
+			<ProfileWindSpeed>LiDAR - 52.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 52.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 52.5m Vertical Speed</ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>67.500000</Height>
@@ -91,22 +67,46 @@
 			<ProfileUpflow>LiDAR - 67.5m Vertical Speed</ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>52.500000</Height>
-			<ProfileWindSpeed>LiDAR - 52.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 52.5m Windvane Mean</ProfileWindDirection>
-			<ProfileUpflow>LiDAR - 52.5m Vertical Speed</ProfileUpflow>
+			<Height>77.500000</Height>
+			<ProfileWindSpeed>LiDAR - 77.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 77.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 77.5m Vertical Speed</ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
-			<Height>107.500000</Height>
-			<ProfileWindSpeed>LiDAR - 107.5m Wind Speed Mean</ProfileWindSpeed>
-			<ProfileWindDirection>LiDAR - 107.5m Windvane Mean</ProfileWindDirection>
-			<ProfileUpflow>LiDAR - 107.5m Vertical Speed</ProfileUpflow>
+			<Height>137.500000</Height>
+			<ProfileWindSpeed>LiDAR - 137.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 137.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 137.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>127.500000</Height>
+			<ProfileWindSpeed>LiDAR - 127.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 127.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 127.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>87.500000</Height>
+			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 87.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 87.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>142.500000</Height>
+			<ProfileWindSpeed>LiDAR - 142.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 142.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 142.5m Vertical Speed</ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>97.500000</Height>
 			<ProfileWindSpeed>LiDAR - 97.5m Wind Speed Mean</ProfileWindSpeed>
 			<ProfileWindDirection>LiDAR - 97.5m Windvane Mean</ProfileWindDirection>
 			<ProfileUpflow>LiDAR - 97.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>107.500000</Height>
+			<ProfileWindSpeed>LiDAR - 107.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 107.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 107.5m Vertical Speed</ProfileUpflow>
 		</ProfileLevel>
 		<ProfileLevel>
 			<Height>117.500000</Height>
@@ -131,6 +131,7 @@
 		<RatedPower>2000.000000</RatedPower>
 		<HubHeight>96.000000</HubHeight>
 		<Diameter>90.000000</Diameter>
+		<Tilt>5.000000</Tilt>
 	</Turbine>
 	<MetaData>
 		<DataType>Mast &amp; LiDAR</DataType>

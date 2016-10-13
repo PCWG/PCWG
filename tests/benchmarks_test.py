@@ -4,7 +4,7 @@ from nose.plugins.attrib import attr
 
 from pcwg.configuration.analysis_configuration import AnalysisConfiguration
 from pcwg.configuration.benchmark_configuration import BenchmarkConfiguration
-from pcwg.core.analysis import Analysis
+from pcwg.core.benchmark import BenchmarkAnalysis
 
 PACKAGE_ROOT = abspath(join(dirname(__file__), '..'))
 
@@ -18,6 +18,6 @@ def test_benchmark():
 
 
 def check_benchmark(benchmark, tolerance):
-    analysis = Analysis(AnalysisConfiguration(benchmark.absolute_path))
+    analysis = BenchmarkAnalysis(AnalysisConfiguration(benchmark.absolute_path), benchmark.base_line_mode)
     for (field, value) in benchmark.expectedResults.iteritems():
         assert_almost_equal(value, analysis.__dict__[field], delta=tolerance)

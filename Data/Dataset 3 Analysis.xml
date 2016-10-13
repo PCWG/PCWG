@@ -2,7 +2,6 @@
 <Configuration xmlns="http://www.pcwg.org">
 	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
 	<FilterMode>All</FilterMode>
-	<BaseLineMode>Hub</BaseLineMode>
 	<InterpolationMode>Linear</InterpolationMode>
 	<PowerCurveMode>Specified</PowerCurveMode>
 	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
@@ -32,6 +31,8 @@
 	</TurbulenceRenormalisation>
 	<RotorEquivalentWindSpeed>
 		<Active>1</Active>
+		<Veer>0</Veer>
+		<Upflow>0</Upflow>
 	</RotorEquivalentWindSpeed>
 	<PowerDeviationMatrix>
 		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>

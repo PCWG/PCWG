@@ -12,7 +12,7 @@
 		<BinSize>1.000000</BinSize>
 	</PowerCurveBins>
 	<Datasets>
-		<Dataset>Dataset 2 config.xml</Dataset>
+		<Dataset>Dataset 1 config.xml</Dataset>
 	</Datasets>
 	<InnerRange>
 		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
@@ -31,8 +31,9 @@
 	</TurbulenceRenormalisation>
 	<RotorEquivalentWindSpeed>
 		<Active>1</Active>
-		<Veer>0</Veer>
-		<Upflow>0</Upflow>
+		<Veer>1</Veer>
+		<Upflow>1</Upflow>
+		<Exponent>1.000000</Exponent>
 	</RotorEquivalentWindSpeed>
 	<PowerDeviationMatrix>
 		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>

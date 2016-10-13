@@ -147,10 +147,16 @@ class GridBox(object):
 
         # adjust column's width if necessary to fit each value
         for ix, val in enumerate(values):
-            col_w = tkFont.Font().measure(val)
-            if self.tree.column(self.headers[ix],width=None)<col_w:
-                self.tree.column(self.headers[ix], width=col_w)
-                
+
+            if not val is None: 
+    
+                try:
+                    col_w = tkFont.Font().measure(val)
+                    if self.tree.column(self.headers[ix],width=None)<col_w:
+                        self.tree.column(self.headers[ix], width=col_w)
+                except ExceptionHandler.ExceptionType as e:
+                    ExceptionHandler.add("Cannot adjust column width {0}: {1}".format(val, e))
+
     def get_tree_values(self, item):
 
         values = []

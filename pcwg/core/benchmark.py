@@ -27,8 +27,6 @@ class BenchmarkAnalysis(Analysis):
         self.calculationCombinedBenchmark()
         self.calculatePowerDeviationMatrixBenchmark()
 
-        self.dataFrame.to_csv("Debug.dat")
-
     def calculate_power_deviation_matrices(self):
         #speed optimisation (output power deviation matrices not required for benchmark)
         pass

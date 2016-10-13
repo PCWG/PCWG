@@ -183,6 +183,7 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.cutInWindSpeed = None
             self.cutOutWindSpeed = None
             self.ratedPower = None
+            self.rotor_tilt = None
 
             self.invariant_rand_id = None
 
@@ -434,6 +435,9 @@ class DatasetConfiguration(base_configuration.XmlBase):
         if self.diameter != None:
             self.addFloatNode(doc, turbineNode, "Diameter", self.diameter)
 
+        if self.rotor_tilt != None:
+            self.addFloatNode(doc, turbineNode, "Tilt", self.rotor_tilt)
+
         #write meta dat
         self.write_meta_data(doc, root)
 
@@ -509,13 +513,20 @@ class DatasetConfiguration(base_configuration.XmlBase):
                 self.ratedPower = self.getNodeFloat(turbineNode, 'RatedPower')
             else:
                 self.ratedPower = None
-        
+            
+            if self.nodeExists(turbineNode, 'Tilt'): 
+                self.rotor_tilt = self.getNodeFloat(turbineNode, 'Tilt')
+            else:
+                self.rotor_tilt = None
+
         else:
+            
             self.hubHeight = None
             self.diameter = None
             self.cutInWindSpeed = None
             self.cutOutWindSpeed = None
             self.ratedPower = None
+            self.rotor_tilt = None
                 
     def readREWS(self, configurationNode):
 

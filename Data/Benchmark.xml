@@ -54,6 +54,21 @@
 				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
+
+		<Benchmark>
+			<AnalysisConfigPath>Dataset 1 Analysis (RAWS with Veer and Upflow).xml</AnalysisConfigPath>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>hubDelta</Field>
+					<Value>0.000000</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>rewsDelta</Field>
+					<Value>-0.0130116</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 2 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>

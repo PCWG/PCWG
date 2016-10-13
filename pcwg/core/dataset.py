@@ -251,7 +251,7 @@ class Dataset:
 
     def __init__(self, config, analysisConfig):
 
-        self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight)
+        self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight, config.rotor_tilt)
 
         self.nameColumn = "Dataset Name"
         self.name = config.name
@@ -276,11 +276,7 @@ class Dataset:
         self.referenceWindSpeed = 'Reference Wind Speed'
         self.turbineLocationWindSpeed = 'Turbine Location Wind Speed'
 
-        self.rewsToHubRatioFull = "REWS To Hub Ratio Full"
-        self.rewsToHubRatioJustWindSpeed = "REWS To Hub Ratio Just Wind Speed"
-        self.rewsToHubRatioJustWindSpeedAndVeer = "REWS To Hub Ratio Just Wind Speed And Veer"
-        self.rewsToHubRatioJustWindSpeedAndUpflow = "REWS To Hub Ratio Just Wind Speed And Upflow"
-
+        self.rewsToHubRatio = "REWS To Hub Ratio"
         self.residualWindSpeed = "Residual Wind Speed" 
         
         self.hasShear = len(config.referenceShearMeasurements) > 1
@@ -411,7 +407,7 @@ class Dataset:
             else:
                 self.hasDensity = False
 
-        if config.power != None:
+        if config.power != None and len(config.power) > 0:
             dataFrame[self.actualPower] = dataFrame[config.power]
             self.hasActualPower = True
         else:
@@ -425,8 +421,8 @@ class Dataset:
         dataFrame = self.filterDataFrame(dataFrame, config.filters)
         dataFrame = self.excludeData(dataFrame, config)
 
-        if self.rewsDefined:
-            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry)
+        if self.rewsDefined and analysisConfig.rewsActive:
+            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysisConfig.rewsVeer, analysisConfig.rewsUpflow, analysisConfig.rewsExponent)
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
@@ -656,11 +652,7 @@ class Dataset:
             requiredCols.append(self.inflowAngle)
 
         if self.rewsDefined:
-
-            requiredCols.append(self.rewsToHubRatioFull)
-            requiredCols.append(self.rewsToHubRatioJustWindSpeed)
-            requiredCols.append(self.rewsToHubRatioJustWindSpeedAndVeer)
-            requiredCols.append(self.rewsToHubRatioJustWindSpeedAndUpflow)
+            requiredCols.append(self.rewsToHubRatio)
 
         if self.hasAllPowers:
             requiredCols.append(self.powerMin)
@@ -834,17 +826,36 @@ class Dataset:
         else:
             return mask | (dataFrame[filterColumn] > filterValue)
 
-    def defineREWS(self, dataFrame, config, rotorGeometry):
+    def valid_column(self, column):
+        
+        if column is None:
+            return False
+
+        if len(column) < 1:
+            return False
+
+        return True
+
+    def defineREWS(self, dataFrame, config, rotorGeometry, rewsVeer, rewsUpflow, rewsExponent):
 
         windSpeedLevels = {}
         directionLevels = {}
         upflowLevels = {}
 
         for item in config.rewsProfileLevels:
-            windSpeedLevels[item.height] = item.wind_speed_column
-            directionLevels[item.height] = item.wind_direction_column
-            upflowLevels[item.height] = item.upflow_column
-            
+            if self.valid_column(item.wind_speed_column): windSpeedLevels[item.height] = item.wind_speed_column
+            if self.valid_column(item.wind_direction_column): directionLevels[item.height] = item.wind_direction_column
+            if self.valid_column(item.upflow_column): upflowLevels[item.height] = item.upflow_column
+        
+        if len(windSpeedLevels) < 3:
+            raise Exception("Insufficient levels to define REWS")
+
+        if len(directionLevels) < 3:
+            directionLevels = None
+
+        if len(upflowLevels) < 3:
+            upflowLevels = None
+
         profileLevels = rews.ProfileLevels(rotorGeometry, windSpeedLevels, directionLevels, upflowLevels)
         
         self.windSpeedLevels = windSpeedLevels
@@ -863,14 +874,8 @@ class Dataset:
         else:
             raise Exception("Unknown hub mode: % s" % config.hubMode)
 
-        rotorEquivalentWindSpeed = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator)
-        rotorEquivalentJustWindSpeed = rews.RotorEquivalentJustWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator)
-        rotorEquivalentJustWindSpeedAndVeer = rews.RotorEquivalentJustWindSpeedAndVeer(profileLevels, self.rotor, profileHubWindSpeedCalculator)
-        rotorEquivalentJustWindSpeedAndUpflow = rews.RotorEquivalentJustWindSpeedAndUpflow(profileLevels, self.rotor, profileHubWindSpeedCalculator)
+        rotorEquivalentWindSpeed = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator, rewsVeer, rewsUpflow, rewsExponent)
 
-        dataFrame[self.rewsToHubRatioFull] = dataFrame.apply(rotorEquivalentWindSpeed.rewsToHubRatio, axis=1)
-        dataFrame[self.rewsToHubRatioJustWindSpeed] = dataFrame.apply(rotorEquivalentJustWindSpeed.rewsToHubRatio, axis=1)
-        dataFrame[self.rewsToHubRatioJustWindSpeedAndVeer] = dataFrame.apply(rotorEquivalentJustWindSpeedAndVeer.rewsToHubRatio, axis=1)
-        dataFrame[self.rewsToHubRatioJustWindSpeedAndUpflow] = dataFrame.apply(rotorEquivalentJustWindSpeedAndUpflow.rewsToHubRatio, axis=1)
+        dataFrame[self.rewsToHubRatio] = dataFrame.apply(rotorEquivalentWindSpeed.rewsToHubRatio, axis=1)
 
         return dataFrame

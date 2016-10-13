@@ -608,6 +608,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
             self.ratedPower = self.addEntry(master, "Rated Power:", validation.ValidatePositiveFloat(master), self.config.ratedPower)
             self.hubHeight = self.addEntry(master, "Hub Height:", validation.ValidatePositiveFloat(master), self.config.hubHeight)
             self.diameter = self.addEntry(master, "Diameter:", validation.ValidatePositiveFloat(master), self.config.diameter)
+            self.rotor_tilt = self.addEntry(master, "Tilt:", validation.ValidateOptionalFloat(master), self.config.rotor_tilt)
 
         def addFormElements(self, master, path):
 
@@ -917,6 +918,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.config.ratedPower = float(self.ratedPower.get())
                 self.config.hubHeight = float(self.hubHeight.get())
                 self.config.diameter = float(self.diameter.get())
+                self.config.rotor_tilt = float(self.rotor_tilt.get())
 
                 #meta data
 
