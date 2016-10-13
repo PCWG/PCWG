@@ -396,19 +396,19 @@ class Analysis:
             self.hubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode)
             if self.hasShear: self.hubPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.hubPower, innerShearFilterMode)
 
-            if config.rewsActive:
+            if self.rewsActive:
                 self.rewsPowerDeviations = self.calculatePowerDeviationMatrix(self.rewsPower, allFilterMode)
                 if self.hasShear: self.rewsPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.rewsPower, innerShearFilterMode)
 
-            if config.turbRenormActive:
+            if self.turbRenormActive:
                 self.turbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, allFilterMode)
                 if self.hasShear: self.turbPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.turbulencePower, innerShearFilterMode)
 
-            if config.turbRenormActive and config.rewsActive:
+            if self.turbRenormActive and self.rewsActive:
                 self.combPowerDeviations = self.calculatePowerDeviationMatrix(self.combinedPower, allFilterMode)
                 if self.hasShear: self.combPowerDeviationsInnerShear = self.calculatePowerDeviationMatrix(self.combinedPower, innerShearFilterMode)
 
-            if config.powerDeviationMatrixActive:
+            if self.powerDeviationMatrixActive:
                 self.powerDeviationMatrixDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
 
             Status.add("Power Curve Deviation Matrices Complete.")
@@ -1120,7 +1120,7 @@ class Analysis:
                                                                                                                   axis=1)
 
     def export(self, path,clean = True,  full = True, calibration = True ):
-        op_path = os.path.dirname(path)
+
         plotsDir = self.config.path.replace(".xml","_PPAnalysisPlots")
         self.png_plots(plotsDir)
         if clean:
