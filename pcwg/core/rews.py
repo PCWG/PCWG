@@ -276,11 +276,14 @@ class PiecewiseInterpolationHubDirection(PiecewiseHubBase):
 
 class RotorEquivalentWindSpeed:
 
-    def __init__(self, profileLevels, rotor, hubWindSpeedCalculator):        
+    def __init__(self, profileLevels, rotor, hubWindSpeedCalculator, rewsVeer, rewsUpflow, exponent):        
 
         self.profileLevels = profileLevels
         self.rotor = rotor
         self.hubWindSpeedCalculator = hubWindSpeedCalculator
+        self.rewsVeer = rewsVeer
+        self.rewsUpflow = rewsUpflow
+        self.exponent = exponent
 
         if not profileLevels.windDirectionLevels is None:
             self.hubDirectionCalculator = PiecewiseInterpolationHubDirection(profileLevels, self.rotor.rotorGeometry)
@@ -321,9 +324,9 @@ class RotorEquivalentWindSpeed:
                              * self.direction_term(level, hub_direction, direction_profile) \
                              * self.upflow_term(level, speed, upflow_profile)
 
-            equivalentWindSpeed += level_value ** 3.0 * level.areaFraction
+            equivalentWindSpeed += level_value ** self.exponent * level.areaFraction
 
-        return equivalentWindSpeed ** (1.0 / 3.0)
+        return equivalentWindSpeed ** (1.0 / self.exponent)
 
         
     def rewsToHubRatio(self, row):
@@ -333,6 +336,9 @@ class RotorEquivalentWindSpeed:
         return self.rews(row) / hub_speed
 
     def direction_term(self, level, hub_direction, direction_profile):
+
+        if not self.rewsVeer:
+            return 1.0
 
         direction = direction_profile(level.level)
 
@@ -345,6 +351,9 @@ class RotorEquivalentWindSpeed:
 
     def upflow_term(self, level, speed, upflow_profile):
 
+        if not self.rewsUpflow:
+            return 1.0
+
         upflow = upflow_profile(level.level)
 
         if upflow is None or self.tilt_rad is None:
@@ -356,20 +365,3 @@ class RotorEquivalentWindSpeed:
     def to_radians(self, direction):
         return direction * math.pi / 180.0
 
-class RotorEquivalentJustWindSpeed(RotorEquivalentWindSpeed):
-
-    def direction_term(self, level, hub_direction, direction_profile):
-        return 1.0
-
-    def upflow_term(self, level, speed, direction_profile):
-        return 1.0     
-           
-class RotorEquivalentJustWindSpeedAndVeer(RotorEquivalentWindSpeed):
-
-    def upflow_term(self, level, speed, direction_profile):
-        return 1.0     
-
-class RotorEquivalentJustWindSpeedAndUpflow(RotorEquivalentWindSpeed):
-
-    def upflow_term(self, level, speed, direction_profile):
-        return 1.0     

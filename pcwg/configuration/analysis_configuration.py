@@ -77,6 +77,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.rewsActive = False
             self.rewsVeer = True
             self.rewsUpflow = False
+            self.rewsExponent = 3.0
 
             self.turbRenormActive = False
             self.densityCorrectionActive = False
@@ -162,6 +163,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addBoolNode(doc, rewsNode, "Active", self.rewsActive)
         self.addBoolNode(doc, rewsNode, "Veer", self.rewsVeer)
         self.addBoolNode(doc, rewsNode, "Upflow", self.rewsUpflow)
+        self.addFloatNode(doc, rewsNode, "Exponent", self.rewsExponent)
 
         powerDeviationMatrixNode = self.addNode(doc, root, "PowerDeviationMatrix")
         self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specified_power_deviation_matrix.relative_path)
@@ -219,6 +221,11 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 self.rewsUpflow = self.getNodeBool(rewsNode, 'Upflow')
             else:
                 self.rewsUpflow = False
+
+            if self.nodeExists(rewsNode, 'Exponent'):
+                self.rewsExponent = self.getNodeFloat(rewsNode, 'Exponent')
+            else:
+                self.rewsExponent = 3.0
 
         else:
 

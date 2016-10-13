@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
+	<FilterMode>All</FilterMode>
+	<InterpolationMode>Linear</InterpolationMode>
+	<PowerCurveMode>Specified</PowerCurveMode>
+	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
+	<NominalWindSpeedDistribution></NominalWindSpeedDistribution>
+	<PowerCurveBins>
+		<FirstBinCentre>1.000000</FirstBinCentre>
+		<LastBinCentre>30.000000</LastBinCentre>
+		<BinSize>1.000000</BinSize>
+	</PowerCurveBins>
+	<Datasets>
+		<Dataset>Dataset 1 config.xml</Dataset>
+	</Datasets>
+	<InnerRange>
+		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
+		<InnerRangeUpperTurbulence>0.140000</InnerRangeUpperTurbulence>
+		<InnerRangeLowerShear>0.150000</InnerRangeLowerShear>
+		<InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
+	</InnerRange>
+	<Turbine>
+		<SpecifiedPowerCurve>PowerCurve.xml</SpecifiedPowerCurve>
+	</Turbine>
+	<DensityCorrection>
+		<Active>0</Active>
+	</DensityCorrection>
+	<TurbulenceRenormalisation>
+		<Active>1</Active>
+	</TurbulenceRenormalisation>
+	<RotorEquivalentWindSpeed>
+		<Active>1</Active>
+		<Veer>1</Veer>
+		<Upflow>1</Upflow>
+		<Exponent>1.000000</Exponent>
+	</RotorEquivalentWindSpeed>
+	<PowerDeviationMatrix>
+		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>
+		<Active>1</Active>
+	</PowerDeviationMatrix>
+</Configuration>

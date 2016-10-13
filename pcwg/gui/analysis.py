@@ -86,6 +86,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
             self.rewsVeer = self.addCheckBox(master, "REWS Veer", self.config.rewsVeer)  
             self.rewsUpflow = self.addCheckBox(master, "REWS Upflow", self.config.rewsUpflow)  
+            self.rewsExponent = self.addEntry(master, "REWS Exponent:", validation.ValidatePositiveFloat(master), self.config.rewsExponent)
 
         def add_advanced(self, master):
 
@@ -189,7 +190,8 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.config.rewsActive = bool(self.rewsCorrectionActive.get())
                 self.config.rewsVeer = bool(self.rewsVeer.get())
                 self.config.rewsUpflow = bool(self.rewsUpflow.get())
-    
+                self.config.rewsExponent = float(self.rewsExponent.get())
+
                 self.config.specified_power_deviation_matrix.absolute_path = self.specifiedPowerDeviationMatrix.get()
                 self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
 

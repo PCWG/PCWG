@@ -225,31 +225,6 @@ class Analysis:
         self.rewsVeer = config.rewsVeer
         self.rewsUpflow = config.rewsUpflow
 
-        if self.rewsActive:
-
-            self.rewsToHubRatio = "REWS To Hub Ratio"
-            self.rewsToHubRatioDeviation = "REWS To Hub Ratio Deviation"
-
-            if self.rewsVeer:
-
-                if self.rewsUpflow:
-                    Status.add("REWS Full")
-                    self.rewsToHubRatio = self.rewsToHubRatioFull
-                else:
-                    Status.add("REWS Wind Speed & Veer")
-                    self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeedAndVeer
-
-            else:
-
-                if self.rewsUpflow:
-                    Status.add("REWS Wind Speed & Upflow")
-                    self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeedAndUpflow
-                else:
-                    Status.add("REWS Wind Speed Only")
-                    self.rewsToHubRatio = self.rewsToHubRatioJustWindSpeed
-
-            self.dataFrame[self.rewsToHubRatioDeviation] = self.dataFrame[self.rewsToHubRatio] - 1.0
-
         self.turbRenormActive = config.turbRenormActive
         self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
         
@@ -372,7 +347,8 @@ class Analysis:
             self.normalisedPower = 'Normalised Power'
             self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.ratedPower
 
-        if config.rewsActive:
+        if self.rewsActive and self.rewsDefined:
+
             Status.add("Calculating REWS Correction...")
             self.calculateREWS()
             Status.add("REWS Correction Complete.")
@@ -581,11 +557,7 @@ class Analysis:
                 self.rewsDefined = data.rewsDefined
 
                 if data.rewsDefined:
-
-                    self.rewsToHubRatioFull = data.rewsToHubRatioFull
-                    self.rewsToHubRatioJustWindSpeed = data.rewsToHubRatioJustWindSpeed
-                    self.rewsToHubRatioJustWindSpeedAndVeer = data.rewsToHubRatioJustWindSpeedAndVeer
-                    self.rewsToHubRatioJustWindSpeedAndUpflow = data.rewsToHubRatioJustWindSpeedAndUpflow
+                    self.rewsToHubRatio = data.rewsToHubRatio
 
                 self.actualPower = data.actualPower
                 self.residualWindSpeed = data.residualWindSpeed
@@ -1107,6 +1079,10 @@ class Analysis:
         self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
 
     def calculateREWS(self):
+
+        self.rewsToHubRatioDeviation = "REWS To Hub Ratio Deviation"
+        self.dataFrame[self.rewsToHubRatioDeviation] = self.dataFrame[self.rewsToHubRatio] - 1.0
+
         self.dataFrame[self.rotorEquivalentWindSpeed] = self.dataFrame[self.inputHubWindSpeed] * self.dataFrame[self.rewsToHubRatio]
         self.dataFrame[self.rewsPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.rotorEquivalentWindSpeed).power, axis=1)
 

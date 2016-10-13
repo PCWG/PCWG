@@ -276,11 +276,7 @@ class Dataset:
         self.referenceWindSpeed = 'Reference Wind Speed'
         self.turbineLocationWindSpeed = 'Turbine Location Wind Speed'
 
-        self.rewsToHubRatioFull = "REWS To Hub Ratio Full"
-        self.rewsToHubRatioJustWindSpeed = "REWS To Hub Ratio Just Wind Speed"
-        self.rewsToHubRatioJustWindSpeedAndVeer = "REWS To Hub Ratio Just Wind Speed And Veer"
-        self.rewsToHubRatioJustWindSpeedAndUpflow = "REWS To Hub Ratio Just Wind Speed And Upflow"
-
+        self.rewsToHubRatio = "REWS To Hub Ratio"
         self.residualWindSpeed = "Residual Wind Speed" 
         
         self.hasShear = len(config.referenceShearMeasurements) > 1
@@ -425,8 +421,8 @@ class Dataset:
         dataFrame = self.filterDataFrame(dataFrame, config.filters)
         dataFrame = self.excludeData(dataFrame, config)
 
-        if self.rewsDefined:
-            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry)
+        if self.rewsDefined and analysisConfig.rewsActive:
+            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysisConfig.rewsVeer, analysisConfig.rewsUpflow, analysisConfig.rewsExponent)
 
         self.fullDataFrame = dataFrame.copy()
         self.dataFrame = self.extractColumns(dataFrame).dropna()
@@ -656,11 +652,7 @@ class Dataset:
             requiredCols.append(self.inflowAngle)
 
         if self.rewsDefined:
-
-            requiredCols.append(self.rewsToHubRatioFull)
-            requiredCols.append(self.rewsToHubRatioJustWindSpeed)
-            requiredCols.append(self.rewsToHubRatioJustWindSpeedAndVeer)
-            requiredCols.append(self.rewsToHubRatioJustWindSpeedAndUpflow)
+            requiredCols.append(self.rewsToHubRatio)
 
         if self.hasAllPowers:
             requiredCols.append(self.powerMin)
@@ -844,7 +836,7 @@ class Dataset:
 
         return True
 
-    def defineREWS(self, dataFrame, config, rotorGeometry):
+    def defineREWS(self, dataFrame, config, rotorGeometry, rewsVeer, rewsUpflow, rewsExponent):
 
         windSpeedLevels = {}
         directionLevels = {}
@@ -882,14 +874,8 @@ class Dataset:
         else:
             raise Exception("Unknown hub mode: % s" % config.hubMode)
 
-        rotorEquivalentWindSpeed = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator)
-        rotorEquivalentJustWindSpeed = rews.RotorEquivalentJustWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator)
-        rotorEquivalentJustWindSpeedAndVeer = rews.RotorEquivalentJustWindSpeedAndVeer(profileLevels, self.rotor, profileHubWindSpeedCalculator)
-        rotorEquivalentJustWindSpeedAndUpflow = rews.RotorEquivalentJustWindSpeedAndUpflow(profileLevels, self.rotor, profileHubWindSpeedCalculator)
+        rotorEquivalentWindSpeed = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator, rewsVeer, rewsUpflow, rewsExponent)
 
-        dataFrame[self.rewsToHubRatioFull] = dataFrame.apply(rotorEquivalentWindSpeed.rewsToHubRatio, axis=1)
-        dataFrame[self.rewsToHubRatioJustWindSpeed] = dataFrame.apply(rotorEquivalentJustWindSpeed.rewsToHubRatio, axis=1)
-        dataFrame[self.rewsToHubRatioJustWindSpeedAndVeer] = dataFrame.apply(rotorEquivalentJustWindSpeedAndVeer.rewsToHubRatio, axis=1)
-        dataFrame[self.rewsToHubRatioJustWindSpeedAndUpflow] = dataFrame.apply(rotorEquivalentJustWindSpeedAndUpflow.rewsToHubRatio, axis=1)
+        dataFrame[self.rewsToHubRatio] = dataFrame.apply(rotorEquivalentWindSpeed.rewsToHubRatio, axis=1)
 
         return dataFrame
