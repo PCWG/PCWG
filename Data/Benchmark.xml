@@ -54,7 +54,6 @@
 				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
-
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis (RAWS with Veer and Upflow).xml</AnalysisConfigPath>
 			<ExpectedResults>
@@ -64,11 +63,10 @@
 				</ExpectedResult>
 				<ExpectedResult>
 					<Field>rewsDelta</Field>
-					<Value>-0.0130116</Value>
+					<Value>-0.00166133</Value>
 				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
-
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 2 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>

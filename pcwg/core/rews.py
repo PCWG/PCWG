@@ -326,8 +326,9 @@ class RotorEquivalentWindSpeed:
 
             equivalentWindSpeed += level_value ** self.exponent * level.areaFraction
 
-        return equivalentWindSpeed ** (1.0 / self.exponent)
+        equivalentWindSpeed = equivalentWindSpeed ** (1.0 / self.exponent)
 
+        return equivalentWindSpeed
         
     def rewsToHubRatio(self, row):
 
