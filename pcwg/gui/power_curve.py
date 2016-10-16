@@ -8,6 +8,7 @@ Created on Wed Aug 10 14:20:11 2016
 import base_dialog
 import Tkinter as tk
 import validation
+import pandas as pd
 
 from ..exceptions.handling import ExceptionHandler
 from ..core.status import Status
@@ -104,6 +105,9 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.addPowerCurveLevelButton = tk.Button(master, text="Delete", command = self.removePowerCurveLevels, width=5, height=1)
                 self.addPowerCurveLevelButton.grid(row=self.row, sticky=tk.E+tk.S, column=self.buttonColumn)
 
+                self.addPowerCurveLevelButton = tk.Button(master, text="Parse", command = self.parse_clipboard, width=5, height=1)
+                self.addPowerCurveLevelButton.grid(row=self.row, sticky=tk.E+tk.S, column=self.secondButtonColumn, pady=30)
+
         def EditPowerCurveLevel(self):
 
                 items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
@@ -115,6 +119,25 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
                                 PowerCurveLevelDialog(self, self.addPowerCurveLevelFromText, text, idx)
                         except Exception as e: 
                                ExceptionHandler.add(e, "ERROR loading config (%s)".format(text))
+
+        def parse_clipboard(self):
+            
+            clip_board_df = pd.read_clipboard()
+            
+            if clip_board_df is None:
+                return
+                
+            if len(clip_board_df.columns) < 2:
+                return 
+                
+            for index in clip_board_df.index:
+                self.add_row(clip_board_df.ix[index])
+            
+        def add_row(self, row):
+            
+            text = encodePowerLevelValueAsText(row[0], row[1])
+            
+            self.addPowerCurveLevelFromText(text)
                                         
         def NewPowerCurveLevel(self):
                 PowerCurveLevelDialog(self, self.addPowerCurveLevelFromText)

@@ -259,10 +259,6 @@ class report:
         sh.write(row, dataColumn, config.powerCurveMinimumCount)
         row += 1
 
-        sh.write(row, labelColumn, "Baseline Mode", self.bold_style)
-        sh.write(row, dataColumn, config.baseLineMode)
-        row += 1
-
         sh.write(row, labelColumn, "Filter Mode", self.bold_style)
         sh.write(row, dataColumn, config.filterMode)
         row += 1
