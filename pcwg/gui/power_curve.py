@@ -108,6 +108,7 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.addPowerCurveLevelButton = tk.Button(master, text="Parse", command = self.parse_clipboard, width=5, height=1)
                 self.addPowerCurveLevelButton.grid(row=self.row, sticky=tk.E+tk.S, column=self.secondButtonColumn, pady=30)
 
+
         def EditPowerCurveLevel(self):
 
                 items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
@@ -163,7 +164,7 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
                     self.powerCurveLevelsListBoxEntry.listbox.delete(idx, idx)
                     pos += 1
             
-                self.powerCurveLevelsListBoxEntry.listbox.validate()
+                self.validatedPowerCurveLevels.validate()
 
         def sortLevels(self):
 

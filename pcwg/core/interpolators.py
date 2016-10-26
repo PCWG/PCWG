@@ -535,7 +535,7 @@ class CubicPowerCurveInterpolator(BaseInterpolator):
     def __init__(self, x, y, cutOutWindSpeed):
 
         #todo consolidate preprocessing logic with MarmanderPowerCurveInterpolator (maybe extract base class)
-
+        
         self.cubicInterpolator = interpolate.interp1d(x, y, kind='cubic',fill_value=0.0,bounds_error=False)
         self.linearInterpolator = interpolate.interp1d(x, y, kind='linear',fill_value=0.0,bounds_error=False)
         self.cutOutWindSpeed = cutOutWindSpeed
@@ -553,9 +553,9 @@ class CubicPowerCurveInterpolator(BaseInterpolator):
             return 0.0
         else:
             if x > self.lastCubicWindSpeed:
-                return self.linearInterpolator(x)
+                return float(self.linearInterpolator(x))
             else:
-                return self.cubicInterpolator(x)
+                return float(self.cubicInterpolator(x))
 
 class LinearPowerCurveInterpolator(BaseInterpolator):
 
@@ -569,7 +569,7 @@ class LinearPowerCurveInterpolator(BaseInterpolator):
         if x > self.cutOutWindSpeed:
             return 0.0
         else:
-            return self.interpolator(x)
+            return float(self.interpolator(x))
     
 class LinearTurbulenceInterpolator:
 
@@ -577,5 +577,5 @@ class LinearTurbulenceInterpolator:
         self.interpolator = interpolate.interp1d(x, y, kind='linear',fill_value=0.0,bounds_error=False)
 
     def __call__(self, x):
-        return self.interpolator(x)
+        return float(self.interpolator(x))
     

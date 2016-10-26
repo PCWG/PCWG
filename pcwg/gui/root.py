@@ -328,7 +328,7 @@ class UserInterface:
                     except ExceptionHandler.ExceptionType as e:
                         ExceptionHandler.add(e, "Couldn't load last analysis")
                         
-            if len(preferences.portfolioLastOpened) > 0:
+            if len(preferences.portfolioLastOpened) > 0 and os.path.isfile(preferences.portfolioLastOpened):
                     try:
                         Status.add("Loading last portfolio opened")
                         self.LoadPortfolioFromPath(preferences.portfolioLastOpened)
@@ -548,7 +548,7 @@ class UserInterface:
 
             self.portfolioConfiguration = None
 
-            if len(fileName) > 0:
+            if len(fileName) > 0 and os.path.isfile(fileName):
 
                     try:
                         self.portfolioConfiguration = PortfolioConfiguration(fileName)
