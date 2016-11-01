@@ -57,7 +57,7 @@ class MatplotlibPlotter(object):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
-            (self.analysis.powerCurveSensitivityVariationMetrics*100.).plot(kind = 'bar', title = 'Summary of Power Curve Variation by Variable. Significance Threshold = %.2f%%' % (self.analysis.sensitivityAnalysisThreshold * 100), figsize = (12,8))
+            (self.analysis.powerCurveSensitivityVariationMetrics.dropna()*100.).plot(kind = 'bar', title = 'Summary of Power Curve Variation by Variable. Significance Threshold = %.2f%%' % (self.analysis.sensitivityAnalysisThreshold * 100), figsize = (12,8), fontsize = 6)
             plt.ylabel('Variation Metric (%)')
             file_out = self.path + os.sep + 'Power Curve Sensitivity Analysis Variation Metric Summary.png'
             plt.tight_layout()
