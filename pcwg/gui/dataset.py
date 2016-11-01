@@ -918,7 +918,10 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 self.config.ratedPower = float(self.ratedPower.get())
                 self.config.hubHeight = float(self.hubHeight.get())
                 self.config.diameter = float(self.diameter.get())
-                self.config.rotor_tilt = float(self.rotor_tilt.get())
+                if len(self.rotor_tilt.get()) > 0:
+                    self.config.rotor_tilt = float(self.rotor_tilt.get())
+                else:
+                    self.config.rotor_tilt = None
 
                 #meta data
 
