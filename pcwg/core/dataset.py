@@ -674,10 +674,11 @@ class Dataset:
 
             Status.add("Number of null columns: {0}".format(dataFrame[requiredCols].isnull().sum()))
 
-            text = "One of the required columns is empty.\n"
+            text = "The following required columns are empty:\n"
 
             for col in requiredCols:
-                text += "- %s: %d\n" % (col, dataFrame[col].dropna().count())
+                if dataFrame[col].dropna().count() < 1:
+                    text += "- {0}\n".format(col)
 
             raise Exception(text)
 
