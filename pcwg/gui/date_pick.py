@@ -1,10 +1,47 @@
-#!/usr/bin/env python
-#Author : Camilo Olarte|colarte@telesat.com.co|Sept.2003
-import sys, string, calendar
+
+#based on code by : Camilo Olarte|colarte@telesat.com.co|Sept.2003
+
+import sys
+import string
+import calendar
 import Tkinter as tk
 import time
 import datetime
+import dateutil
+
 from tk_simple_dialog import Dialog
+
+from ..core.status import Status
+
+class ParseClipBoard:
+
+    def __init__(self, master, dateFormat, callback):
+        self.master = master
+        self.dateFormat = dateFormat
+        self.callback = callback
+
+    def __call__(self):
+            
+        try:
+                
+            clipboard = self.master.selection_get(selection = "CLIPBOARD")
+            
+            if len(clipboard) > 0:
+
+                try:                                        
+                    date = datetime.datetime.strptime(clipboard, self.dateFormat)
+                except Exception as e:
+                    try:
+                        date = dateutil.parser.parse(clipboard)
+                    except Exception as e:
+                        date = None
+                        Status.add("Can't parse clipboard (%s)" % e.message)
+
+                if date != None:
+                    self.callback(date)
+                                
+        except Exception as e:
+                Status.add("Can't parse clipboard (%s)" % e.message)
 
 class Calendar(Dialog):
 
@@ -12,13 +49,17 @@ class Calendar(Dialog):
 
     FONT = ("Times", 12)
 
-    def __init__ (self, master, selected_date = None):
+    def __init__ (self, master, selected_date = None, date_format = None):
 
         today = datetime.date.today()
         self.empty_date = datetime.datetime(year=today.year, month=today.month, day=today.day)
 
         self.selected_date = selected_date
-        self.is_ok = False
+
+        if date_format is None:
+            self.date_format = Calendar.DATE_FORMAT
+        else:
+            self.date_format = date_format
 
         Dialog.__init__(self, master, "Calendar")
         
@@ -28,10 +69,10 @@ class Calendar(Dialog):
           relief =tk.RIDGE, background ="white", borderwidth =1)
 
         self.year_label = tk.Label(master, font=Calendar.FONT, background="white")
-        self.year_label.place(x=85, y=10)
+        self.year_label.place(x=105, y=10)
 
         self.month_label = tk.Label(master, font=Calendar.FONT, background="white")
-        self.month_label.place(x=85, y=30)
+        self.month_label.place(x=105, y=30)
 
         self.base_button_tag = "Arrow"
         self.base_number_tag = "Number"
@@ -41,10 +82,10 @@ class Calendar(Dialog):
         self.left_month_tag = "LeftMonth"
         self.right_month_tag = "RightMonth"
 
-        self.create_left_arrow(self.canvas, 40, 23, (self.base_button_tag, self.left_year_tag))
-        self.create_right_arrow(self.canvas, 150, 23, (self.base_button_tag, self.right_year_tag))
-        self.create_left_arrow(self.canvas, 40, 43, (self.base_button_tag, self.left_month_tag))
-        self.create_right_arrow(self.canvas, 150, 43, (self.base_button_tag, self.right_month_tag))
+        self.create_left_arrow(self.canvas, 60, 23, (self.base_button_tag, self.left_year_tag))
+        self.create_right_arrow(self.canvas, 170, 23, (self.base_button_tag, self.right_year_tag))
+        self.create_left_arrow(self.canvas, 60, 43, (self.base_button_tag, self.left_month_tag))
+        self.create_right_arrow(self.canvas, 170, 43, (self.base_button_tag, self.right_month_tag))
 
         self.canvas.pack (expand =1, fill =tk.BOTH)
         self.canvas.tag_bind (self.base_button_tag, "<ButtonRelease-1>", self.on_click)
@@ -54,12 +95,22 @@ class Calendar(Dialog):
         self.time_frame = tk.Frame(master)
         self.time_frame.pack()
 
-        self.hour_var = tk.StringVar(self.time_frame, '00')
+        if self.selected_date is None:
+            hour = 0
+        else:
+            hour = self.selected_date.hour
+
+        self.hour_var = tk.StringVar(self.time_frame, "{0:02}".format(hour))
         self.hour_option = apply(tk.OptionMenu, (self.time_frame, self.hour_var) + tuple('{:02}'.format(x) for x in range(24)))
         self.hour_option.grid(row=1, column=1, sticky=tk.W)
         self.hour_var.trace('w', self.update_time)
 
-        self.minute_var = tk.StringVar(self.time_frame, '00')
+        if self.selected_date is None:
+            minute = 0
+        else:
+            minute = self.selected_date.minute
+
+        self.minute_var = tk.StringVar(self.time_frame, "{0:02}".format(minute))
         self.minute_option = apply(tk.OptionMenu, (self.time_frame, self.minute_var) + tuple('{:02}'.format(x * 10) for x in range(6)))
         self.minute_option.grid(row=1, column=2, sticky=tk.E)
         self.minute_var.trace('w', self.update_time)
@@ -74,6 +125,9 @@ class Calendar(Dialog):
         self.clear_button = tk.Button(self.date_frame, text="X", command = self.click_clear)
         self.clear_button.grid(row=1, column=2, sticky=tk.E)
 
+        self.parse_button = tk.Button(self.date_frame, text="Parse", command = ParseClipBoard(master, self.date_format, self.set_parse))
+        self.parse_button.grid(row=1, column=3, sticky=tk.E)
+
         self.radius = 10
         self.circle_hover = self.create_circle(self.canvas, 0, 0, self.radius, outline="#DDD", width=4)
         self.canvas.itemconfigure(self.circle_hover, state='hidden')
@@ -84,8 +138,12 @@ class Calendar(Dialog):
         self.fill_calendar()
         self.update_labels()
 
-    def apply(self):
-        self.is_ok = True
+    def set_parse(self, date):
+
+        if not date is None:
+            self.selected_date = date
+            self.update_labels()
+            self.fill_calendar()
 
     def click_clear(self):
 
@@ -114,11 +172,10 @@ class Calendar(Dialog):
 
         if not self.selected_date is None:
             display_date = self.selected_date
-            self.date_label.configure(text=self.selected_date.strftime(Calendar.DATE_FORMAT))
+            self.date_label.configure(text=self.selected_date.strftime(self.date_format))
         else:
             display_date = self.empty_date
-            #self.date_label.configure(text=" " * 35)
-            self.date_label.configure(text=" DATE-TIME NOT SET ")
+            self.date_label.configure(text="DATE NOT SET")
 
         self.month_label.configure(text=display_date.strftime("%b"))
         self.year_label.configure(text=display_date.strftime("%Y"))
@@ -191,7 +248,7 @@ class Calendar(Dialog):
     
     def fill_calendar(self):
 
-        init_x = 20
+        init_x = 40
         y = 70
 
         step_x = 27

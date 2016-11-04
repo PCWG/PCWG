@@ -259,7 +259,9 @@ class DialogGridBox(GridBox):
     def new(self):
 
         dialog = self.new_dialog(self.master, self.parent_dialog, None)
-        self.add_item(dialog.item)
+
+        if dialog.is_ok:
+            self.add_item(dialog.item)
         
     def edit_item(self, item):                   
                     
