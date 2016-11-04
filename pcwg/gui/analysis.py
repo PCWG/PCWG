@@ -24,176 +24,176 @@ from ..exceptions.handling import ExceptionHandler
 
 class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
-        def getInitialFileName(self):
-            return "Analysis"
+    def getInitialFileName(self):
+        return "Analysis"
 
-        def add_general(self, master, path):
+    def add_general(self, master, path):
 
-            self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", validation.ValidatePositiveInteger(master), self.config.powerCurveMinimumCount)
-            
-            filterModeOptions = ["All", "Inner", "Outer"]
-            self.filterMode = self.addOption(master, "Filter Mode:", filterModeOptions, self.config.filterMode)
-            
-            powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
-            self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode)
-            
-            self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Observed", "Max", "Rated"], self.config.powerCurvePaddingMode)
-
-        def add_power_curve(self, master):
-
-            self.addTitleRow(master, "Power Curve Bins:")
-            self.powerCurveFirstBin = self.addEntry(master, "First Bin Centre:", validation.ValidateNonNegativeFloat(master), self.config.powerCurveFirstBin)
-            self.powerCurveLastBin = self.addEntry(master, "Last Bin Centre:", validation.ValidateNonNegativeFloat(master), self.config.powerCurveLastBin)
-            self.powerCurveBinSize = self.addEntry(master, "Bin Size:", validation.ValidatePositiveFloat(master), self.config.powerCurveBinSize)
+        self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", validation.ValidatePositiveInteger(master), self.config.powerCurveMinimumCount)
         
-        def add_datasets(self, master):
+        filterModeOptions = ["All", "Inner", "Outer"]
+        self.filterMode = self.addOption(master, "Filter Mode:", filterModeOptions, self.config.filterMode)
+        
+        powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
+        self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode)
+        
+        self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Observed", "Max", "Rated"], self.config.powerCurvePaddingMode)
 
-            self.dataset_grid_box = dataset.DatasetGridBox(master, self, self.row, self.inputColumn, self.config.datasets.clone())
-            self.row += 1
+    def add_power_curve(self, master):
+
+        self.addTitleRow(master, "Power Curve Bins:")
+        self.powerCurveFirstBin = self.addEntry(master, "First Bin Centre:", validation.ValidateNonNegativeFloat(master), self.config.powerCurveFirstBin)
+        self.powerCurveLastBin = self.addEntry(master, "Last Bin Centre:", validation.ValidateNonNegativeFloat(master), self.config.powerCurveLastBin)
+        self.powerCurveBinSize = self.addEntry(master, "Bin Size:", validation.ValidatePositiveFloat(master), self.config.powerCurveBinSize)
+    
+    def add_datasets(self, master):
+
+        self.dataset_grid_box = dataset.DatasetGridBox(master, self, self.row, self.inputColumn, self.config.datasets.clone())
+        self.row += 1
+        
+        self.validate_datasets = validation.ValidateDatasets(master, self.dataset_grid_box)
+        self.validations.append(self.validate_datasets)
+        self.validate_datasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
+
+    def add_inner_range(self, master):
+        
+        self.innerRangeLowerTurbulence = self.addEntry(master, "Inner Range Lower Turbulence:", validation.ValidateNonNegativeFloat(master), self.config.innerRangeLowerTurbulence)
+        self.innerRangeUpperTurbulence = self.addEntry(master, "Inner Range Upper Turbulence:", validation.ValidateNonNegativeFloat(master), self.config.innerRangeUpperTurbulence)
+        self.innerRangeLowerShear = self.addEntry(master, "Inner Range Lower Shear:", validation.ValidatePositiveFloat(master), self.config.innerRangeLowerShear)
+        self.innerRangeUpperShear = self.addEntry(master, "Inner Range Upper Shear:", validation.ValidatePositiveFloat(master), self.config.innerRangeUpperShear)
+
+    def add_turbine(self, master):
+        
+        self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", validation.ValidateSpecifiedPowerCurve(master, self.powerCurveMode), self.config.specified_power_curve.absolute_path, self.filePath)
+
+        self.addPowerCurveButton = tk.Button(master, text="New", command = self.NewPowerCurve, width=5, height=1)
+        self.addPowerCurveButton.grid(row=(self.row-2), sticky=tk.E+tk.N, column=self.secondButtonColumn)
+        
+        self.editPowerCurveButton = tk.Button(master, text="Edit", command = self.EditPowerCurve, width=5, height=1)
+        self.editPowerCurveButton.grid(row=(self.row-1), sticky=tk.E+tk.S, column=self.secondButtonColumn)
+
+    def add_corrections(self, master):
+                                        
+        self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive)
+        self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive)
+        self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive)               
+        
+        self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", validation.ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specified_power_deviation_matrix.absolute_path, self.filePath)
+
+    def add_rews(self, master):
+                                        
+        self.rewsCorrectionActive = self.addCheckBox(master, "REWS Active", self.config.rewsActive)  
+
+        self.rewsVeer = self.addCheckBox(master, "REWS Veer", self.config.rewsVeer)  
+        self.rewsUpflow = self.addCheckBox(master, "REWS Upflow", self.config.rewsUpflow)  
+        self.rewsExponent = self.addEntry(master, "REWS Exponent:", validation.ValidatePositiveFloat(master), self.config.rewsExponent)
+
+    def add_advanced(self, master):
+
+        self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
+        self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
+
+    def addFormElements(self, master, path):            
+
+        nb = ttk.Notebook(master, height=400)
+        nb.pressed_index = None
+        
+        general_tab = tk.Frame(nb)
+        power_curve_tab = tk.Frame(nb)
+        datasets_tab = tk.Frame(nb)
+        inner_range_tab = tk.Frame(nb)
+        turbine_tab = tk.Frame(nb)
+        rews_tab = tk.Frame(nb)
+        corrections_tab = tk.Frame(nb)
+        advanced_tab = tk.Frame(nb)
+
+        nb.add(general_tab, text='General', padding=3)
+        nb.add(power_curve_tab, text='Power Curve', padding=3)
+        nb.add(datasets_tab, text='Datasets', padding=3)
+        nb.add(turbine_tab, text='Turbine', padding=3)
+        nb.add(rews_tab, text='REWS', padding=3)
+        nb.add(corrections_tab, text='Corrections', padding=3)
+        nb.add(advanced_tab, text='Advanced', padding=3)
+
+        nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
+        master.grid_rowconfigure(self.row, weight=1)
+        self.row += 1
+        
+        self.add_general(general_tab, path)
+        self.add_power_curve(power_curve_tab)
+        self.add_datasets(datasets_tab)
+        self.add_inner_range(inner_range_tab)
+        self.add_turbine(turbine_tab)
+        self.add_rews(rews_tab)
+        self.add_corrections(corrections_tab)                                                                                                                 
+        self.add_advanced(advanced_tab) 
+
+    def EditPowerCurve(self):
             
-            self.validate_datasets = validation.ValidateDatasets(master, self.dataset_grid_box)
-            self.validations.append(self.validate_datasets)
-            self.validate_datasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
-
-        def add_inner_range(self, master):
-            
-            self.innerRangeLowerTurbulence = self.addEntry(master, "Inner Range Lower Turbulence:", validation.ValidateNonNegativeFloat(master), self.config.innerRangeLowerTurbulence)
-            self.innerRangeUpperTurbulence = self.addEntry(master, "Inner Range Upper Turbulence:", validation.ValidateNonNegativeFloat(master), self.config.innerRangeUpperTurbulence)
-            self.innerRangeLowerShear = self.addEntry(master, "Inner Range Lower Shear:", validation.ValidatePositiveFloat(master), self.config.innerRangeLowerShear)
-            self.innerRangeUpperShear = self.addEntry(master, "Inner Range Upper Shear:", validation.ValidatePositiveFloat(master), self.config.innerRangeUpperShear)
-
-        def add_turbine(self, master):
-            
-            self.specifiedPowerCurve = self.addFileOpenEntry(master, "Specified Power Curve:", validation.ValidateSpecifiedPowerCurve(master, self.powerCurveMode), self.config.specified_power_curve.absolute_path, self.filePath)
-
-            self.addPowerCurveButton = tk.Button(master, text="New", command = self.NewPowerCurve, width=5, height=1)
-            self.addPowerCurveButton.grid(row=(self.row-2), sticky=tk.E+tk.N, column=self.secondButtonColumn)
-            
-            self.editPowerCurveButton = tk.Button(master, text="Edit", command = self.EditPowerCurve, width=5, height=1)
-            self.editPowerCurveButton.grid(row=(self.row-1), sticky=tk.E+tk.S, column=self.secondButtonColumn)
-
-        def add_corrections(self, master):
-                                            
-            self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive)
-            self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive)
-            self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive)               
-            
-            self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", validation.ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specified_power_deviation_matrix.absolute_path, self.filePath)
-
-        def add_rews(self, master):
-                                            
-            self.rewsCorrectionActive = self.addCheckBox(master, "REWS Active", self.config.rewsActive)  
-
-            self.rewsVeer = self.addCheckBox(master, "REWS Veer", self.config.rewsVeer)  
-            self.rewsUpflow = self.addCheckBox(master, "REWS Upflow", self.config.rewsUpflow)  
-            self.rewsExponent = self.addEntry(master, "REWS Exponent:", validation.ValidatePositiveFloat(master), self.config.rewsExponent)
-
-        def add_advanced(self, master):
-
-            self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
-            self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
-
-        def addFormElements(self, master, path):            
-
-                nb = ttk.Notebook(master, height=400)
-                nb.pressed_index = None
-                
-                general_tab = tk.Frame(nb)
-                power_curve_tab = tk.Frame(nb)
-                datasets_tab = tk.Frame(nb)
-                inner_range_tab = tk.Frame(nb)
-                turbine_tab = tk.Frame(nb)
-                rews_tab = tk.Frame(nb)
-                corrections_tab = tk.Frame(nb)
-                advanced_tab = tk.Frame(nb)
-
-                nb.add(general_tab, text='General', padding=3)
-                nb.add(power_curve_tab, text='Power Curve', padding=3)
-                nb.add(datasets_tab, text='Datasets', padding=3)
-                nb.add(turbine_tab, text='Turbine', padding=3)
-                nb.add(rews_tab, text='REWS', padding=3)
-                nb.add(corrections_tab, text='Corrections', padding=3)
-                nb.add(advanced_tab, text='Advanced', padding=3)
-
-                nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
-                master.grid_rowconfigure(self.row, weight=1)
-                self.row += 1
-                
-                self.add_general(general_tab, path)
-                self.add_power_curve(power_curve_tab)
-                self.add_datasets(datasets_tab)
-                self.add_inner_range(inner_range_tab)
-                self.add_turbine(turbine_tab)
-                self.add_rews(rews_tab)
-                self.add_corrections(corrections_tab)                                                                                                                 
-                self.add_advanced(advanced_tab) 
-
-        def EditPowerCurve(self):
-                
-                specifiedPowerCurve = self.specifiedPowerCurve.get()
-                analysisPath = self.filePath.get()
-                
-                folder = os.path.dirname(os.path.abspath(analysisPath))
-                path = os.path.join(folder, specifiedPowerCurve)
-                
-                if len(specifiedPowerCurve) > 0:
-                    
-                        try:
-                                config = PowerCurveConfiguration(path)
-                                power_curve.PowerCurveConfigurationDialog(self, self.setSpecifiedPowerCurveFromPath, config)
-                        except Exception as e:
-                                ExceptionHandler.add(e, "ERROR loading config ({0})".format(specifiedPowerCurve))
-                        
-        def NewPowerCurve(self):
-                config = PowerCurveConfiguration()
+        specifiedPowerCurve = self.specifiedPowerCurve.get()
+        analysisPath = self.filePath.get()
+        
+        folder = os.path.dirname(os.path.abspath(analysisPath))
+        path = os.path.join(folder, specifiedPowerCurve)
+        
+        if len(specifiedPowerCurve) > 0:
+        
+            try:
+                config = PowerCurveConfiguration(path)
                 power_curve.PowerCurveConfigurationDialog(self, self.setSpecifiedPowerCurveFromPath, config)
-                                                        
-        def setSpecifiedPowerCurve(self):
-                preferences = Preferences.get()
-                fileName = tkFileDialog.askopenfilename(parent=self.master, initialdir=preferences.power_curve_last_opened_dir(), defaultextension=".xml")
-                self.setSpecifiedPowerCurveFromPath(fileName)
-    
-        def setSpecifiedPowerCurveFromPath(self, fileName):
-            
-                if len(fileName) > 0:
+            except Exception as e:
+                ExceptionHandler.add(e, "ERROR loading config ({0})".format(specifiedPowerCurve))
                     
-                    try:
-                            preferences = Preferences.get()
-                            preferences.powerCurveLastOpened = fileName
-                            preferences.save()
-                    except Exception as e:
-                        ExceptionHandler.add(e, "Cannot save preferences")
+    def NewPowerCurve(self):
+        config = PowerCurveConfiguration()
+        power_curve.PowerCurveConfigurationDialog(self, self.setSpecifiedPowerCurveFromPath, config)
+                                                    
+    def setSpecifiedPowerCurve(self):
+        preferences = Preferences.get()
+        fileName = tkFileDialog.askopenfilename(parent=self.master, initialdir=preferences.power_curve_last_opened_dir(), defaultextension=".xml")
+        self.setSpecifiedPowerCurveFromPath(fileName)
 
-                    self.specifiedPowerCurve.set(fileName)
-                
-        def setConfigValues(self):
-    
-                self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
-                self.config.filterMode = self.filterMode.get()
-                self.config.interpolationMode = self.interpolationMode.get()
-                self.config.powerCurveMode = self.powerCurveMode.get()
-                self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
-                self.config.nominal_wind_speed_distribution.absolute_path = self.nominalWindSpeedDistribution.get()
-                self.config.powerCurveFirstBin = self.powerCurveFirstBin.get()
-                self.config.powerCurveLastBin = self.powerCurveLastBin.get()
-                self.config.powerCurveBinSize = self.powerCurveBinSize.get()
-                self.config.innerRangeLowerTurbulence = float(self.innerRangeLowerTurbulence.get())
-                self.config.innerRangeUpperTurbulence = float(self.innerRangeUpperTurbulence.get())
-                self.config.innerRangeLowerShear = float(self.innerRangeLowerShear.get())
-                self.config.innerRangeUpperShear = float(self.innerRangeUpperShear.get())
-    
-                self.config.specified_power_curve.absolute_path = self.specifiedPowerCurve.get()
-    
-                self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
-                self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
+    def setSpecifiedPowerCurveFromPath(self, fileName):
+        
+        if len(fileName) > 0:
+            
+            try:
+                preferences = Preferences.get()
+                preferences.powerCurveLastOpened = fileName
+                preferences.save()
+            except Exception as e:
+                ExceptionHandler.add(e, "Cannot save preferences")
 
-                self.config.rewsActive = bool(self.rewsCorrectionActive.get())
-                self.config.rewsVeer = bool(self.rewsVeer.get())
-                self.config.rewsUpflow = bool(self.rewsUpflow.get())
-                self.config.rewsExponent = float(self.rewsExponent.get())
+            self.specifiedPowerCurve.set(fileName)
+            
+    def setConfigValues(self):
 
-                self.config.specified_power_deviation_matrix.absolute_path = self.specifiedPowerDeviationMatrix.get()
-                self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
+        self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
+        self.config.filterMode = self.filterMode.get()
+        self.config.interpolationMode = self.interpolationMode.get()
+        self.config.powerCurveMode = self.powerCurveMode.get()
+        self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
+        self.config.nominal_wind_speed_distribution.absolute_path = self.nominalWindSpeedDistribution.get()
+        self.config.powerCurveFirstBin = self.powerCurveFirstBin.get()
+        self.config.powerCurveLastBin = self.powerCurveLastBin.get()
+        self.config.powerCurveBinSize = self.powerCurveBinSize.get()
+        self.config.innerRangeLowerTurbulence = float(self.innerRangeLowerTurbulence.get())
+        self.config.innerRangeUpperTurbulence = float(self.innerRangeUpperTurbulence.get())
+        self.config.innerRangeLowerShear = float(self.innerRangeLowerShear.get())
+        self.config.innerRangeUpperShear = float(self.innerRangeUpperShear.get())
 
-                self.config.datasets = self.dataset_grid_box.datasets_file_manager
+        self.config.specified_power_curve.absolute_path = self.specifiedPowerCurve.get()
+
+        self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
+        self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
+
+        self.config.rewsActive = bool(self.rewsCorrectionActive.get())
+        self.config.rewsVeer = bool(self.rewsVeer.get())
+        self.config.rewsUpflow = bool(self.rewsUpflow.get())
+        self.config.rewsExponent = float(self.rewsExponent.get())
+
+        self.config.specified_power_deviation_matrix.absolute_path = self.specifiedPowerDeviationMatrix.get()
+        self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
+
+        self.config.datasets = self.dataset_grid_box.datasets_file_manager
 
