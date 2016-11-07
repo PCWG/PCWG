@@ -17,7 +17,7 @@ from ..core.status import Status
 def chckMake(path):
     """Make a folder if it doesn't exist"""
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 def hash_file_contents(file_path):
     with open(file_path, 'r') as f:

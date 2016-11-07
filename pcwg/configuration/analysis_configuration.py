@@ -8,6 +8,8 @@ Created on Thu Aug 11 05:37:57 2016
 import base_configuration
 import path_manager
 
+from power_deviation_matrix_configuration import PowerDeviationMatrixDimension
+
 class AnalysisConfiguration(base_configuration.XmlBase):
 
     def __init__(self, path = None):
@@ -84,6 +86,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.powerDeviationMatrixActive = False
 
             self.interpolationMode = 'Cubic'
+            self.calculated_power_deviation_matrix_dimensions = []
 
     @property
     def path(self): 
@@ -169,6 +172,19 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addTextNode(doc, powerDeviationMatrixNode, "SpecifiedPowerDeviationMatrix", self.specified_power_deviation_matrix.relative_path)
         self.addBoolNode(doc, powerDeviationMatrixNode, "Active", self.powerDeviationMatrixActive)
 
+        calculatedPowerDeviationMatrixNode = self.addNode(doc, powerDeviationMatrixNode, "CalculatedPowerDeviationMatrix")
+
+        dimensionsNode = self.addNode(doc, calculatedPowerDeviationMatrixNode, "Dimensions")
+
+        for dimension in self.calculated_power_deviation_matrix_dimensions:
+
+            dimensionNode = self.addNode(doc, dimensionsNode, "Dimension")
+
+            self.addTextNode(doc, dimensionNode, "Parameter", dimension.parameter)
+            self.addFloatNode(doc, dimensionNode, "CenterOfFirstBin", dimension.centerOfFirstBin)
+            self.addFloatNode(doc, dimensionNode, "BinWidth", dimension.binWidth)
+            self.addIntNode(doc, dimensionNode, "NumberOfBins", dimension.numberOfBins)
+
     def readDatasets(self, configurationNode):
 
         datasetsNode = self.getNode(configurationNode, 'Datasets')
@@ -197,11 +213,31 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
     def readPowerDeviationMatrix(self, configurationNode):
 
+        self.calculated_power_deviation_matrix_dimensions = []
+
         if self.nodeExists(configurationNode, 'PowerDeviationMatrix'):
+            
             powerDeviationMatrixNode = self.getNode(configurationNode, 'PowerDeviationMatrix')
+            
             self.powerDeviationMatrixActive = self.getNodeBool(powerDeviationMatrixNode, 'Active')
             self.specified_power_deviation_matrix.relative_path = self.getNodeValue(powerDeviationMatrixNode, 'SpecifiedPowerDeviationMatrix')
+
+            if self.nodeExists(powerDeviationMatrixNode, 'CalculatedPowerDeviationMatrix'):
+                
+                calculated_pdm_node = self.getNode(powerDeviationMatrixNode, 'CalculatedPowerDeviationMatrix')
+                dimensionsNode = self.getNode(calculated_pdm_node, 'Dimensions')
+
+                for dimensionNode in self.getNodes(dimensionsNode, 'Dimension'):
+
+                    parameter = self.getNodeValue(dimensionNode, 'Parameter')
+                    centerOfFirstBin = self.getNodeFloat(dimensionNode, 'CenterOfFirstBin')
+                    binWidth = self.getNodeFloat(dimensionNode, 'BinWidth')
+                    numberOfBins = self.getNodeInt(dimensionNode, 'NumberOfBins')
+
+                    self.calculated_power_deviation_matrix_dimensions.append(PowerDeviationMatrixDimension(parameter, centerOfFirstBin, binWidth, numberOfBins))
+
         else:
+
             self.powerDeviationMatrixActive = False
             self.specified_power_deviation_matrix.relative_path = None
 

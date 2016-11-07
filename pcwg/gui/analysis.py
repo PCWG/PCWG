@@ -20,6 +20,8 @@ import dataset
 from ..configuration.power_curve_configuration import PowerCurveConfiguration
 from ..configuration.preferences_configuration import Preferences
 
+from power_deviation_matrix import PowerDeviationMatrixGridBox
+
 from ..exceptions.handling import ExceptionHandler
 
 class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
@@ -92,6 +94,15 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
         self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
+
+        self.addTitleRow(master, "Power Deviation Matrix Dimensions (Output):")
+        self.power_deviation_matrix_grid_box = PowerDeviationMatrixGridBox(master, self, self.row, self.inputColumn)
+        self.power_deviation_matrix_grid_box.add_items(self.config.calculated_power_deviation_matrix_dimensions)
+        self.row += 1
+
+        #self.validate_datasets = validation.ValidateDatasets(master, self.dataset_grid_box)
+        #self.validations.append(self.validate_datasets)
+        #self.validate_datasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
 
     def addFormElements(self, master, path):            
 
@@ -194,6 +205,8 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         self.config.specified_power_deviation_matrix.absolute_path = self.specifiedPowerDeviationMatrix.get()
         self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
-
+        
+        self.dataset_grid_box.datasets_file_manager.set_base(self.config.path)
         self.config.datasets = self.dataset_grid_box.datasets_file_manager
+        self.config.calculated_power_deviation_matrix_dimensions = self.power_deviation_matrix_grid_box.get_items()
 

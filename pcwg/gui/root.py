@@ -37,308 +37,309 @@ import portfolio
 
 class ExportDataSetDialog(base_dialog.BaseDialog):
 
-        def __init__(self, master):
+    def __init__(self, master):
 
-                self.cleanDataset = True
-                self.allDatasets = False
-                self.calibrationDatasets = False
-                base_dialog.BaseDialog.__init__(self, master)
+        self.cleanDataset = True
+        self.allDatasets = False
+        self.calibrationDatasets = False
+        base_dialog.BaseDialog.__init__(self, master)
 
-        def validate(self):
+    def validate(self):
 
-                valid = any(self.getSelections())
+        valid = any(self.getSelections())
 
-                if valid:
-                        return 1
-                else:
-                        return 0
+        if valid:
+            return 1
+        else:
+            return 0
 
-        def body(self, master):
+    def body(self, master):
 
-                spacer = tk.Label(master, text=" " * 30)
+        spacer = tk.Label(master, text=" " * 30)
 
-                spacer.grid(row=self.row,
-                            column=self.titleColumn,
-                            columnspan=2)
+        spacer.grid(row=self.row,
+                    column=self.titleColumn,
+                    columnspan=2)
 
-                spacer = tk.Label(master, text=" " * 30)
+        spacer = tk.Label(master, text=" " * 30)
 
-                spacer.grid(row=self.row,
-                            column=self.secondButtonColumn, columnspan=2)
+        spacer.grid(row=self.row,
+                    column=self.secondButtonColumn, columnspan=2)
 
-                self.row += 1
+        self.row += 1
 
-                cleanDataset = self.cleanDataset
-                allDatasets = self.allDatasets
-                calibrationDatasets = self.calibrationDatasets
+        cleanDataset = self.cleanDataset
+        allDatasets = self.allDatasets
+        calibrationDatasets = self.calibrationDatasets
 
-                self.cleanDataset = self.addCheckBox(master,
-                                                     "Clean Combined Dataset:",
-                                                     cleanDataset)
+        self.cleanDataset = self.addCheckBox(master,
+                                             "Clean Combined Dataset:",
+                                             cleanDataset)
 
-                spacer = tk.Label(master, text="Extra Time Series:")
+        spacer = tk.Label(master, text="Extra Time Series:")
 
-                spacer.grid(row=self.row,
-                            column=self.titleColumn,
-                            columnspan=2)
+        spacer.grid(row=self.row,
+                    column=self.titleColumn,
+                    columnspan=2)
 
-                self.row += 1
+        self.row += 1
 
-                self.allDatasets = self.addCheckBox(master,
-                                                    "    Filtered Individual Datasets:",
-                                                    allDatasets)
+        self.allDatasets = self.addCheckBox(master,
+                                            "    Filtered Individual Datasets:",
+                                            allDatasets)
 
-                self.calibrationDatasets = self.addCheckBox(master,
-                                                            "    Calibration Datasets:",
-                                                            calibrationDatasets)
+        self.calibrationDatasets = self.addCheckBox(master,
+                                                    "    Calibration Datasets:",
+                                                    calibrationDatasets)
 
-        def getSelections(self):
+    def getSelections(self):
 
-                return (bool(self.cleanDataset.get()),
-                        bool(self.allDatasets.get()),
-                        bool(self.calibrationDatasets.get()))
+        return (bool(self.cleanDataset.get()),
+                bool(self.allDatasets.get()),
+                bool(self.calibrationDatasets.get()))
 
-        def apply(self):
+    def apply(self):
 
-                return self.getSelections()
+        return self.getSelections()
 
+        
 class UserInterface:
 
     def __init__(self, preferences):
 
-            ExceptionHandler.initialize_handler(self.add_exception)
-            Status.initialize_status(self.add_message, preferences.verbosity)
+        ExceptionHandler.initialize_handler(self.add_exception)
+        Status.initialize_status(self.add_message, preferences.verbosity)
 
-            self.analysis = None
-            self.analysisConfiguration = None
+        self.analysis = None
+        self.analysisConfiguration = None
 
-            self.root = tk.Tk()
-            self.root.geometry("860x400")
-            self.root.title("PCWG")
+        self.root = tk.Tk()
+        self.root.geometry("860x400")
+        self.root.title("PCWG")
+        
+        try:
+            self.root.iconbitmap(os.path.join("Resources", "logo.ico"))
+        except:
+            Status.add("Can't set icon")
             
-            try:
-                self.root.iconbitmap(os.path.join("Resources", "logo.ico"))
-            except:
-                Status.add("Can't set icon")
-                
-            self.verbosity = Preferences.get().verbosity
+        self.verbosity = Preferences.get().verbosity
 
-            consoleframe = tk.Frame(self.root)
-            commandframe = tk.Frame(self.root)
+        consoleframe = tk.Frame(self.root)
+        commandframe = tk.Frame(self.root)
 
-            # analyse
-            analyse_group = tk.LabelFrame(commandframe,
-                                          text="Analysis",
+        # analyse
+        analyse_group = tk.LabelFrame(commandframe,
+                                      text="Analysis",
+                                      padx=5,
+                                      pady=5)
+
+        analyse_group_top = tk.Frame(analyse_group)
+        analyse_group_bottom = tk.Frame(analyse_group)
+
+        load_button = tk.Button(analyse_group_bottom,
+                                text="Load",
+                                command=self.LoadAnalysis)
+
+        edit_button = tk.Button(analyse_group_bottom,
+                                text="Edit",
+                                command=self.EditAnalysis)
+
+        new_button = tk.Button(analyse_group_bottom,
+                               text="New",
+                               command=self.NewAnalysis)
+
+        calculate_button = tk.Button(analyse_group_top,
+                                     text="Calculate",
+                                     command=self.Calculate)
+
+        export_report_button = tk.Button(analyse_group_top,
+                                         text="Export Report",
+                                         command=self.ExportReport)
+
+        export_time_series_button = tk.Button(analyse_group_top,
+                                              text="Export Time Series",
+                                              command=self.ExportTimeSeries)
+
+        load_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        edit_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        new_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        calculate_button.pack(side=tk.LEFT, padx=5, pady=5)
+        export_report_button.pack(side=tk.LEFT, padx=5, pady=5)
+        export_time_series_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.analysisFilePathLabel = tk.Label(analyse_group_bottom,
+                                              text="Analysis File")
+
+        self.analysisFilePathTextBox = tk.Entry(analyse_group_bottom)
+        self.analysisFilePathTextBox.config(state=tk.DISABLED)
+
+        self.analysisFilePathLabel.pack(side=tk.LEFT,
+                                        anchor=tk.NW,
+                                        padx=5,
+                                        pady=5)
+
+        self.analysisFilePathTextBox.pack(side=tk.RIGHT,
+                                          anchor=tk.NW,
+                                          fill=tk.X,
+                                          expand=1,
                                           padx=5,
                                           pady=5)
 
-            analyse_group_top = tk.Frame(analyse_group)
-            analyse_group_bottom = tk.Frame(analyse_group)
+        analyse_group_bottom.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+        analyse_group_top.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-            load_button = tk.Button(analyse_group_bottom,
-                                    text="Load",
-                                    command=self.LoadAnalysis)
+        analyse_group.pack(side=tk.TOP,
+                           padx=10,
+                           pady=5,
+                           anchor=tk.NW,
+                           fill=tk.X,
+                           expand=1)
 
-            edit_button = tk.Button(analyse_group_bottom,
-                                    text="Edit",
-                                    command=self.EditAnalysis)
+        # portfolio
+        portfolio_group = tk.LabelFrame(commandframe,
+                                        text="PCWG-Share-X",
+                                        padx=5,
+                                        pady=5)
 
-            new_button = tk.Button(analyse_group_bottom,
-                                   text="New",
-                                   command=self.NewAnalysis)
+        portfolio_group_top = tk.Frame(portfolio_group)
+        portfolio_group_bottom = tk.Frame(portfolio_group)
 
-            calculate_button = tk.Button(analyse_group_top,
-                                         text="Calculate",
-                                         command=self.Calculate)
+        run_portfolio_button = tk.Button(portfolio_group_top,
+                                         text="PCWG-Share-1.0",
+                                         command=self.PCWG_Share_1_Portfolio)
 
-            export_report_button = tk.Button(analyse_group_top,
-                                             text="Export Report",
-                                             command=self.ExportReport)
+        run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-            export_time_series_button = tk.Button(analyse_group_top,
-                                                  text="Export Time Series",
-                                                  command=self.ExportTimeSeries)
+        run_portfolio_button = tk.Button(portfolio_group_top,
+                                         text="PCWG-Share-1.1",
+                                         command=self.PCWG_Share_1_dot_1_Portfolio)
 
-            load_button.pack(side=tk.RIGHT, padx=5, pady=5)
-            edit_button.pack(side=tk.RIGHT, padx=5, pady=5)
-            new_button.pack(side=tk.RIGHT, padx=5, pady=5)
-            calculate_button.pack(side=tk.LEFT, padx=5, pady=5)
-            export_report_button.pack(side=tk.LEFT, padx=5, pady=5)
-            export_time_series_button.pack(side=tk.LEFT, padx=5, pady=5)
+        run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-            self.analysisFilePathLabel = tk.Label(analyse_group_bottom,
-                                                  text="Analysis File")
+        load_portfolio_button = tk.Button(portfolio_group_bottom,
+                                          text="Load",
+                                          command=self.load_portfolio)
 
-            self.analysisFilePathTextBox = tk.Entry(analyse_group_bottom)
-            self.analysisFilePathTextBox.config(state=tk.DISABLED)
+        edit_portfolio_button = tk.Button(portfolio_group_bottom,
+                                          text="Edit",
+                                          command=self.edit_portfolio)
 
-            self.analysisFilePathLabel.pack(side=tk.LEFT,
-                                            anchor=tk.NW,
-                                            padx=5,
-                                            pady=5)
+        new_portfolio_button = tk.Button(portfolio_group_bottom,
+                                         text="New",
+                                         command=self.new_portfolio)
 
-            self.analysisFilePathTextBox.pack(side=tk.RIGHT,
-                                              anchor=tk.NW,
-                                              fill=tk.X,
-                                              expand=1,
-                                              padx=5,
-                                              pady=5)
+        load_portfolio_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        edit_portfolio_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        new_portfolio_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
-            analyse_group_bottom.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
-            analyse_group_top.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.portfolioFilePathLabel = tk.Label(portfolio_group_bottom,
+                                               text="Portfolio File")
 
-            analyse_group.pack(side=tk.TOP,
-                               padx=10,
-                               pady=5,
-                               anchor=tk.NW,
-                               fill=tk.X,
-                               expand=1)
+        self.portfolioFilePathTextBox = tk.Entry(portfolio_group_bottom)
+        self.portfolioFilePathTextBox.config(state=tk.DISABLED)
 
-            # portfolio
-            portfolio_group = tk.LabelFrame(commandframe,
-                                            text="PCWG-Share-X",
-                                            padx=5,
-                                            pady=5)
+        self.portfolioFilePathLabel.pack(side=tk.LEFT,
+                                         anchor=tk.NW,
+                                         padx=5,
+                                         pady=5)
 
-            portfolio_group_top = tk.Frame(portfolio_group)
-            portfolio_group_bottom = tk.Frame(portfolio_group)
+        self.portfolioFilePathTextBox.pack(side=tk.RIGHT,
+                                           anchor=tk.NW,
+                                           fill=tk.X,
+                                           expand=1,
+                                           padx=5,
+                                           pady=5)
 
-            run_portfolio_button = tk.Button(portfolio_group_top,
-                                             text="PCWG-Share-1.0",
-                                             command=self.PCWG_Share_1_Portfolio)
+        portfolio_group_bottom.pack(side=tk.BOTTOM,
+                                    fill=tk.BOTH,
+                                    expand=1)
 
-            run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-            run_portfolio_button = tk.Button(portfolio_group_top,
-                                             text="PCWG-Share-1.1",
-                                             command=self.PCWG_Share_1_dot_1_Portfolio)
-
-            run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-            load_portfolio_button = tk.Button(portfolio_group_bottom,
-                                              text="Load",
-                                              command=self.load_portfolio)
-
-            edit_portfolio_button = tk.Button(portfolio_group_bottom,
-                                              text="Edit",
-                                              command=self.edit_portfolio)
-
-            new_portfolio_button = tk.Button(portfolio_group_bottom,
-                                             text="New",
-                                             command=self.new_portfolio)
-
-            load_portfolio_button.pack(side=tk.RIGHT, padx=5, pady=5)
-            edit_portfolio_button.pack(side=tk.RIGHT, padx=5, pady=5)
-            new_portfolio_button.pack(side=tk.RIGHT, padx=5, pady=5)
-
-            self.portfolioFilePathLabel = tk.Label(portfolio_group_bottom,
-                                                   text="Portfolio File")
-
-            self.portfolioFilePathTextBox = tk.Entry(portfolio_group_bottom)
-            self.portfolioFilePathTextBox.config(state=tk.DISABLED)
-
-            self.portfolioFilePathLabel.pack(side=tk.LEFT,
-                                             anchor=tk.NW,
-                                             padx=5,
-                                             pady=5)
-
-            self.portfolioFilePathTextBox.pack(side=tk.RIGHT,
-                                               anchor=tk.NW,
-                                               fill=tk.X,
-                                               expand=1,
-                                               padx=5,
-                                               pady=5)
-
-            portfolio_group_bottom.pack(side=tk.BOTTOM,
-                                        fill=tk.BOTH,
-                                        expand=1)
-
-            portfolio_group_top.pack(side=tk.TOP,
-                                     fill=tk.BOTH,
-                                     expand=1)
-
-            portfolio_group.pack(side=tk.LEFT,
-                                 padx=10,
-                                 pady=5,
-                                 fill=tk.X,
+        portfolio_group_top.pack(side=tk.TOP,
+                                 fill=tk.BOTH,
                                  expand=1)
 
-            # misc
-            misc_group = tk.LabelFrame(commandframe,
-                                       text="Miscellaneous",
-                                       padx=5,
-                                       pady=5)
+        portfolio_group.pack(side=tk.LEFT,
+                             padx=10,
+                             pady=5,
+                             fill=tk.X,
+                             expand=1)
 
-            misc_group_top = tk.Frame(misc_group)
-            msic_group_bottom = tk.Frame(misc_group)
+        # misc
+        misc_group = tk.LabelFrame(commandframe,
+                                   text="Miscellaneous",
+                                   padx=5,
+                                   pady=5)
 
-            benchmark_button = tk.Button(misc_group_top,
-                                         text="Benchmark",
-                                         command=self.RunBenchmark)
+        misc_group_top = tk.Frame(misc_group)
+        msic_group_bottom = tk.Frame(misc_group)
 
-            clear_console_button = tk.Button(misc_group_top,
-                                             text="Clear Console",
-                                             command=self.ClearConsole)
+        benchmark_button = tk.Button(misc_group_top,
+                                     text="Benchmark",
+                                     command=self.RunBenchmark)
 
-            about_button = tk.Button(msic_group_bottom,
-                                     text="About",
-                                     command=self.About)
+        clear_console_button = tk.Button(misc_group_top,
+                                         text="Clear Console",
+                                         command=self.ClearConsole)
 
-            benchmark_button.pack(side=tk.LEFT, padx=5, pady=5)
-            clear_console_button.pack(side=tk.LEFT, padx=5, pady=5)
-            about_button.pack(side=tk.LEFT, padx=5, pady=5)
+        about_button = tk.Button(msic_group_bottom,
+                                 text="About",
+                                 command=self.About)
 
-            msic_group_bottom.pack(side=tk.BOTTOM)
-            misc_group_top.pack(side=tk.TOP)
+        benchmark_button.pack(side=tk.LEFT, padx=5, pady=5)
+        clear_console_button.pack(side=tk.LEFT, padx=5, pady=5)
+        about_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-            misc_group.pack(side=tk.RIGHT, padx=10, pady=5)
+        msic_group_bottom.pack(side=tk.BOTTOM)
+        misc_group_top.pack(side=tk.TOP)
 
-            # console
-            scrollbar = tk.Scrollbar(consoleframe,
-                                     orient=tk.VERTICAL)
+        misc_group.pack(side=tk.RIGHT, padx=10, pady=5)
 
-            self.listbox = tk.Listbox(consoleframe,
-                                      yscrollcommand=scrollbar.set,
-                                      selectmode=tk.EXTENDED)
+        # console
+        scrollbar = tk.Scrollbar(consoleframe,
+                                 orient=tk.VERTICAL)
 
-            scrollbar.configure(command=self.listbox.yview)
+        self.listbox = tk.Listbox(consoleframe,
+                                  yscrollcommand=scrollbar.set,
+                                  selectmode=tk.EXTENDED)
 
-            self.listbox.grid(column=0, row=0, sticky='nsew')
-            scrollbar.grid(column=1, row=0, sticky='ns')
+        scrollbar.configure(command=self.listbox.yview)
 
-            consoleframe.grid_columnconfigure(0, weight=1)
-            consoleframe.grid_columnconfigure(1, weight=0)
-            consoleframe.grid_rowconfigure(0, weight=1)
+        self.listbox.grid(column=0, row=0, sticky='nsew')
+        scrollbar.grid(column=1, row=0, sticky='ns')
 
-            commandframe.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
-            consoleframe.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+        consoleframe.grid_columnconfigure(0, weight=1)
+        consoleframe.grid_columnconfigure(1, weight=0)
+        consoleframe.grid_rowconfigure(0, weight=1)
 
-            self.root.grid_columnconfigure(0, weight=1)
-            self.root.grid_rowconfigure(0, weight=0)
-            self.root.grid_rowconfigure(1, weight=1)
+        commandframe.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+        consoleframe.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
 
-            preferences = Preferences.get()
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(0, weight=0)
+        self.root.grid_rowconfigure(1, weight=1)
 
-            if len(preferences.analysisLastOpened) > 0:
-                    try:
-                        Status.add("Loading last analysis opened")
-                        self.LoadAnalysisFromPath(preferences.analysisLastOpened)
-                    except IOError:
-                        Status.add("Couldn't load last analysis: File could not be found.")
-                    except ExceptionHandler.ExceptionType as e:
-                        ExceptionHandler.add(e, "Couldn't load last analysis")
-                        
-            if len(preferences.portfolioLastOpened) > 0 and os.path.isfile(preferences.portfolioLastOpened):
-                    try:
-                        Status.add("Loading last portfolio opened")
-                        self.LoadPortfolioFromPath(preferences.portfolioLastOpened)
-                    except IOError:
-                        Status.add("Couldn't load last portfolio: File could not be found.")
-                    except ExceptionHandler.ExceptionType as e:
-                        ExceptionHandler.add(e, "Couldn't load last portfolio")
-                        
-            self.update()
-            self.root.mainloop()
+        preferences = Preferences.get()
+
+        if len(preferences.analysisLastOpened) > 0:
+            try:
+                Status.add("Loading last analysis opened")
+                self.LoadAnalysisFromPath(preferences.analysisLastOpened)
+            except IOError:
+                Status.add("Couldn't load last analysis: File could not be found.")
+            except ExceptionHandler.ExceptionType as e:
+                ExceptionHandler.add(e, "Couldn't load last analysis")
+                    
+        if len(preferences.portfolioLastOpened) > 0 and os.path.isfile(preferences.portfolioLastOpened):
+            try:
+                Status.add("Loading last portfolio opened")
+                self.LoadPortfolioFromPath(preferences.portfolioLastOpened)
+            except IOError:
+                Status.add("Couldn't load last portfolio: File could not be found.")
+            except ExceptionHandler.ExceptionType as e:
+                ExceptionHandler.add(e, "Couldn't load last portfolio")
+                    
+        self.update()
+        self.root.mainloop()
 
     def update(self):
 
@@ -372,52 +373,52 @@ class UserInterface:
 
     def RunBenchmark(self):
 
-            preferences = Preferences.get()
+        preferences = Preferences.get()
 
-            self.LoadAnalysisFromPath("")
+        self.LoadAnalysisFromPath("")
 
-            self.ClearConsole()
+        self.ClearConsole()
 
-            # read the benchmark config xml
-            path = tkFileDialog.askopenfilename(parent=self.root,
-                                                title="Select Benchmark Configuration",
-                                                initialdir=preferences.benchmark_last_opened_dir(),
-                                                initialfile=preferences.benchmark_last_opened_file())
+        # read the benchmark config xml
+        path = tkFileDialog.askopenfilename(parent=self.root,
+                                            title="Select Benchmark Configuration",
+                                            initialdir=preferences.benchmark_last_opened_dir(),
+                                            initialfile=preferences.benchmark_last_opened_file())
 
-            if len(path) > 0:
+        if len(path) > 0:
 
-                try:
-                    preferences.benchmarkLastOpened = path
-                    preferences.save()
-                except ExceptionHandler.ExceptionType as e:
-                    ExceptionHandler.add(e, "Cannot save preferences")
+            try:
+                preferences.benchmarkLastOpened = path
+                preferences.save()
+            except ExceptionHandler.ExceptionType as e:
+                ExceptionHandler.add(e, "Cannot save preferences")
 
-                Status.add("Loading benchmark configuration file: %s" % path)
-                benchmarkConfig = BenchmarkConfiguration(path)
+            Status.add("Loading benchmark configuration file: %s" % path)
+            benchmarkConfig = BenchmarkConfiguration(path)
 
-                Status.add("Loaded benchmark configuration: %s" % benchmarkConfig.name)
-                Status.add("")
+            Status.add("Loaded benchmark configuration: %s" % benchmarkConfig.name)
+            Status.add("")
 
-                benchmarkPassed = True
-                totalTime = 0.0
+            benchmarkPassed = True
+            totalTime = 0.0
 
-                for i in range(len(benchmarkConfig.benchmarks)):
-                        benchmark = benchmarkConfig.benchmarks[i]
-                        Status.add("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
-                        benchmarkResults = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.base_line_mode, benchmark.expectedResults)
-                        benchmarkPassed = benchmarkPassed & benchmarkResults[0]
-                        totalTime += benchmarkResults[1]
+            for i in range(len(benchmarkConfig.benchmarks)):
+                benchmark = benchmarkConfig.benchmarks[i]
+                Status.add("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
+                benchmarkResults = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.base_line_mode, benchmark.expectedResults)
+                benchmarkPassed = benchmarkPassed & benchmarkResults[0]
+                totalTime += benchmarkResults[1]
 
-                if benchmarkPassed:
-                        Status.add("All benchmarks passed")
-                else:
-                        Status.add("There are failing benchmarks", red=True)
-
-                Status.add("Total Time Taken: %fs" % totalTime)
-
+            if benchmarkPassed:
+                Status.add("All benchmarks passed")
             else:
+                Status.add("There are failing benchmarks", red=True)
 
-                Status.add("No benchmark loaded", red=True)
+            Status.add("Total Time Taken: %fs" % totalTime)
+
+        else:
+
+            Status.add("No benchmark loaded", red=True)
 
     def BenchmarkAnalysis(self, path, tolerance, base_line_mode, dictExpectedResults):
 
@@ -430,27 +431,27 @@ class UserInterface:
 
             try:
 
-                    analysis = benchmark.BenchmarkAnalysis(AnalysisConfiguration(path), base_line_mode)
+                analysis = benchmark.BenchmarkAnalysis(AnalysisConfiguration(path), base_line_mode)
 
             except ExceptionHandler.ExceptionType as e:
 
-                    analysis = None
-                    Status.add("ERROR: ".format(e))
-                    benchmarkPassed = False
+                analysis = None
+                Status.add("ERROR: ".format(e))
+                benchmarkPassed = False
 
             if analysis is not None:
 
-                    for (field, value) in dictExpectedResults.iteritems():
+                for (field, value) in dictExpectedResults.iteritems():
 
-                        try:
-                            benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, float(eval("analysis.%s" % field)), tolerance)
-                        except:
-                            raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
+                    try:
+                        benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, float(eval("analysis.%s" % field)), tolerance)
+                    except:
+                        raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
 
             if benchmarkPassed:
-                    Status.add("Benchmark Passed")
+                Status.add("Benchmark Passed")
             else:
-                    Status.add("Benchmark Failed", red=True)
+                Status.add("Benchmark Failed", red=True)
 
             end = datetime.datetime.now()
 
@@ -462,56 +463,56 @@ class UserInterface:
             return (benchmarkPassed, timeTaken)
 
     def formatPercentTwoDP(self, value):
-            return "%0.2f%%" % (value * 100.0)
+        return "%0.2f%%" % (value * 100.0)
 
     def compareBenchmark(self, title, expected, actual, tolerance):
 
-            diff = abs(expected - actual)
-            passed = (diff <= tolerance)
+        diff = abs(expected - actual)
+        passed = (diff <= tolerance)
 
-            text = "{title}: {expec:0.10} (expected) vs {act:0.10} (actual) =>".format(title=title, expec=expected, act=actual)
+        text = "{title}: {expec:0.10} (expected) vs {act:0.10} (actual) =>".format(title=title, expec=expected, act=actual)
 
-            if passed:
-                    Status.add("%s passed" % text)
-            else:
-                    Status.add("%s failed" % text, red=True)
+        if passed:
+            Status.add("%s passed" % text)
+        else:
+            Status.add("%s failed" % text, red=True)
 
-            return passed
+        return passed
 
     def EditAnalysis(self):
 
-            if self.analysisConfiguration is None:
-                    Status.add("ERROR: Analysis not loaded", red=True)
-                    return
+        if self.analysisConfiguration is None:
+            Status.add("ERROR: Analysis not loaded", red=True)
+            return
 
-            analysis.AnalysisConfigurationDialog(self.root,
-                                                 self.LoadAnalysisFromPath,
-                                                 self.analysisConfiguration)
+        analysis.AnalysisConfigurationDialog(self.root,
+                                             self.LoadAnalysisFromPath,
+                                             self.analysisConfiguration)
 
     def NewAnalysis(self):
 
-            conf = AnalysisConfiguration()
-            analysis.AnalysisConfigurationDialog(self.root,
-                                                 self.LoadAnalysisFromPath, conf)
+        conf = AnalysisConfiguration()
+        analysis.AnalysisConfigurationDialog(self.root,
+                                             self.LoadAnalysisFromPath, conf)
 
     def LoadAnalysis(self):
 
-            preferences = Preferences.get()
-            fileName = tkFileDialog.askopenfilename(parent=self.root,
-                                                    initialdir=preferences.analysis_last_opened_dir(),
-                                                    defaultextension=".xml")
+        preferences = Preferences.get()
+        fileName = tkFileDialog.askopenfilename(parent=self.root,
+                                                initialdir=preferences.analysis_last_opened_dir(),
+                                                defaultextension=".xml")
 
-            if len(fileName) < 1:
-                return
+        if len(fileName) < 1:
+            return
 
-            self.LoadAnalysisFromPath(fileName)
+        self.LoadAnalysisFromPath(fileName)
 
     def LoadAnalysisFromPath(self, fileName):
 
             try:
-                    preferences = Preferences.get()
-                    preferences.analysisLastOpened = fileName
-                    preferences.save()
+                preferences = Preferences.get()
+                preferences.analysisLastOpened = fileName
+                preferences.save()
             except ExceptionHandler.ExceptionType as e:
                 ExceptionHandler.add(e, "Cannot save preferences")
 
@@ -525,19 +526,19 @@ class UserInterface:
 
             if len(fileName) > 0:
 
-                    try:
-                        self.analysisConfiguration = AnalysisConfiguration(fileName)
-                        Status.add("Analysis config loaded: %s" % fileName)
-                    except ExceptionHandler.ExceptionType as e:
+                try:
+                    self.analysisConfiguration = AnalysisConfiguration(fileName)
+                    Status.add("Analysis config loaded: %s" % fileName)
+                except ExceptionHandler.ExceptionType as e:
 
-                        ExceptionHandler.add(e, "ERROR loading config")
+                    ExceptionHandler.add(e, "ERROR loading config")
 
     def LoadPortfolioFromPath(self, fileName):
 
             try:
-                    preferences = Preferences.get()
-                    preferences.portfolioLastOpened = fileName
-                    preferences.save()
+                preferences = Preferences.get()
+                preferences.portfolioLastOpened = fileName
+                preferences.save()
             except ExceptionHandler.ExceptionType as e:
                 ExceptionHandler.add(e, "Cannot save preferences")
 
@@ -550,43 +551,26 @@ class UserInterface:
 
             if len(fileName) > 0 and os.path.isfile(fileName):
 
-                    try:
-                        self.portfolioConfiguration = PortfolioConfiguration(fileName)
-                        Status.add("Portfolio config loaded: %s" % fileName)
-                    except ExceptionHandler.ExceptionType as e:
+                try:
+                    self.portfolioConfiguration = PortfolioConfiguration(fileName)
+                    Status.add("Portfolio config loaded: %s" % fileName)
+                except ExceptionHandler.ExceptionType as e:
 
-                        ExceptionHandler.add(e, "ERROR loading config")
+                    ExceptionHandler.add(e, "ERROR loading config")
 
     def ExportReport(self):
 
             preferences = Preferences.get()
 
             if self.analysis is None:
-                    Status.add("ERROR: Analysis not yet calculated", red=True)
-                    return
+                Status.add("ERROR: Analysis not yet calculated", red=True)
+                return
 
             if not self.analysis.hasActualPower:
 
-                    Status.add("No Power Signal in Dataset. Exporting report without power curve results.")
-                    
-                    try:
-
-                        fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                                  defaultextension=".xls",
-                                                                  initialfile="report.xls",
-                                                                  title="Save Report",
-                                                                  initialdir=preferences.analysis_last_opened_dir())
-    
-                        self.analysis.report(fileName, ver.version, report_power_curve=False)
-                        Status.add("Report written to %s" % fileName)
-
-                    except ExceptionHandler.ExceptionType as e:
-        
-                        ExceptionHandler.add(e, "ERROR Exporting Report")
-
-                    return
-
-            try:
+                Status.add("No Power Signal in Dataset. Exporting report without power curve results.")
+                
+                try:
 
                     fileName = tkFileDialog.asksaveasfilename(parent=self.root,
                                                               defaultextension=".xls",
@@ -594,8 +578,25 @@ class UserInterface:
                                                               title="Save Report",
                                                               initialdir=preferences.analysis_last_opened_dir())
 
-                    self.analysis.report(fileName, ver.version)
+                    self.analysis.report(fileName, ver.version, report_power_curve=False)
                     Status.add("Report written to %s" % fileName)
+
+                except ExceptionHandler.ExceptionType as e:
+    
+                    ExceptionHandler.add(e, "ERROR Exporting Report")
+
+                return
+
+            try:
+
+                fileName = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                          defaultextension=".xls",
+                                                          initialfile="report.xls",
+                                                          title="Save Report",
+                                                          initialdir=preferences.analysis_last_opened_dir())
+
+                self.analysis.report(fileName, ver.version)
+                Status.add("Report written to %s" % fileName)
 
             except ExceptionHandler.ExceptionType as e:
 
@@ -604,8 +605,8 @@ class UserInterface:
     def PCWG_Share_1_Portfolio(self):
 
         if self.portfolioConfiguration is None:
-                Status.add("ERROR: Portfolio not loaded", red=True)
-                return
+            Status.add("ERROR: Portfolio not loaded", red=True)
+            return
 
         try:
 
@@ -618,8 +619,8 @@ class UserInterface:
     def PCWG_Share_1_dot_1_Portfolio(self):
 
         if self.portfolioConfiguration is None:
-                Status.add("ERROR: Portfolio not loaded", red=True)
-                return
+            Status.add("ERROR: Portfolio not loaded", red=True)
+            return
 
         try:
 
@@ -645,8 +646,8 @@ class UserInterface:
     def edit_portfolio(self):
 
         if self.portfolioConfiguration is None:
-                Status.add("ERROR: Portfolio not loaded", red=True)
-                return
+            Status.add("ERROR: Portfolio not loaded", red=True)
+            return
 
         try:
 
@@ -680,46 +681,46 @@ class UserInterface:
 
     def ExportTimeSeries(self):
 
-            if self.analysis is None:
-                    Status.add("ERROR: Analysis not yet calculated", red=True)
-                    return
+        if self.analysis is None:
+            Status.add("ERROR: Analysis not yet calculated", red=True)
+            return
 
-            try:
+        try:
 
-                    preferences = Preferences.get()
-                    selections = ExportDataSetDialog(self.root)
-                    clean, full, calibration = selections.getSelections()
+            preferences = Preferences.get()
+            selections = ExportDataSetDialog(self.root)
+            clean, full, calibration = selections.getSelections()
 
-                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                              defaultextension=".dat",
-                                                              initialfile="timeseries.dat",
-                                                              title="Save Time Series",
-                                                              initialdir=preferences.analysis_last_opened_dir())
+            fileName = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                      defaultextension=".dat",
+                                                      initialfile="timeseries.dat",
+                                                      title="Save Time Series",
+                                                      initialdir=preferences.analysis_last_opened_dir())
 
-                    self.analysis.export(fileName, clean, full, calibration)
+            self.analysis.export(fileName, clean, full, calibration)
 
-                    if clean:
-                            Status.add("Time series written to %s" % fileName)
+            if clean:
+                    Status.add("Time series written to %s" % fileName)
 
-                    if any((full, calibration)):
-                            Status.add("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+            if any((full, calibration)):
+                    Status.add("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
 
-            except ExceptionHandler.ExceptionType as e:
-                    ExceptionHandler.add(e, "ERROR Exporting Time Series")
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "ERROR Exporting Time Series")
 
     def Calculate(self):
 
-            if self.analysisConfiguration is None:
-                    Status.add("ERROR: Analysis Config file not specified", red=True)
-                    return
+        if self.analysisConfiguration is None:
+            Status.add("ERROR: Analysis Config file not specified", red=True)
+            return
 
-            try:
+        try:
 
-                    self.analysis = core_analysis.Analysis(self.analysisConfiguration)
+            self.analysis = core_analysis.Analysis(self.analysisConfiguration)
 
-            except ExceptionHandler.ExceptionType as e:
+        except ExceptionHandler.ExceptionType as e:
 
-                    ExceptionHandler.add(e, "ERROR Calculating Analysis")
+            ExceptionHandler.add(e, "ERROR Calculating Analysis")
 
     def ClearConsole(self):
         self.listbox.delete(0, tk.END)
