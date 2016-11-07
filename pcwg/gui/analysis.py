@@ -194,6 +194,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         self.config.specified_power_deviation_matrix.absolute_path = self.specifiedPowerDeviationMatrix.get()
         self.config.powerDeviationMatrixActive = bool(self.powerDeviationMatrixActive.get())
-
+        
+        self.dataset_grid_box.datasets_file_manager.set_base(self.config.path)
         self.config.datasets = self.dataset_grid_box.datasets_file_manager
 
