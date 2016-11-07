@@ -456,10 +456,10 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.hubWindSpeedMode = self.addOption(master, "Hub Wind Speed Mode:", ["None", "Calculated", "Specified"], self.config.hubWindSpeedMode)
         self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
 
-        self.calibrationMethod = self.addOption(master, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod)
+        self.calibrationMethod = self.addOption(master, "Calibration Method:", ["None", "Specified", "LeastSquares"], self.config.calibrationMethod)
         self.calibrationMethod.trace("w", self.calibrationMethodChange)
         
-        self.densityMode = self.addOption(master, "Density Mode:", ["Calculated", "Specified"], self.config.densityMode)
+        self.densityMode = self.addOption(master, "Density Mode:", ["None", "Calculated", "Specified"], self.config.densityMode)
         self.densityMode.trace("w", self.densityMethodChange)
 
     def add_measurements(self, master):

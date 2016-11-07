@@ -89,7 +89,7 @@ class DatasetTab(ClosableTab):
         self.hubWindSpeedMode = self.addOption(self.main_frame, "Hub Wind Speed Mode:", ["None", "Calculated", "Specified"], self.config.hubWindSpeedMode)
         self.hubWindSpeedMode.trace("w", self.hubWindSpeedModeChange)
 
-        self.calibrationMethod = self.addOption(self.main_frame, "Calibration Method:", ["Specified", "LeastSquares"], self.config.calibrationMethod)
+        self.calibrationMethod = self.addOption(self.main_frame, "Calibration Method:", ["None", "Specified", "LeastSquares"], self.config.calibrationMethod)
         self.calibrationMethod.trace("w", self.calibrationMethodChange)
         
         self.densityMode = self.addOption(self.main_frame, "Density Mode:", ["Calculated", "Specified"], self.config.densityMode)
