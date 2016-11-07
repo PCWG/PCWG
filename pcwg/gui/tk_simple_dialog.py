@@ -43,6 +43,9 @@ class Dialog(tk.Toplevel):
 
         self.wait_window(self)
 
+        if not hasattr(self, 'is_ok'):
+            self.is_ok = False
+
     #
     # construction hooks
 
@@ -78,8 +81,8 @@ class Dialog(tk.Toplevel):
         self.withdraw()
         self.update_idletasks()
 
+        self.is_ok = True
         self.apply()
-
         self.cancel()
 
     def cancel(self, event=None):

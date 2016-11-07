@@ -327,8 +327,16 @@ class ExclusionsGridBox(DialogGridBox):
 
         values_dict = {}
 
-        values_dict["StartDate"] = base_dialog.convertDateToText(item.startDate)
-        values_dict["EndDate"] = base_dialog.convertDateToText(item.endDate)
+        if item.startDate is None:
+            values_dict["StartDate"] = ""
+        else:
+            values_dict["StartDate"] = base_dialog.convertDateToText(item.startDate)
+
+        if item.endDate is None:
+            values_dict["EndDate"] = ""
+        else:
+            values_dict["EndDate"] = base_dialog.convertDateToText(item.endDate)
+    
         values_dict["Active"] = item.active
 
         return values_dict

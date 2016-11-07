@@ -13,6 +13,7 @@ import datetime
 import dateutil
 import os.path
 
+from date_pick import Calendar
 from ..configuration.preferences_configuration import Preferences
 
 import validation
@@ -171,11 +172,8 @@ class BaseDialog(tk_simple_dialog.Dialog):
                 entry = self.addEntry(master, title + " " + datePickerFormatDisplay, validation, textValue, width = width)
                 entry.entry.config(state=tk.DISABLED)
                 
-                pickButton = tk.Button(master, text=".", command = DatePicker(self, entry, datePickerFormat), width=3, height=1)
+                pickButton = tk.Button(master, text="...", command = DatePicker(self, entry, datePickerFormat), width=3, height=1)
                 pickButton.grid(row=(self.row-1), sticky=tk.N, column=self.inputColumn, padx = 160)
-
-                clearButton = tk.Button(master, text="x", command = ClearEntry(entry), width=3, height=1)
-                clearButton.grid(row=(self.row-1), sticky=tk.W, column=self.inputColumn, padx = 133)
                         
                 entry.bindPickButton(pickButton)
 
@@ -465,119 +463,14 @@ class DatePicker:
                 else:
                         date = None
 
-                DatePickerDialog(self.parentDialog, self.pick, date, self.dateFormat)
+                calendar = Calendar(self.parentDialog, selected_date=date, date_format = self.dateFormat)
 
-        def pick(self, date):
-                
-                self.entry.set(date.strftime(self.dateFormat))
+                if calendar.is_ok:
+                    if not calendar.selected_date is None:
+                        self.entry.set(calendar.selected_date.strftime(self.dateFormat))                  
+                    else:
+                        self.entry.set("")
 
-class DatePickerDialog(BaseDialog):
-
-        def __init__(self, master, callback, date, dateFormat):
-
-                self.callback = callback
-                self.date = date
-                self.dateFormat = dateFormat
-                
-                BaseDialog.__init__(self, master)
-
-        def validate(self):
-                valid = False
-                
-                if type(self.getDate()) == datetime.datetime:
-                    valid = True
-                    
-                if valid:
-                    return 1
-                else:
-                    return 0
-                
-        def body(self, master):
-
-                if self.date != None:
-                        selectedDay = self.date.day
-                        selectedMonth = self.date.month
-                        selectedYear = self.date.year
-                        selectedHour = self.date.hour
-                        selectedMinute = self.date.minute
-                else:
-                        selectedDay = None
-                        selectedMonth = None
-                        selectedYear = None
-                        selectedHour = None
-                        selectedMinute = None
-                                
-                self.parseButton = tk.Button(master, text="Parse Clipboard", command = ParseClipBoard(master, self.dateFormat, self.parseClipBoard), width=30, height=1)
-                self.parseButton.grid(row=self.row, column=self.titleColumn, columnspan = 8)
-                self.row += 1
-                
-                spacer = tk.Label(master, text=" " * 60)
-                spacer.grid(row=self.row, column=self.titleColumn, columnspan = 4)
-                spacer = tk.Label(master, text=" " * 60)
-                spacer.grid(row=self.row, column=self.secondButtonColumn, columnspan = 4)
-                
-                self.row += 1
-                
-                self.day = self.addEntry(master, "Day:", validation.ValidateNonNegativeInteger(master), selectedDay)
-                self.month = self.addEntry(master, "Month:", validation.ValidateNonNegativeInteger(master), selectedMonth)
-                self.year = self.addEntry(master, "Year:", validation.ValidateNonNegativeInteger(master), selectedYear)
-                self.hour = self.addEntry(master, "Hour:", validation.ValidateNonNegativeInteger(master), selectedHour)
-                self.minute = self.addEntry(master, "Minute:", validation.ValidateNonNegativeInteger(master), selectedMinute)
-
-                self.validations.append(self.validateDate)
-
-        def validateDate(self):
-
-                try:
-                        self.getDate()
-                except:
-                        pass
-                        
-        def parseClipBoard(self, date):
-                
-                self.day.set(date.day)
-                self.month.set(date.month)
-                self.year.set(date.year)
-                self.hour.set(date.hour)
-                self.minute.set(date.minute)
-                
-        def getDate(self):
-                return datetime.datetime(int(self.year.get()), int(self.month.get()), int(self.day.get()), int(self.hour.get()), int(self.minute.get()))
-        
-        def apply(self):
-                self.callback(self.getDate())
-
-class ParseClipBoard:
-
-        def __init__(self, master, dateFormat, callback):
-                self.master = master
-                self.dateFormat = dateFormat
-                self.callback = callback
-
-        def __call__(self):
-                
-                try:
-                        
-                        clipboard = self.master.selection_get(selection = "CLIPBOARD")
-                        
-                        if len(clipboard) > 0:
-
-                                try:                                        
-                                        date = datetime.datetime.strptime(clipboard, self.dateFormat)
-                                except Exception as e:
-                                        try:
-                                                date = dateutil.parser.parse(clipboard)
-                                        except Exception as e:
-                                                date = None
-                                                Status.add("Can't parse clipboard (%s)" % e.message)
-
-                                if date != None:
-                                        self.callback(date)
-                                        
-                except Exception as e:
-                        Status.add("Can't parse clipboard (%s)" % e.message)
-                        
-            
 class BaseConfigurationDialog(BaseDialog):
 
         def __init__(self, master, callback, config, index = None):
