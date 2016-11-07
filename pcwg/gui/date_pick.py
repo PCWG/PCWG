@@ -7,7 +7,8 @@ import calendar
 import Tkinter as tk
 import time
 import datetime
-import dateutil
+from dateutil.parser import parse
+from dateutil.relativedelta import relativedelta
 
 from tk_simple_dialog import Dialog
 
@@ -32,7 +33,7 @@ class ParseClipBoard:
                     date = datetime.datetime.strptime(clipboard, self.dateFormat)
                 except Exception as e:
                     try:
-                        date = dateutil.parser.parse(clipboard)
+                        date = parse(clipboard)
                     except Exception as e:
                         date = None
                         Status.add("Can't parse clipboard (%s)" % e.message)
@@ -200,51 +201,27 @@ class Calendar(Dialog):
             current_date = self.selected_date
 
         if self.right_year_tag in owntags:
-            
             year_shift = 1
             month_shift = 0
-
         elif self.left_year_tag in owntags:
-            
             year_shift = -1
             month_shift = 0
-
         elif self.right_month_tag in owntags:
-
-            if current_date.month < 12:
-                year_shift = 0
-                month_shift = 1
-            else:
-                year_shift = 1
-                month_shift = -11
-
+            year_shift = 0
+            month_shift = 1
         elif self.left_month_tag in owntags:
-
-            if current_date.month > 1:
-                year_shift = 0
-                month_shift = -1
-            else:
-                year_shift = -1
-                month_shift = 11
+            year_shift = 0
+            month_shift = -1
 
         if not self.selected_date is None:
-
-            self.selected_date = datetime.datetime(year=current_date.year + year_shift,
-                                                    month=current_date.month + month_shift,
-                                                    day=current_date.day,
-                                                    hour=current_date.hour,
-                                                    minute=current_date.minute)  
+            self.selected_date = current_date + relativedelta(months = month_shift,
+                                                              years = year_shift)
         else:
-
-            self.empty_date = datetime.datetime(year=self.empty_date.year + year_shift,
-                                                    month=self.empty_date.month + month_shift,
-                                                    day=self.empty_date.day,
-                                                    hour=self.empty_date.hour,
-                                                    minute=self.empty_date.minute)  
+            self.empty_date += relativedelta(months = month_shift, years = year_shift)
 
         self.update_labels()
         self.hide(self.circle_selected)
-        self.fill_calendar()       
+        self.fill_calendar()
     
     def fill_calendar(self):
 
