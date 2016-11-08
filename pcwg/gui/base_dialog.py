@@ -243,7 +243,7 @@ class BaseDialog(tk_simple_dialog.Dialog):
 
         self.row += 1
 
-    def addEntry(self, master, title, validation, value, width = None):
+    def addEntry(self, master, title, validation, value, width = None, read_only = False):
 
         variable = tk.StringVar(master, value)
 
@@ -262,6 +262,9 @@ class BaseDialog(tk_simple_dialog.Dialog):
             validationCommand = None
 
         entry = tk.Entry(master, textvariable=variable, validate = 'key', validatecommand = validationCommand, width = width)
+
+        if read_only:
+            entry.config(state=tk.DISABLED)
 
         entry.grid(row=self.row, column=self.inputColumn, sticky=tk.W)
 

@@ -21,7 +21,7 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             dimensionsNode = self.getNode(matrixNode, 'Dimensions')
 
             self.dimensions = []
-            
+
             for node in self.getNodes(dimensionsNode, 'Dimension'):
 
                 parameter = self.getNodeValue(node, 'Parameter')
@@ -117,16 +117,54 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
         
         return self.cells[key]
 
+class PowerDeviationMatrixDimension(object):
 
-class PowerDeviationMatrixDimension:
-
-    def __init__(self, parameter, centerOfFirstBin, binWidth, numberOfBins):
+    def __init__(self, parameter='Wind Speed', centerOfFirstBin=None, binWidth=None, numberOfBins=None):
+        self.calculate_last_bin = False
         self.parameter = parameter
         self.centerOfFirstBin = centerOfFirstBin
         self.binWidth = binWidth
         self.numberOfBins = numberOfBins
-        self.centerOfLastBin = self.centerOfFirstBin + self.binWidth * (self.numberOfBins - 1)
+        self.calculate_last_bin = True
+        self.calculate_center_of_last_bin()
 
+    @property
+    def binWidth(self): 
+        return self._binWidth
+
+    @binWidth.setter
+    def binWidth(self, value): 
+        self._binWidth = value
+        self.calculate_center_of_last_bin()
+
+    @property
+    def numberOfBins(self): 
+        return self._numberOfBins
+
+    @numberOfBins.setter
+    def numberOfBins(self, value): 
+        self._numberOfBins = value
+        self.calculate_center_of_last_bin()
+
+    @property
+    def centerOfFirstBin(self): 
+        return self._centerOfFirstBin
+
+    @centerOfFirstBin.setter
+    def centerOfFirstBin(self, value): 
+        self._centerOfFirstBin = value
+        self.calculate_center_of_last_bin()
+
+    def calculate_center_of_last_bin(self):
+
+        if self.calculate_last_bin:
+            if (self.centerOfFirstBin is None) or (self.binWidth is None) or (self.numberOfBins is None):
+                self.centerOfLastBin = None
+            else:
+                self.centerOfLastBin = self.centerOfFirstBin + self.binWidth * (self.numberOfBins - 1)
+        else:
+            self.centerOfLastBin = None
+            
     def withinRange(self, value):
         if value < self.centerOfFirstBin: return False
         if value > self.centerOfLastBin: return False
