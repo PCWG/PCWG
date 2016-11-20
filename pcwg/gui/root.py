@@ -160,12 +160,17 @@ class UserInterface:
                                               text="Export Time Series",
                                               command=self.ExportTimeSeries)
 
+        export_pdm_button = tk.Button(analyse_group_top,
+                                              text="Export PDM",
+                                              command=self.ExportPDM)
+
         load_button.pack(side=tk.RIGHT, padx=5, pady=5)
         edit_button.pack(side=tk.RIGHT, padx=5, pady=5)
         new_button.pack(side=tk.RIGHT, padx=5, pady=5)
         calculate_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_report_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_time_series_button.pack(side=tk.LEFT, padx=5, pady=5)
+        export_pdm_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.analysisFilePathLabel = tk.Label(analyse_group_bottom,
                                               text="Analysis File")
@@ -577,6 +582,30 @@ class UserInterface:
 
                 self.analysis.report(fileName)
                 Status.add("Report written to %s" % fileName)
+
+            except ExceptionHandler.ExceptionType as e:
+
+                ExceptionHandler.add(e, "ERROR Exporting Report")
+
+    def ExportPDM(self):
+
+            preferences = Preferences.get()
+
+            if self.analysis is None:
+                Status.add("ERROR: Analysis not yet calculated", red=True)
+                return
+
+
+            try:
+
+                fileName = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                          defaultextension=".xml",
+                                                          initialfile="power_deviation_matrix.xml",
+                                                          title="Save Report",
+                                                          initialdir=preferences.analysis_last_opened_dir())
+
+                self.analysis.report_pdm(fileName)
+                Status.add("Power Deviation Matrix written to %s" % fileName)
 
             except ExceptionHandler.ExceptionType as e:
 

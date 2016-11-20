@@ -1017,6 +1017,10 @@ class Analysis:
         report = reporting.report(self.windSpeedBins, self.calculated_power_deviation_matrix_bins)
         report.report(path, self)
 
+    def report_pdm(self, path):
+
+        pass
+
     def calculateCp(self):
         
         area = np.pi*(self.rotorGeometry.diameter/2.0)**2
