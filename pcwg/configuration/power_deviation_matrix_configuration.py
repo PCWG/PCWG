@@ -119,9 +119,10 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
 class PowerDeviationMatrixDimension(object):
 
-    def __init__(self, parameter='Wind Speed', centerOfFirstBin=None, binWidth=None, numberOfBins=None):
+    def __init__(self, parameter='Normalised Hub Wind Speed', index=1, centerOfFirstBin=None, binWidth=None, numberOfBins=None):
         self.calculate_last_bin = False
         self.parameter = parameter
+        self.index = index
         self.centerOfFirstBin = centerOfFirstBin
         self.binWidth = binWidth
         self.numberOfBins = numberOfBins

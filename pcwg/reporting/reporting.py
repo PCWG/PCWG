@@ -8,7 +8,10 @@ from ..configuration.base_configuration import TimeOfDayFilter
 
 from ..core.status import Status
 
+import version as ver
+
 class report:
+    
     bold_style = xlwt.easyxf('font: bold 1')
     no_dp_style = xlwt.easyxf(num_format_str='0')
     one_dp_style = xlwt.easyxf(num_format_str='0.0')
@@ -18,14 +21,17 @@ class report:
     percent_style = xlwt.easyxf(num_format_str='0.00%')
     percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
 
-    def __init__(self, windSpeedBins, turbulenceBins, version="unknown", report_power_curve = True):
-        self.version = version
+    def __init__(self, windSpeedBins, calculated_power_deviation_matrisecond_dimensions):
+        
+        self.version = ver.version
+        
         self.windSpeedBins = windSpeedBins
-        self.turbulenceBins = turbulenceBins
-        self.report_power_curve = report_power_curve
+        self.calculated_power_deviation_matrisecond_dimensions = calculated_power_deviation_matrisecond_dimensions
 
     def report(self, path, analysis):
     
+        report_power_curve = analysis.hasActualPower
+
         book = xlwt.Workbook()
         
         plotsDir = analysis.config.path.replace(".xml","_PPAnalysisPlots")
@@ -33,15 +39,14 @@ class report:
 
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
         
-        if self.report_power_curve:
+        if report_power_curve:
             sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
 
         settingsSheet = book.add_sheet("Settings", cell_overwrite_ok=True)
 
         self.reportSettings(settingsSheet, analysis)
         
-        
-        if self.report_power_curve:
+        if report_power_curve:
             rowsAfterCurves = []
             #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specifiedPowerCurve, analysis)) #needs fixing + move to settings sheet
             if analysis.specifiedPowerCurve is not None:
@@ -95,23 +100,18 @@ class report:
                 
                 if analysis.rewsActive:
                     self.reportPowerDeviations(book, "REWSPowerDeviations", analysis.rewsPowerDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-REWS-DevDiff", analysis.hubPowerDeviations, analysis.rewsPowerDeviations, gradient)
                     self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
                     if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Inner Shear", analysis.rewsMatrixInnerShear, gradient)
                     if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Outer Shear", analysis.rewsMatrixOuterShear, gradient)
-                    #self.reportPowerDeviations(book, "REWSPowerDeviationsInnerShear", analysis.rewsPowerDeviationsInnerShear, gradient)
+
                 if analysis.turbRenormActive:
                     self.reportPowerDeviations(book, "TurbPowerDeviations", analysis.turbPowerDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
-                    #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
+
                 if analysis.turbRenormActive and analysis.rewsActive:
                     self.reportPowerDeviations(book, "CombPowerDeviations", analysis.combPowerDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-Comb-DevDiff", analysis.hubPowerDeviations, analysis.combPowerDeviations, gradient)
-                    #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
+
                 if analysis.powerDeviationMatrixActive:
                     self.reportPowerDeviations(book, "PowerDeviationMatrixDeviations", analysis.powerDeviationMatrixDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
-                    #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
     
                 if analysis.config.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
@@ -588,65 +588,128 @@ class report:
 
 
     def reportPowerDeviations(self, book, sheetName, powerDeviations, gradient):
-        
+
+        dimensions_count = len(self.calculated_power_deviation_matrisecond_dimensions)
+
+        if dimensions_count < 2 or dimensions_count > 3:
+            Status.add("Cannot report PDM due to dimensionality: {0} Dimension(s)".format(len(self.calculated_power_deviation_matrisecond_dimensions)), verbosity=1)
+            return
+
         sh = book.add_sheet(sheetName, cell_overwrite_ok=True)
 
-        sh.write_merge(1,self.turbulenceBins.numberOfBins,0,0,"Turbulence Intensity", xlwt.easyxf('align: rotation 90'))
-        sh.write_merge(self.turbulenceBins.numberOfBins+2,self.turbulenceBins.numberOfBins+2,2,self.windSpeedBins.numberOfBins+1, "Wind Speed", self.bold_style)
+        if dimensions_count == 2:
+    
+            self.report_slice(gradient,
+                              sh,
+                              powerDeviations.matrix)
 
-        for i in range(self.windSpeedBins.numberOfBins):
+        else:
+
+            top_dimension = self.calculated_power_deviation_matrisecond_dimensions[0]
+
+            for i in range(top_dimension.bins.numberOfBins):
+
+                top_value = top_dimension.bins.binCenterByIndex(i)
+
+                if top_value in powerDeviations.matrix:
+                    pdm_value = powerDeviations.matrix[top_value]
+                else:
+                    pdm_value = None
+
+                self.report_slice(gradient,
+                                  sh,
+                                  pdm_value,
+                                  top_value,
+                                  parent_dimension=0,
+                                  parent_index=i)
+
+    def report_slice(self, gradient, sh, pdm_slice, parent_value = None, parent_dimension = None, parent_index = None):
+
+        if parent_dimension is None:
+            
+            first_dimension = self.calculated_power_deviation_matrisecond_dimensions[0]  #e.g. wind speed
+            second_dimension = self.calculated_power_deviation_matrisecond_dimensions[1] #e.g. turbulence
+
+            row_offset = 0
+
+        else:
+            
+            first_dimension = self.calculated_power_deviation_matrisecond_dimensions[parent_dimension + 1]  #e.g. wind speed
+            second_dimension = self.calculated_power_deviation_matrisecond_dimensions[parent_dimension + 2] #e.g. turbulence
+
+            parent = self.calculated_power_deviation_matrisecond_dimensions[parent_dimension]
+
+            row_offset = parent_index * (second_dimension.bins.numberOfBins + 3)
+
+            sh.write(second_dimension.bins.numberOfBins + 2 + row_offset,
+                     0,
+                     parent.parameter,
+                     self.bold_style)
+
+            if "Turbulence" in parent.parameter:                
+                sh.write(second_dimension.bins.numberOfBins + 2 + row_offset,
+                         1,
+                         parent_value,
+                         self.percent_no_dp_style)
+            else:
+                sh.write(second_dimension.bins.numberOfBins + 2 + row_offset,
+                         1,
+                         parent_value,
+                         self.one_dp_style)
+
+        sh.write_merge(1 + row_offset,
+                       second_dimension.bins.numberOfBins + row_offset,
+                       0,
+                       0,
+                       second_dimension.parameter,
+                       xlwt.easyxf('align: rotation 90'))
+
+        sh.write_merge(second_dimension.bins.numberOfBins+2 + row_offset,
+                       second_dimension.bins.numberOfBins+2 + row_offset,
+                       2,
+                       first_dimension.bins.numberOfBins+1,
+                       first_dimension.parameter,
+                       self.bold_style)
+
+        for i in range(first_dimension.bins.numberOfBins):
             sh.col(i + 2).width = 256 * 5
 
-        for j in range(self.turbulenceBins.numberOfBins):
+        sh.col(0).width = 8000
 
-            turbulence = self.turbulenceBins.binCenterByIndex(j)
-            row = self.turbulenceBins.numberOfBins - j
-            
-            sh.write(row, 1, turbulence, self.percent_no_dp_style)
-            
-            for i in range(self.windSpeedBins.numberOfBins):
+        for j in range(second_dimension.bins.numberOfBins):
 
-                windSpeed = self.windSpeedBins.binCenterByIndex(i)
+            second_value = second_dimension.bins.binCenterByIndex(j)
+            row = second_dimension.bins.numberOfBins - j
+            
+            if "Turbulence" in second_dimension.parameter:
+                sh.write(row + row_offset, 1, second_value, self.percent_no_dp_style)
+            else:
+                sh.write(row + row_offset, 1, second_value, self.one_dp_style)
+
+            for i in range(first_dimension.bins.numberOfBins):
+
+                first_value = first_dimension.bins.binCenterByIndex(i)
                 col = i + 2
                 
                 if j == 0:
-                    sh.write(self.turbulenceBins.numberOfBins+1, col, windSpeed, self.one_dp_style)
+                    if "Turbulence" in first_dimension.parameter:
+                        sh.write(second_dimension.bins.numberOfBins + 1 + row_offset,
+                                 col,
+                                 first_value,
+                                 self.percent_no_dp_style)
+                    else:
+                        sh.write(second_dimension.bins.numberOfBins + 1 + row_offset,
+                                 col,
+                                 first_value,
+                                 self.one_dp_style)
 
-                
-                if windSpeed in powerDeviations.matrix:
-                    if turbulence  in powerDeviations.matrix[windSpeed]:
-                        deviation = powerDeviations.matrix[windSpeed][turbulence]
-                        if not np.isnan(deviation):
-                            sh.write(row, col, deviation, gradient.getStyle(deviation))
+                if not pdm_slice is None:
 
-    def reportPowerDeviationsDifference(self, book, sheetName, deviationsA, deviationsB, gradient):
-        
-        sh = book.add_sheet(sheetName, cell_overwrite_ok=True)
-
-        for i in range(self.windSpeedBins.numberOfBins):
-            sh.col(i + 1).width = 256 * 5
-
-        for j in range(self.turbulenceBins.numberOfBins):        
-
-            turbulence = self.turbulenceBins.binCenterByIndex(j)
-            row = self.turbulenceBins.numberOfBins - j - 1
-            
-            sh.write(row, 0, turbulence, self.percent_no_dp_style)
-            
-            for i in range(self.windSpeedBins.numberOfBins):
-
-                windSpeed = self.windSpeedBins.binCenterByIndex(i)
-                col = i + 1
-                
-                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.one_dp_style)
-                
-                if windSpeed in deviationsA.matrix:
-                    if turbulence  in deviationsA.matrix[windSpeed]:
-                        deviationA = deviationsA.matrix[windSpeed][turbulence]
-                        deviationB = deviationsB.matrix[windSpeed][turbulence]
-                        if not np.isnan(deviationA) and not np.isnan(deviationB):
-                            diff = abs(deviationA) - abs(deviationB)
-                            sh.write(row, col, diff, gradient.getStyle(diff))
+                    if first_value in pdm_slice:
+                        if second_value  in pdm_slice[first_value]:
+                            deviation = pdm_slice[first_value][second_value]
+                            if not np.isnan(deviation):
+                                sh.write(row + row_offset, col, deviation, gradient.getStyle(deviation))
 
     def report_aep(self,sh,analysis):
         sh # get tables in PP report form

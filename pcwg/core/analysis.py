@@ -8,9 +8,14 @@ from ..configuration.dataset_configuration import DatasetConfiguration
 from ..configuration.power_deviation_matrix_configuration import PowerDeviationMatrixConfiguration
 
 import dataset
-from dataset import DeviationMatrix
 import binning
 import turbine
+
+from power_deviation_matrix import DeviationMatrix
+from power_deviation_matrix import PowerDeviationMatrixDimension
+
+from rotor_wind_speed_ratio import RotorWindSpeedRatio
+
 from ..reporting import reporting
 from ..core.status import Status
 
@@ -202,7 +207,6 @@ class Analysis:
         self.turbulencePower = "Simulated TI Corrected Power"
         self.combinedPower = "Combined Power"
         self.windSpeedBin = "Wind Speed Bin"
-        self.turbulenceBin = "Turbulence Bin"
         self.powerDeviation = "Power Deviation"
         self.dataCount = "Data Count"
         self.powerStandDev = "Power Standard Deviation"
@@ -258,16 +262,10 @@ class Analysis:
         Status.add("Power Curve Mode: %s" % self.powerCurveMode)
 
         self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
-        
-        first_turb_bin = 0.01
-        turb_bin_width = 0.02
-        last_turb_bin = 0.25
+        self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
 
         self.powerCurveSensitivityResults = {}
         self.powerCurveSensitivityVariationMetrics = pd.DataFrame(columns = ['Power Curve Variation Metric'])
-
-        self.turbulenceBins = binning.Bins(first_turb_bin, turb_bin_width, last_turb_bin)
-        self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
         
         if config.specified_power_curve.absolute_path != None :
 
@@ -275,7 +273,7 @@ class Analysis:
             
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
                                                           self.rotorGeometry, actualPower = "Specified Power", hubTurbulence = "Specified Turbulence", \
-                                                          turbulenceRenormalisation = self.turbRenormActive, name = 'Specified', interpolationMode = self.interpolationMode)
+                                                          name = 'Specified', interpolationMode = self.interpolationMode)
 
             self.referenceDensity = self.specifiedPowerCurve.referenceDensity
             
@@ -299,13 +297,14 @@ class Analysis:
             self.inputHubWindSpeedSource = self.hubWindSpeed
 
         self.dataFrame[self.windSpeedBin] = self.dataFrame[self.inputHubWindSpeed].map(self.windSpeedBins.binCenter)        
-        self.dataFrame[self.turbulenceBin] = self.dataFrame[self.hubTurbulence].map(self.turbulenceBins.binCenter)
 
         self.applyRemainingFilters() #To do: record rows which are removed by each filter independently, as opposed to sequentially.
 
         if self.hasDensity:
+            
             if self.densityCorrectionActive:
                 self.dataFrame[self.powerCoeff] = self.calculateCp()
+
             self.meanMeasuredSiteDensity = self.dataFrame[self.hubDensity].dropna().mean()            
                
         if self.hasActualPower:
@@ -330,22 +329,27 @@ class Analysis:
 
         self.calculateHub()
 
-        # Normalisation Parameters
-        if self.turbRenormActive:
-            self.normalisingRatedPower = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
-            self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
-            self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
+        self.normalisingRatedPower = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
+        self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
+        self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
 
-            Status.add("normalisation", verbosity=2)
-            Status.add(self.normalisingRatedWindSpeed, verbosity=2)
-            Status.add(self.normalisingCutInWindSpeed, verbosity=2)
-            
-            self.normalisedWS = 'Normalised WS'
-            self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.normalisingCutInWindSpeed) / (self.normalisingRatedWindSpeed - self.normalisingCutInWindSpeed)
+        Status.add("normalisation", verbosity=2)
+        Status.add(self.normalisingRatedWindSpeed, verbosity=2)
+        Status.add(self.normalisingCutInWindSpeed, verbosity=2)
+        
+        self.normalisedWS = 'Normalised Hub Wind Speed'
+        self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.normalisingCutInWindSpeed) / (self.normalisingRatedWindSpeed - self.normalisingCutInWindSpeed)
+
+        if self.hasShear:
+            self.rotor_wind_speed_ratio = 'Rotor Wind Speed Ratio'
+            self.dataFrame[self.rotor_wind_speed_ratio] = self.dataFrame[self.shearExponent].map(RotorWindSpeedRatio(self.rotorGeometry.diameter, self.rotorGeometry.hubHeight))
 
         if self.hasActualPower:
             self.normalisedPower = 'Normalised Power'
             self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.ratedPower
+
+        #Power Deviation Matrix Dimensions
+        self.created_calculated_power_deviation_matrix_bins(config)
 
         if self.rewsActive and self.rewsDefined:
 
@@ -412,6 +416,23 @@ class Analysis:
                 self.powerDeviationMatrixDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower, allFilterMode)
 
             Status.add("Power Curve Deviation Matrices Complete.")
+
+    def created_calculated_power_deviation_matrix_bins(self, config):
+
+        self.calculated_power_deviation_matrix_bins = []
+        
+        sorted_dimensions = sorted(config.calculated_power_deviation_matrix_dimensions, key=lambda x: x.index, reverse=False)
+
+        for dimension in sorted_dimensions:
+            
+            pdm_dimension = PowerDeviationMatrixDimension(dimension.parameter,
+                                                          dimension.centerOfFirstBin,
+                                                          dimension.binWidth,
+                                                          dimension.numberOfBins)
+
+            self.dataFrame[pdm_dimension.bin_parameter] = pdm_dimension.create_column(self.dataFrame)
+
+            self.calculated_power_deviation_matrix_bins.append(pdm_dimension)
 
     def calculate_aep(self):
 
@@ -903,20 +924,22 @@ class Analysis:
 
             turb = turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, inputHubWindSpeed = self.inputHubWindSpeed, 
                                             hubTurbulence = self.hubTurbulence, actualPower = powerColumn,
-                                            turbulenceRenormalisation = (self.turbRenormActive if powerColumn != self.turbulencePower else False), 
                                             name = name, interpolationMode = self.interpolationMode, 
                                             required = required, xLimits = self.windSpeedBins.limits, 
                                             sub_power = sub_power)
                 
             return turb
 
-    def calculatePowerDeviationMatrix(self, power, filterMode, windBin = None, turbBin = None):
+    def get_deviation_matrix_bins(self, data_frame):
 
-        if windBin is None:
-            windBin = self.windSpeedBin
+        dimension_bins = []
 
-        if turbBin is None:
-            turbBin = self.turbulenceBin
+        for dimension in self.calculated_power_deviation_matrix_bins:
+            dimension_bins.append(data_frame[dimension.bin_parameter])
+
+        return dimension_bins
+
+    def calculatePowerDeviationMatrix(self, power, filterMode):
 
         mask = (self.dataFrame[self.actualPower] > 0) & (self.dataFrame[power] > 0)
         mask = mask & self.getFilter(filterMode)
@@ -925,8 +948,10 @@ class Analysis:
         filteredDataFrame.is_copy = False
         filteredDataFrame[self.powerDeviation] = (filteredDataFrame[self.actualPower] - filteredDataFrame[power]) / filteredDataFrame[power]
 
-        devMatrix = DeviationMatrix(filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).aggregate(self.aggregations.average),
-                                    filteredDataFrame[self.powerDeviation].groupby([filteredDataFrame[windBin], filteredDataFrame[turbBin]]).count())
+        dimension_bins = self.get_deviation_matrix_bins(filteredDataFrame)
+
+        devMatrix = DeviationMatrix(filteredDataFrame[self.powerDeviation].groupby(dimension_bins).aggregate(self.aggregations.average),
+                                    filteredDataFrame[self.powerDeviation].groupby(dimension_bins).count())
 
         return devMatrix
 
@@ -937,8 +962,10 @@ class Analysis:
 
         filteredDataFrame = self.dataFrame[mask]
 
-        rewsMatrix = DeviationMatrix(filteredDataFrame[self.rewsToHubRatioDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).aggregate(self.aggregations.average),
-                                    filteredDataFrame[self.rewsToHubRatioDeviation].groupby([filteredDataFrame[self.windSpeedBin], filteredDataFrame[self.turbulenceBin]]).count())
+        dimension_bins = self.get_deviation_matrix_bins(filteredDataFrame)
+
+        rewsMatrix = DeviationMatrix(filteredDataFrame[self.rewsToHubRatioDeviation].groupby(dimension_bins).aggregate(self.aggregations.average),
+                                    filteredDataFrame[self.rewsToHubRatioDeviation].groupby(dimension_bins).count())
 
         return rewsMatrix
 
@@ -985,79 +1012,10 @@ class Analysis:
         self.categoryAUncertainty = unc_MWh / test_MWh
         Status.add("Power curve category A uncertainty (assuming measured wind speed distribution for test): %.3f%%" % (self.categoryAUncertainty * 100.0), verbosity=2)
 
-    def report(self, path,version="unknown", report_power_curve = True):
+    def report(self, path):
 
-        report = reporting.report(self.windSpeedBins, self.turbulenceBins, version, report_power_curve = report_power_curve)
+        report = reporting.report(self.windSpeedBins, self.calculated_power_deviation_matrix_bins)
         report.report(path, self)
-
-    def anonym_report(self, path, version="Unknown", scatter = False, deviationMatrix = True):
-
-        if not self.hasActualPower:
-            raise Exception("Anonymous report can only be generated if analysis has actual power data")
-
-        if deviationMatrix:
-            self.calculate_anonymous_values()
-        else:
-            self.normalisedWindSpeedBins = []
-
-        report = reporting.AnonReport(targetPowerCurve = self.powerCurve,
-                                      wind_bins = self.normalisedWindSpeedBins,
-                                      turbulence_bins = self.turbulenceBins,
-                                      version= version)
-
-        report.report(path, self, powerDeviationMatrix = deviationMatrix, scatterMetric= scatter)
-
-    def calculate_anonymous_values(self):
-
-        allFilterMode = 0
-                
-        self.normalisedWSBin = 'Normalised WS Bin Centre'
-        firstNormWSbin = 0.05
-        lastNormWSbin = 2.95
-        normWSstep = 0.1
-        self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
-        self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
-
-        if self.hasDirection:
-            self.pcwgDirectionBin = 'Wind Direction Bin Centre'
-            dir_bin_width = 10.
-            wdir_centre_first_bin = 0.
-            self.pcwgWindDirBins = binning.Bins(wdir_centre_first_bin, dir_bin_width, 350.)
-            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
-            self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
-            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
-
-        self.pcwgFourCellMatrixGroup = 'PCWG Four Cell WS-TI Matrix Group'
-        self.dataFrame[self.pcwgFourCellMatrixGroup] = np.nan
-        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-HTI'
-        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-HTI'
-        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-LTI'
-        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-LTI'
-        
-        self.pcwgRange = 'PCWG Range (Inner or Outer)'
-        self.dataFrame[self.pcwgRange] = np.nan
-        self.dataFrame.loc[self.getFilter(1), self.pcwgRange] = 'Inner'
-        self.dataFrame.loc[self.getFilter(4), self.pcwgRange] = 'Outer'
-        
-        self.hourOfDay = 'Hour Of Day'
-        self.dataFrame[self.hourOfDay] = self.dataFrame[self.timeStamp].dt.hour
-        self.calendarMonth = 'Calendar Month'
-        self.dataFrame[self.calendarMonth] = self.dataFrame[self.timeStamp].dt.month
-
-        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
-                                                                               ,windBin = self.normalisedWSBin
-                                                                               ,turbBin = self.turbulenceBin)
-
-        if self.config.turbRenormActive:
-            self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, allFilterMode
-                                                                                   ,windBin = self.normalisedWSBin
-                                                                                   ,turbBin = self.turbulenceBin)
-        else:
-            self.normalisedTurbPowerDeviations = None
 
     def calculateCp(self):
         

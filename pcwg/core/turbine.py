@@ -86,7 +86,8 @@ class Relaxation:
         
 class PowerCurve:
 
-    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, inputHubWindSpeed = None, actualPower = None, hubTurbulence = None, fixedTurbulence = None, ratedPower = None, turbulenceRenormalisation=True,
+    def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, inputHubWindSpeed = None, actualPower = None,
+                hubTurbulence = None, fixedTurbulence = None, ratedPower = None,
                 name = 'Undefined', interpolationMode = 'Cubic', required = False, xLimits = None, sub_power = None,
                 relaxation_factory = NoRelaxationFactory()):
         
@@ -135,7 +136,7 @@ class PowerCurve:
             
         self.turbulenceFunction = self.createTurbulenceFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
 
-        if (turbulenceRenormalisation and has_pc):
+        if has_pc:
 
             Status.add("Calculating zero turbulence curve for {0} Power Curve".format(self.name), verbosity=3)
 

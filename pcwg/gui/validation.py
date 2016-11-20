@@ -352,6 +352,58 @@ class ValidateDatasets:
                 
                 self.messageLabel['text'] = message
 
+class ValidatePDM:
+
+        def __init__(self, master, listbox):
+
+                self.listbox = listbox
+                self.messageLabel = tk.Label(master, text="", fg="red")
+                self.validate()
+                self.title = "Datasets PDM"
+
+        def validate(self):
+
+                self.valid = True
+                message = ""
+                
+                dictionary = {}
+                duplicate_count = 0
+
+                for i in range(self.listbox.size()):
+
+                        item = self.listbox.get(i)
+                        index = item.index
+                        
+                        if index in dictionary:
+                                duplicate_count += 1
+                        else:
+                                dictionary[index] = index
+
+                if duplicate_count > 0:
+                        self.valid = False
+                        message = "Duplicate index specified"
+                
+                if self.valid:
+                    
+                    indexes = []
+
+                    for i in range(self.listbox.size()):
+
+                        item = self.listbox.get(i)
+                        index = item.index
+
+                        indexes.append(index)
+
+                    max_index = max(indexes)
+                    sum_index = sum(indexes)
+                    expected_sum_index = sum(range(1, max_index + 1))  
+
+                    if expected_sum_index != sum_index:
+                            self.valid = False
+                            message = "Non-continuous indexes specified"
+
+                self.messageLabel['text'] = message
+
 class ValidatePortfolioItems:
 
         def __init__(self, master, grid_box):

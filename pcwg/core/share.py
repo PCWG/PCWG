@@ -89,6 +89,58 @@ class ShareAnalysis(Analysis):
             self.calculate_pcwg_overall_metrics()
             self.calculate_pcwg_binned_metrics()
 
+    def calculate_anonymous_values(self):
+
+        allFilterMode = 0
+                
+        self.normalisedWSBin = 'Normalised WS Bin Centre'
+        firstNormWSbin = 0.05
+        lastNormWSbin = 2.95
+        normWSstep = 0.1
+        self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
+        self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
+
+        if self.hasDirection:
+            self.pcwgDirectionBin = 'Wind Direction Bin Centre'
+            dir_bin_width = 10.
+            wdir_centre_first_bin = 0.
+            self.pcwgWindDirBins = binning.Bins(wdir_centre_first_bin, dir_bin_width, 350.)
+            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
+            self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
+            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
+
+        self.pcwgFourCellMatrixGroup = 'PCWG Four Cell WS-TI Matrix Group'
+        self.dataFrame[self.pcwgFourCellMatrixGroup] = np.nan
+        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-HTI'
+        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-HTI'
+        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-LTI'
+        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
+        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-LTI'
+        
+        self.pcwgRange = 'PCWG Range (Inner or Outer)'
+        self.dataFrame[self.pcwgRange] = np.nan
+        self.dataFrame.loc[self.getFilter(1), self.pcwgRange] = 'Inner'
+        self.dataFrame.loc[self.getFilter(4), self.pcwgRange] = 'Outer'
+        
+        self.hourOfDay = 'Hour Of Day'
+        self.dataFrame[self.hourOfDay] = self.dataFrame[self.timeStamp].dt.hour
+        self.calendarMonth = 'Calendar Month'
+        self.dataFrame[self.calendarMonth] = self.dataFrame[self.timeStamp].dt.month
+
+        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
+                                                                               ,windBin = self.normalisedWSBin
+                                                                               ,turbBin = self.turbulenceBin)
+
+        if self.config.turbRenormActive:
+            self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, allFilterMode
+                                                                                   ,windBin = self.normalisedWSBin
+                                                                                   ,turbBin = self.turbulenceBin)
+        else:
+            self.normalisedTurbPowerDeviations = None
+            
     def calculate_pcwg_error_fields(self):
         self.calculate_anonymous_values()
         self.pcwgErrorBaseline = 'Baseline Error'

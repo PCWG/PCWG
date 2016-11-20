@@ -86,7 +86,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.powerDeviationMatrixActive = False
 
             self.interpolationMode = 'Cubic'
-            self.calculated_power_deviation_matrix_dimensions = []
+            self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
 
     @property
     def path(self): 
@@ -100,6 +100,15 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.nominal_wind_speed_distribution.set_base(self._path)
         self.specified_power_deviation_matrix.set_base(self._path)
 
+    def default_calculated_power_deviation_matrix_dimensions(self):
+
+        dimensions = []
+
+        dimensions.append(PowerDeviationMatrixDimension("Normalised Hub Wind Speed", 1, 0.1, 0.1, 21))
+        dimensions.append(PowerDeviationMatrixDimension("Hub Turbulence", 2, 0.01, 0.02, 25))
+
+        return dimensions
+        
     def setDefaultInnerRangeTurbulence(self):
         self.innerRangeLowerTurbulence = 0.08
         self.innerRangeUpperTurbulence = 0.12
@@ -176,11 +185,14 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         dimensionsNode = self.addNode(doc, calculatedPowerDeviationMatrixNode, "Dimensions")
 
-        for dimension in self.calculated_power_deviation_matrix_dimensions:
+        sorted_dimensions = sorted(self.calculated_power_deviation_matrix_dimensions, key=lambda x: x.index, reverse=False)
+
+        for dimension in sorted_dimensions:
 
             dimensionNode = self.addNode(doc, dimensionsNode, "Dimension")
 
             self.addTextNode(doc, dimensionNode, "Parameter", dimension.parameter)
+            self.addIntNode(doc, dimensionNode, "Index", dimension.index)
             self.addFloatNode(doc, dimensionNode, "CenterOfFirstBin", dimension.centerOfFirstBin)
             self.addFloatNode(doc, dimensionNode, "BinWidth", dimension.binWidth)
             self.addIntNode(doc, dimensionNode, "NumberOfBins", dimension.numberOfBins)
@@ -226,20 +238,33 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 
                 calculated_pdm_node = self.getNode(powerDeviationMatrixNode, 'CalculatedPowerDeviationMatrix')
                 dimensionsNode = self.getNode(calculated_pdm_node, 'Dimensions')
+                dimensions = []
 
                 for dimensionNode in self.getNodes(dimensionsNode, 'Dimension'):
 
                     parameter = self.getNodeValue(dimensionNode, 'Parameter')
+                    
+                    if self.nodeExists(dimensionNode, 'Index'):
+                        index = self.getNodeInt(dimensionNode, 'Index')
+                    else:
+                        index = len(self.calculated_power_deviation_matrix_dimensions) + 1
+
                     centerOfFirstBin = self.getNodeFloat(dimensionNode, 'CenterOfFirstBin')
                     binWidth = self.getNodeFloat(dimensionNode, 'BinWidth')
                     numberOfBins = self.getNodeInt(dimensionNode, 'NumberOfBins')
 
-                    self.calculated_power_deviation_matrix_dimensions.append(PowerDeviationMatrixDimension(parameter, centerOfFirstBin, binWidth, numberOfBins))
+                    dimensions.append(PowerDeviationMatrixDimension(parameter, index, centerOfFirstBin, binWidth, numberOfBins))
+                    self.calculated_power_deviation_matrix_dimensions = sorted(dimensions, key=lambda x: x.index, reverse=False)
+
+            else:
+
+                self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
 
         else:
 
             self.powerDeviationMatrixActive = False
             self.specified_power_deviation_matrix.relative_path = None
+            self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
 
     def readREWS(self, configurationNode):
 

@@ -9,6 +9,8 @@ import binning
 import turbine
 import warnings
 
+from power_deviation_matrix import DeviationMatrix
+
 from ..core.status import Status
 
 warnings.simplefilter('ignore', np.RankWarning)
@@ -28,13 +30,6 @@ def getDecimalValue(decimal):
                 "COMMA":","}[decimal.upper()]
     except:
         raise Exception("Unkown decimal: '%s'" % decimal)
-        
-
-class DeviationMatrix(object):
-    def __init__(self,deviationMatrix,countMatrix):
-        self.matrix = deviationMatrix
-        self.count  = countMatrix
-
 
 class CalibrationBase:
 
@@ -266,7 +261,7 @@ class Dataset:
         self.powerSD  = "Power SD"
 
         self.hubWindSpeed = "Hub Wind Speed"
-        self.hubTurbulence = "Hub Turbulence"
+        self.hubTurbulence = "Hub Turbulence Intensity"
         self.hubDensity = "Hub Density"
         self.shearExponent = "Shear Exponent"
         self.referenceShearExponent = "Reference Shear Exponent"

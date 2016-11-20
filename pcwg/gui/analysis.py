@@ -90,19 +90,23 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.rewsUpflow = self.addCheckBox(master, "REWS Upflow", self.config.rewsUpflow)  
         self.rewsExponent = self.addEntry(master, "REWS Exponent:", validation.ValidatePositiveFloat(master), self.config.rewsExponent)
 
-    def add_advanced(self, master):
-
-        self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
-        self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
+    def add_output_pdm(self, master):
 
         self.addTitleRow(master, "Power Deviation Matrix Dimensions (Output):")
         self.power_deviation_matrix_grid_box = PowerDeviationMatrixGridBox(master, self, self.row, self.inputColumn)
         self.power_deviation_matrix_grid_box.add_items(self.config.calculated_power_deviation_matrix_dimensions)
         self.row += 1
 
-        #self.validate_datasets = validation.ValidateDatasets(master, self.dataset_grid_box)
-        #self.validations.append(self.validate_datasets)
-        #self.validate_datasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
+        self.validate_pdm = validation.ValidatePDM(master, self.power_deviation_matrix_grid_box)
+        self.validations.append(self.validate_datasets)
+        self.validate_pdm.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
+
+        self.power_deviation_matrix_grid_box.onChange += self.validate_pdm.validate
+
+    def add_advanced(self, master):
+
+        self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
+        self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
 
     def addFormElements(self, master, path):            
 
@@ -116,6 +120,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         turbine_tab = tk.Frame(nb)
         rews_tab = tk.Frame(nb)
         corrections_tab = tk.Frame(nb)
+        output_pdm_tab = tk.Frame(nb)
         advanced_tab = tk.Frame(nb)
 
         nb.add(general_tab, text='General', padding=3)
@@ -124,6 +129,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         nb.add(turbine_tab, text='Turbine', padding=3)
         nb.add(rews_tab, text='REWS', padding=3)
         nb.add(corrections_tab, text='Corrections', padding=3)
+        nb.add(output_pdm_tab, text='Output PDM', padding=3)
         nb.add(advanced_tab, text='Advanced', padding=3)
 
         nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
@@ -136,7 +142,8 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.add_inner_range(inner_range_tab)
         self.add_turbine(turbine_tab)
         self.add_rews(rews_tab)
-        self.add_corrections(corrections_tab)                                                                                                                 
+        self.add_corrections(corrections_tab)     
+        self.add_output_pdm(output_pdm_tab)                                                                                                            
         self.add_advanced(advanced_tab) 
 
     def EditPowerCurve(self):

@@ -566,26 +566,6 @@ class UserInterface:
                 Status.add("ERROR: Analysis not yet calculated", red=True)
                 return
 
-            if not self.analysis.hasActualPower:
-
-                Status.add("No Power Signal in Dataset. Exporting report without power curve results.")
-                
-                try:
-
-                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                              defaultextension=".xls",
-                                                              initialfile="report.xls",
-                                                              title="Save Report",
-                                                              initialdir=preferences.analysis_last_opened_dir())
-
-                    self.analysis.report(fileName, ver.version, report_power_curve=False)
-                    Status.add("Report written to %s" % fileName)
-
-                except ExceptionHandler.ExceptionType as e:
-    
-                    ExceptionHandler.add(e, "ERROR Exporting Report")
-
-                return
 
             try:
 
@@ -595,7 +575,7 @@ class UserInterface:
                                                           title="Save Report",
                                                           initialdir=preferences.analysis_last_opened_dir())
 
-                self.analysis.report(fileName, ver.version)
+                self.analysis.report(fileName)
                 Status.add("Report written to %s" % fileName)
 
             except ExceptionHandler.ExceptionType as e:
