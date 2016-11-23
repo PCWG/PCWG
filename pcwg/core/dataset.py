@@ -261,7 +261,10 @@ class Dataset:
         self.powerSD  = "Power SD"
 
         self.hubWindSpeed = "Hub Wind Speed"
+        
         self.hubTurbulence = "Hub Turbulence Intensity"
+        self.hubTurbulenceAlias = "Hub Turbulence"
+
         self.hubDensity = "Hub Density"
         self.shearExponent = "Shear Exponent"
         self.referenceShearExponent = "Reference Shear Exponent"
@@ -360,6 +363,8 @@ class Dataset:
                 dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             else:
                 dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
+            
+            dataFrame[self.hubTurbulenceAlias] = dataFrame[self.hubTurbulence]
 
             if config.calibrationMethod != "Specified":
 
