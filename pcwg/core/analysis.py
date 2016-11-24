@@ -1019,7 +1019,9 @@ class Analysis:
 
     def report_pdm(self, path):
 
-        pass
+        power_deviation_matrix = PowerDeviationMatrixConfiguration()
+
+        power_deviation_matrix.save(path, self.calculated_power_deviation_matrix_bins, self.hubPowerDeviations)
 
     def calculateCp(self):
         

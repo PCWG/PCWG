@@ -1,0 +1,60 @@
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
+	<FilterMode>All</FilterMode>
+	<InterpolationMode>Linear</InterpolationMode>
+	<PowerCurveMode>Specified</PowerCurveMode>
+	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
+	<NominalWindSpeedDistribution></NominalWindSpeedDistribution>
+	<PowerCurveBins>
+		<FirstBinCentre>1.000000</FirstBinCentre>
+		<LastBinCentre>30.000000</LastBinCentre>
+		<BinSize>1.000000</BinSize>
+	</PowerCurveBins>
+	<Datasets>
+		<Dataset>Dataset 1 config (with actual power).xml</Dataset>
+	</Datasets>
+	<InnerRange>
+		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
+		<InnerRangeUpperTurbulence>0.140000</InnerRangeUpperTurbulence>
+		<InnerRangeLowerShear>0.150000</InnerRangeLowerShear>
+		<InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
+	</InnerRange>
+	<Turbine>
+		<SpecifiedPowerCurve>PowerCurve.xml</SpecifiedPowerCurve>
+	</Turbine>
+	<DensityCorrection>
+		<Active>0</Active>
+	</DensityCorrection>
+	<TurbulenceRenormalisation>
+		<Active>1</Active>
+	</TurbulenceRenormalisation>
+	<RotorEquivalentWindSpeed>
+		<Active>0</Active>
+		<Veer>0</Veer>
+		<Upflow>0</Upflow>
+		<Exponent>3.000000</Exponent>
+	</RotorEquivalentWindSpeed>
+	<PowerDeviationMatrix>
+		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>
+		<Active>1</Active>
+		<CalculatedPowerDeviationMatrix>
+			<Dimensions>
+				<Dimension>
+					<Parameter>Normalised Hub Wind Speed</Parameter>
+					<Index>1</Index>
+					<CenterOfFirstBin>0.100000</CenterOfFirstBin>
+					<BinWidth>0.100000</BinWidth>
+					<NumberOfBins>21</NumberOfBins>
+				</Dimension>
+				<Dimension>
+					<Parameter>Hub Turbulence</Parameter>
+					<Index>2</Index>
+					<CenterOfFirstBin>0.010000</CenterOfFirstBin>
+					<BinWidth>0.020000</BinWidth>
+					<NumberOfBins>25</NumberOfBins>
+				</Dimension>
+			</Dimensions>
+		</CalculatedPowerDeviationMatrix>
+	</PowerDeviationMatrix>
+</Configuration>

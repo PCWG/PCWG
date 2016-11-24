@@ -364,8 +364,6 @@ class Dataset:
             else:
                 dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
             
-            dataFrame[self.hubTurbulenceAlias] = dataFrame[self.hubTurbulence]
-
             if config.calibrationMethod != "Specified":
 
                 dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
@@ -391,10 +389,12 @@ class Dataset:
             self.verify_column_datatype(dataFrame, config.hubWindSpeed)
 
             dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
+            
             if (config.hubTurbulence != ''):
                 dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
             else:
                 dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
+
             self.residualWindSpeedMatrix = None
 
         if config.calculateDensity:
@@ -423,13 +423,19 @@ class Dataset:
 
         if self.rewsDefined and analysisConfig.rewsActive:
             dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysisConfig.rewsVeer, analysisConfig.rewsUpflow, analysisConfig.rewsExponent)
+        else:
+            self.windSpeedLevels = {}
+
+        #alias columns
+        dataFrame[self.hubTurbulenceAlias] = dataFrame[self.hubTurbulence]
 
         self.fullDataFrame = dataFrame.copy()
-        self.dataFrame = self.extractColumns(dataFrame).dropna()
+        self.dataFrame = self.extractColumns(dataFrame, analysisConfig).dropna()
         
         if self.windDirection in self.dataFrame.columns:
             self.fullDataFrame[self.windDirection] = self.fullDataFrame[self.windDirection].astype(float)
             self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
+
 
     def verify_column_datatype(self, data_frame, column):
 
@@ -623,7 +629,7 @@ class Dataset:
 
         return dataFrame[mask]
 
-    def extractColumns(self, dataFrame):
+    def extractColumns(self, dataFrame, analysisConfig):
 
         requiredCols = []
         
@@ -631,7 +637,9 @@ class Dataset:
         requiredCols.append(self.timeStamp)
 
         requiredCols.append(self.hubWindSpeed)
+
         requiredCols.append(self.hubTurbulence)
+        requiredCols.append(self.hubTurbulenceAlias)
 
         if self.hasDensity:
             requiredCols.append(self.hubDensity)
@@ -651,7 +659,7 @@ class Dataset:
         if self.hasInflowAngle:
             requiredCols.append(self.inflowAngle)
 
-        if self.rewsDefined:
+        if self.rewsDefined and analysisConfig.rewsActive:
             requiredCols.append(self.rewsToHubRatio)
 
         if self.hasAllPowers:

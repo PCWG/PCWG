@@ -71,7 +71,7 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             self.cells = {}
 
 
-    def save(self):
+    def save(self, path, dimensions, matrix):
 
         self.isNew = False
 
@@ -79,6 +79,69 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
         root = self.addRootNode(doc, "PowerDeviationMatrix", "http://www.pcwg.org")
 
         self.addTextNode(doc, root, "Name", self.name)
+        self.addFloatNode(doc, root, "OutOfRangeValue", 0.0)
+
+        dimensions_node = self.addNode(doc, root, "Dimensions")
+
+        for dimension in dimensions:
+
+            dimension_node = self.addNode(doc, dimensions_node, "Dimension")
+
+            self.addTextNode(doc, dimension_node, "Parameter", dimension.parameter)
+            self.addFloatNode(doc, dimension_node, "CenterOfFirstBin", dimension.bins.centerOfFirstBin)
+            self.addFloatNode(doc, dimension_node, "BinWidth", dimension.bins.binWidth)
+            self.addIntNode(doc, dimension_node, "NumberOfBins", dimension.bins.numberOfBins)
+
+        cells_node = self.addNode(doc, root, "Cells")
+
+        self.add_cells(doc, cells_node, dimensions, matrix.matrix)
+        
+        self.path = path        
+        self.saveDocument(doc, self.path)
+
+    def add_cells(self, doc, cells_node, dimensions, matrix, centers = None):
+
+        if centers is None:
+            dimension_index = 0
+        else:
+            dimension_index = len(centers)
+
+        dimension = dimensions[dimension_index]
+
+        for i in range(dimension.bins.numberOfBins):
+
+            center = dimension.bins.binCenterByIndex(i)
+
+            if center in matrix:
+
+                value = matrix[center]
+
+                if dimension_index == 0:
+                    next_centers = []
+                else: 
+                    next_centers = list(centers)
+                
+                next_centers.append(center)
+
+                if len(next_centers) == len(dimensions):
+                    self.write_cell(doc, cells_node, dimensions, next_centers, float(value))
+                else:
+                    self.add_cells(doc, cells_node, dimensions, value, next_centers)
+
+    def write_cell(self, doc, cells_node, dimensions, centers, value):
+
+        cell_node = self.addNode(doc, cells_node, "Cell")
+
+        cell_dimensions_node = self.addNode(doc, cell_node, "CellDimensions")        
+
+        for i in range(len(dimensions)):
+
+            cell_dimension_node = self.addNode(doc, cell_dimensions_node, "CellDimension")        
+
+            self.addTextNode(doc, cell_dimension_node, "Parameter", dimensions[i].parameter)
+            self.addFloatNode(doc, cell_dimension_node, "BinCenter", centers[i])
+
+        self.addFloatNode(doc, cell_node, "Value", value)
 
     def getBin(self, dimension, value):
         return round(round((value - dimension.centerOfFirstBin) / dimension.binWidth, 0) * dimension.binWidth + dimension.centerOfFirstBin, 4)

@@ -441,7 +441,7 @@ class UserInterface:
             except ExceptionHandler.ExceptionType as e:
 
                 analysis = None
-                Status.add("ERROR: ".format(e))
+                Status.add("ERROR: {0}".format(e))
                 benchmarkPassed = False
 
             if analysis is not None:
@@ -450,8 +450,8 @@ class UserInterface:
 
                     try:
                         benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, float(eval("analysis.%s" % field)), tolerance)
-                    except:
-                        raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
+                    except Exception as e:
+                        raise Exception("Evaluation of analysis.{f} has failed, does this property exist? {e}".format(f=field, e=e))
 
             if benchmarkPassed:
                 Status.add("Benchmark Passed")
@@ -595,6 +595,9 @@ class UserInterface:
                 Status.add("ERROR: Analysis not yet calculated", red=True)
                 return
 
+            if not hasattr(self.analysis, 'hubPowerDeviations'):
+                Status.add("ERROR: PDM not calculated", red=True)
+                return
 
             try:
 

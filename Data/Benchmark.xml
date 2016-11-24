@@ -3,6 +3,17 @@
 	<Name>PCWG Round Robin</Name>
 	<Tolerance>0.0001</Tolerance>
 	<Benchmarks>
+<!--		
+		<Benchmark>
+			<AnalysisConfigPath>Dataset 1 Analysis (Power Deviation Matrix).xml</AnalysisConfigPath>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>hubPowerDeviations.matrix[0.1][0.03]</Field>
+					<Value>-1.0</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+	-->
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>
@@ -24,6 +35,10 @@
 				</ExpectedResult>
 				<ExpectedResult>
 					<Field>powerDeviationMatrixDelta</Field>
+					<Value>0.00224711</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>hubPowerDeviations[0.1][0.1]</Field>
 					<Value>0.00224711</Value>
 				</ExpectedResult>
 			</ExpectedResults>
@@ -117,5 +132,6 @@
 				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
+
 	</Benchmarks>
 </Configuration>
