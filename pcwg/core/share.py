@@ -26,8 +26,30 @@ import version as ver
 class ShareAnalysis(Analysis):
 
     def __init__(self, config):
+
         Analysis.__init__(self, config)
+
+        self.generate_unique_ids()
+
         self.pcwg_share_metrics_calc()
+
+    def generate_unique_ids(self):
+
+        self.uniqueAnalysisId = hash_file_contents(self.config.path)
+        Status.add("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
+        Status.add("Calculating (please wait)...")
+
+        if len(self.datasetConfigs) > 0:
+            self.datasetUniqueIds = self.generate_unique_dset_ids()
+
+    def generate_unique_dset_ids(self):
+        dset_ids = {}
+        for conf in self.datasetConfigs:
+            ids = {}
+            ids['Configuration'] = hash_file_contents(conf.path)
+            ids['Time Series'] = hash_file_contents(conf.input_time_series.absolute_path)
+            dset_ids[conf.name] = ids
+        return dset_ids
 
     def calculate_power_deviation_matrices(self):
         #speed optimisation (output power deviation matrices not required for PCWG-Share-X)
@@ -91,8 +113,6 @@ class ShareAnalysis(Analysis):
 
     def calculate_anonymous_values(self):
 
-        allFilterMode = 0
-                
         self.normalisedWSBin = 'Normalised WS Bin Centre'
         firstNormWSbin = 0.05
         lastNormWSbin = 2.95
@@ -122,22 +142,22 @@ class ShareAnalysis(Analysis):
         
         self.pcwgRange = 'PCWG Range (Inner or Outer)'
         self.dataFrame[self.pcwgRange] = np.nan
-        self.dataFrame.loc[self.getFilter(1), self.pcwgRange] = 'Inner'
-        self.dataFrame.loc[self.getFilter(4), self.pcwgRange] = 'Outer'
+        self.dataFrame.loc[self.get_inner_range_filter(), self.pcwgRange] = 'Inner'
+        self.dataFrame.loc[self.get_outer_range_filter(), self.pcwgRange] = 'Outer'
         
         self.hourOfDay = 'Hour Of Day'
         self.dataFrame[self.hourOfDay] = self.dataFrame[self.timeStamp].dt.hour
         self.calendarMonth = 'Calendar Month'
         self.dataFrame[self.calendarMonth] = self.dataFrame[self.timeStamp].dt.month
 
-        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, allFilterMode
-                                                                               ,windBin = self.normalisedWSBin
-                                                                               ,turbBin = self.turbulenceBin)
+        self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, 
+                                                                               windBin = self.normalisedWSBin,
+                                                                               turbBin = self.turbulenceBin)
 
         if self.config.turbRenormActive:
-            self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, allFilterMode
-                                                                                   ,windBin = self.normalisedWSBin
-                                                                                   ,turbBin = self.turbulenceBin)
+            self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, 
+                                                                                   windBin = self.normalisedWSBin,
+                                                                                   turbBin = self.turbulenceBin)
         else:
             self.normalisedTurbPowerDeviations = None
             
@@ -257,8 +277,7 @@ class PcwgShare01Config(AnalysisConfiguration):
     def set_config_values(self, dataset):
         
         self.powerCurveMinimumCount = 10
-        self.filterMode = "All"
-        self.baseLineMode = "Hub"
+
         self.interpolationMode = self.get_interpolation_mode()
         self.powerCurveMode = "InnerMeasured"
         self.powerCurvePaddingMode = "Max"

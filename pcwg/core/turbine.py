@@ -110,34 +110,36 @@ class PowerCurve:
         
         self.referenceDensity = referenceDensity
         self.rotorGeometry = rotorGeometry
-        
-        has_pc = len(self.powerCurveLevels.index) != 0
-        self.firstWindSpeed = min(self.powerCurveLevels.index) if has_pc else None
-        self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels) if has_pc else None
-        self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels) if has_pc else None
-                
-        if self.inputHubWindSpeed is None:
-            ws_data = None
-        else:
-            ws_data = powerCurveLevels[self.inputHubWindSpeed]
 
-        Status.add("calculating power function ({0})".format(self.interpolationMode), verbosity=3)
-        self.powerFunction = self.createPowerFunction(powerCurveLevels[self.actualPower], ws_data) if has_pc else None
-        Status.add("power function calculated ({0})".format(type(self.powerFunction)), verbosity=3)
+        if len(self.powerCurveLevels.index) != 0:
 
-        self.relaxation = relaxation_factory.new_relaxation(self.powerFunction, self.cutInWindSpeed, self.cutOutWindSpeed) if has_pc else NoRelaxation()
+            if 'Data Count' in self.powerCurveLevels.columns:
+                self.hours = self.powerCurveLevels['Data Count'].sum()*1.0/6.0
+            else:
+                self.hours = 0.0
+
+            if self.inputHubWindSpeed is None:
+                wind_data = None
+            else:
+                wind_data = powerCurveLevels[self.inputHubWindSpeed]
+
+            power_data = powerCurveLevels[self.actualPower]
+
+            self.firstWindSpeed = min(self.powerCurveLevels.index)
+            self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels)
+            self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels)
+
+            self.wind_speed_points, self.power_points = self.extract_points(wind_data, power_data)
+
+            Status.add("calculating power function ({0})".format(self.interpolationMode), verbosity=3)
+            self.powerFunction = self.createPowerFunction(self.wind_speed_points, self.power_points)
+            Status.add("power function calculated ({0})".format(type(self.powerFunction)), verbosity=3)
+
+            self.turbulenceFunction = self.createTurbulenceFunction(wind_data, powerCurveLevels[self.hubTurbulence])
+
+            self.relaxation = relaxation_factory.new_relaxation(self.powerFunction, self.cutInWindSpeed, self.cutOutWindSpeed)      
+            self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower])
             
-        self.ratedPower = self.getRatedPower(ratedPower, powerCurveLevels[self.actualPower]) if has_pc else None
-
-        if 'Data Count' in self.powerCurveLevels.columns:
-            self.hours = self.powerCurveLevels['Data Count'].sum()*1.0/6.0
-        else:
-            self.hours = 0.0
-            
-        self.turbulenceFunction = self.createTurbulenceFunction(powerCurveLevels[self.hubTurbulence], ws_data) if has_pc else None
-
-        if has_pc:
-
             Status.add("Calculating zero turbulence curve for {0} Power Curve".format(self.name), verbosity=3)
 
             try:
@@ -153,8 +155,37 @@ class PowerCurve:
                 else:
                     raise Exception(err_msg)
         
+        else:
+            
+            self.relaxation = NoRelaxation()
+
+            self.wind_speed_points = None
+            self.power_points = None
+
+            self.turbulenceFunction  = None
+            self.powerFunction = None
+
+            self.firstWindSpeed = min(self.powerCurveLevels.index)
+            self.cutInWindSpeed = self.calculateCutInWindSpeed(powerCurveLevels)
+            self.cutOutWindSpeed = self.calculateCutOutWindSpeed(powerCurveLevels)
+            self.ratedPower = None
+
+            self.hours = 0.0
+
         Status.add("Turbine Created Successfully", verbosity=3)
-        
+    
+    def get_level(self, wind_speed, tolerance = 0.00001):
+
+        for i in range(len(self.wind_speed_points)):
+            
+            diff = abs(self.wind_speed_points[i] - wind_speed)
+
+            if diff < tolerance:
+                return self.power_points[i] 
+
+        raise Exception("Cannot find level: {0}".format(wind_speed))
+
+
     def calcZeroTurbulencePowerCurve(self):
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
         integrationRange = IntegrationRange(0.0, 100.0, 0.1)
@@ -196,10 +227,11 @@ class PowerCurve:
 
         return array
 
-    def createTurbulenceFunction(self, y_data, x_data):
+    def createTurbulenceFunction(self, x_data, y_data):
 
         if x_data is None:
             x_data = pd.Series(y_data.index, index = y_data.index)
+
         x, y = [], []
 
         for i in y_data.index:
@@ -211,7 +243,7 @@ class PowerCurve:
 
         return interpolators.LinearTurbulenceInterpolator(x, y)        
         
-    def createPowerFunction(self, y_data, x_data):
+    def extract_points(self, x_data, y_data):
 
         if x_data is None:
             x_data = pd.Series(y_data.index, index = y_data.index)
@@ -234,6 +266,10 @@ class PowerCurve:
                 y.append(y_data[i])
 
             Status.add("{0} {1} {2}".format(i, x[-1], y[-1]), verbosity=3)
+        
+        return (x, y)
+
+    def createPowerFunction(self, x, y):
         
         Status.add("Creating interpolator", verbosity=3)
         

@@ -9,7 +9,7 @@ import binning
 import turbine
 import warnings
 
-from power_deviation_matrix import DeviationMatrix
+from power_deviation_matrix import AverageOfDeviationsMatrix
 
 from ..core.status import Status
 
@@ -378,7 +378,7 @@ class Dataset:
                 dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
                 dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
 
-                self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                self.residualWindSpeedMatrix = AverageOfDeviationsMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
                                                                 dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
             else:
 

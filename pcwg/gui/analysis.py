@@ -32,10 +32,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     def add_general(self, master, path):
 
         self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", validation.ValidatePositiveInteger(master), self.config.powerCurveMinimumCount)
-        
-        filterModeOptions = ["All", "Inner", "Outer"]
-        self.filterMode = self.addOption(master, "Filter Mode:", filterModeOptions, self.config.filterMode)
-        
+                
         powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
         self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode)
         
@@ -92,6 +89,9 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
     def add_output_pdm(self, master):
 
+        self.power_deviation_matrix_minimum_count = self.addEntry(master, "PDM Minimum Count:", validation.ValidateNonNegativeInteger(master), self.config.power_deviation_matrix_minimum_count)
+        self.power_deviation_matrix_method = self.addOption(master, "PDM Method:", ["Average of Deviations", "Deviation of Averages"], self.config.power_deviation_matrix_method)
+
         self.addTitleRow(master, "Power Deviation Matrix Dimensions (Output):")
         self.power_deviation_matrix_grid_box = PowerDeviationMatrixGridBox(master, self, self.row, self.inputColumn)
         self.power_deviation_matrix_grid_box.add_items(self.config.calculated_power_deviation_matrix_dimensions)
@@ -129,6 +129,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         nb.add(turbine_tab, text='Turbine', padding=3)
         nb.add(rews_tab, text='REWS', padding=3)
         nb.add(corrections_tab, text='Corrections', padding=3)
+        nb.add(inner_range_tab, text='Inner Range', padding=3)
         nb.add(output_pdm_tab, text='Output PDM', padding=3)
         nb.add(advanced_tab, text='Advanced', padding=3)
 
@@ -187,7 +188,6 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     def setConfigValues(self):
 
         self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
-        self.config.filterMode = self.filterMode.get()
         self.config.interpolationMode = self.interpolationMode.get()
         self.config.powerCurveMode = self.powerCurveMode.get()
         self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
@@ -217,3 +217,5 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.config.datasets = self.dataset_grid_box.datasets_file_manager
         self.config.calculated_power_deviation_matrix_dimensions = self.power_deviation_matrix_grid_box.get_items()
 
+        self.config.power_deviation_matrix_minimum_count = int(self.power_deviation_matrix_minimum_count.get())
+        self.config.power_deviation_matrix_method = self.power_deviation_matrix_method.get()

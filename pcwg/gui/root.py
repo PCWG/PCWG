@@ -709,7 +709,7 @@ class UserInterface:
                                                       title="Save Time Series",
                                                       initialdir=preferences.analysis_last_opened_dir())
 
-            self.analysis.export(fileName, clean, full, calibration)
+            self.analysis.export_time_series(fileName, clean, full, calibration)
 
             if clean:
                     Status.add("Time series written to %s" % fileName)

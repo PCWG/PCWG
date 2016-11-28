@@ -1,9 +1,8 @@
 <?xml version="1.0" ?>
 <Configuration xmlns="http://www.pcwg.org">
 	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
-	<FilterMode>All</FilterMode>
 	<InterpolationMode>Linear</InterpolationMode>
-	<PowerCurveMode>Specified</PowerCurveMode>
+	<PowerCurveMode>InnerMeasured</PowerCurveMode>
 	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
 	<NominalWindSpeedDistribution></NominalWindSpeedDistribution>
 	<PowerCurveBins>
@@ -24,10 +23,10 @@
 		<SpecifiedPowerCurve>PowerCurve.xml</SpecifiedPowerCurve>
 	</Turbine>
 	<DensityCorrection>
-		<Active>0</Active>
+		<Active>1</Active>
 	</DensityCorrection>
 	<TurbulenceRenormalisation>
-		<Active>1</Active>
+		<Active>0</Active>
 	</TurbulenceRenormalisation>
 	<RotorEquivalentWindSpeed>
 		<Active>0</Active>
@@ -37,8 +36,10 @@
 	</RotorEquivalentWindSpeed>
 	<PowerDeviationMatrix>
 		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>
-		<Active>1</Active>
+		<Active>0</Active>
 		<CalculatedPowerDeviationMatrix>
+			<PowerDeviationMatrixMethod>Deviation of Averages</PowerDeviationMatrixMethod>
+			<PowerDeviationMatrixMinimumCount>0</PowerDeviationMatrixMinimumCount>
 			<Dimensions>
 				<Dimension>
 					<Parameter>Normalised Hub Wind Speed</Parameter>

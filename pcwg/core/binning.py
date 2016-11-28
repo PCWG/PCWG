@@ -2,6 +2,8 @@ import numpy as np
 
 class Bins:
 
+    TOLERANCE = 0.000000001
+
     def __init__(self, centerOfFirstBin, binWidth, centerOfLastBin = None, numberOfBins = None):
 
         if (centerOfLastBin is None) and (numberOfBins is None):
@@ -40,10 +42,24 @@ class Bins:
         self.centers = []
         self.limits = []
 
+        self.starts = {}
+
         for i in range(self.numberOfBins):
-            limit = (self.binStartByIndex(i), self.binEndByIndex(i))
+            
+            start = self.binStartByIndex(i)
+            end = self.binEndByIndex(i)
+            center = self.binCenterByIndex(i)
+
+            self.starts[start] = center
+
+            limit = (start, end)
+
             self.limits.append(limit)
-            self.centers.append(self.binCenterByIndex(i))
+            self.centers.append(center)
+
+    def binIndexForFirstCenterAndWidth(self, x, centerOfFirstBin, binWidth):
+        if np.isnan(x): return np.nan
+        return int(round((x - centerOfFirstBin)/binWidth,0))
 
     def binCenterForFirstCenterAndWidth(self, x, centerOfFirstBin, binWidth):
         if np.isnan(x): return np.nan
@@ -59,8 +75,22 @@ class Bins:
         return self.binCenterByIndex(index) + self.binWidth / 2.0
         
     def binCenter(self, x):
+        
         if np.isnan(x): return np.nan
-        return self.binCenterForFirstCenterAndWidth(x, self.centerOfFirstBin, self.binWidth)
+        
+        if x in self.starts:
+            return self.starts[x]
+
+        index = self.binIndexForFirstCenterAndWidth(x, self.centerOfFirstBin, self.binWidth)
+        
+        end = self.binEndByIndex(index)
+
+        #nudge values at bin end into next bin
+        if abs(x - end) < Bins.TOLERANCE:
+            if index < (self.numberOfBins - 1):
+                index += 1
+
+        return self.binCenterByIndex(index)
 
 class Aggregations:
 

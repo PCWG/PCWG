@@ -38,7 +38,6 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             else:
                 self.interpolationMode = 'Linear'
 
-            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
 
@@ -67,7 +66,6 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.isNew = True
             self.Name = ""
             self.powerCurveMinimumCount = 10
-            self.filterMode = 'All'
             self.powerCurveMode = 'Specified'
             self.powerCurvePaddingMode = defaultPaddingMode
 
@@ -87,6 +85,8 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
             self.interpolationMode = 'Cubic'
             self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
+            self.power_deviation_matrix_minimum_count = 0
+            self.power_deviation_matrix_method = 'Average of Deviations'
 
     @property
     def path(self): 
@@ -137,7 +137,6 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         self.addIntNode(doc, root, "PowerCurveMinimumCount", self.powerCurveMinimumCount)
 
-        self.addTextNode(doc, root, "FilterMode", self.filterMode)
         self.addTextNode(doc, root, "InterpolationMode", self.interpolationMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
@@ -182,6 +181,9 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addBoolNode(doc, powerDeviationMatrixNode, "Active", self.powerDeviationMatrixActive)
 
         calculatedPowerDeviationMatrixNode = self.addNode(doc, powerDeviationMatrixNode, "CalculatedPowerDeviationMatrix")
+
+        self.addTextNode(doc, calculatedPowerDeviationMatrixNode, 'PowerDeviationMatrixMethod', self.power_deviation_matrix_method)
+        self.addIntNode(doc, calculatedPowerDeviationMatrixNode, 'PowerDeviationMatrixMinimumCount', self.power_deviation_matrix_minimum_count)
 
         dimensionsNode = self.addNode(doc, calculatedPowerDeviationMatrixNode, "Dimensions")
 
@@ -228,8 +230,18 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.calculated_power_deviation_matrix_dimensions = []
 
         if self.nodeExists(configurationNode, 'PowerDeviationMatrix'):
-            
+
             powerDeviationMatrixNode = self.getNode(configurationNode, 'PowerDeviationMatrix')
+
+            if self.nodeExists(powerDeviationMatrixNode, 'PowerDeviationMatrixMethod'):
+                self.power_deviation_matrix_method = self.getNodeValue(powerDeviationMatrixNode, 'PowerDeviationMatrixMethod')
+            else:
+                self.power_deviation_matrix_method = 'Average of Deviations'
+
+            if self.nodeExists(powerDeviationMatrixNode, 'PowerDeviationMatrixMinimumCount'):
+                self.power_deviation_matrix_minimum_count = self.getNodeInt(powerDeviationMatrixNode, 'PowerDeviationMatrixMinimumCount')
+            else:
+                self.power_deviation_matrix_minimum_count = self.powerCurveMinimumCount
             
             self.powerDeviationMatrixActive = self.getNodeBool(powerDeviationMatrixNode, 'Active')
             self.specified_power_deviation_matrix.relative_path = self.getNodeValue(powerDeviationMatrixNode, 'SpecifiedPowerDeviationMatrix')
@@ -262,9 +274,11 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         else:
 
+            self.power_deviation_matrix_minimum_count = self.powerCurveMinimumCount
             self.powerDeviationMatrixActive = False
             self.specified_power_deviation_matrix.relative_path = None
             self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
+            self.power_deviation_matrix_method = 'Average of Deviations'
 
     def readREWS(self, configurationNode):
 

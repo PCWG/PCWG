@@ -3,17 +3,87 @@
 	<Name>PCWG Round Robin</Name>
 	<Tolerance>0.0001</Tolerance>
 	<Benchmarks>
-<!--		
+	
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis (Power Deviation Matrix).xml</AnalysisConfigPath>
+			<BaseLineMode>Measured</BaseLineMode>
+
 			<ExpectedResults>
 				<ExpectedResult>
-					<Field>hubPowerDeviations.matrix[0.1][0.03]</Field>
-					<Value>-1.0</Value>
+					<Field>powerCurve.get_level(4.01292)</Field>
+					<Value>63.723334</Value>
 				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(5.06244)</Field>
+					<Value>208.198620</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(6.01236)</Field>
+					<Value>372.770268</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(7.03736)</Field>
+					<Value>602.342540</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(7.98938)</Field>
+					<Value>886.302097</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(9.00868)</Field>
+					<Value>1182.258656</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(9.93401)</Field>
+					<Value>1521.605744</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(10.99312)</Field>
+					<Value>1783.239382</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(12.00858)</Field>
+					<Value>1923.309858</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(12.99722)</Field>
+					<Value>1958.546666</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(13.95039)</Field>
+					<Value>1976.577200</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(15.05412)</Field>
+					<Value>1981.239696</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(16.03944)</Field>
+					<Value>1983.056190</Value>
+				</ExpectedResult>
+				<ExpectedResult>
+					<Field>powerCurve.get_level(16.73271)</Field>
+					<Value>1984.156369</Value>
+				</ExpectedResult>
+
+				<ExpectedResult>
+					<Field>hubPowerDeviations.get_2D_value(0.30, 0.13)</Field>
+					<Value>-0.01734157</Value>
+				</ExpectedResult>
+
+				<ExpectedResult>
+					<Field>hubPowerDeviations.get_2D_value(0.30, 0.13)</Field>
+					<Value>-0.01734157</Value>
+				</ExpectedResult>
+
+				<ExpectedResult>
+					<Field>hubPowerDeviations.get_2D_value(0.60, 0.13)</Field>
+					<Value>0.00342551</Value>
+				</ExpectedResult>
+				
 			</ExpectedResults>
 		</Benchmark>
-	-->
+
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis.xml</AnalysisConfigPath>
 			<ExpectedResults>

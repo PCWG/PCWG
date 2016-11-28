@@ -24,26 +24,26 @@
 		<ReferenceWindDirectionOffset>0.000000</ReferenceWindDirectionOffset>
 		<Temperature></Temperature>
 		<Pressure></Pressure>
-		<Density></Density>
+		<Density>Turbine Density</Density>
 		<InflowAngle></InflowAngle>
 		<TurbineLocationWindSpeed></TurbineLocationWindSpeed>
 		<Power>Turbine Power</Power>
 		<PowerMin></PowerMin>
 		<PowerMax></PowerMax>
 		<PowerSD></PowerSD>
-		<HubWindSpeed>Mast - 96.0m Wind Speed Mean</HubWindSpeed>
+		<HubWindSpeed>Turbine Wind Speed Mean</HubWindSpeed>
 		<HubTurbulence>Mast - 96.0m Turbulence Intensity</HubTurbulence>
 	</Measurements>
 	<Shear>
 		<ShearCalibrationMethod>None</ShearCalibrationMethod>
 		<ReferenceShearMeasurements>
 			<ShearMeasurement>
-				<Height>89.100000</Height>
-				<WindSpeed>Mast - 89.1m Wind Speed Mean</WindSpeed>
-			</ShearMeasurement>
-			<ShearMeasurement>
 				<Height>40.000000</Height>
 				<WindSpeed>Mast - 40.0m Wind Speed Mean</WindSpeed>
+			</ShearMeasurement>
+			<ShearMeasurement>
+				<Height>89.100000</Height>
+				<WindSpeed>Mast - 89.1m Wind Speed Mean</WindSpeed>
 			</ShearMeasurement>
 		</ReferenceShearMeasurements>
 		<TurbineShearMeasurements/>
@@ -57,7 +57,15 @@
 		<CalibrationFilters/>
 		<CalibrationDirections/>
 	</Calibration>
-	<Filters/>
+	<Filters>
+		<Filter>
+			<DataColumn>Turbine Power</DataColumn>
+			<FilterType>Below</FilterType>
+			<Inclusive>0</Inclusive>
+			<FilterValue>0.000000</FilterValue>
+			<Active>0</Active>
+		</Filter>
+	</Filters>
 	<Exclusions/>
 	<Turbine>
 		<CutInWindSpeed>3.000000</CutInWindSpeed>
