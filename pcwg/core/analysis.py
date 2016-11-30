@@ -264,7 +264,7 @@ class Analysis:
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
                                                           self.rotorGeometry, actualPower = "Specified Power", hubTurbulence = "Specified Turbulence", \
                                                           name = 'Specified', interpolationMode = self.interpolationMode,
-                                                          zero_ti_pc_required = (self.powerCurveMode == 'AllMeasured'))
+                                                          zero_ti_pc_required = (self.powerCurveMode == 'Specified'))
 
             self.referenceDensity = self.specifiedPowerCurve.referenceDensity
             
@@ -338,10 +338,6 @@ class Analysis:
         self.normalisingRatedPower = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
         self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
         self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
-
-        print self.normalisingRatedPower 
-        print self.normalisingRatedWindSpeed 
-        print self.normalisingCutInWindSpeed 
 
         Status.add("normalisation", verbosity=2)
         Status.add(self.normalisingRatedWindSpeed, verbosity=2)
@@ -754,7 +750,7 @@ class Analysis:
             sub_power = SubPower(self.dataFrame, filteredDataFrame, self.aggregations, self.inputHubWindSpeed, powerColumn, self.windSpeedBins)
                             
             Status.add("Creating turbine", verbosity=2)     
-
+            
             turb = turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, inputHubWindSpeed = self.inputHubWindSpeed, 
                                             hubTurbulence = self.hubTurbulence, actualPower = powerColumn,
                                             name = name, interpolationMode = self.interpolationMode, 

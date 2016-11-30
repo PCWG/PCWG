@@ -90,7 +90,7 @@ class PowerCurve:
                 hubTurbulence = None, fixedTurbulence = None, ratedPower = None,
                 name = 'Undefined', interpolationMode = 'Cubic', zero_ti_pc_required = False, xLimits = None, sub_power = None,
                 relaxation_factory = NoRelaxationFactory()):
-        
+                
         self.name = name
         self.interpolationMode = interpolationMode
         self.zero_ti_pc_required = zero_ti_pc_required
@@ -120,7 +120,7 @@ class PowerCurve:
             wind_data = None
         else:
             wind_data = powerCurveLevels[self.inputHubWindSpeed]
-
+        
         power_data = powerCurveLevels[self.actualPower]
 
         self.firstWindSpeed = min(self.powerCurveLevels.index)
@@ -175,7 +175,7 @@ class PowerCurve:
         keys = sorted(self.powerCurveLevels[self.actualPower].keys())
         integrationRange = IntegrationRange(0.0, 100.0, 0.1)
         
-        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(keys,
+        self.zeroTurbulencePowerCurve = ZeroTurbulencePowerCurve(self.getArray(self.powerCurveLevels[self.inputHubWindSpeed], keys, suppress_negative = True),
                                                                  self.getArray(self.powerCurveLevels[self.actualPower], keys, suppress_negative = True),
                                                                  self.getArray(self.powerCurveLevels[self.hubTurbulence], keys, suppress_negative = True),
                                                                  integrationRange,
@@ -479,7 +479,7 @@ class InitialZeroTurbulencePowerCurve:
         self.power = selectedIteration.power
         
     def solve(self, previousIterationStats, iterationCount = 1):
-           
+        
         if iterationCount > self.maxIterations: raise Exception("Failed to solve initial zero turbulence curve in permitted number of iterations")
         
         iterationZeroTurbCurve = InitialZeroTurbulencePowerCurveIteration(self.integrationRange.windSpeeds,
@@ -493,7 +493,7 @@ class InitialZeroTurbulencePowerCurve:
         iterationSimulatedCurveStats = IterationPowerCurveStats(iterationSimulatedCurve.windSpeeds, iterationSimulatedCurve.powers, self.availablePower)
         
         convergenceCheck = IterationPowerCurveConvergenceCheck(self.referencePowerCurveStats, iterationSimulatedCurveStats)
-
+        
         if convergenceCheck.isConverged:
             return previousIterationStats
         else:
