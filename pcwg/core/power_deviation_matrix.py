@@ -59,7 +59,7 @@ class DeviationOfAveragesMatrix(BaseDeviationMatrix):
 
 		BaseDeviationMatrix.__init__(self, count_matrix, dimensions)
 
-		self.deviation_matrix = (modelled_matrix -  actual_matrix) / actual_matrix
+		self.deviation_matrix = (actual_matrix - modelled_matrix) / actual_matrix
 
 class PowerDeviationMatrixDimension(object):
 

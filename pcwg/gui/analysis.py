@@ -106,6 +106,10 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     def add_advanced(self, master):
 
         self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
+
+        self.negative_power_period_treatment = self.addOption(master, "Negative Power Period Treatment", self.config.get_power_treatment_options(), self.config.negative_power_period_treatment)  
+        self.negative_power_bin_average_treatment = self.addOption(master, "Negative Power Bin Average Treatment", self.config.get_power_treatment_options(), self.config.negative_power_bin_average_treatment)  
+               
         self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
 
     def addFormElements(self, master, path):            
@@ -188,6 +192,10 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     def setConfigValues(self):
 
         self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
+
+        self.config.negative_power_period_treatment = self.negative_power_period_treatment.get()
+        self.config.negative_power_bin_average_treatment = self.negative_power_bin_average_treatment.get()
+        
         self.config.interpolationMode = self.interpolationMode.get()
         self.config.powerCurveMode = self.powerCurveMode.get()
         self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()

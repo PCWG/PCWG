@@ -671,7 +671,8 @@ class Report:
     
             self.report_slice(gradient,
                               sh,
-                              powerDeviations.deviation_matrix)
+                              powerDeviations.deviation_matrix,
+                              powerDeviations.count_matrix)
 
         else:
 
@@ -683,17 +684,20 @@ class Report:
 
                 if top_value in powerDeviations.deviation_matrix:
                     pdm_value = powerDeviations.deviation_matrix[top_value]
+                    pdm_count = powerDeviations.count_matrix[top_value]
                 else:
                     pdm_value = None
+                    pdm_count = None
 
                 self.report_slice(gradient,
                                   sh,
                                   pdm_value,
+                                  pdm_count,
                                   top_value,
                                   parent_dimension=0,
                                   parent_index=i)
 
-    def report_slice(self, gradient, sh, pdm_slice, parent_value = None, parent_dimension = None, parent_index = None):
+    def report_slice(self, gradient, sh, pdm_slice, count_slice, parent_value = None, parent_dimension = None, parent_index = None):
 
         if parent_dimension is None:
             
@@ -710,7 +714,7 @@ class Report:
             parent = self.calculated_power_deviation_matrix_dimensions[parent_dimension]
 
             row_offset = parent_index * (second_dimension.bins.numberOfBins + 3)
-
+            
             sh.write(second_dimension.bins.numberOfBins + 2 + row_offset,
                      0,
                      parent.parameter,
@@ -727,6 +731,8 @@ class Report:
                          parent_value,
                          self.one_dp_style)
 
+        count_col_offset = (first_dimension.bins.numberOfBins + 3)
+        
         sh.write_merge(1 + row_offset,
                        second_dimension.bins.numberOfBins + row_offset,
                        0,
@@ -777,9 +783,15 @@ class Report:
 
                     if first_value in pdm_slice:
                         if second_value  in pdm_slice[first_value]:
+                            
                             deviation = pdm_slice[first_value][second_value]
+                            count = int(count_slice[first_value][second_value])
+
+                            sh.write(row + row_offset, col + count_col_offset, count)
+                                 
                             if not np.isnan(deviation):
                                 sh.write(row + row_offset, col, deviation, gradient.getStyle(deviation))
+                                
 
     def report_aep(self,sh,analysis):
         sh # get tables in PP report form

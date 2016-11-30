@@ -1,7 +1,5 @@
-import pandas as pd
 import numpy as np
 import hashlib
-import os
 
 from ..configuration.power_curve_configuration import PowerCurveConfiguration
 from ..configuration.dataset_configuration import DatasetConfiguration
@@ -245,6 +243,9 @@ class Analysis:
 
         self.interpolationMode = config.interpolationMode
         self.powerCurveMode = config.powerCurveMode
+        
+        self.negative_power_period_treatment = config.negative_power_period_treatment
+        self.negative_power_bin_average_treatment = config.negative_power_bin_average_treatment
 
         self.defineInnerRange(config)
 
@@ -258,11 +259,12 @@ class Analysis:
         
         if config.specified_power_curve.absolute_path != None :
 
-            powerCurveConfig = PowerCurveConfiguration(config.specified_power_curve.absolute_path)
+            powerCurveConfig = PowerCurveConfiguration(config.specified_power_curve.absolute_path)            
             
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
                                                           self.rotorGeometry, actualPower = "Specified Power", hubTurbulence = "Specified Turbulence", \
-                                                          name = 'Specified', interpolationMode = self.interpolationMode)
+                                                          name = 'Specified', interpolationMode = self.interpolationMode,
+                                                          zero_ti_pc_required = (self.powerCurveMode == 'AllMeasured'))
 
             self.referenceDensity = self.specifiedPowerCurve.referenceDensity
             
@@ -289,6 +291,24 @@ class Analysis:
 
         self.applyRemainingFilters() #To do: record rows which are removed by each filter independently, as opposed to sequentially.
 
+        if self.hasActualPower:
+
+            negative_powers = (self.dataFrame[self.actualPower] < 0)
+            negative_powers_count = np.sum(negative_powers)
+            
+            if negative_powers_count > 0:
+                
+                if self.negative_power_period_treatment == 'Remove': 
+                    Status.add("Removing {0} negative power periods".format(negative_powers_count))
+                    self.dataFrame = self.dataFrame[~negative_powers]
+                elif self.negative_power_period_treatment == 'Set to Zero': 
+                    Status.add("Setting {0} negative power periods to zero".format(negative_powers_count))
+                    self.dataFrame.loc[negative_powers, self.actualPower] = 0.0
+                elif self.negative_power_period_treatment == 'Keep':
+                    Status.add("Keeping {0} negative power periods".format(negative_powers_count))
+                else:
+                    raise Exception('Unknown negative power period treatment: {0}'.format(self.negative_power_period_treatment))
+                
         if self.hasDensity:
             
             if self.densityCorrectionActive:
@@ -300,14 +320,14 @@ class Analysis:
 
             Status.add("Calculating actual power curves...")
 
-            self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(self.get_base_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'All Measured')
+            self.allMeasuredPowerCurve = self.calculateMeasuredPowerCurve(self.get_base_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'All Measured', zero_ti_pc_required = (self.powerCurveMode == 'AllMeasured'))
             
-            self.dayTimePowerCurve = self.calculateMeasuredPowerCurve(self.get_day_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Day Time')
-            self.nightTimePowerCurve = self.calculateMeasuredPowerCurve(self.get_night_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Night Time')
+            self.dayTimePowerCurve = self.calculateMeasuredPowerCurve(self.get_day_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Day Time', zero_ti_pc_required = False)
+            self.nightTimePowerCurve = self.calculateMeasuredPowerCurve(self.get_night_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Night Time', zero_ti_pc_required = False)
 
             if self.hasShear:
-                self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(self.get_inner_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', required = (self.powerCurveMode == 'InnerMeasured'))            
-                self.outerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(self.get_outer_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', required = (self.powerCurveMode == 'OuterMeasured'))
+                self.innerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(self.get_inner_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', zero_ti_pc_required = (self.powerCurveMode == 'InnerMeasured'))            
+                self.outerMeasuredPowerCurve = self.calculateMeasuredPowerCurve(self.get_outer_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', zero_ti_pc_required = (self.powerCurveMode == 'OuterMeasured'))
 
             Status.add("Actual Power Curves Complete.")
 
@@ -318,6 +338,11 @@ class Analysis:
         self.normalisingRatedPower = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
         self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
         self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
+
+        Status.add("FAKE", red=True)
+        self.normalisingRatedPower = 3408.122
+        self.normalisingRatedWindSpeed = 10.639353
+        self.normalisingCutInWindSpeed = 3.033979
 
         print self.normalisingRatedPower 
         print self.normalisingRatedWindSpeed 
@@ -356,7 +381,7 @@ class Analysis:
             Status.add("Turbulence Correction Complete.")
 
             if self.hasActualPower:
-                self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(self.get_base_filter(), self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected')
+                self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(self.get_base_filter(), self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected', zero_ti_pc_required = False)
 
         if config.turbRenormActive and config.rewsActive:
             Status.add("Calculating Combined (REWS + Turbulence) Correction...")
@@ -623,13 +648,9 @@ class Analysis:
             raise Exception("Unrecognised power curve mode: %s" % powerCurveMode)
 
     def get_base_filter(self):
-
-        if self.hasActualPower:
-            return self.dataFrame[self.actualPower] > 0
-        else:
-            #dummy line to create all true
-            return self.dataFrame[self.timeStamp].dt.hour >= 0
-
+        #dummy line to create all true
+        return self.dataFrame[self.timeStamp].dt.hour >= 0
+        
     def get_inner_turbulence_filter(self):
         return (self.dataFrame[self.hubTurbulence] >= self.innerRangeLowerTurbulence) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeUpperTurbulence)
 
@@ -672,7 +693,7 @@ class Analysis:
     def interpolatePowerCurve(self, powerCurveLevels, ws_col, interp_power_col):
         self.dataFrame[interp_power_col] = self.dataFrame[ws_col].apply(powerCurveLevels.power)
 
-    def calculateMeasuredPowerCurve(self, filter_func, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name, required = False):
+    def calculateMeasuredPowerCurve(self, filter_func, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name, zero_ti_pc_required = False):
 
         Status.add("Calculating %s power curve." % name, verbosity=2)       
         
@@ -699,7 +720,23 @@ class Analysis:
             dfPowerCoeff = filteredDataFrame[self.powerCoeff].groupby(filteredDataFrame[self.windSpeedBin]).aggregate(self.aggregations.average)
         else:
             dfPowerCoeff = None
-
+        
+        negative_levels = (dfPowerLevels[powerColumn] < 0.0)
+        negative_levels_count = np.sum(negative_levels)
+        
+        if negative_levels_count > 0:
+            
+            if self.negative_power_bin_average_treatment == 'Set to Zero':
+                Status.add("Setting {0} negative bin averages to zero".format(negative_levels_count))
+                dfPowerLevels.loc[negative_levels, powerColumn] = 0.0
+            elif self.negative_power_bin_average_treatment == 'Remove':
+                Status.add("Removing {0} negative bin averages ".format(negative_levels_count))
+                dfPowerLevels = dfPowerLevels[~negative_levels]
+            elif self.negative_power_bin_average_treatment == 'Keep':
+                Status.add("Keeping {0} negative bin averages".format(negative_levels_count))
+            else:
+                raise Exception('Unknown negative bin average treatment: {0}'.format(self.negative_power_bin_average_treatment))
+                
         if len(dfPowerLevels.index) != 0:
             
             #padding
@@ -726,7 +763,7 @@ class Analysis:
             turb = turbine.PowerCurve(powerLevels, self.referenceDensity, self.rotorGeometry, inputHubWindSpeed = self.inputHubWindSpeed, 
                                             hubTurbulence = self.hubTurbulence, actualPower = powerColumn,
                                             name = name, interpolationMode = self.interpolationMode, 
-                                            required = required, xLimits = self.windSpeedBins.limits, 
+                                            zero_ti_pc_required = zero_ti_pc_required, xLimits = self.windSpeedBins.limits, 
                                             sub_power = sub_power)
                 
             return turb
@@ -744,9 +781,10 @@ class Analysis:
 
         if filter_func is None:
             filter_func = self.get_base_filter
-
-        mask = (self.dataFrame[self.actualPower] > 0) & (self.dataFrame[power] > 0)
-        mask = mask & filter_func()
+        
+        mask = filter_func()
+            
+        #mask = mask & (self.dataFrame[self.actualPower] >= 0) & (self.dataFrame[power] >= 0)        
 
         filteredDataFrame = self.dataFrame[mask]
         filteredDataFrame.is_copy = False
@@ -759,7 +797,8 @@ class Analysis:
                                         filteredDataFrame[self.powerDeviation].groupby(dimension_bins).count(),
                                         self.calculated_power_deviation_matrix_bins)
         elif self.power_deviation_matrix_method == 'Deviation of Averages':
-            devMatrix = DeviationOfAveragesMatrix(filteredDataFrame[self.actualPower].groupby(dimension_bins).aggregate(self.pdm_aggregations.average),
+            devMatrix = DeviationOfAveragesMatrix(
+                                        filteredDataFrame[self.actualPower].groupby(dimension_bins).aggregate(self.pdm_aggregations.average),
                                         filteredDataFrame[power].groupby(dimension_bins).aggregate(self.pdm_aggregations.average),
                                         filteredDataFrame[power].groupby(dimension_bins).count(),
                                         self.calculated_power_deviation_matrix_bins)
@@ -853,7 +892,7 @@ class Analysis:
         
         betzExceed = (len(a[a>16.0/27])*100.0)/len(a)
         
-        if betzExceed > 0.5:
+        if betzExceed > 0.593:
             Status.add("{0:.02}% data points slightly exceed Betz limit - if this number is high, investigate...".format(betzExceed), verbosity=2)
 
         if (abs(a-b) > 0.005).any():

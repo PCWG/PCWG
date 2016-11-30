@@ -33,6 +33,16 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
             
+            if self.nodeExists(configurationNode, 'NegativePowerPeriodTreatment'):            
+                self.negative_power_period_treatment = self.get_power_treatment(configurationNode, 'NegativePowerPeriodTreatment')
+            else:
+                self.negative_power_period_treatment = 'Remove'
+                        
+            if self.nodeExists(configurationNode, 'NegativePowerBinAverageTreatment'):                            
+                self.negative_power_bin_average_treatment = self.get_power_treatment(configurationNode, 'NegativePowerBinAverageTreatment')
+            else:
+                self.negative_power_bin_average_treatment = 'Remove'
+                
             if self.nodeExists(configurationNode, 'InterpolationMode'):
                 self.interpolationMode = self.getNodeValue(configurationNode, 'InterpolationMode')
             else:
@@ -69,6 +79,9 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.powerCurveMode = 'Specified'
             self.powerCurvePaddingMode = defaultPaddingMode
 
+            self.negative_power_period_treatment = 'Remove'
+            self.negative_power_bin_average_treatment = 'Remove'
+                
             self.setDefaultPowerCurveBins()
 
             self.setDefaultInnerRangeTurbulence()
@@ -99,6 +112,18 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.specified_power_curve.set_base(self._path)
         self.nominal_wind_speed_distribution.set_base(self._path)
         self.specified_power_deviation_matrix.set_base(self._path)
+
+    def get_power_treatment_options(self):
+        return ['Keep', 'Remove', 'Set to Zero']
+        
+    def get_power_treatment(self, node, name):
+        
+        treatment = self.getNodeValue(node, name)
+        
+        if treatment in self.get_power_treatment_options():
+            return treatment
+        else:
+            raise Exception("Unknown power treatment: {0}".format(treatment))
 
     def default_calculated_power_deviation_matrix_dimensions(self):
 
@@ -136,7 +161,10 @@ class AnalysisConfiguration(base_configuration.XmlBase):
     def writeSettings(self, doc, root):
 
         self.addIntNode(doc, root, "PowerCurveMinimumCount", self.powerCurveMinimumCount)
-
+     
+        self.addTextNode(doc, root, 'NegativePowerPeriodTreatment', self.negative_power_period_treatment)                         
+        self.addTextNode(doc, root, 'NegativePowerBinAverageTreatment', self.negative_power_bin_average_treatment)
+                
         self.addTextNode(doc, root, "InterpolationMode", self.interpolationMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)

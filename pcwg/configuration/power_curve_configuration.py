@@ -52,7 +52,7 @@ class PowerCurveConfiguration(base_configuration.XmlBase):
 
         speeds, powers = [], []
 
-        for speed in self.powerCurveDictionary:
+        for speed in sorted(self.powerCurveDictionary.keys()):
             speeds.append(speed)
             powers.append(self.powerCurveDictionary[speed])
 
