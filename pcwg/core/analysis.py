@@ -775,7 +775,7 @@ class Analysis:
         
         mask = filter_func()
             
-        #mask = mask & (self.dataFrame[self.actualPower] >= 0) & (self.dataFrame[power] >= 0)        
+        mask = mask & (self.dataFrame[self.actualPower] >= 0) & (self.dataFrame[power] >= 0)        
 
         filteredDataFrame = self.dataFrame[mask]
         filteredDataFrame.is_copy = False
@@ -943,7 +943,7 @@ class PadderFactory:
         
         if strPadder  == 'none':
             return NonePadder(powerCol, wsCol, turbCol, countCol)
-        elif strPadder  == 'observed':
+        elif strPadder  == 'last observed':
             return LastObservedPadder(powerCol, wsCol, turbCol, countCol)
         elif strPadder  == 'max':
             return MaxPadder(powerCol, wsCol, turbCol, countCol)
@@ -993,35 +993,33 @@ class Padder:
 
         self.min_key = min(powerLevels.index)
         self.max_key = max(powerLevels.index)
-
+        self.last_observed = powerLevels.loc[self.max_key, self.powerCol]
+        self.ratedPower = ratedPower
+        self.max_power = powerLevels[self.powerCol].max()
+        
+        powerPadValue = self.powerPadValue()
+        
         for windSpeed in self.getWindSpeedBins(bins):
             
             if not self.levelExists(powerLevels, windSpeed):
 
-                powerPadValue = self.powerPadValue(powerLevels, windSpeed, ratedPower)
                 turbulencePadValue = self.turbulencePadValue(powerLevels, windSpeed)
+                
+                if windSpeed < self.min_key or windSpeed > self.max_key:
 
-                if windSpeed > cutOutWindSpeed:
-                    powerLevels.loc[windSpeed, self.powerCol] = 0.0
                     powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
-                else:
-
-                    if windSpeed < cutInWindSpeed:
-                        powerLevels.loc[windSpeed, self.powerCol] = 0.0
-                        powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
-                        powerLevels.loc[windSpeed, self.wsCol] = windSpeed
-                        powerLevels.loc[windSpeed, self.countCol] = 0
-                        
-                    elif windSpeed > self.max_key:
+                    powerLevels.loc[windSpeed, self.wsCol] = windSpeed
+                    powerLevels.loc[windSpeed, self.countCol] = 0
+                
+                    if windSpeed < cutInWindSpeed or windSpeed > cutOutWindSpeed:
+                        powerLevels.loc[windSpeed, self.powerCol] = 0.0                                            
+                    else:
                         powerLevels.loc[windSpeed, self.powerCol] = powerPadValue
-                        powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
-                        powerLevels.loc[windSpeed, self.wsCol] = windSpeed
-                        powerLevels.loc[windSpeed, self.countCol] = 0
-                        
+                                            
         powerLevels.sort_index(inplace=True)
         
         return powerLevels
-        
+    
 class NonePadder(Padder):
 
     def pad(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):
@@ -1029,15 +1027,15 @@ class NonePadder(Padder):
     
 class MaxPadder(Padder):
 
-    def powerPadValue(self, powerLevels, windSpeed, ratedPower):
-        return powerLevels[self.powerCol].max()
+    def powerPadValue(self):
+        return self.max_power
   
 class LastObservedPadder(Padder):
 
-    def powerPadValue(self, powerLevels, windSpeed, ratedPower):
-        return powerLevels[self.max_key, self.powerCol]
+    def powerPadValue(self):
+        return self.last_observed
 
 class RatedPowerPadder(Padder):
     
-    def powerPadValue(self, powerLevels, windSpeed, ratedPower):
-        return ratedPower
+    def powerPadValue(self):
+        return self.ratedPower

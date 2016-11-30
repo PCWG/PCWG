@@ -36,7 +36,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
         self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode)
         
-        self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Observed", "Max", "Rated"], self.config.powerCurvePaddingMode)
+        self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Last Observed", "Max", "Rated"], self.config.powerCurvePaddingMode)
 
     def add_power_curve(self, master):
 

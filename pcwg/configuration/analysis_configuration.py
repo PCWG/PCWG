@@ -50,7 +50,10 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
-
+            
+            if self.powerCurvePaddingMode == "Observed":
+                self.powerCurvePaddingMode = "Last Observed"
+                
             if self.nodeExists(configurationNode, 'PowerCurveBins'):
                 powerCurveBinsNode = self.getNode(configurationNode, 'PowerCurveBins')
                 self.powerCurveFirstBin = self.getNodeFloat(powerCurveBinsNode, 'FirstBinCentre')
