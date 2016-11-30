@@ -339,11 +339,6 @@ class Analysis:
         self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
         self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
 
-        Status.add("FAKE", red=True)
-        self.normalisingRatedPower = 3408.122
-        self.normalisingRatedWindSpeed = 10.639353
-        self.normalisingCutInWindSpeed = 3.033979
-
         print self.normalisingRatedPower 
         print self.normalisingRatedWindSpeed 
         print self.normalisingCutInWindSpeed 
