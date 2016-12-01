@@ -774,8 +774,9 @@ class Analysis:
             filter_func = self.get_base_filter
         
         mask = filter_func()
-            
-        mask = mask & (self.dataFrame[self.actualPower] >= 0) & (self.dataFrame[power] >= 0)        
+        
+        #todo review if this filter is correct
+        mask = mask & (self.dataFrame[self.actualPower] > 0) & (self.dataFrame[power] > 0)        
 
         filteredDataFrame = self.dataFrame[mask]
         filteredDataFrame.is_copy = False
