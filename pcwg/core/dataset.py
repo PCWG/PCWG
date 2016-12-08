@@ -257,11 +257,10 @@ class Dataset:
         self.set_columns(config)
 
         dataFrame = self.load_raw_data(config)
-
         dataFrame = self.load_direction(config, dataFrame)
         dataFrame = self.load_shear(config, dataFrame)
         dataFrame = self.load_inflow(config, dataFrame)        
-        dataFrame = self.load_wind_speed(config, dataFrame)
+        dataFrame = self.load_wind_speed(config, analysisConfig, dataFrame)
         dataFrame = self.load_density(config, dataFrame) 
         dataFrame = self.load_power(config, dataFrame)       
 
@@ -370,7 +369,7 @@ class Dataset:
         self.hasShear = len(config.referenceShearMeasurements) > 1
 
         if not self.hasShear:
-            return
+            return dataFrame
 
         if config.shearCalibrationMethod.lower() == 'none':
             self.shearCalibration = False
@@ -416,15 +415,15 @@ class Dataset:
 
         return dataFrame
 
-    def load_wind_speed(self, config, dataFrame):
+    def load_wind_speed(self, config, analysisConfig, dataFrame):
 
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
-
+        
         dataFrame[self.residualWindSpeed] = 0.0
 
         if config.calculateHubWindSpeed:
 
-            dataFrame = self.calculate_hub_wind_speed(config, dataFrame)
+            dataFrame = self.calculate_hub_wind_speed(config, analysisConfig, dataFrame)
 
         else:
 
@@ -450,7 +449,7 @@ class Dataset:
 
         return dataFrame
 
-    def calculate_hub_wind_speed(self, config, dataFrame):
+    def calculate_hub_wind_speed(self, config, analysisConfig, dataFrame):
 
         self.verify_column_datatype(dataFrame, config.referenceWindSpeed)
 
