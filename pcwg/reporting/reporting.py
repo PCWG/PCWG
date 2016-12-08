@@ -53,8 +53,8 @@ class PNGPlotter:
         plotter.plotCalibrationSectors()
         
         if analysis.hasActualPower:
-            
-            if len(analysis.dataFrame[analysis.nameColumn].unique()) > 1:
+
+            if analysis.multiple_datasets:
                 plotter.plot_multiple(analysis.inputHubWindSpeed, analysis.actualPower, analysis.allMeasuredPowerCurve)
 
 class TimeSeriesExporter:
@@ -186,7 +186,10 @@ class Report:
 
                 if analysis.powerDeviationMatrixActive:
                     self.reportPowerDeviations(book, "PowerDeviationMatrixDeviations", analysis.powerDeviationMatrixDeviations, gradient)
-    
+
+                if analysis.productionByHeightActive:
+                    self.reportPowerDeviations(book, "ProductionByHeightDeviations", analysis.productionByHeightDeviations, gradient)
+
                 if analysis.config.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
                     self.report_aep(sh,analysis)

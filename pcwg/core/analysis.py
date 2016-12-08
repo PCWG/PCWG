@@ -213,9 +213,6 @@ class Analysis:
         self.inflowAngle = 'Inflow Angle'
             
         self.calibrations = []
-        
-        Status.add("Loading dataset...")
-        self.loadData(config)
             
         self.densityCorrectionActive = config.densityCorrectionActive
         
@@ -225,7 +222,11 @@ class Analysis:
 
         self.turbRenormActive = config.turbRenormActive
         self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
-        
+        self.productionByHeightActive = config.productionByHeightActive
+
+        Status.add("Loading dataset...")
+        self.loadData(config)
+
         if self.powerDeviationMatrixActive:
             
             Status.add("Loading power deviation matrix...")
@@ -383,6 +384,11 @@ class Analysis:
             self.calculatePowerDeviationMatrixCorrection()
             Status.add("Power Deviation Matrix Correction Complete.")
 
+        if config.productionByHeightActive:
+            Status.add("Calculating Production by Height Correction...")
+            self.calculateProductionByHeightCorrection()
+            Status.add("Production by Height Correction Complete.")
+
         self.hours = len(self.dataFrame.index)*1.0 / 6.0
 
         self.calculate_power_deviation_matrices()
@@ -410,6 +416,9 @@ class Analysis:
 
             if self.powerDeviationMatrixActive:
                 self.powerDeviationMatrixDeviations = self.calculatePowerDeviationMatrix(self.powerDeviationMatrixPower)
+
+            if self.productionByHeightActive:
+                self.productionByHeightDeviations = self.calculatePowerDeviationMatrix(self.productionByHeightPower)
 
             Status.add("Power Curve Deviation Matrices Complete.")
 
@@ -520,6 +529,11 @@ class Analysis:
         self.residualWindSpeedMatrices = {}
         self.datasetConfigs = []
 
+        if self.config.productionByHeightActive:
+            self.original_datasets = []
+
+        self.multiple_datasets = (len(config.datasets) > 1)
+
         for i in range(len(config.datasets)):
 
             if not isinstance(config.datasets[i],DatasetConfiguration):
@@ -528,6 +542,9 @@ class Analysis:
                 datasetConfig = config.datasets[i]
 
             data = self.load_dataset(datasetConfig, config)
+
+            if self.productionByHeightActive:
+                self.original_datasets.append(data)
 
             if hasattr(data,"calibrationCalculator"):
                 self.calibrations.append( (datasetConfig,data.calibrationCalculator ) )
@@ -547,6 +564,7 @@ class Analysis:
                 self.hubTurbulence = data.hubTurbulence
                 self.hubDensity = data.hubDensity
                 self.shearExponent = data.shearExponent
+                self.datasetName = data.nameColumn
 
                 self.rewsDefined = data.rewsDefined
 
@@ -577,6 +595,8 @@ class Analysis:
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
+
+        self.dataFrame.set_index([self.datasetName, self.timeStamp])
 
         self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
 
@@ -802,7 +822,7 @@ class Analysis:
     def calculateREWSMatrix(self, filter_func = None):
 
         if filter_func is None:
-            filter_func = self.get_base_filter()
+            filter_func = self.get_base_filter
 
         mask = self.dataFrame[self.inputHubWindSpeed] > 0.0
         mask = mask & filter_func()
@@ -935,6 +955,26 @@ class Analysis:
                                                                                                                   self.inputHubWindSpeed, \
                                                                                                                   parameterColumns).power, \
                                                                                                                   axis=1)
+
+    def calculateProductionByHeightCorrection(self):
+
+        for i in range(len(self.original_datasets)):
+
+            original_dataset = self.original_datasets[i]
+
+            original_dataset.calculate_production_by_height(self.powerCurve)
+            
+            production_by_height_for_dataset = original_dataset.dataFrame[[original_dataset.timeStamp, original_dataset.nameColumn, original_dataset.productionByHeight]]
+
+            if i == 0:
+                self.productionByHeightPower = original_dataset.productionByHeight
+                production_by_height_data_frame = production_by_height_for_dataset
+            else:
+                production_by_height_data_frame = production_by_height_data_frame.append(production_by_height_for_dataset, ignore_index=True)
+
+        production_by_height_data_frame.set_index([self.nameColumn, self.timeStamp])
+
+        self.dataFrame = pd.concat([self.dataFrame, production_by_height_data_frame], axis=1, join='inner')
 
 class PadderFactory:
     @staticmethod

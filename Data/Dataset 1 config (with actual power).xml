@@ -9,6 +9,11 @@
 		<CalibrationMethod></CalibrationMethod>
 		<DensityMode>Specified</DensityMode>
 	</GeneralSettings>
+	<RotorEquivalentWindSpeed>
+		<NumberOfRotorLevels>11</NumberOfRotorLevels>
+		<RotorMode>EvenlySpacedLevels</RotorMode>
+		<HubMode>PiecewiseExponent</HubMode>
+	</RotorEquivalentWindSpeed>
 	<Measurements>
 		<InputTimeSeriesPath>Dataset 1 (with actual power).dat</InputTimeSeriesPath>
 		<BadDataValue>-99.990000</BadDataValue>
@@ -48,7 +53,68 @@
 		</ReferenceShearMeasurements>
 		<TurbineShearMeasurements/>
 	</Shear>
-	<ProfileLevels/>
+	<ProfileLevels>
+		<ProfileLevel>
+			<Height>142.500000</Height>
+			<ProfileWindSpeed>LiDAR - 142.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>137.500000</Height>
+			<ProfileWindSpeed>LiDAR - 137.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>127.500000</Height>
+			<ProfileWindSpeed>LiDAR - 127.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>117.500000</Height>
+			<ProfileWindSpeed>LiDAR - 117.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>107.500000</Height>
+			<ProfileWindSpeed>LiDAR - 107.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>97.500000</Height>
+			<ProfileWindSpeed>LiDAR - 97.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>87.500000</Height>
+			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>77.500000</Height>
+			<ProfileWindSpeed>LiDAR - 77.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>67.500000</Height>
+			<ProfileWindSpeed>LiDAR - 67.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>52.500000</Height>
+			<ProfileWindSpeed>LiDAR - 52.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection></ProfileWindDirection>
+			<ProfileUpflow></ProfileUpflow>
+		</ProfileLevel>
+	</ProfileLevels>
 	<Calibration>
 		<CalibrationParameters>
 			<NumberOfSectors>0</NumberOfSectors>

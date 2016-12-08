@@ -86,6 +86,7 @@
 
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis.xml</AnalysisConfigPath>
+			<BaseLineMode>Hub</BaseLineMode>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>
@@ -115,6 +116,7 @@
 		</Benchmark>
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis (REWS with Veer).xml</AnalysisConfigPath>
+			<BaseLineMode>Hub</BaseLineMode>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>
@@ -128,6 +130,7 @@
 		</Benchmark>
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis (REWS with Veer and Upflow).xml</AnalysisConfigPath>
+			<BaseLineMode>Hub</BaseLineMode>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>
@@ -154,6 +157,7 @@
 		</Benchmark>
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 2 Analysis.xml</AnalysisConfigPath>
+			<BaseLineMode>Hub</BaseLineMode>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>
@@ -179,6 +183,7 @@
 		</Benchmark>
 		<Benchmark>
 			<AnalysisConfigPath>Dataset 3 Analysis.xml</AnalysisConfigPath>
+			<BaseLineMode>Hub</BaseLineMode>
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>hubDelta</Field>

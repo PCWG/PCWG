@@ -320,9 +320,7 @@ class RotorEquivalentWindSpeed:
 
                 raise Exception("Speed cannot be None")
 
-            level_value = speed \
-                             * self.direction_term(level, hub_direction, direction_profile) \
-                             * self.upflow_term(level, speed, upflow_profile)
+            level_value = self.level_value(speed, level, hub_direction, direction_profile, upflow_profile)
 
             equivalentWindSpeed += level_value ** self.exponent * level.areaFraction
 
@@ -330,6 +328,12 @@ class RotorEquivalentWindSpeed:
 
         return equivalentWindSpeed
         
+    def level_value(self, speed, level, hub_direction, direction_profile, upflow_profile):
+
+        return speed \
+                         * self.direction_term(level, hub_direction, direction_profile) \
+                         * self.upflow_term(level, speed, upflow_profile)
+
     def rewsToHubRatio(self, row):
 
         hub_speed = self.hubWindSpeedCalculator.hubWindSpeed(row)
@@ -366,3 +370,17 @@ class RotorEquivalentWindSpeed:
     def to_radians(self, direction):
         return direction * math.pi / 180.0
 
+class ProductionByHeight(RotorEquivalentWindSpeed):
+
+    def __init__(self, profileLevels, rotor, hubWindSpeedCalculator, power_curve):        
+
+        RotorEquivalentWindSpeed.__init__(self, profileLevels, rotor, hubWindSpeedCalculator, False, False, 1.0)
+
+        self.power_curve = power_curve
+
+    def level_value(self, speed, level, hub_direction, direction_profile, upflow_profile):
+
+        return self.power_curve.power(speed)
+
+    def calculate(self, row):
+        return self.rews(row)

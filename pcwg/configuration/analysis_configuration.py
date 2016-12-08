@@ -73,6 +73,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.readTurbRenorm(configurationNode)
 
             self.readPowerDeviationMatrix(configurationNode)
+            self.readProductionByHeight(configurationNode)
 
         else:
 
@@ -98,6 +99,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.turbRenormActive = False
             self.densityCorrectionActive = False
             self.powerDeviationMatrixActive = False
+            self.productionByHeightActive = False
 
             self.interpolationMode = 'Cubic'
             self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
@@ -230,6 +232,9 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.addFloatNode(doc, dimensionNode, "BinWidth", dimension.binWidth)
             self.addIntNode(doc, dimensionNode, "NumberOfBins", dimension.numberOfBins)
 
+        production_by_height_node = self.addNode(doc, root, "ProductionByHeight")
+        self.addBoolNode(doc, production_by_height_node, "Active", self.productionByHeightActive)
+
     def readDatasets(self, configurationNode):
 
         datasetsNode = self.getNode(configurationNode, 'Datasets')
@@ -336,6 +341,14 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         else:
 
             self.rewsActive = False
+
+    def readProductionByHeight(self, configurationNode):
+
+        if self.nodeExists(configurationNode, 'ProductionByHeight'):
+            production_by_height_node = self.getNode(configurationNode, 'ProductionByHeight')
+            self.productionByHeightActive = self.getNodeBool(production_by_height_node, 'Active')
+        else:
+            self.productionByHeightActive = False
 
     def readTurbRenorm(self, configurationNode):
 

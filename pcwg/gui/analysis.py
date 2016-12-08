@@ -79,6 +79,8 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         
         self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", validation.ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specified_power_deviation_matrix.absolute_path, self.filePath)
 
+        self.productionByHeightActive = self.addCheckBox(master, "Production By Height Active", self.config.productionByHeightActive)  
+
     def add_rews(self, master):
                                         
         self.rewsCorrectionActive = self.addCheckBox(master, "REWS Active", self.config.rewsActive)  
@@ -212,6 +214,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
         self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
+        self.config.productionByHeightActive = bool(self.productionByHeightActive.get())
 
         self.config.rewsActive = bool(self.rewsCorrectionActive.get())
         self.config.rewsVeer = bool(self.rewsVeer.get())
