@@ -32,14 +32,11 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     def add_general(self, master, path):
 
         self.powerCurveMinimumCount = self.addEntry(master, "Power Curve Minimum Count:", validation.ValidatePositiveInteger(master), self.config.powerCurveMinimumCount)
-        
-        filterModeOptions = ["All", "Inner", "Outer"]
-        self.filterMode = self.addOption(master, "Filter Mode:", filterModeOptions, self.config.filterMode)
-        
+                
         powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
         self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode)
         
-        self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Observed", "Max", "Rated"], self.config.powerCurvePaddingMode)
+        self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Last Observed", "Max", "Rated"], self.config.powerCurvePaddingMode)
 
     def add_power_curve(self, master):
 
@@ -82,6 +79,19 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         
         self.specifiedPowerDeviationMatrix = self.addFileOpenEntry(master, "Specified PDM:", validation.ValidateSpecifiedPowerDeviationMatrix(master, self.powerDeviationMatrixActive), self.config.specified_power_deviation_matrix.absolute_path, self.filePath)
 
+        self.productionByHeightActive = self.addCheckBox(master, "Production By Height Active", self.config.productionByHeightActive)  
+
+        self.web_service_active = self.addCheckBox(master, "Web Service Active", self.config.web_service_active)  
+        self.web_service_url = self.addEntry(master, "Web Service URL:", None, self.config.web_service_url, width=100)
+
+        web_service_label = tk.Label(master, text='Available substitutions are: <TurbulenceIntensity>, <NormalisedWindSpeed> & <RotorWindSpeedRatio>')        
+        web_service_label.grid(row=self.row, column=self.inputColumn, columnspan=1,sticky=tk.W)
+        self.row += 1
+        
+        web_service_example_label = tk.Label(master, text='e.g. http://www.power.com/<NormalisedWindSpeed>/<TurbulenceIntensity>')        
+        web_service_example_label.grid(row=self.row, column=self.inputColumn, columnspan=1,sticky=tk.W)
+        self.row += 1
+        
     def add_rews(self, master):
                                         
         self.rewsCorrectionActive = self.addCheckBox(master, "REWS Active", self.config.rewsActive)  
@@ -90,19 +100,30 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.rewsUpflow = self.addCheckBox(master, "REWS Upflow", self.config.rewsUpflow)  
         self.rewsExponent = self.addEntry(master, "REWS Exponent:", validation.ValidatePositiveFloat(master), self.config.rewsExponent)
 
-    def add_advanced(self, master):
+    def add_output_pdm(self, master):
 
-        self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
-        self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
+        self.power_deviation_matrix_minimum_count = self.addEntry(master, "PDM Minimum Count:", validation.ValidateNonNegativeInteger(master), self.config.power_deviation_matrix_minimum_count)
+        self.power_deviation_matrix_method = self.addOption(master, "PDM Method:", ["Average of Deviations", "Deviation of Averages"], self.config.power_deviation_matrix_method)
 
         self.addTitleRow(master, "Power Deviation Matrix Dimensions (Output):")
         self.power_deviation_matrix_grid_box = PowerDeviationMatrixGridBox(master, self, self.row, self.inputColumn)
         self.power_deviation_matrix_grid_box.add_items(self.config.calculated_power_deviation_matrix_dimensions)
         self.row += 1
 
-        #self.validate_datasets = validation.ValidateDatasets(master, self.dataset_grid_box)
-        #self.validations.append(self.validate_datasets)
-        #self.validate_datasets.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
+        self.validate_pdm = validation.ValidatePDM(master, self.power_deviation_matrix_grid_box)
+        self.validations.append(self.validate_datasets)
+        self.validate_pdm.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
+
+        self.power_deviation_matrix_grid_box.onChange += self.validate_pdm.validate
+
+    def add_advanced(self, master):
+
+        self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic", "Marmander"], self.config.interpolationMode)
+
+        self.negative_power_period_treatment = self.addOption(master, "Negative Power Period Treatment", self.config.get_power_treatment_options(), self.config.negative_power_period_treatment)  
+        self.negative_power_bin_average_treatment = self.addOption(master, "Negative Power Bin Average Treatment", self.config.get_power_treatment_options(), self.config.negative_power_bin_average_treatment)  
+               
+        self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
 
     def addFormElements(self, master, path):            
 
@@ -116,6 +137,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         turbine_tab = tk.Frame(nb)
         rews_tab = tk.Frame(nb)
         corrections_tab = tk.Frame(nb)
+        output_pdm_tab = tk.Frame(nb)
         advanced_tab = tk.Frame(nb)
 
         nb.add(general_tab, text='General', padding=3)
@@ -124,6 +146,8 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         nb.add(turbine_tab, text='Turbine', padding=3)
         nb.add(rews_tab, text='REWS', padding=3)
         nb.add(corrections_tab, text='Corrections', padding=3)
+        nb.add(inner_range_tab, text='Inner Range', padding=3)
+        nb.add(output_pdm_tab, text='Output PDM', padding=3)
         nb.add(advanced_tab, text='Advanced', padding=3)
 
         nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
@@ -136,7 +160,8 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.add_inner_range(inner_range_tab)
         self.add_turbine(turbine_tab)
         self.add_rews(rews_tab)
-        self.add_corrections(corrections_tab)                                                                                                                 
+        self.add_corrections(corrections_tab)     
+        self.add_output_pdm(output_pdm_tab)                                                                                                            
         self.add_advanced(advanced_tab) 
 
     def EditPowerCurve(self):
@@ -180,7 +205,10 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
     def setConfigValues(self):
 
         self.config.powerCurveMinimumCount = int(self.powerCurveMinimumCount.get())
-        self.config.filterMode = self.filterMode.get()
+
+        self.config.negative_power_period_treatment = self.negative_power_period_treatment.get()
+        self.config.negative_power_bin_average_treatment = self.negative_power_bin_average_treatment.get()
+        
         self.config.interpolationMode = self.interpolationMode.get()
         self.config.powerCurveMode = self.powerCurveMode.get()
         self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
@@ -197,6 +225,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
         self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
+        self.config.productionByHeightActive = bool(self.productionByHeightActive.get())
 
         self.config.rewsActive = bool(self.rewsCorrectionActive.get())
         self.config.rewsVeer = bool(self.rewsVeer.get())
@@ -210,3 +239,8 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.config.datasets = self.dataset_grid_box.datasets_file_manager
         self.config.calculated_power_deviation_matrix_dimensions = self.power_deviation_matrix_grid_box.get_items()
 
+        self.config.power_deviation_matrix_minimum_count = int(self.power_deviation_matrix_minimum_count.get())
+        self.config.power_deviation_matrix_method = self.power_deviation_matrix_method.get()
+
+        self.config.web_service_active = bool(self.web_service_active.get())
+        self.config.web_service_url = self.web_service_url.get()

@@ -160,12 +160,17 @@ class UserInterface:
                                               text="Export Time Series",
                                               command=self.ExportTimeSeries)
 
+        export_pdm_button = tk.Button(analyse_group_top,
+                                              text="Export PDM",
+                                              command=self.ExportPDM)
+
         load_button.pack(side=tk.RIGHT, padx=5, pady=5)
         edit_button.pack(side=tk.RIGHT, padx=5, pady=5)
         new_button.pack(side=tk.RIGHT, padx=5, pady=5)
         calculate_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_report_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_time_series_button.pack(side=tk.LEFT, padx=5, pady=5)
+        export_pdm_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.analysisFilePathLabel = tk.Label(analyse_group_bottom,
                                               text="Analysis File")
@@ -436,7 +441,7 @@ class UserInterface:
             except ExceptionHandler.ExceptionType as e:
 
                 analysis = None
-                Status.add("ERROR: ".format(e))
+                Status.add("ERROR: {0}".format(e))
                 benchmarkPassed = False
 
             if analysis is not None:
@@ -445,8 +450,8 @@ class UserInterface:
 
                     try:
                         benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, float(eval("analysis.%s" % field)), tolerance)
-                    except:
-                        raise Exception("Evaluation of analysis.{f} has failed, does this property exist?".format(f=field))
+                    except Exception as e:
+                        raise Exception("Evaluation of analysis.{f} has failed, does this property exist? {e}".format(f=field, e=e))
 
             if benchmarkPassed:
                 Status.add("Benchmark Passed")
@@ -566,26 +571,6 @@ class UserInterface:
                 Status.add("ERROR: Analysis not yet calculated", red=True)
                 return
 
-            if not self.analysis.hasActualPower:
-
-                Status.add("No Power Signal in Dataset. Exporting report without power curve results.")
-                
-                try:
-
-                    fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                              defaultextension=".xls",
-                                                              initialfile="report.xls",
-                                                              title="Save Report",
-                                                              initialdir=preferences.analysis_last_opened_dir())
-
-                    self.analysis.report(fileName, ver.version, report_power_curve=False)
-                    Status.add("Report written to %s" % fileName)
-
-                except ExceptionHandler.ExceptionType as e:
-    
-                    ExceptionHandler.add(e, "ERROR Exporting Report")
-
-                return
 
             try:
 
@@ -595,8 +580,35 @@ class UserInterface:
                                                           title="Save Report",
                                                           initialdir=preferences.analysis_last_opened_dir())
 
-                self.analysis.report(fileName, ver.version)
+                self.analysis.report(fileName)
                 Status.add("Report written to %s" % fileName)
+
+            except ExceptionHandler.ExceptionType as e:
+
+                ExceptionHandler.add(e, "ERROR Exporting Report")
+
+    def ExportPDM(self):
+
+            preferences = Preferences.get()
+
+            if self.analysis is None:
+                Status.add("ERROR: Analysis not yet calculated", red=True)
+                return
+
+            if not hasattr(self.analysis, 'hubPowerDeviations'):
+                Status.add("ERROR: PDM not calculated", red=True)
+                return
+
+            try:
+
+                fileName = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                          defaultextension=".xml",
+                                                          initialfile="power_deviation_matrix.xml",
+                                                          title="Save Report",
+                                                          initialdir=preferences.analysis_last_opened_dir())
+
+                self.analysis.report_pdm(fileName)
+                Status.add("Power Deviation Matrix written to %s" % fileName)
 
             except ExceptionHandler.ExceptionType as e:
 
@@ -697,7 +709,7 @@ class UserInterface:
                                                       title="Save Time Series",
                                                       initialdir=preferences.analysis_last_opened_dir())
 
-            self.analysis.export(fileName, clean, full, calibration)
+            self.analysis.export_time_series(fileName, clean, full, calibration)
 
             if clean:
                     Status.add("Time series written to %s" % fileName)

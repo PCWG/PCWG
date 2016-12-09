@@ -1,5 +1,6 @@
 import xlwt
 import numpy as np
+import os
 
 import colour
 
@@ -8,7 +9,84 @@ from ..configuration.base_configuration import TimeOfDayFilter
 
 from ..core.status import Status
 
-class report:
+from plots import MatplotlibPlotter
+
+import version as ver
+
+def chckMake(path):
+    """Make a folder if it doesn't exist"""
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+class PNGPlotter:
+
+    def plot(self, analysis, path):
+
+        chckMake(path)
+        
+        plotter = MatplotlibPlotter(path, analysis)
+        
+        if analysis.hasActualPower:
+            
+            plotter.plotPowerCurve(analysis.inputHubWindSpeed, analysis.actualPower, analysis.allMeasuredPowerCurve, specified_title = 'Warranted', mean_title = 'Measured Mean', gridLines = True)
+            plotter.plotPowerCurve(analysis.inputHubWindSpeed, analysis.actualPower, analysis.allMeasuredPowerCurve, show_scatter = False, fname = "PowerCurve - Warranted vs Measured Mean", specified_title = 'Warranted', mean_title = 'Measured Mean', mean_pc_color = 'blue', gridLines = True)
+            
+            if analysis.turbRenormActive:
+                plotter.plotTurbCorrectedPowerCurve(analysis.inputHubWindSpeed, analysis.measuredTurbulencePower, analysis.allMeasuredTurbCorrectedPowerCurve)
+            
+            if analysis.hasAllPowers:
+                plotter.plotPowerLimits(specified_title = 'Warranted', gridLines = True)
+        
+        plotter.plotBy(analysis.windDirection, analysis.hubWindSpeed, analysis.dataFrame, gridLines = True)
+        plotter.plotBy(analysis.windDirection, analysis.shearExponent, analysis.dataFrame, gridLines = True)
+        plotter.plotBy(analysis.windDirection, analysis.hubTurbulence, analysis.dataFrame, gridLines = True)
+        plotter.plotBy(analysis.hubWindSpeed, analysis.hubTurbulence, analysis.dataFrame, gridLines = True)
+        
+        if analysis.hasActualPower:
+            plotter.plotBy(analysis.hubWindSpeed, analysis.powerCoeff, analysis.dataFrame, gridLines = True)
+            plotter.plotBy('Input Hub Wind Speed', analysis.powerCoeff, analysis.allMeasuredPowerCurve, gridLines = True)
+        
+        if analysis.inflowAngle in analysis.dataFrame.columns:
+            analysis.dataFrame.loc[analysis.dataFrame[analysis.inflowAngle]>180,analysis.inflowAngle] -= 360
+            plotter.plotBy(analysis.windDirection,analysis.inflowAngle,analysis.dataFrame, gridLines = True)
+        
+        plotter.plotCalibrationSectors()
+        
+        if analysis.hasActualPower:
+
+            if analysis.multiple_datasets:
+                plotter.plot_multiple(analysis.inputHubWindSpeed, analysis.actualPower, analysis.allMeasuredPowerCurve)
+
+class TimeSeriesExporter:
+
+    def export(self, analysis, time_series_path, clean = True,  full = True, calibration = True ):
+
+        data_frame = analysis.dataFrame
+        analysis_config = analysis.config
+        dataset_configs = analysis.datasetConfigs
+
+        plotsDir = analysis_config.path.replace(".xml", "_PPAnalysisPlots")
+
+        plotter = PNGPlotter()
+        plotter.plot(analysis, plotsDir)
+
+        if clean:
+            data_frame.to_csv(time_series_path, sep = '\t')
+        
+        if full:
+        
+            rootPath = analysis_config.path.split(".")[0] + "_TimeSeriesData"
+            chckMake(rootPath)
+        
+            for ds in dataset_configs:
+                
+                ds.data.fullDataFrame.to_csv(rootPath + os.sep + "FilteredDataSet_AllColumns_{0}.dat".format(ds.name), sep = '\t')
+
+                if calibration and hasattr(ds.data,"filteredCalibrationDataframe"):
+                    ds.data.filteredCalibrationDataframe.to_csv(rootPath + os.sep + "CalibrationDataSet_{0}.dat".format(ds.name), sep = '\t')
+
+class Report:
+    
     bold_style = xlwt.easyxf('font: bold 1')
     no_dp_style = xlwt.easyxf(num_format_str='0')
     one_dp_style = xlwt.easyxf(num_format_str='0.0')
@@ -18,30 +96,34 @@ class report:
     percent_style = xlwt.easyxf(num_format_str='0.00%')
     percent_no_dp_style = xlwt.easyxf(num_format_str='0%')
 
-    def __init__(self, windSpeedBins, turbulenceBins, version="unknown", report_power_curve = True):
-        self.version = version
+    def __init__(self, windSpeedBins, calculated_power_deviation_matrix_dimensions):
+        
+        self.version = ver.version
+        
         self.windSpeedBins = windSpeedBins
-        self.turbulenceBins = turbulenceBins
-        self.report_power_curve = report_power_curve
+        self.calculated_power_deviation_matrix_dimensions = calculated_power_deviation_matrix_dimensions
 
     def report(self, path, analysis):
     
+        report_power_curve = analysis.hasActualPower
+
         book = xlwt.Workbook()
         
         plotsDir = analysis.config.path.replace(".xml","_PPAnalysisPlots")
-        analysis.png_plots(plotsDir)
+
+        plotter = PNGPlotter()
+        plotter.plot(analysis, plotsDir)
 
         gradient = colour.ColourGradient(-0.1, 0.1, 0.01, book)
         
-        if self.report_power_curve:
+        if report_power_curve:
             sh = book.add_sheet("PowerCurves", cell_overwrite_ok=True)
 
         settingsSheet = book.add_sheet("Settings", cell_overwrite_ok=True)
 
         self.reportSettings(settingsSheet, analysis)
         
-        
-        if self.report_power_curve:
+        if report_power_curve:
             rowsAfterCurves = []
             #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specifiedPowerCurve, analysis)) #needs fixing + move to settings sheet
             if analysis.specifiedPowerCurve is not None:
@@ -58,61 +140,59 @@ class report:
     
                 if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
                     rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 5, 'Inner', analysis.innerMeasuredPowerCurve, analysis) )
-                
-                if analysis.innerTurbulenceMeasuredPowerCurve != None:
-                    rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, analysis) )
-                
+                                
                 if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
-                    rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 15, 'Outer', analysis.outerMeasuredPowerCurve, analysis) )
+                    rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 10, 'Outer', analysis.outerMeasuredPowerCurve, analysis) )
     
-                rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 20, 'All', analysis.allMeasuredPowerCurve, analysis) )
+                rowsAfterCurves.append( self.reportPowerCurve(sh, 1, 15, 'All', analysis.allMeasuredPowerCurve, analysis) )
                 
                 if analysis.turbRenormActive:
-                    rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, analysis) )
+                    rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 20, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, analysis) )
+
                 if analysis.specifiedPowerCurve is not None:
+
                     rowAfterCurves = max(rowsAfterCurves) + 5
                     sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
                     specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
         
                     if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
                         self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
-        
-                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 10, 'InnerTurbulence', analysis.innerTurbulenceMeasuredPowerCurve, specifiedLevels)
-        
+                
                     if analysis.hasShear and analysis.outerMeasuredPowerCurve != None:
-                        self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
+                        self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 10, 'Outer', analysis.outerMeasuredPowerCurve, specifiedLevels)
         
-                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 15, 'All', analysis.allMeasuredPowerCurve, specifiedLevels)
         
                     if analysis.turbRenormActive:
-                        self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 25, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, specifiedLevels)
+                        self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 20, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, specifiedLevels)
                         
-                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (30 if analysis.turbRenormActive else 25), 'DayTime', analysis.dayTimePowerCurve, specifiedLevels)
-                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (35 if analysis.turbRenormActive else 30), 'NightTime', analysis.nightTimePowerCurve, specifiedLevels)
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (25 if analysis.turbRenormActive else 20), 'DayTime', analysis.dayTimePowerCurve, specifiedLevels)
+                    self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (30 if analysis.turbRenormActive else 25), 'NightTime', analysis.nightTimePowerCurve, specifiedLevels)
     
                 self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
                 #self.reportPowerDeviations(book, "HubPowerDeviationsInnerShear", analysis.hubPowerDeviationsInnerShear, gradient)
                 
                 if analysis.rewsActive:
                     self.reportPowerDeviations(book, "REWSPowerDeviations", analysis.rewsPowerDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-REWS-DevDiff", analysis.hubPowerDeviations, analysis.rewsPowerDeviations, gradient)
                     self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
                     if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Inner Shear", analysis.rewsMatrixInnerShear, gradient)
                     if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Outer Shear", analysis.rewsMatrixOuterShear, gradient)
-                    #self.reportPowerDeviations(book, "REWSPowerDeviationsInnerShear", analysis.rewsPowerDeviationsInnerShear, gradient)
+
                 if analysis.turbRenormActive:
                     self.reportPowerDeviations(book, "TurbPowerDeviations", analysis.turbPowerDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
-                    #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
+
                 if analysis.turbRenormActive and analysis.rewsActive:
                     self.reportPowerDeviations(book, "CombPowerDeviations", analysis.combPowerDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-Comb-DevDiff", analysis.hubPowerDeviations, analysis.combPowerDeviations, gradient)
-                    #self.reportPowerDeviations(book, "CombPowerDeviationsInnerShear", analysis.combPowerDeviationsInnerShear, gradient)
+
                 if analysis.powerDeviationMatrixActive:
                     self.reportPowerDeviations(book, "PowerDeviationMatrixDeviations", analysis.powerDeviationMatrixDeviations, gradient)
-                    #self.reportPowerDeviationsDifference(book, "Hub-Turb-DevDiff", analysis.hubPowerDeviations, analysis.turbPowerDeviations, gradient)
-                    #self.reportPowerDeviations(book, "TurbPowerDeviationsInnerShear", analysis.turbPowerDeviationsInnerShear, gradient)
-    
+
+                if analysis.productionByHeightActive:
+                    self.reportPowerDeviations(book, "ProductionByHeightDeviations", analysis.productionByHeightDeviations, gradient)
+
+                if analysis.web_service_active:
+                    self.reportPowerDeviations(book, "WebServiceDeviations", analysis.webServiceDeviations, gradient)
+
                 if analysis.config.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
                     self.report_aep(sh,analysis)
@@ -257,10 +337,6 @@ class report:
 
         sh.write(row, labelColumn, "Power Curve Minimum Count", self.bold_style)
         sh.write(row, dataColumn, config.powerCurveMinimumCount)
-        row += 1
-
-        sh.write(row, labelColumn, "Filter Mode", self.bold_style)
-        sh.write(row, dataColumn, config.filterMode)
         row += 1
 
         sh.write(row, labelColumn, "Power Curve Mode", self.bold_style)
@@ -588,65 +664,140 @@ class report:
 
 
     def reportPowerDeviations(self, book, sheetName, powerDeviations, gradient):
-        
+
+        dimensions_count = len(self.calculated_power_deviation_matrix_dimensions)
+
+        if dimensions_count < 2 or dimensions_count > 3:
+            Status.add("Cannot report PDM due to dimensionality: {0} Dimension(s)".format(len(self.calculated_power_deviation_matrix_dimensions)), verbosity=1)
+            return
+
         sh = book.add_sheet(sheetName, cell_overwrite_ok=True)
 
-        sh.write_merge(1,self.turbulenceBins.numberOfBins,0,0,"Turbulence Intensity", xlwt.easyxf('align: rotation 90'))
-        sh.write_merge(self.turbulenceBins.numberOfBins+2,self.turbulenceBins.numberOfBins+2,2,self.windSpeedBins.numberOfBins+1, "Wind Speed", self.bold_style)
+        if dimensions_count == 2:
+    
+            self.report_slice(gradient,
+                              sh,
+                              powerDeviations.deviation_matrix,
+                              powerDeviations.count_matrix)
 
-        for i in range(self.windSpeedBins.numberOfBins):
+        else:
+
+            top_dimension = self.calculated_power_deviation_matrix_dimensions[0]
+
+            for i in range(top_dimension.bins.numberOfBins):
+
+                top_value = top_dimension.bins.binCenterByIndex(i)
+
+                if top_value in powerDeviations.deviation_matrix:
+                    pdm_value = powerDeviations.deviation_matrix[top_value]
+                    pdm_count = powerDeviations.count_matrix[top_value]
+                else:
+                    pdm_value = None
+                    pdm_count = None
+
+                self.report_slice(gradient,
+                                  sh,
+                                  pdm_value,
+                                  pdm_count,
+                                  top_value,
+                                  parent_dimension=0,
+                                  parent_index=i)
+
+    def report_slice(self, gradient, sh, pdm_slice, count_slice, parent_value = None, parent_dimension = None, parent_index = None):
+
+        if parent_dimension is None:
+            
+            first_dimension = self.calculated_power_deviation_matrix_dimensions[0]  #e.g. wind speed
+            second_dimension = self.calculated_power_deviation_matrix_dimensions[1] #e.g. turbulence
+
+            row_offset = 0
+
+        else:
+            
+            first_dimension = self.calculated_power_deviation_matrix_dimensions[parent_dimension + 1]  #e.g. wind speed
+            second_dimension = self.calculated_power_deviation_matrix_dimensions[parent_dimension + 2] #e.g. turbulence
+
+            parent = self.calculated_power_deviation_matrix_dimensions[parent_dimension]
+
+            row_offset = parent_index * (second_dimension.bins.numberOfBins + 3)
+            
+            sh.write(second_dimension.bins.numberOfBins + 2 + row_offset,
+                     0,
+                     parent.parameter,
+                     self.bold_style)
+
+            if "Turbulence" in parent.parameter:                
+                sh.write(second_dimension.bins.numberOfBins + 2 + row_offset,
+                         1,
+                         parent_value,
+                         self.percent_no_dp_style)
+            else:
+                sh.write(second_dimension.bins.numberOfBins + 2 + row_offset,
+                         1,
+                         parent_value,
+                         self.one_dp_style)
+
+        count_col_offset = (first_dimension.bins.numberOfBins + 3)
+        
+        sh.write_merge(1 + row_offset,
+                       second_dimension.bins.numberOfBins + row_offset,
+                       0,
+                       0,
+                       second_dimension.parameter,
+                       xlwt.easyxf('align: rotation 90'))
+
+        sh.write_merge(second_dimension.bins.numberOfBins+2 + row_offset,
+                       second_dimension.bins.numberOfBins+2 + row_offset,
+                       2,
+                       first_dimension.bins.numberOfBins+1,
+                       first_dimension.parameter,
+                       self.bold_style)
+
+        for i in range(first_dimension.bins.numberOfBins):
             sh.col(i + 2).width = 256 * 5
 
-        for j in range(self.turbulenceBins.numberOfBins):
+        sh.col(0).width = 8000
 
-            turbulence = self.turbulenceBins.binCenterByIndex(j)
-            row = self.turbulenceBins.numberOfBins - j
-            
-            sh.write(row, 1, turbulence, self.percent_no_dp_style)
-            
-            for i in range(self.windSpeedBins.numberOfBins):
+        for j in range(second_dimension.bins.numberOfBins):
 
-                windSpeed = self.windSpeedBins.binCenterByIndex(i)
+            second_value = second_dimension.bins.binCenterByIndex(j)
+            row = second_dimension.bins.numberOfBins - j
+            
+            if "Turbulence" in second_dimension.parameter:
+                sh.write(row + row_offset, 1, second_value, self.percent_no_dp_style)
+            else:
+                sh.write(row + row_offset, 1, second_value, self.one_dp_style)
+
+            for i in range(first_dimension.bins.numberOfBins):
+
+                first_value = first_dimension.bins.binCenterByIndex(i)
                 col = i + 2
                 
                 if j == 0:
-                    sh.write(self.turbulenceBins.numberOfBins+1, col, windSpeed, self.one_dp_style)
+                    if "Turbulence" in first_dimension.parameter:
+                        sh.write(second_dimension.bins.numberOfBins + 1 + row_offset,
+                                 col,
+                                 first_value,
+                                 self.percent_no_dp_style)
+                    else:
+                        sh.write(second_dimension.bins.numberOfBins + 1 + row_offset,
+                                 col,
+                                 first_value,
+                                 self.one_dp_style)
 
-                
-                if windSpeed in powerDeviations.matrix:
-                    if turbulence  in powerDeviations.matrix[windSpeed]:
-                        deviation = powerDeviations.matrix[windSpeed][turbulence]
-                        if not np.isnan(deviation):
-                            sh.write(row, col, deviation, gradient.getStyle(deviation))
+                if not pdm_slice is None:
 
-    def reportPowerDeviationsDifference(self, book, sheetName, deviationsA, deviationsB, gradient):
-        
-        sh = book.add_sheet(sheetName, cell_overwrite_ok=True)
+                    if first_value in pdm_slice:
+                        if second_value  in pdm_slice[first_value]:
+                            
+                            deviation = pdm_slice[first_value][second_value]
+                            count = int(count_slice[first_value][second_value])
 
-        for i in range(self.windSpeedBins.numberOfBins):
-            sh.col(i + 1).width = 256 * 5
-
-        for j in range(self.turbulenceBins.numberOfBins):        
-
-            turbulence = self.turbulenceBins.binCenterByIndex(j)
-            row = self.turbulenceBins.numberOfBins - j - 1
-            
-            sh.write(row, 0, turbulence, self.percent_no_dp_style)
-            
-            for i in range(self.windSpeedBins.numberOfBins):
-
-                windSpeed = self.windSpeedBins.binCenterByIndex(i)
-                col = i + 1
-                
-                if j == 0: sh.write(self.turbulenceBins.numberOfBins, col, windSpeed, self.one_dp_style)
-                
-                if windSpeed in deviationsA.matrix:
-                    if turbulence  in deviationsA.matrix[windSpeed]:
-                        deviationA = deviationsA.matrix[windSpeed][turbulence]
-                        deviationB = deviationsB.matrix[windSpeed][turbulence]
-                        if not np.isnan(deviationA) and not np.isnan(deviationB):
-                            diff = abs(deviationA) - abs(deviationB)
-                            sh.write(row, col, diff, gradient.getStyle(diff))
+                            sh.write(row + row_offset, col + count_col_offset, count)
+                                 
+                            if not np.isnan(deviation):
+                                sh.write(row + row_offset, col, deviation, gradient.getStyle(deviation))
+                                
 
     def report_aep(self,sh,analysis):
         sh # get tables in PP report form
@@ -867,7 +1018,7 @@ class report:
         return row + 3
         
 
-class AnonReport(report):
+class AnonReport(Report):
 
     def __init__(self,targetPowerCurve,wind_bins, turbulence_bins, version="unknown"):
 

@@ -9,6 +9,8 @@ import binning
 import turbine
 import warnings
 
+from power_deviation_matrix import AverageOfDeviationsMatrix
+
 from ..core.status import Status
 
 warnings.simplefilter('ignore', np.RankWarning)
@@ -28,13 +30,6 @@ def getDecimalValue(decimal):
                 "COMMA":","}[decimal.upper()]
     except:
         raise Exception("Unkown decimal: '%s'" % decimal)
-        
-
-class DeviationMatrix(object):
-    def __init__(self,deviationMatrix,countMatrix):
-        self.matrix = deviationMatrix
-        self.count  = countMatrix
-
 
 class CalibrationBase:
 
@@ -251,22 +246,42 @@ class Dataset:
 
     def __init__(self, config, analysisConfig):
 
+        self.config = config
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight, config.rotor_tilt)
 
-        self.nameColumn = "Dataset Name"
         self.name = config.name
-
         self.timeStepInSeconds = config.timeStepInSeconds
+        self.rewsDefined = config.rewsDefined
+        self.turbRenormActive = analysisConfig.turbRenormActive
 
+        self.set_columns(config)
+
+        dataFrame = self.load_raw_data(config)
+        dataFrame = self.load_direction(config, dataFrame)
+        dataFrame = self.load_shear(config, dataFrame)
+        dataFrame = self.load_inflow(config, dataFrame)        
+        dataFrame = self.load_wind_speed(config, analysisConfig, dataFrame)
+        dataFrame = self.load_density(config, dataFrame) 
+        dataFrame = self.load_power(config, dataFrame)       
+
+        dataFrame = self.filterDataFrame(dataFrame, config.filters)
+        dataFrame = self.excludeData(dataFrame, config)
+
+        dataFrame = self.load_rews(config, analysisConfig, dataFrame)
+
+        self.finalise_data(config, analysisConfig, dataFrame)
+
+    def set_columns(self, config):
+
+        self.nameColumn = "Dataset Name"
         self.timeStamp = config.timeStamp
         self.actualPower = "Actual Power"
-        self.hasAllPowers = None not in (config.powerMin,config.powerMax,config.powerSD)
         self.powerMin = "Power Min"
         self.powerMax = "Power Max"
         self.powerSD  = "Power SD"
-
         self.hubWindSpeed = "Hub Wind Speed"
-        self.hubTurbulence = "Hub Turbulence"
+        self.hubTurbulence = "Hub Turbulence Intensity"
+        self.hubTurbulenceAlias = "Hub Turbulence"
         self.hubDensity = "Hub Density"
         self.shearExponent = "Shear Exponent"
         self.referenceShearExponent = "Reference Shear Exponent"
@@ -275,29 +290,13 @@ class Dataset:
         self.inflowAngle = 'Inflow Angle'
         self.referenceWindSpeed = 'Reference Wind Speed'
         self.turbineLocationWindSpeed = 'Turbine Location Wind Speed'
-
         self.rewsToHubRatio = "REWS To Hub Ratio"
         self.residualWindSpeed = "Residual Wind Speed" 
-        
-        self.hasShear = len(config.referenceShearMeasurements) > 1
-        
-        self.hasDirection = config.referenceWindDirection not in (None,'')
-
-        if config.shearCalibrationMethod.lower() == 'none':
-            self.shearCalibration = False
-        else:
-            if config.shearCalibrationMethod.lower() != 'leastsquares':
-                self.shearCalibration = True
-            else:
-                raise Exception("Unkown shear calibration method: {0}".format(config.shearCalibrationMethod))
-        
-        self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
-        self.turbRenormActive = analysisConfig.turbRenormActive
         self.turbulencePower = 'Turbulence Power'
-        self.rewsDefined = config.rewsDefined
-        self.hasInflowAngle = config.inflowAngle not in (None,'')
-
+        self.productionByHeight = 'Production By Height'
         self.sensitivityDataColumns = config.sensitivityDataColumns
+
+    def load_raw_data(self, config):
 
         dateConverter = lambda x: datetime.datetime.strptime(x, config.dateFormat)
         dataFrame = pd.read_csv(config.input_time_series.absolute_path, index_col=config.timeStamp, \
@@ -314,88 +313,44 @@ class Dataset:
         dataFrame[self.nameColumn] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
 
-        if self.hasDirection:
-            dataFrame[self.windDirection] = dataFrame[config.referenceWindDirection]
+        return dataFrame
 
-        if self.hasShear:
+    def finalise_data(self, config, analysisConfig, dataFrame):
 
-            for measurement in config.referenceShearMeasurements:
-                self.verify_column_datatype(dataFrame, measurement.wind_speed_column)
-
-            for measurement in config.turbineShearMeasurements:
-                self.verify_column_datatype(dataFrame, measurement.wind_speed_column)
-
-            if not self.shearCalibration:
-                dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
-            else:
-
-                dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.turbineShearMeasurements).shearExponent, axis=1)
-                dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
-
-                self.shearCalibrationCalculator = self.createShearCalibration(dataFrame ,config, config.timeStepInSeconds)
-                dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
+        self.fullDataFrame = dataFrame.copy()
+        self.dataFrame = self.extractColumns(dataFrame, analysisConfig).dropna()
         
-        if self.hasInflowAngle:
-            dataFrame[self.inflowAngle] = dataFrame[config.inflowAngle]
-        
-        dataFrame[self.residualWindSpeed] = 0.0
+        if self.windDirection in self.dataFrame.columns:
+            self.fullDataFrame[self.windDirection] = self.fullDataFrame[self.windDirection].astype(float)
+            self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
 
-        if config.calculateHubWindSpeed:
+    def load_rews(self, config, analysisConfig, dataFrame):
 
-            self.verify_column_datatype(dataFrame, config.referenceWindSpeed)
-
-            dataFrame[self.referenceWindSpeed] = dataFrame[config.referenceWindSpeed]
-
-            if config.turbineLocationWindSpeed not in ('', None):
-                dataFrame[self.turbineLocationWindSpeed] = dataFrame[config.turbineLocationWindSpeed]
-            
-            if dataFrame[config.referenceWindSpeed].count() < 1:
-                raise Exception("Reference wind speed column is empty: cannot apply calibration")
-
-            if dataFrame[config.referenceWindDirection].count() < 1:
-                raise Exception("Reference wind direction column is empty: cannot apply calibration")
-
-            self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
-            dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
-
-            if dataFrame[self.hubWindSpeed].count() < 1:
-                raise Exception("Hub wind speed column is empty after application of calibration")
-
-            if (config.hubTurbulence != ''):
-                dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
-            else:
-                dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
-
-            if config.calibrationMethod != "Specified":
-
-                dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
-
-                windSpeedBin = "Wind Speed Bin"
-                turbulenceBin = "Turbulence Bin"
-
-                windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
-                turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
-                aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
-
-                dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
-                dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
-
-                self.residualWindSpeedMatrix = DeviationMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
-                                                                dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
-            else:
-
-                self.residualWindSpeedMatrix = None
-
+        if self.rewsDefined and analysisConfig.rewsActive:
+            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysisConfig.rewsVeer, analysisConfig.rewsUpflow, analysisConfig.rewsExponent)
         else:
+            self.windSpeedLevels = {}
 
-            self.verify_column_datatype(dataFrame, config.hubWindSpeed)
+        return dataFrame
 
-            dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
-            if (config.hubTurbulence != ''):
-                dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
-            else:
-                dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
-            self.residualWindSpeedMatrix = None
+    def load_power(self, config, dataFrame):
+
+        if config.power != None and len(config.power) > 0:
+            dataFrame[self.actualPower] = dataFrame[config.power]
+            self.hasActualPower = True
+        else:
+            self.hasActualPower = False
+        
+        self.hasAllPowers = None not in (config.powerMin,config.powerMax,config.powerSD)
+
+        if self.hasAllPowers:
+            dataFrame[self.powerMin] = dataFrame[config.powerMin]
+            dataFrame[self.powerMax] = dataFrame[config.powerMax]
+            dataFrame[self.powerSD] = dataFrame[config.powerSD]
+        
+        return dataFrame
+
+    def load_density(self, config, dataFrame):
 
         if config.calculateDensity:
             dataFrame[self.hubDensity] = 100.0 * dataFrame[config.pressure] / (273.15 + dataFrame[config.temperature]) / 287.058
@@ -406,30 +361,141 @@ class Dataset:
                 self.hasDensity = True
             else:
                 self.hasDensity = False
-
-        if config.power != None and len(config.power) > 0:
-            dataFrame[self.actualPower] = dataFrame[config.power]
-            self.hasActualPower = True
-        else:
-            self.hasActualPower = False
-
-        if self.hasAllPowers:
-            dataFrame[self.powerMin] = dataFrame[config.powerMin]
-            dataFrame[self.powerMax] = dataFrame[config.powerMax]
-            dataFrame[self.powerSD] = dataFrame[config.powerSD]
-
-        dataFrame = self.filterDataFrame(dataFrame, config.filters)
-        dataFrame = self.excludeData(dataFrame, config)
-
-        if self.rewsDefined and analysisConfig.rewsActive:
-            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysisConfig.rewsVeer, analysisConfig.rewsUpflow, analysisConfig.rewsExponent)
-
-        self.fullDataFrame = dataFrame.copy()
-        self.dataFrame = self.extractColumns(dataFrame).dropna()
         
-        if self.windDirection in self.dataFrame.columns:
-            self.fullDataFrame[self.windDirection] = self.fullDataFrame[self.windDirection].astype(float)
-            self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
+        return dataFrame
+
+    def load_shear(self, config, dataFrame):
+
+        self.hasShear = len(config.referenceShearMeasurements) > 1
+
+        if not self.hasShear:
+            return dataFrame
+
+        if config.shearCalibrationMethod.lower() == 'none':
+            self.shearCalibration = False
+        else:
+            if config.shearCalibrationMethod.lower() != 'leastsquares':
+                self.shearCalibration = True
+            else:
+                raise Exception("Unkown shear calibration method: {0}".format(config.shearCalibrationMethod))
+
+        for measurement in config.referenceShearMeasurements:
+            self.verify_column_datatype(dataFrame, measurement.wind_speed_column)
+
+        for measurement in config.turbineShearMeasurements:
+            self.verify_column_datatype(dataFrame, measurement.wind_speed_column)
+
+        if not self.shearCalibration:
+            dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
+        else:
+
+            dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.turbineShearMeasurements).shearExponent, axis=1)
+            dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
+
+            self.shearCalibrationCalculator = self.createShearCalibration(dataFrame ,config, config.timeStepInSeconds)
+            dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
+        
+        return dataFrame
+
+    def load_direction(self, config, dataFrame):
+
+        self.hasDirection = config.referenceWindDirection not in (None,'')
+
+        if self.hasDirection:
+            dataFrame[self.windDirection] = dataFrame[config.referenceWindDirection]
+
+        return dataFrame
+
+    def load_inflow(self, config, dataFrame):
+
+        self.hasInflowAngle = config.inflowAngle not in (None,'')
+
+        if self.hasInflowAngle:
+            dataFrame[self.inflowAngle] = dataFrame[config.inflowAngle]
+
+        return dataFrame
+
+    def load_wind_speed(self, config, analysisConfig, dataFrame):
+
+        self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
+        
+        dataFrame[self.residualWindSpeed] = 0.0
+
+        if config.calculateHubWindSpeed:
+
+            dataFrame = self.calculate_hub_wind_speed(config, analysisConfig, dataFrame)
+
+        else:
+
+            dataFrame = self.set_up_specified_hub_wind_speed(config, dataFrame)
+
+        #alias columns
+        dataFrame[self.hubTurbulenceAlias] = dataFrame[self.hubTurbulence]
+        
+        return dataFrame
+
+    def set_up_specified_hub_wind_speed(self, config, dataFrame):
+
+        self.verify_column_datatype(dataFrame, config.hubWindSpeed)
+
+        dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
+        
+        if (config.hubTurbulence != ''):
+            dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+        else:
+            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
+
+        self.residualWindSpeedMatrix = None
+
+        return dataFrame
+
+    def calculate_hub_wind_speed(self, config, analysisConfig, dataFrame):
+
+        self.verify_column_datatype(dataFrame, config.referenceWindSpeed)
+
+        dataFrame[self.referenceWindSpeed] = dataFrame[config.referenceWindSpeed]
+
+        if config.turbineLocationWindSpeed not in ('', None):
+            dataFrame[self.turbineLocationWindSpeed] = dataFrame[config.turbineLocationWindSpeed]
+        
+        if dataFrame[config.referenceWindSpeed].count() < 1:
+            raise Exception("Reference wind speed column is empty: cannot apply calibration")
+
+        if dataFrame[config.referenceWindDirection].count() < 1:
+            raise Exception("Reference wind direction column is empty: cannot apply calibration")
+
+        self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
+        dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
+
+        if dataFrame[self.hubWindSpeed].count() < 1:
+            raise Exception("Hub wind speed column is empty after application of calibration")
+
+        if (config.hubTurbulence != ''):
+            dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
+        else:
+            dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
+        
+        if config.calibrationMethod != "Specified":
+
+            dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
+
+            windSpeedBin = "Wind Speed Bin"
+            turbulenceBin = "Turbulence Bin"
+
+            windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
+            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
+            aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
+
+            dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
+            dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
+
+            self.residualWindSpeedMatrix = AverageOfDeviationsMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                                                            dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+        else:
+
+            self.residualWindSpeedMatrix = None
+
+        return dataFrame
 
     def verify_column_datatype(self, data_frame, column):
 
@@ -623,7 +689,7 @@ class Dataset:
 
         return dataFrame[mask]
 
-    def extractColumns(self, dataFrame):
+    def extractColumns(self, dataFrame, analysisConfig):
 
         requiredCols = []
         
@@ -631,7 +697,9 @@ class Dataset:
         requiredCols.append(self.timeStamp)
 
         requiredCols.append(self.hubWindSpeed)
+
         requiredCols.append(self.hubTurbulence)
+        requiredCols.append(self.hubTurbulenceAlias)
 
         if self.hasDensity:
             requiredCols.append(self.hubDensity)
@@ -651,8 +719,12 @@ class Dataset:
         if self.hasInflowAngle:
             requiredCols.append(self.inflowAngle)
 
-        if self.rewsDefined:
+        if self.rewsDefined and analysisConfig.rewsActive:
             requiredCols.append(self.rewsToHubRatio)
+
+        if analysisConfig.productionByHeightActive:
+            for item in self.config.rewsProfileLevels:
+                requiredCols.append(item.wind_speed_column)
 
         if self.hasAllPowers:
             requiredCols.append(self.powerMin)
@@ -837,7 +909,7 @@ class Dataset:
 
         return True
 
-    def defineREWS(self, dataFrame, config, rotorGeometry, rewsVeer, rewsUpflow, rewsExponent):
+    def prepare_rews(self, config, rotorGeometry):
 
         windSpeedLevels = {}
         directionLevels = {}
@@ -875,8 +947,25 @@ class Dataset:
         else:
             raise Exception("Unknown hub mode: % s" % config.hubMode)
 
+        return (profileLevels, profileHubWindSpeedCalculator)
+
+    def defineREWS(self, dataFrame, config, rotorGeometry, rewsVeer, rewsUpflow, rewsExponent):
+
+        profileLevels, profileHubWindSpeedCalculator = self.prepare_rews(config, rotorGeometry)
+
         rotorEquivalentWindSpeed = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator, rewsVeer, rewsUpflow, rewsExponent)
 
         dataFrame[self.rewsToHubRatio] = dataFrame.apply(rotorEquivalentWindSpeed.rewsToHubRatio, axis=1)
 
         return dataFrame
+
+    def calculate_production_by_height(self, power_curve):
+
+        self.dataFrame[self.productionByHeight] = 99.99
+
+        profileLevels, profileHubWindSpeedCalculator = self.prepare_rews(self.config, self.rotorGeometry)
+
+        rotorEquivalentWindSpeed = rews.ProductionByHeight(profileLevels, self.rotor, profileHubWindSpeedCalculator, power_curve)
+
+        self.dataFrame[self.productionByHeight] = self.dataFrame.apply(rotorEquivalentWindSpeed.calculate, axis=1)
+

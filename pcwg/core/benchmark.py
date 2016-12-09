@@ -29,10 +29,6 @@ class BenchmarkAnalysis(Analysis):
 
         #self.dataFrame.to_csv("debug.dat")
 
-    def calculate_power_deviation_matrices(self):
-        #speed optimisation (output power deviation matrices not required for benchmark)
-        pass
-
     def calculate_sensitivity_analysis(self):
         #speed optimisation (sensitivity analysis not required for benchmark)
         pass
@@ -43,10 +39,12 @@ class BenchmarkAnalysis(Analysis):
 
     def get_base_filter(self):
 
+        base_filter = Analysis.get_base_filter(self)
+
         if self.baseLineMode == "Hub":
-            return self.dataFrame[self.inputHubWindSpeed].notnull()
+            return base_filter & self.dataFrame[self.inputHubWindSpeed].notnull()
         elif self.baseLineMode == "Measured":
-            return Analysis.get_base_filter(self)
+            return base_filter
         else:
             raise Exception("Unrecognised baseline mode: %s" % self.baseLineMode)
 
@@ -76,41 +74,45 @@ class BenchmarkAnalysis(Analysis):
 
             raise Exception("Unkown baseline mode: % s" % self.baseLineMode)
 
-        self.baseYield = self.dataFrame[self.getFilter()][self.basePower].sum() * self.timeStampHours
+        self.baseYield = self.dataFrame[self.get_base_filter()][self.basePower].sum() * self.timeStampHours
 
     def calculateHubBenchmark(self):
         self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
-        self.hubYield = self.dataFrame[self.getFilter()][self.hubPower].sum() * self.timeStampHours
-        self.hubYieldCount = self.dataFrame[self.getFilter()][self.hubPower].count()
+        self.hubYield = self.dataFrame[self.get_base_filter()][self.hubPower].sum() * self.timeStampHours
+        self.hubYieldCount = self.dataFrame[self.get_base_filter()][self.hubPower].count()
         self.hubDelta = self.hubYield / self.baseYield - 1.0
         Status.add("Hub Delta: %.3f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))
 
     def calculateREWSBenchmark(self):
-        self.dataFrame[self.rewsPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.rotorEquivalentWindSpeed).power, axis=1)
-        self.rewsYield = self.dataFrame[self.getFilter()][self.rewsPower].sum() * self.timeStampHours
-        self.rewsYieldCount = self.dataFrame[self.getFilter()][self.rewsPower].count()
-        self.rewsDelta = self.rewsYield / self.baseYield - 1.0
-        Status.add("REWS Delta: %.3f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
+        if self.rewsActive:
+            self.dataFrame[self.rewsPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.rotorEquivalentWindSpeed).power, axis=1)
+            self.rewsYield = self.dataFrame[self.get_base_filter()][self.rewsPower].sum() * self.timeStampHours
+            self.rewsYieldCount = self.dataFrame[self.get_base_filter()][self.rewsPower].count()
+            self.rewsDelta = self.rewsYield / self.baseYield - 1.0
+            Status.add("REWS Delta: %.3f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
 
     def calculateTurbRenormBenchmark(self):
-        self.dataFrame[self.turbulencePower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.inputHubWindSpeed, self.hubTurbulence).power, axis=1)
-        self.turbulenceYield = self.dataFrame[self.getFilter()][self.turbulencePower].sum() * self.timeStampHours
-        self.turbulenceYieldCount = self.dataFrame[self.getFilter()][self.turbulencePower].count()
-        self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
-        if self.hasActualPower:
-            self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]).astype('float')
-        Status.add("Turb Delta: %.3f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
+        if self.turbRenormActive:
+            self.dataFrame[self.turbulencePower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.inputHubWindSpeed, self.hubTurbulence).power, axis=1)
+            self.turbulenceYield = self.dataFrame[self.get_base_filter()][self.turbulencePower].sum() * self.timeStampHours
+            self.turbulenceYieldCount = self.dataFrame[self.get_base_filter()][self.turbulencePower].count()
+            self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
+            if self.hasActualPower:
+                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]).astype('float')
+            Status.add("Turb Delta: %.3f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
 
     def calculationCombinedBenchmark(self):
-        self.dataFrame[self.combinedPower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.rotorEquivalentWindSpeed, self.hubTurbulence).power, axis=1)
-        self.combinedYield = self.dataFrame[self.getFilter()][self.combinedPower].sum() * self.timeStampHours
-        self.combinedYieldCount = self.dataFrame[self.getFilter()][self.combinedPower].count()
-        self.combinedDelta = self.combinedYield / self.baseYield - 1.0
-        Status.add("Comb Delta: %.3f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
+        if self.rewsActive and self.turbRenormActive:
+            self.dataFrame[self.combinedPower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.rotorEquivalentWindSpeed, self.hubTurbulence).power, axis=1)
+            self.combinedYield = self.dataFrame[self.get_base_filter()][self.combinedPower].sum() * self.timeStampHours
+            self.combinedYieldCount = self.dataFrame[self.get_base_filter()][self.combinedPower].count()
+            self.combinedDelta = self.combinedYield / self.baseYield - 1.0
+            Status.add("Comb Delta: %.3f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
 
     def calculatePowerDeviationMatrixBenchmark(self):
+        if self.powerDeviationMatrixActive:
+            self.powerDeviationMatrixYield = self.dataFrame[self.get_base_filter()][self.powerDeviationMatrixPower].sum() * self.timeStampHours
+            self.powerDeviationMatrixYieldCount = self.dataFrame[self.get_base_filter()][self.powerDeviationMatrixPower].count()
+            self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
+            Status.add("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
 
-        self.powerDeviationMatrixYield = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].sum() * self.timeStampHours
-        self.powerDeviationMatrixYieldCount = self.dataFrame[self.getFilter()][self.powerDeviationMatrixPower].count()
-        self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
-        Status.add("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))

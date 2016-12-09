@@ -33,15 +33,27 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
             self.powerCurveMinimumCount = self.getNodeInt(configurationNode, 'PowerCurveMinimumCount')
             
+            if self.nodeExists(configurationNode, 'NegativePowerPeriodTreatment'):            
+                self.negative_power_period_treatment = self.get_power_treatment(configurationNode, 'NegativePowerPeriodTreatment')
+            else:
+                self.negative_power_period_treatment = 'Remove'
+                        
+            if self.nodeExists(configurationNode, 'NegativePowerBinAverageTreatment'):                            
+                self.negative_power_bin_average_treatment = self.get_power_treatment(configurationNode, 'NegativePowerBinAverageTreatment')
+            else:
+                self.negative_power_bin_average_treatment = 'Remove'
+                
             if self.nodeExists(configurationNode, 'InterpolationMode'):
                 self.interpolationMode = self.getNodeValue(configurationNode, 'InterpolationMode')
             else:
                 self.interpolationMode = 'Linear'
 
-            self.filterMode = self.getNodeValue(configurationNode, 'FilterMode')
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
-
+            
+            if self.powerCurvePaddingMode == "Observed":
+                self.powerCurvePaddingMode = "Last Observed"
+                
             if self.nodeExists(configurationNode, 'PowerCurveBins'):
                 powerCurveBinsNode = self.getNode(configurationNode, 'PowerCurveBins')
                 self.powerCurveFirstBin = self.getNodeFloat(powerCurveBinsNode, 'FirstBinCentre')
@@ -61,16 +73,20 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.readTurbRenorm(configurationNode)
 
             self.readPowerDeviationMatrix(configurationNode)
+            self.readProductionByHeight(configurationNode)
+            self.readWebService(configurationNode)
 
         else:
 
             self.isNew = True
             self.Name = ""
             self.powerCurveMinimumCount = 10
-            self.filterMode = 'All'
             self.powerCurveMode = 'Specified'
             self.powerCurvePaddingMode = defaultPaddingMode
 
+            self.negative_power_period_treatment = 'Remove'
+            self.negative_power_bin_average_treatment = 'Remove'
+                
             self.setDefaultPowerCurveBins()
 
             self.setDefaultInnerRangeTurbulence()
@@ -84,9 +100,15 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.turbRenormActive = False
             self.densityCorrectionActive = False
             self.powerDeviationMatrixActive = False
+            self.productionByHeightActive = False
 
+            self.web_service_active = False
+            self.web_service_url = ''
+            
             self.interpolationMode = 'Cubic'
-            self.calculated_power_deviation_matrix_dimensions = []
+            self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
+            self.power_deviation_matrix_minimum_count = 0
+            self.power_deviation_matrix_method = 'Average of Deviations'
 
     @property
     def path(self): 
@@ -100,6 +122,27 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.nominal_wind_speed_distribution.set_base(self._path)
         self.specified_power_deviation_matrix.set_base(self._path)
 
+    def get_power_treatment_options(self):
+        return ['Keep', 'Remove', 'Set to Zero']
+        
+    def get_power_treatment(self, node, name):
+        
+        treatment = self.getNodeValue(node, name)
+        
+        if treatment in self.get_power_treatment_options():
+            return treatment
+        else:
+            raise Exception("Unknown power treatment: {0}".format(treatment))
+
+    def default_calculated_power_deviation_matrix_dimensions(self):
+
+        dimensions = []
+
+        dimensions.append(PowerDeviationMatrixDimension("Normalised Hub Wind Speed", 1, 0.1, 0.1, 21))
+        dimensions.append(PowerDeviationMatrixDimension("Hub Turbulence", 2, 0.01, 0.02, 25))
+
+        return dimensions
+        
     def setDefaultInnerRangeTurbulence(self):
         self.innerRangeLowerTurbulence = 0.08
         self.innerRangeUpperTurbulence = 0.12
@@ -127,8 +170,10 @@ class AnalysisConfiguration(base_configuration.XmlBase):
     def writeSettings(self, doc, root):
 
         self.addIntNode(doc, root, "PowerCurveMinimumCount", self.powerCurveMinimumCount)
-
-        self.addTextNode(doc, root, "FilterMode", self.filterMode)
+     
+        self.addTextNode(doc, root, 'NegativePowerPeriodTreatment', self.negative_power_period_treatment)                         
+        self.addTextNode(doc, root, 'NegativePowerBinAverageTreatment', self.negative_power_bin_average_treatment)
+                
         self.addTextNode(doc, root, "InterpolationMode", self.interpolationMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
         self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
@@ -174,16 +219,29 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         calculatedPowerDeviationMatrixNode = self.addNode(doc, powerDeviationMatrixNode, "CalculatedPowerDeviationMatrix")
 
+        self.addTextNode(doc, calculatedPowerDeviationMatrixNode, 'PowerDeviationMatrixMethod', self.power_deviation_matrix_method)
+        self.addIntNode(doc, calculatedPowerDeviationMatrixNode, 'PowerDeviationMatrixMinimumCount', self.power_deviation_matrix_minimum_count)
+
         dimensionsNode = self.addNode(doc, calculatedPowerDeviationMatrixNode, "Dimensions")
 
-        for dimension in self.calculated_power_deviation_matrix_dimensions:
+        sorted_dimensions = sorted(self.calculated_power_deviation_matrix_dimensions, key=lambda x: x.index, reverse=False)
+
+        for dimension in sorted_dimensions:
 
             dimensionNode = self.addNode(doc, dimensionsNode, "Dimension")
 
             self.addTextNode(doc, dimensionNode, "Parameter", dimension.parameter)
+            self.addIntNode(doc, dimensionNode, "Index", dimension.index)
             self.addFloatNode(doc, dimensionNode, "CenterOfFirstBin", dimension.centerOfFirstBin)
             self.addFloatNode(doc, dimensionNode, "BinWidth", dimension.binWidth)
             self.addIntNode(doc, dimensionNode, "NumberOfBins", dimension.numberOfBins)
+
+        production_by_height_node = self.addNode(doc, root, "ProductionByHeight")
+        self.addBoolNode(doc, production_by_height_node, "Active", self.productionByHeightActive)
+
+        web_service_node = self.addNode(doc, root, "WebService")
+        self.addBoolNode(doc, web_service_node, "Active", self.web_service_active)
+        self.addTextNode(doc, web_service_node, "URL", self.web_service_url)
 
     def readDatasets(self, configurationNode):
 
@@ -216,8 +274,18 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.calculated_power_deviation_matrix_dimensions = []
 
         if self.nodeExists(configurationNode, 'PowerDeviationMatrix'):
-            
+
             powerDeviationMatrixNode = self.getNode(configurationNode, 'PowerDeviationMatrix')
+
+            if self.nodeExists(powerDeviationMatrixNode, 'PowerDeviationMatrixMethod'):
+                self.power_deviation_matrix_method = self.getNodeValue(powerDeviationMatrixNode, 'PowerDeviationMatrixMethod')
+            else:
+                self.power_deviation_matrix_method = 'Average of Deviations'
+
+            if self.nodeExists(powerDeviationMatrixNode, 'PowerDeviationMatrixMinimumCount'):
+                self.power_deviation_matrix_minimum_count = self.getNodeInt(powerDeviationMatrixNode, 'PowerDeviationMatrixMinimumCount')
+            else:
+                self.power_deviation_matrix_minimum_count = self.powerCurveMinimumCount
             
             self.powerDeviationMatrixActive = self.getNodeBool(powerDeviationMatrixNode, 'Active')
             self.specified_power_deviation_matrix.relative_path = self.getNodeValue(powerDeviationMatrixNode, 'SpecifiedPowerDeviationMatrix')
@@ -226,20 +294,35 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 
                 calculated_pdm_node = self.getNode(powerDeviationMatrixNode, 'CalculatedPowerDeviationMatrix')
                 dimensionsNode = self.getNode(calculated_pdm_node, 'Dimensions')
+                dimensions = []
 
                 for dimensionNode in self.getNodes(dimensionsNode, 'Dimension'):
 
                     parameter = self.getNodeValue(dimensionNode, 'Parameter')
+                    
+                    if self.nodeExists(dimensionNode, 'Index'):
+                        index = self.getNodeInt(dimensionNode, 'Index')
+                    else:
+                        index = len(self.calculated_power_deviation_matrix_dimensions) + 1
+
                     centerOfFirstBin = self.getNodeFloat(dimensionNode, 'CenterOfFirstBin')
                     binWidth = self.getNodeFloat(dimensionNode, 'BinWidth')
                     numberOfBins = self.getNodeInt(dimensionNode, 'NumberOfBins')
 
-                    self.calculated_power_deviation_matrix_dimensions.append(PowerDeviationMatrixDimension(parameter, centerOfFirstBin, binWidth, numberOfBins))
+                    dimensions.append(PowerDeviationMatrixDimension(parameter, index, centerOfFirstBin, binWidth, numberOfBins))
+                    self.calculated_power_deviation_matrix_dimensions = sorted(dimensions, key=lambda x: x.index, reverse=False)
+
+            else:
+
+                self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
 
         else:
 
+            self.power_deviation_matrix_minimum_count = self.powerCurveMinimumCount
             self.powerDeviationMatrixActive = False
             self.specified_power_deviation_matrix.relative_path = None
+            self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
+            self.power_deviation_matrix_method = 'Average of Deviations'
 
     def readREWS(self, configurationNode):
 
@@ -267,6 +350,32 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
             self.rewsActive = False
 
+    def readProductionByHeight(self, configurationNode):
+
+        if self.nodeExists(configurationNode, 'ProductionByHeight'):
+            production_by_height_node = self.getNode(configurationNode, 'ProductionByHeight')
+            self.productionByHeightActive = self.getNodeBool(production_by_height_node, 'Active')
+        else:
+            self.productionByHeightActive = False
+
+    def readWebService(self, configurationNode):
+
+        if self.nodeExists(configurationNode, 'WebService'):
+            
+            web_service_node = self.getNode(configurationNode, 'WebService')
+            
+            self.web_service_active = self.getNodeBool(web_service_node, 'Active')
+            
+            if self.nodeExists(configurationNode, 'URL'): 
+                self.web_service_url = self.getNodeValue(web_service_node, 'URL')
+            else:
+                self.web_service_url = ''
+                
+        else:
+            
+            self.web_service_active = False
+            self.web_service_url = ''
+            
     def readTurbRenorm(self, configurationNode):
 
         if self.nodeExists(configurationNode, 'TurbulenceRenormalisation'):

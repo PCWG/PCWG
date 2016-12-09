@@ -3,6 +3,8 @@ import Tkinter as tk
 import tkFont as tkFont
 import ttk as ttk
 
+from event import EventHook
+
 from ..exceptions.handling import ExceptionHandler
 
 class GridBox(object):
@@ -37,6 +39,8 @@ class GridBox(object):
         self.tree.bind("<Button-2>", self.pop_up)
         self.tree.bind("<Button-3>", self.pop_up)
         
+        self.onChange = EventHook()
+
         self.tip = None
         
     def clearTip(self):
@@ -111,6 +115,7 @@ class GridBox(object):
         
         if selection != None:
             self.remove_item(selection)
+            self.onChange.fire()
 
     def edit(self):
         
@@ -120,6 +125,8 @@ class GridBox(object):
             
             if item != None:
                 self.edit_item(item)
+                self.onChange.fire()
+                print 
         
         except ExceptionHandler.ExceptionType as e:
             ExceptionHandler.add(e, "Cannot edit item")
@@ -132,6 +139,8 @@ class GridBox(object):
         self.items_dict[key] = item
         
         self.adjust_width(values)
+        self.default_sort()
+        self.onChange.fire()
 
     def redraw_item(self, key):
         
@@ -142,6 +151,7 @@ class GridBox(object):
         self.tree.item(key, text='', values=values)
 
         self.adjust_width(values)
+        self.default_sort()
     
     def adjust_width(self, values):
 
@@ -237,6 +247,14 @@ class GridBox(object):
         tree.heading(col, command=lambda col=col: self.sortby(tree, col, \
             int(not descending)))
     
+    def default_sort(self):
+
+        if len(self.headers) < 1:
+            return 
+
+        first_column = self.headers[0]
+        self.sortby(self.tree, first_column, False)
+
 class DialogGridBox(GridBox):
 
     def __init__(self, master, parent_dialog, row, column):
@@ -262,14 +280,16 @@ class DialogGridBox(GridBox):
 
         if dialog.is_ok:
             self.add_item(dialog.item)
-        
+            self.onChange.fire()
+
     def edit_item(self, item):                   
                     
         try:
             key = self.get_selected_key() 
             item = self.items_dict[key]
             self.new_dialog(self.master, self.parent_dialog, item)  
-            self.redraw_item(key)                             
+            self.redraw_item(key)       
+            self.onChange.fire()                      
         except ExceptionHandler.ExceptionType as e:
             ExceptionHandler.add(e, "ERROR editing item")
 
