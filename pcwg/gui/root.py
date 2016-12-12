@@ -160,6 +160,10 @@ class UserInterface:
                                               text="Export Time Series",
                                               command=self.ExportTimeSeries)
 
+        export_training_data_button = tk.Button(analyse_group_top,
+                                              text="Export Training Data",
+                                              command=self.ExportTrainingData)
+
         export_pdm_button = tk.Button(analyse_group_top,
                                               text="Export PDM",
                                               command=self.ExportPDM)
@@ -170,6 +174,7 @@ class UserInterface:
         calculate_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_report_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_time_series_button.pack(side=tk.LEFT, padx=5, pady=5)
+        export_training_data_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_pdm_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.analysisFilePathLabel = tk.Label(analyse_group_bottom,
@@ -704,8 +709,8 @@ class UserInterface:
             clean, full, calibration = selections.getSelections()
 
             fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                      defaultextension=".dat",
-                                                      initialfile="timeseries.dat",
+                                                      defaultextension=".csv",
+                                                      initialfile="timeseries.csv",
                                                       title="Save Time Series",
                                                       initialdir=preferences.analysis_last_opened_dir())
 
@@ -716,6 +721,29 @@ class UserInterface:
 
             if any((full, calibration)):
                     Status.add("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "ERROR Exporting Time Series")
+
+    def ExportTrainingData(self):
+
+        if self.analysis is None:
+            Status.add("ERROR: Analysis not yet calculated", red=True)
+            return
+
+        try:
+
+            preferences = Preferences.get()
+
+            fileName = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                      defaultextension=".dat",
+                                                      initialfile="training_data.dat",
+                                                      title="Save Training Data",
+                                                      initialdir=preferences.analysis_last_opened_dir())
+
+            self.analysis.export_training_data(fileName)
+
+            Status.add("Time series written to %s" % fileName)
 
         except ExceptionHandler.ExceptionType as e:
             ExceptionHandler.add(e, "ERROR Exporting Time Series")

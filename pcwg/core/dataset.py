@@ -10,6 +10,7 @@ import turbine
 import warnings
 
 from power_deviation_matrix import AverageOfDeviationsMatrix
+from power_deviation_matrix import PowerDeviationMatrixDimension
 
 from ..core.status import Status
 
@@ -482,8 +483,17 @@ class Dataset:
 
             dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
 
+            dimensions = []
             windSpeedBin = "Wind Speed Bin"
             turbulenceBin = "Turbulence Bin"
+
+            windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
+            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
+
+            dimensions.append(PowerDeviationMatrixDimension(self.hubWindSpeed, windSpeedBins.centerOfFirstBin, windSpeedBins.binWidth, windSpeedBins.numberOfBins))    
+            dimensions.append(PowerDeviationMatrixDimension(self.hubTurbulence, turbulenceBins.centerOfFirstBin, turbulenceBins.binWidth, turbulenceBins.numberOfBins))    
+
+            aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
 
             windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
             turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
@@ -492,8 +502,9 @@ class Dataset:
             dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
             dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
 
-            self.residualWindSpeedMatrix = AverageOfDeviationsMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
-                                                            dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+            self.residualWindSpeedMatrix = AverageOfDeviationsMatrix(dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                                                                     dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count(),
+                                                                     dimensions)
         else:
 
             self.residualWindSpeedMatrix = None
@@ -880,8 +891,9 @@ class Dataset:
                         Status.add("{0} to {1}".format(dataFrame[~mask][self.timeStamp].min(), dataFrame[~mask][self.timeStamp].max()))
                         componentFilter.applied = True
 
-                    except:
-
+                    except Exception as exception:
+                        
+                        Status.add("Cannot apply filter {0}: {1}".format(componentFilter, exception))                      
                         componentFilter.applied = False
 
         Status.add("", verbosity=2)

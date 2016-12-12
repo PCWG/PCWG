@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import hashlib
+import random
+import datetime
 
 from ..configuration.power_curve_configuration import PowerCurveConfiguration
 from ..configuration.dataset_configuration import DatasetConfiguration
@@ -25,6 +27,24 @@ def hash_file_contents(file_path):
         uid = hashlib.sha1(''.join(f.read().split())).hexdigest()
     return uid
 
+class RandomizeYear:
+    
+    def __init__(self, time_stamp_column):
+        self.time_stamp_column = time_stamp_column
+        
+    def __call__(self, row):
+        
+        date_time = row[self.time_stamp_column]
+        
+        year = random.randint(1980, 2020)
+        
+        return datetime.datetime(year = year,
+                                 month = date_time.month,
+                                 day = date_time.day, 
+                                 hour = date_time.hour,
+                                 minute = date_time.minute,
+                                 second = date_time.second)
+                                 
 class DensityCorrectionCalculator:
 
     def __init__(self, referenceDensity, windSpeedColumn, densityColumn):
@@ -62,7 +82,7 @@ class TurbulencePowerCalculator:
 
 
 class PowerDeviationMatrixPowerCalculator:
-
+    
     def __init__(self, powerCurve, powerDeviationMatrix, windSpeedColumn, parameterColumns):
 
         self.powerCurve = powerCurve
@@ -204,7 +224,6 @@ class Analysis:
         self.combinedPower = "Combined Power"
         self.web_service_power = "Web Service Power"
         self.windSpeedBin = "Wind Speed Bin"
-        self.powerDeviation = "Power Deviation"
         self.dataCount = "Data Count"
         self.powerStandDev = "Power Standard Deviation"
         self.windDirection = "Wind Direction"
@@ -214,7 +233,7 @@ class Analysis:
         self.measuredTurbPowerCurveInterp = 'Measured TI Corrected Power Curve Interp'
         self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
         self.inflowAngle = 'Inflow Angle'
-            
+
         self.calibrations = []
             
         self.densityCorrectionActive = config.densityCorrectionActive
@@ -340,16 +359,16 @@ class Analysis:
 
         self.calculateHub()
 
-        self.normalisingRatedPower = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
-        self.normalisingRatedWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
-        self.normalisingCutInWindSpeed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
+        self.zero_ti_rated_power = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.ratedPower
+        self.zero_ti_rated_wind_speed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.ratedWindSpeed
+        self.zero_to_cut_in_wind_speed = self.powerCurve.zeroTurbulencePowerCurve.initialZeroTurbulencePowerCurve.selectedStats.cutInWindSpeed
 
-        Status.add("normalisation", verbosity=2)
-        Status.add(self.normalisingRatedWindSpeed, verbosity=2)
-        Status.add(self.normalisingCutInWindSpeed, verbosity=2)
+        Status.add("Zero TI Wind Speeds", verbosity=2)
+        Status.add("Zero TI Rated Wind Speed: {0}".format(self.zero_ti_rated_wind_speed), verbosity=2)
+        Status.add("Zero TI Cut-In Wind Speed: {0}".format(self.zero_to_cut_in_wind_speed), verbosity=2)
         
         self.normalisedWS = 'Normalised Hub Wind Speed'
-        self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.normalisingCutInWindSpeed) / (self.normalisingRatedWindSpeed - self.normalisingCutInWindSpeed)
+        self.dataFrame[self.normalisedWS] = (self.dataFrame[self.inputHubWindSpeed] - self.zero_to_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_to_cut_in_wind_speed)
 
         if self.hasShear:
             self.rotor_wind_speed_ratio = 'Rotor Wind Speed Ratio'
@@ -360,7 +379,7 @@ class Analysis:
         if self.hasActualPower:
             self.normalisedPower = 'Normalised Power'
             self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.ratedPower
-
+  
         #Power Deviation Matrix Dimensions
         self.created_calculated_power_deviation_matrix_bins(config)
 
@@ -508,7 +527,7 @@ class Analysis:
                     
                     for filter in dataSetConf.filters:
                         if ((not filter.applied) & (filter.active)):
-                            Status.add(str(filter)) 
+                            Status.add("Filter not applied {0} {1}".format(type(filter), filter)) 
 
                     raise Exception("Filters have not been able to be applied!")
 
@@ -812,15 +831,17 @@ class Analysis:
         #todo review if this filter is correct
         mask = mask & (self.dataFrame[self.actualPower] > 0) & (self.dataFrame[power] > 0)        
 
+        powerDeviation = 'Power Deviation'
+        
         filteredDataFrame = self.dataFrame[mask]
         filteredDataFrame.is_copy = False
-        filteredDataFrame[self.powerDeviation] = (filteredDataFrame[self.actualPower] - filteredDataFrame[power]) / filteredDataFrame[power]
+        filteredDataFrame[powerDeviation] = (filteredDataFrame[self.actualPower] - filteredDataFrame[power]) / filteredDataFrame[power]
 
         dimension_bins = self.get_deviation_matrix_bins(filteredDataFrame)
 
         if self.power_deviation_matrix_method == 'Average of Deviations':
-            devMatrix = AverageOfDeviationsMatrix(filteredDataFrame[self.powerDeviation].groupby(dimension_bins).aggregate(self.pdm_aggregations.average),
-                                        filteredDataFrame[self.powerDeviation].groupby(dimension_bins).count(),
+            devMatrix = AverageOfDeviationsMatrix(filteredDataFrame[powerDeviation].groupby(dimension_bins).aggregate(self.pdm_aggregations.average),
+                                        filteredDataFrame[powerDeviation].groupby(dimension_bins).count(),
                                         self.calculated_power_deviation_matrix_bins)
         elif self.power_deviation_matrix_method == 'Deviation of Averages':
             devMatrix = DeviationOfAveragesMatrix(
@@ -904,6 +925,30 @@ class Analysis:
 
         exporter = reporting.TimeSeriesExporter()        
         exporter.export(self, path, clean = clean,  full = full, calibration = calibration)
+
+    def export_training_data(self, path):
+        
+        power_columns = [self.actualPower, self.hubPower]
+        other_columns = [self.normalisedWS, self.rotor_wind_speed_ratio, self.hubTurbulence, self.timeStamp]
+        
+        data_frame = self.dataFrame[power_columns + other_columns]
+        
+        positive_power = data_frame[self.hubPower] > 0
+        data_frame = data_frame[positive_power]
+        
+        deviation = 'Power Deviation'
+
+        data_frame[deviation] = (data_frame[self.actualPower] - data_frame[self.hubPower]) / data_frame[self.hubPower]
+        
+        random_stamp = 'Random Time Stamp'
+        
+        data_frame[random_stamp] = data_frame.apply(RandomizeYear(self.timeStamp), axis=1)
+        
+        columns = [random_stamp, deviation] + other_columns
+
+        data_frame = data_frame[columns]
+
+        data_frame.to_csv(path, sep = ',', index=False, columns=[random_stamp, self.normalisedWS, self.rotor_wind_speed_ratio, self.hubTurbulence, deviation])
 
     def report_pdm(self, path):
 
