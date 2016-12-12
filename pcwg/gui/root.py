@@ -736,8 +736,8 @@ class UserInterface:
             preferences = Preferences.get()
 
             fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                      defaultextension=".dat",
-                                                      initialfile="training_data.dat",
+                                                      defaultextension=".csv",
+                                                      initialfile="training_data.csv",
                                                       title="Save Training Data",
                                                       initialdir=preferences.analysis_last_opened_dir())
 
