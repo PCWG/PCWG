@@ -81,6 +81,17 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         self.productionByHeightActive = self.addCheckBox(master, "Production By Height Active", self.config.productionByHeightActive)  
 
+        self.web_service_active = self.addCheckBox(master, "Web Service Active", self.config.web_service_active)  
+        self.web_service_url = self.addEntry(master, "Web Service URL:", None, self.config.web_service_url, width=100)
+
+        web_service_label = tk.Label(master, text='Available substitutions are: <TurbulenceIntensity>, <NormalisedWindSpeed> & <RotorWindSpeedRatio>')        
+        web_service_label.grid(row=self.row, column=self.inputColumn, columnspan=1,sticky=tk.W)
+        self.row += 1
+        
+        web_service_example_label = tk.Label(master, text='e.g. http://www.power.com/<NormalisedWindSpeed>/<TurbulenceIntensity>')        
+        web_service_example_label.grid(row=self.row, column=self.inputColumn, columnspan=1,sticky=tk.W)
+        self.row += 1
+        
     def add_rews(self, master):
                                         
         self.rewsCorrectionActive = self.addCheckBox(master, "REWS Active", self.config.rewsActive)  
@@ -230,3 +241,6 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
         self.config.power_deviation_matrix_minimum_count = int(self.power_deviation_matrix_minimum_count.get())
         self.config.power_deviation_matrix_method = self.power_deviation_matrix_method.get()
+
+        self.config.web_service_active = bool(self.web_service_active.get())
+        self.config.web_service_url = self.web_service_url.get()

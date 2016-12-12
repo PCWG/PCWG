@@ -190,6 +190,9 @@ class Report:
                 if analysis.productionByHeightActive:
                     self.reportPowerDeviations(book, "ProductionByHeightDeviations", analysis.productionByHeightDeviations, gradient)
 
+                if analysis.web_service_active:
+                    self.reportPowerDeviations(book, "WebServiceDeviations", analysis.webServiceDeviations, gradient)
+
                 if analysis.config.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
                     self.report_aep(sh,analysis)

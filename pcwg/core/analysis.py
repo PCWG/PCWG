@@ -15,6 +15,7 @@ from power_deviation_matrix import DeviationOfAveragesMatrix
 from power_deviation_matrix import PowerDeviationMatrixDimension
 
 from rotor_wind_speed_ratio import RotorWindSpeedRatio
+from web_service import WebService
 
 from ..reporting import reporting
 from ..core.status import Status
@@ -201,6 +202,7 @@ class Analysis:
         self.powerDeviationMatrixPower = "Power Deviation Matrix Power"
         self.turbulencePower = "Simulated TI Corrected Power"
         self.combinedPower = "Combined Power"
+        self.web_service_power = "Web Service Power"
         self.windSpeedBin = "Wind Speed Bin"
         self.powerDeviation = "Power Deviation"
         self.dataCount = "Data Count"
@@ -224,6 +226,7 @@ class Analysis:
         self.turbRenormActive = config.turbRenormActive
         self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
         self.productionByHeightActive = config.productionByHeightActive
+        self.web_service_active = config.web_service_active
 
         Status.add("Loading dataset...")
         self.loadData(config)
@@ -351,7 +354,9 @@ class Analysis:
         if self.hasShear:
             self.rotor_wind_speed_ratio = 'Rotor Wind Speed Ratio'
             self.dataFrame[self.rotor_wind_speed_ratio] = self.dataFrame[self.shearExponent].map(RotorWindSpeedRatio(self.rotorGeometry.diameter, self.rotorGeometry.hubHeight))
-
+        else:
+            self.rotor_wind_speed_ratio = None
+            
         if self.hasActualPower:
             self.normalisedPower = 'Normalised Power'
             self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.ratedPower
@@ -390,6 +395,11 @@ class Analysis:
             self.calculateProductionByHeightCorrection()
             Status.add("Production by Height Correction Complete.")
 
+        if config.web_service_active:
+            Status.add("Calculating Web Service Correction...")
+            self.calculate_web_service_correction()
+            Status.add("Web Service Correction Complete.")
+            
         self.hours = len(self.dataFrame.index)*1.0 / 6.0
 
         self.calculate_power_deviation_matrices()
@@ -421,6 +431,9 @@ class Analysis:
             if self.productionByHeightActive:
                 self.productionByHeightDeviations = self.calculatePowerDeviationMatrix(self.productionByHeightPower)
 
+            if self.web_service_active:
+                self.webServiceDeviations = self.calculatePowerDeviationMatrix(self.web_service_power)
+                
             Status.add("Power Curve Deviation Matrices Complete.")
 
     def created_calculated_power_deviation_matrix_bins(self, config):
@@ -970,6 +983,34 @@ class Analysis:
         
         self.dataFrame[self.productionByHeightPower] = pd.concat(production_by_height, axis=1, join='inner')
 
+<<<<<<< HEAD
+=======
+            original_dataset.calculate_production_by_height(self.powerCurve)
+            
+            production_by_height_for_dataset = original_dataset.dataFrame[[original_dataset.timeStamp, original_dataset.nameColumn, original_dataset.productionByHeight]]
+
+            if i == 0:
+                self.productionByHeightPower = original_dataset.productionByHeight
+                production_by_height_data_frame = production_by_height_for_dataset
+            else:
+                production_by_height_data_frame = production_by_height_data_frame.append(production_by_height_for_dataset, ignore_index=True)
+
+        production_by_height_data_frame.set_index([self.nameColumn, self.timeStamp])
+
+        self.dataFrame = pd.concat([self.dataFrame, production_by_height_data_frame], axis=1, join='inner')
+        
+    def calculate_web_service_correction(self):
+            
+        self.dataFrame[self.web_service_power] = self.dataFrame.apply(WebService(self.config.web_service_url, \
+                                                                                         self.powerCurve, \
+                                                                                         input_wind_speed_column = self.inputHubWindSpeed, \
+                                                                                         normalised_wind_speed_column = self.normalisedWS, \
+                                                                                         turbulence_intensity_column = self.hubTurbulence, \
+                                                                                         rotor_wind_seed_ratio_column = self.rotor_wind_speed_ratio, \
+                                                                                         has_shear = self.hasShear, \
+                                                                                         rows = len(self.dataFrame)).power, \
+                                                                                         axis=1)
+>>>>>>> origin/master
 
 class PadderFactory:
     @staticmethod

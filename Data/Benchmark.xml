@@ -134,10 +134,7 @@
 					<Field>powerDeviationMatrixDelta</Field>
 					<Value>0.00224711</Value>
 				</ExpectedResult>
-				<ExpectedResult>
-					<Field>hubPowerDeviations[0.1][0.1]</Field>
-					<Value>0.00224711</Value>
-				</ExpectedResult>
+
 			</ExpectedResults>
 		</Benchmark>
 		<Benchmark>

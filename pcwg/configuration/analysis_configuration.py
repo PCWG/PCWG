@@ -74,6 +74,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
             self.readPowerDeviationMatrix(configurationNode)
             self.readProductionByHeight(configurationNode)
+            self.readWebService(configurationNode)
 
         else:
 
@@ -101,6 +102,9 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.powerDeviationMatrixActive = False
             self.productionByHeightActive = False
 
+            self.web_service_active = False
+            self.web_service_url = ''
+            
             self.interpolationMode = 'Cubic'
             self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
             self.power_deviation_matrix_minimum_count = 0
@@ -235,6 +239,10 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         production_by_height_node = self.addNode(doc, root, "ProductionByHeight")
         self.addBoolNode(doc, production_by_height_node, "Active", self.productionByHeightActive)
 
+        web_service_node = self.addNode(doc, root, "WebService")
+        self.addBoolNode(doc, web_service_node, "Active", self.web_service_active)
+        self.addTextNode(doc, web_service_node, "URL", self.web_service_url)
+
     def readDatasets(self, configurationNode):
 
         datasetsNode = self.getNode(configurationNode, 'Datasets')
@@ -350,6 +358,24 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         else:
             self.productionByHeightActive = False
 
+    def readWebService(self, configurationNode):
+
+        if self.nodeExists(configurationNode, 'WebService'):
+            
+            web_service_node = self.getNode(configurationNode, 'WebService')
+            
+            self.web_service_active = self.getNodeBool(web_service_node, 'Active')
+            
+            if self.nodeExists(configurationNode, 'URL'): 
+                self.web_service_url = self.getNodeValue(web_service_node, 'URL')
+            else:
+                self.web_service_url = ''
+                
+        else:
+            
+            self.web_service_active = False
+            self.web_service_url = ''
+            
     def readTurbRenorm(self, configurationNode):
 
         if self.nodeExists(configurationNode, 'TurbulenceRenormalisation'):
