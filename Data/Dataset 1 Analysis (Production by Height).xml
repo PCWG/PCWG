@@ -12,7 +12,7 @@
 		<BinSize>1.000000</BinSize>
 	</PowerCurveBins>
 	<Datasets>
-		<Dataset>Dataset 1 config.xml</Dataset>
+		<Dataset>Dataset 1 config (Production by Height).xml</Dataset>
 	</Datasets>
 	<InnerRange>
 		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
@@ -36,7 +36,7 @@
 	</RotorEquivalentWindSpeed>
 	<PowerDeviationMatrix>
 		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>
-		<Active>1</Active>
+		<Active>0</Active>
 	</PowerDeviationMatrix>
 	<ProductionByHeight>
 		<Active>1</Active>

@@ -314,6 +314,9 @@ class Dataset:
         dataFrame[self.nameColumn] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
 
+        #todo find a why to do this without re-indexing
+        dataFrame.set_index([self.nameColumn, self.timeStamp])
+
         return dataFrame
 
     def finalise_data(self, config, analysisConfig, dataFrame):
@@ -970,3 +973,4 @@ class Dataset:
 
         self.dataFrame[self.productionByHeight] = self.dataFrame.apply(rotorEquivalentWindSpeed.calculate, axis=1)
 
+        return self.dataFrame[self.productionByHeight]

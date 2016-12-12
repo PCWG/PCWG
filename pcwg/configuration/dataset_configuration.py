@@ -655,7 +655,11 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
             height = self.getNodeFloat(node, 'Height')
             speed = self.getNodeValue(node, 'ProfileWindSpeed')
-            direction = self.getNodeValue(node, 'ProfileWindDirection')
+            
+            if self.nodeExists(node, 'ProfileWindDirection'):
+                direction = self.getNodeValue(node, 'ProfileWindDirection')
+            else:
+                direction = ''
 
             if self.nodeExists(node, 'ProfileUpflow'):
                 upflow = self.getNodeValue(node, 'ProfileUpflow')

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import hashlib
 
 from ..configuration.power_curve_configuration import PowerCurveConfiguration
@@ -958,23 +959,17 @@ class Analysis:
 
     def calculateProductionByHeightCorrection(self):
 
+        self.productionByHeightPower = self.original_datasets[0].productionByHeight
+
+        production_by_height = []
+        
         for i in range(len(self.original_datasets)):
 
             original_dataset = self.original_datasets[i]
+            production_by_height.append(original_dataset.calculate_production_by_height(self.powerCurve))
+        
+        self.dataFrame[self.productionByHeightPower] = pd.concat(production_by_height, axis=1, join='inner')
 
-            original_dataset.calculate_production_by_height(self.powerCurve)
-            
-            production_by_height_for_dataset = original_dataset.dataFrame[[original_dataset.timeStamp, original_dataset.nameColumn, original_dataset.productionByHeight]]
-
-            if i == 0:
-                self.productionByHeightPower = original_dataset.productionByHeight
-                production_by_height_data_frame = production_by_height_for_dataset
-            else:
-                production_by_height_data_frame = production_by_height_data_frame.append(production_by_height_for_dataset, ignore_index=True)
-
-        production_by_height_data_frame.set_index([self.nameColumn, self.timeStamp])
-
-        self.dataFrame = pd.concat([self.dataFrame, production_by_height_data_frame], axis=1, join='inner')
 
 class PadderFactory:
     @staticmethod
