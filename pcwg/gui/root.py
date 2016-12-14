@@ -17,7 +17,11 @@ import tkMessageBox
 
 from ..update import update
 from ..core import analysis as core_analysis
-from ..core import share
+
+from ..core.share import PcwgShare01Portfolio
+from ..core.share1_dot_1 import PcwgShare01dot1Portfolio
+from ..core.share2 import PcwgShare02Portfolio
+
 from ..core import benchmark
 
 from ..configuration.preferences_configuration import Preferences
@@ -223,6 +227,12 @@ class UserInterface:
         run_portfolio_button = tk.Button(portfolio_group_top,
                                          text="PCWG-Share-1.1",
                                          command=self.PCWG_Share_1_dot_1_Portfolio)
+
+        run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        run_portfolio_button = tk.Button(portfolio_group_top,
+                                         text="PCWG-Share-2.0",
+                                         command=self.PCWG_Share_2_Portfolio)
 
         run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
 
@@ -627,7 +637,7 @@ class UserInterface:
 
         try:
 
-            share.PcwgShare01Portfolio(self.portfolioConfiguration)
+            PcwgShare01Portfolio(self.portfolioConfiguration)
 
         except ExceptionHandler.ExceptionType as e:
 
@@ -641,7 +651,21 @@ class UserInterface:
 
         try:
 
-            share.PcwgShare01dot1Portfolio(self.portfolioConfiguration)
+            PcwgShare01dot1Portfolio(self.portfolioConfiguration)
+
+        except ExceptionHandler.ExceptionType as e:
+
+            ExceptionHandler.add(e)
+
+    def PCWG_Share_2_Portfolio(self):
+
+        if self.portfolioConfiguration is None:
+            Status.add("ERROR: Portfolio not loaded", red=True)
+            return
+
+        try:
+
+            PcwgShare02Portfolio(self.portfolioConfiguration)
 
         except ExceptionHandler.ExceptionType as e:
 

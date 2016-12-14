@@ -7,11 +7,14 @@ Created on Thu Apr 28 19:18:27 2016
 import os
 import os.path
 import zipfile
+import hashlib
+
 from shutil import copyfile
 
 import numpy as np
 
 from analysis import Analysis
+import binning
 
 from ..reporting import data_sharing_reports as reports
 from ..configuration.analysis_configuration import AnalysisConfiguration
@@ -23,7 +26,12 @@ from ..core.status import Status
 
 import version as ver
 
-class ShareAnalysis(Analysis):
+def hash_file_contents(file_path):
+    with open(file_path, 'r') as f:
+        uid = hashlib.sha1(''.join(f.read().split())).hexdigest()
+    return uid
+
+class ShareAnalysis01(Analysis):
 
     def __init__(self, config):
 
@@ -114,9 +122,11 @@ class ShareAnalysis(Analysis):
     def calculate_anonymous_values(self):
 
         self.normalisedWSBin = 'Normalised WS Bin Centre'
+
         firstNormWSbin = 0.05
         lastNormWSbin = 2.95
         normWSstep = 0.1
+
         self.normalisedWindSpeedBins = binning.Bins(firstNormWSbin, normWSstep, lastNormWSbin)
         self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
 
@@ -188,23 +198,29 @@ class ShareAnalysis(Analysis):
         self.dataFrame[self.pcwgErrorValid] = self.dataFrame[self.windSpeedBin].isin(self.powerCurveCompleteBins)
     
     def calculate_pcwg_overall_metrics(self):
+
         self.overall_pcwg_err_metrics = {}
         NME, NMAE, data_count = self._calculate_pcwg_error_metric(self.pcwgErrorBaseline)
+
         self.overall_pcwg_err_metrics[self.dataCount] = data_count
         self.overall_pcwg_err_metrics['Baseline NME'] = NME
         self.overall_pcwg_err_metrics['Baseline NMAE'] = NMAE
+
         if self.turbRenormActive:
             NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTurbRenor)
             self.overall_pcwg_err_metrics['TI Renorm NME'] = NME
             self.overall_pcwg_err_metrics['TI Renorm NMAE'] = NMAE
+
         if self.rewsActive:
             NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorRews)
             self.overall_pcwg_err_metrics['REWS NME'] = NME
             self.overall_pcwg_err_metrics['REWS NMAE'] = NMAE
+
         if (self.turbRenormActive and self.rewsActive):
             NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTiRewsCombined)
             self.overall_pcwg_err_metrics['REWS and TI Renorm NME'] = NME
             self.overall_pcwg_err_metrics['REWS and TI Renorm NMAE'] = NMAE
+
         if self.powerDeviationMatrixActive:
             NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorPdm)
             self.overall_pcwg_err_metrics['PDM NME'] = NME
@@ -263,6 +279,7 @@ class ShareAnalysis(Analysis):
         NMAE = (np.abs(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error]).sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
         return NME, NMAE, data_count
 
+
 class PcwgShare01Config(AnalysisConfiguration):
 
     pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
@@ -303,11 +320,6 @@ class PcwgShare01Config(AnalysisConfiguration):
 
     def get_interpolation_mode(self):
         return "Cubic"
-        
-class PcwgShare01dot1Config(PcwgShare01Config):
-                
-    def get_interpolation_mode(self):
-        return "Marmander"
         
 class PcwgShare01:
     
@@ -363,6 +375,9 @@ class PcwgShare01:
     def new_config(self, dataset, inner_range_id):
         return PcwgShare01Config(dataset, inner_range_id)     
          
+    def new_analysis(self, config):
+        return ShareAnalysis01(config)
+        
     def attempt_calculation(self, dataset, inner_range_id):
 
         temp_path = "temp_config.xml"
@@ -374,7 +389,7 @@ class PcwgShare01:
 
         try:
 
-            analysis = ShareAnalysis(config)
+            analysis = self.new_analysis(config)
 
             if not self._is_sufficient_complete_bins(analysis):
                 raise Exception('Insufficient complete power curve bins')
@@ -431,13 +446,8 @@ class PcwgShare01:
                 
         rpt = reports.pcwg_share1_rpt(self.analysis, template = "Share_1_template.xls", version = ver.version, output_fname = output_fname, pcwg_inner_ranges = PcwgShare01Config.pcwg_inner_ranges)
         rpt.report()
-        return rpt
-
-class PcwgShare01dot1(PcwgShare01):
-
-    def new_config(self, dataset, inner_range_id):
-        return PcwgShare01dot1Config(dataset, inner_range_id)     
-    
+        return rpt 
+        
 class BaseSharePortfolio(object):
     
     def __init__(self, portfolio_configuration):
@@ -603,15 +613,6 @@ class PcwgShare01Portfolio(BaseSharePortfolio):
     def share_name(self):
         return "PCWG-Share-01"
         
-class PcwgShare01dot1Portfolio(BaseSharePortfolio):
-    
-    def __init__(self, portfolio_configuration):
 
-        BaseSharePortfolio.__init__(self, portfolio_configuration)
 
-    def share_name(self):
-        return "PCWG-Share-01.1"
-    
-    def new_share(self, dataset, output_zip):
-        return PcwgShare01dot1(dataset, output_zip = output_zip)
-    
+   

@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import hashlib
 import random
 import datetime
 
@@ -21,11 +20,6 @@ from web_service import WebService
 
 from ..reporting import reporting
 from ..core.status import Status
-
-def hash_file_contents(file_path):
-    with open(file_path, 'r') as f:
-        uid = hashlib.sha1(''.join(f.read().split())).hexdigest()
-    return uid
 
 class RandomizeYear:
     
