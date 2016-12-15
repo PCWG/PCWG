@@ -47,7 +47,10 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 self.interpolationMode = self.getNodeValue(configurationNode, 'InterpolationMode')
             else:
                 self.interpolationMode = 'Linear'
-
+            
+            if self.interpolationMode == "Cubic":
+                self.interpolationMode = "Cubic Spline"
+                
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
             self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
             
@@ -105,7 +108,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.web_service_active = False
             self.web_service_url = ''
             
-            self.interpolationMode = 'Cubic'
+            self.interpolationMode = 'Cubic Spline'
             self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
             self.power_deviation_matrix_minimum_count = 0
             self.power_deviation_matrix_method = 'Average of Deviations'

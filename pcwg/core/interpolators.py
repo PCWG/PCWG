@@ -530,7 +530,7 @@ class MarmanderPowerCurveInterpolatorCubicFunction:
             else:
                 return float(self.linearInterpolator(x))
     
-class CubicPowerCurveInterpolator(BaseInterpolator):
+class CubicSplinePowerCurveInterpolator(BaseInterpolator):
 
     def __init__(self, x, y, cutOutWindSpeed):
 
@@ -556,6 +556,31 @@ class CubicPowerCurveInterpolator(BaseInterpolator):
                 return float(self.linearInterpolator(x))
             else:
                 return float(self.cubicInterpolator(x))
+
+class CubicHermitePowerCurveInterpolator(BaseInterpolator):
+
+    def __init__(self, x, y, cutOutWindSpeed):
+        
+        self.first_value = x[0]
+        self.last_value = x[-1]
+        
+        self.interpolator = interpolate.PchipInterpolator(x,
+                                                          y,
+                                                          extrapolate =False)
+        self.cutOutWindSpeed = cutOutWindSpeed
+        
+    def __call__(self, x):
+        
+        if x < self.first_value:
+            return 0.0
+
+        if x > self.last_value:
+            return 0.0
+            
+        if x > self.cutOutWindSpeed:
+            return 0.0
+        else:
+            return float(self.interpolator(x))
 
 class LinearPowerCurveInterpolator(BaseInterpolator):
 
