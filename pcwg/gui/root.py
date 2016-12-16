@@ -18,9 +18,9 @@ import tkMessageBox
 from ..update import update
 from ..core import analysis as core_analysis
 
-from ..core.share import PcwgShare01Portfolio
-from ..core.share1_dot_1 import PcwgShare01dot1Portfolio
-from ..core.share2 import PcwgShare02Portfolio
+from ..core.share import ShareXPortfolio
+
+from ..core.share_factory import ShareAnalysisFactory
 
 from ..core import benchmark
 
@@ -629,7 +629,8 @@ class UserInterface:
 
                 ExceptionHandler.add(e, "ERROR Exporting Report")
 
-    def PCWG_Share_1_Portfolio(self):
+
+    def PCWG_Share_X_Portfolio(self, share_name):
 
         if self.portfolioConfiguration is None:
             Status.add("ERROR: Portfolio not loaded", red=True)
@@ -637,39 +638,23 @@ class UserInterface:
 
         try:
 
-            PcwgShare01Portfolio(self.portfolioConfiguration)
+            ShareXPortfolio(self.portfolioConfiguration, ShareAnalysisFactory(share_name))
 
         except ExceptionHandler.ExceptionType as e:
 
             ExceptionHandler.add(e)
+
+    def PCWG_Share_1_Portfolio(self):
+
+        self.PCWG_Share_X_Portfolio("Share01")
 
     def PCWG_Share_1_dot_1_Portfolio(self):
 
-        if self.portfolioConfiguration is None:
-            Status.add("ERROR: Portfolio not loaded", red=True)
-            return
-
-        try:
-
-            PcwgShare01dot1Portfolio(self.portfolioConfiguration)
-
-        except ExceptionHandler.ExceptionType as e:
-
-            ExceptionHandler.add(e)
+        self.PCWG_Share_X_Portfolio("Share01.1")
 
     def PCWG_Share_2_Portfolio(self):
 
-        if self.portfolioConfiguration is None:
-            Status.add("ERROR: Portfolio not loaded", red=True)
-            return
-
-        try:
-
-            PcwgShare02Portfolio(self.portfolioConfiguration)
-
-        except ExceptionHandler.ExceptionType as e:
-
-            ExceptionHandler.add(e)
+        self.PCWG_Share_X_Portfolio("Share02")
         
     def new_portfolio(self):
 

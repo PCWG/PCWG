@@ -206,7 +206,6 @@ class Analysis:
 
     def __init__(self, config):
 
-        self.config = config
         self.nameColumn = "Dataset Name"
         self.inputHubWindSpeed = "Input Hub Wind Speed"
         self.densityCorrectedHubWindSpeed = "Density Corrected Hub Wind Speed"
@@ -229,55 +228,34 @@ class Analysis:
         self.inflowAngle = 'Inflow Angle'
 
         self.calibrations = []
-            
-        self.densityCorrectionActive = config.densityCorrectionActive
-        
-        self.rewsActive = config.rewsActive
-        self.rewsVeer = config.rewsVeer
-        self.rewsUpflow = config.rewsUpflow
 
-        self.turbRenormActive = config.turbRenormActive
-        self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
-        self.productionByHeightActive = config.productionByHeightActive
-        self.web_service_active = config.web_service_active
+        Status.add("Applying settings...")            
+        self.apply_settings(config)
 
         Status.add("Loading dataset...")
-        self.loadData(config)
+        self.load_data(config)
+        self.defineInnerRange(config)
 
         if self.powerDeviationMatrixActive:
             
             Status.add("Loading power deviation matrix...")
             
-            if config.specified_power_deviation_matrix.absolute_path is None:
+            if self.specified_power_deviation_matrix.absolute_path is None:
                 raise Exception("Power deviation matrix path not set.")
 
-            self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(config.specified_power_deviation_matrix.absolute_path)
-
-        self.powerCurveMinimumCount = config.powerCurveMinimumCount
-        self.power_deviation_matrix_minimum_count = config.power_deviation_matrix_minimum_count
-        self.power_deviation_matrix_method = config.power_deviation_matrix_method
-
-        self.powerCurvePaddingMode = config.powerCurvePaddingMode
-
-        self.interpolationMode = config.interpolationMode
-        self.powerCurveMode = config.powerCurveMode
-        
-        self.negative_power_period_treatment = config.negative_power_period_treatment
-        self.negative_power_bin_average_treatment = config.negative_power_bin_average_treatment
-
-        self.defineInnerRange(config)
+            self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(self.specified_power_deviation_matrix.absolute_path)
 
         Status.add("Interpolation Mode: %s" % self.interpolationMode)
         Status.add("Power Curve Mode: %s" % self.powerCurveMode)
 
-        self.windSpeedBins = binning.Bins(config.powerCurveFirstBin, config.powerCurveBinSize, config.powerCurveLastBin)
+        self.windSpeedBins = binning.Bins(self.powerCurveFirstBin, self.powerCurveBinSize, self.powerCurveLastBin)
 
         self.aggregations = binning.Aggregations(self.powerCurveMinimumCount)
         self.pdm_aggregations = binning.Aggregations(self.power_deviation_matrix_minimum_count)
         
-        if config.specified_power_curve.absolute_path != None :
+        if self.specified_power_curve.absolute_path != None :
 
-            powerCurveConfig = PowerCurveConfiguration(config.specified_power_curve.absolute_path)            
+            powerCurveConfig = PowerCurveConfiguration(self.specified_power_curve.absolute_path)            
             
             self.specifiedPowerCurve = turbine.PowerCurve(powerCurveConfig.powerCurveLevels, powerCurveConfig.powerCurveDensity, \
                                                           self.rotorGeometry, actualPower = "Specified Power", hubTurbulence = "Specified Turbulence", \
@@ -385,7 +363,7 @@ class Analysis:
 
             self.rewsMatrix = self.calculateREWSMatrix()
 
-        if config.turbRenormActive:
+        if self.turbRenormActive:
             
             Status.add("Calculating Turbulence Correction...")
             self.calculateTurbRenorm()
@@ -394,21 +372,21 @@ class Analysis:
             if self.hasActualPower:
                 self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(self.get_base_filter(), self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected', zero_ti_pc_required = False)
 
-        if config.turbRenormActive and config.rewsActive:
+        if self.turbRenormActive and self.rewsActive:
             Status.add("Calculating Combined (REWS + Turbulence) Correction...")
             self.calculationCombined()
 
-        if config.powerDeviationMatrixActive:
+        if self.powerDeviationMatrixActive:
             Status.add("Calculating Power Deviation Matrix Correction...")
             self.calculatePowerDeviationMatrixCorrection()
             Status.add("Power Deviation Matrix Correction Complete.")
 
-        if config.productionByHeightActive:
+        if self.productionByHeightActive:
             Status.add("Calculating Production by Height Correction...")
             self.calculateProductionByHeightCorrection()
             Status.add("Production by Height Correction Complete.")
 
-        if config.web_service_active:
+        if self.web_service_active:
             Status.add("Calculating Web Service Correction...")
             self.calculate_web_service_correction()
             Status.add("Web Service Correction Complete.")
@@ -420,6 +398,54 @@ class Analysis:
         
         Status.add("Total of %.3f hours of data used in analysis." % self.hours)
         Status.add("Complete")
+
+    def apply_settings(self, config):
+
+        self.densityCorrectionActive = config.densityCorrectionActive
+        
+        self.rewsActive = config.rewsActive
+        self.rewsVeer = config.rewsVeer
+        self.rewsUpflow = config.rewsUpflow
+
+        self.turbRenormActive = config.turbRenormActive
+        self.powerDeviationMatrixActive = config.powerDeviationMatrixActive
+        self.productionByHeightActive = config.productionByHeightActive
+        self.web_service_active = config.web_service_active
+
+        self.web_service_url = config.web_service_url
+        self.specified_power_deviation_matrix = config.specified_power_deviation_matrix
+
+        self.powerCurveMinimumCount = config.powerCurveMinimumCount
+        self.power_deviation_matrix_minimum_count = config.power_deviation_matrix_minimum_count
+        self.power_deviation_matrix_method = config.power_deviation_matrix_method
+
+        self.powerCurvePaddingMode = config.powerCurvePaddingMode
+
+        self.interpolationMode = config.interpolationMode
+        self.powerCurveMode = config.powerCurveMode
+        
+        self.negative_power_period_treatment = config.negative_power_period_treatment
+        self.negative_power_bin_average_treatment = config.negative_power_bin_average_treatment
+
+        self.powerCurveFirstBin = config.powerCurveFirstBin
+        self.powerCurveBinSize = config.powerCurveBinSize
+        self.powerCurveLastBin = config.powerCurveLastBin
+
+        self.specified_power_curve = config.specified_power_curve
+
+        self.calculated_power_deviation_matrix_dimensions = config.calculated_power_deviation_matrix_dimensions
+        self.nominal_wind_speed_distribution = self.config.nominal_wind_speed_distribution
+
+    def defineInnerRange(self, config):
+
+        self.innerRangeLowerTurbulence = config.innerRangeLowerTurbulence
+        self.innerRangeUpperTurbulence = config.innerRangeUpperTurbulence
+        self.innerRangeCenterTurbulence = 0.5 * self.innerRangeLowerTurbulence + 0.5 * self.innerRangeUpperTurbulence
+
+        if self.hasShear:
+            self.innerRangeLowerShear = config.innerRangeLowerShear
+            self.innerRangeUpperShear = config.innerRangeUpperShear
+            self.innerRangeCenterShear = 0.5 * self.innerRangeLowerShear + 0.5 * self.innerRangeUpperShear
 
     def calculate_power_deviation_matrices(self):
 
@@ -449,11 +475,11 @@ class Analysis:
                 
             Status.add("Power Curve Deviation Matrices Complete.")
 
-    def created_calculated_power_deviation_matrix_bins(self, config):
+    def created_calculated_power_deviation_matrix_bins(self):
 
         self.calculated_power_deviation_matrix_bins = []
         
-        sorted_dimensions = sorted(config.calculated_power_deviation_matrix_dimensions, key=lambda x: x.index, reverse=False)
+        sorted_dimensions = sorted(self.calculated_power_deviation_matrix_dimensions, key=lambda x: x.index, reverse=False)
 
         for dimension in sorted_dimensions:
             
@@ -468,7 +494,7 @@ class Analysis:
 
     def calculate_aep(self):
 
-        if self.config.nominal_wind_speed_distribution.absolute_path is not None:
+        if self.nominal_wind_speed_distribution.absolute_path is not None:
             Status.add("Attempting AEP Calculation...")
             import aep
             if self.powerCurve is self.specifiedPowerCurve:
@@ -476,9 +502,9 @@ class Analysis:
             if hasattr(self.datasetConfigs[0].data,"analysedDirections"):
                 self.analysedDirectionSectors = self.datasetConfigs[0].data.analysedDirections # assume a single for now.
             if len(self.powerCurve.powerCurveLevels) != 0:
-                self.aepCalc,self.aepCalcLCB = aep.run(self,self.config.nominal_wind_speed_distribution.absolute_path, self.allMeasuredPowerCurve)
+                self.aepCalc,self.aepCalcLCB = aep.run(self,self.nominal_wind_speed_distribution.absolute_path, self.allMeasuredPowerCurve)
                 if self.turbRenormActive:
-                    self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.config.nominal_wind_speed_distribution.absolute_path, self.allMeasuredTurbCorrectedPowerCurve)
+                    self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.nominal_wind_speed_distribution.absolute_path, self.allMeasuredTurbCorrectedPowerCurve)
             else:
                 Status.add("A specified power curve is required for AEP calculation. No specified curve defined.")
 
@@ -537,26 +563,15 @@ class Analysis:
 
         return False
 
-    def defineInnerRange(self, config):
-
-        self.innerRangeLowerTurbulence = config.innerRangeLowerTurbulence
-        self.innerRangeUpperTurbulence = config.innerRangeUpperTurbulence
-        self.innerRangeCenterTurbulence = 0.5 * self.innerRangeLowerTurbulence + 0.5 * self.innerRangeUpperTurbulence
-
-        if self.hasShear:
-            self.innerRangeLowerShear = config.innerRangeLowerShear
-            self.innerRangeUpperShear = config.innerRangeUpperShear
-            self.innerRangeCenterShear = 0.5 * self.innerRangeLowerShear + 0.5 * self.innerRangeUpperShear
-
     def load_dataset(self, dataset_config, analysis_config):
         return dataset.Dataset(dataset_config, analysis_config)
 
-    def loadData(self, config):
+    def load_data(self, config):
 
         self.residualWindSpeedMatrices = {}
         self.datasetConfigs = []
 
-        if self.config.productionByHeightActive:
+        if self.productionByHeightActive:
             self.original_datasets = []
 
         self.multiple_datasets = (len(config.datasets) > 1)
@@ -568,7 +583,7 @@ class Analysis:
             else:
                 datasetConfig = config.datasets[i]
 
-            data = self.load_dataset(datasetConfig, config)
+            data = self.load_dataset(datasetConfig, self)
 
             if self.productionByHeightActive:
                 self.original_datasets.append(data)
@@ -607,6 +622,7 @@ class Analysis:
                 self.hasShear = data.hasShear
                 self.hasDensity = data.hasDensity
                 self.hasDirection = data.hasDirection
+                self.hasTurbulence = data.hasTurbulence
 
             else:
 
@@ -620,6 +636,7 @@ class Analysis:
                 self.hasShear = self.hasShear & data.hasShear
                 self.hasDensity = self.hasDensity & data.hasDensity
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
+                self.hasTurbulence = data.hasTurbulence & data.hasTurbulence
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
 
@@ -1024,7 +1041,7 @@ class Analysis:
         
     def calculate_web_service_correction(self):
             
-        self.dataFrame[self.web_service_power] = self.dataFrame.apply(WebService(self.config.web_service_url, \
+        self.dataFrame[self.web_service_power] = self.dataFrame.apply(WebService(self.web_service_url, \
                                                                                          self.powerCurve, \
                                                                                          input_wind_speed_column = self.inputHubWindSpeed, \
                                                                                          normalised_wind_speed_column = self.normalisedWS, \

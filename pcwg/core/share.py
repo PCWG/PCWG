@@ -26,24 +26,29 @@ from ..core.status import Status
 
 import version as ver
 
-def hash_file_contents(file_path):
-    with open(file_path, 'r') as f:
-        uid = hashlib.sha1(''.join(f.read().split())).hexdigest()
-    return uid
-
-class ShareAnalysis01(Analysis):
+class ShareAnalysisBase(Analysis):
 
     def __init__(self, config):
 
         Analysis.__init__(self, config)
 
+        self.share_specific_calculations()
+
         self.generate_unique_ids()
 
         self.pcwg_share_metrics_calc()
 
+    def share_specific_calculations(self):
+        pass
+
+    def hash_file_contents(self, file_path):
+        with open(file_path, 'r') as f:
+            uid = hashlib.sha1(''.join(f.read().split())).hexdigest()
+        return uid
+
     def generate_unique_ids(self):
 
-        self.uniqueAnalysisId = hash_file_contents(self.config.path)
+        self.uniqueAnalysisId = self.hash_file_contents(self.config.path)
         Status.add("Unique Analysis ID is: %s" % self.uniqueAnalysisId)
         Status.add("Calculating (please wait)...")
 
@@ -54,8 +59,8 @@ class ShareAnalysis01(Analysis):
         dset_ids = {}
         for conf in self.datasetConfigs:
             ids = {}
-            ids['Configuration'] = hash_file_contents(conf.path)
-            ids['Time Series'] = hash_file_contents(conf.input_time_series.absolute_path)
+            ids['Configuration'] = self.hash_file_contents(conf.path)
+            ids['Time Series'] = self.hash_file_contents(conf.input_time_series.absolute_path)
             dset_ids[conf.name] = ids
         return dset_ids
 
@@ -81,43 +86,15 @@ class ShareAnalysis01(Analysis):
 
     def loadData(self, config):
         Analysis.loadData(self, config)
-        self.auto_activate_corrections()
-        
-    def auto_activate_corrections(self):
-        
-        Status.add("Automatically activating corrections based on available data.")
-        save_conf = False
-
-        if self.hasDensity:
-            self.config.densityCorrectionActive = True
-            Status.add("Density Correction activated.")
-            save_conf = True
-
-        if self.hubTurbulence in self.dataFrame.columns:
-            self.config.turbRenormActive = True
-            Status.add("TI Renormalisation activated.")
-            save_conf = True
-
-        if self.rewsDefined:
-            self.config.rewsActive = True
-            Status.add("REWS activated.")
-            save_conf = True
-
-        if (type(self.config.specified_power_deviation_matrix.absolute_path) in (str, unicode)) and (len(self.config.specified_power_deviation_matrix.absolute_path) > 0):
-            self.config.powerDeviationMatrixActive = True
-            Status.add("PDM activated.")
-            save_conf = True
-
-        if save_conf:
-            self.config.save()
 
     def pcwg_share_metrics_calc(self):
+
         if self.powerCurveMode != "InnerMeasured":
             raise Exception("Power Curve Mode must be set to Inner to export PCWG Sharing Initiative 1 Report.")
-        else:
-            self.calculate_pcwg_error_fields()
-            self.calculate_pcwg_overall_metrics()
-            self.calculate_pcwg_binned_metrics()
+
+        self.calculate_pcwg_error_fields()
+        self.calculate_pcwg_overall_metrics()
+        self.calculate_pcwg_binned_metrics()
 
     def calculate_anonymous_values(self):
 
@@ -172,94 +149,100 @@ class ShareAnalysis01(Analysis):
             self.normalisedTurbPowerDeviations = None
             
     def calculate_pcwg_error_fields(self):
+        
         self.calculate_anonymous_values()
         self.pcwgErrorBaseline = 'Baseline Error'
         self.pcwgErrorCols = [self.pcwgErrorBaseline]
         self.dataFrame[self.pcwgErrorBaseline] = self.dataFrame[self.hubPower] - self.dataFrame[self.actualPower]
-        if self.turbRenormActive:
+        
+        for method in self.get_methods():
+            
+            error_column = self.error_column(method)
+            power_column = self.power_column(method)
+
             self.pcwgErrorTurbRenor = 'TI Renormalisation Error'
-            self.dataFrame[self.pcwgErrorTurbRenor] = self.dataFrame[self.turbulencePower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorTurbRenor)
-        if self.rewsActive:
-            self.pcwgErrorRews = 'REWS Error'
-            self.dataFrame[self.pcwgErrorRews] = self.dataFrame[self.rewsPower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorRews)
-        if (self.turbRenormActive and self.rewsActive):
-            self.pcwgErrorTiRewsCombined = 'Combined TI Renorm and REWS Error'
-            self.dataFrame[self.pcwgErrorTiRewsCombined] = self.dataFrame[self.combinedPower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorTiRewsCombined)
-        if self.powerDeviationMatrixActive:
-            self.pcwgErrorPdm = 'PDM Error'
-            self.dataFrame[self.pcwgErrorPdm] = self.dataFrame[self.powerDeviationMatrixPower] - self.dataFrame[self.actualPower]
-            self.pcwgErrorCols.append(self.pcwgErrorPdm)
+            self.dataFrame[error_column] = self.dataFrame[power_column] - self.dataFrame[self.actualPower]
+            self.pcwgErrorCols.append(error_column)
+        
         self.powerCurveCompleteBins = self.powerCurve.powerCurveLevels.index[self.powerCurve.powerCurveLevels[self.dataCount] > 0]
         self.number_of_complete_bins = len(self.powerCurveCompleteBins)
+        
         self.pcwgErrorValid = 'Baseline Power Curve WS Bin Complete'
         self.dataFrame[self.pcwgErrorValid] = self.dataFrame[self.windSpeedBin].isin(self.powerCurveCompleteBins)
     
+    def get_methods(self):
+        return []
+
+    def error_column(self, method):
+        return "{0} Error".format(method)
+
+    def power_column(self, method):
+        return "{0} Power".format(method)
+
     def calculate_pcwg_overall_metrics(self):
 
         self.overall_pcwg_err_metrics = {}
-        NME, NMAE, data_count = self._calculate_pcwg_error_metric(self.pcwgErrorBaseline)
+        nme, nmae, data_count = self._calculate_pcwg_error_metric(self.pcwgErrorBaseline)
 
         self.overall_pcwg_err_metrics[self.dataCount] = data_count
-        self.overall_pcwg_err_metrics['Baseline NME'] = NME
-        self.overall_pcwg_err_metrics['Baseline NMAE'] = NMAE
 
-        if self.turbRenormActive:
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTurbRenor)
-            self.overall_pcwg_err_metrics['TI Renorm NME'] = NME
-            self.overall_pcwg_err_metrics['TI Renorm NMAE'] = NMAE
+        self.overall_pcwg_err_metrics['Baseline NME'] = nme
+        self.overall_pcwg_err_metrics['Baseline NMAE'] = nmae
 
-        if self.rewsActive:
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorRews)
-            self.overall_pcwg_err_metrics['REWS NME'] = NME
-            self.overall_pcwg_err_metrics['REWS NMAE'] = NMAE
+        for method in self.get_methods():
+            
+            error_column = self.error_column(method)
 
-        if (self.turbRenormActive and self.rewsActive):
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorTiRewsCombined)
-            self.overall_pcwg_err_metrics['REWS and TI Renorm NME'] = NME
-            self.overall_pcwg_err_metrics['REWS and TI Renorm NMAE'] = NMAE
+            nme, nmae, _ = self.calculate_pcwg_error_metric(error_column)
 
-        if self.powerDeviationMatrixActive:
-            NME, NMAE, _ = self._calculate_pcwg_error_metric(self.pcwgErrorPdm)
-            self.overall_pcwg_err_metrics['PDM NME'] = NME
-            self.overall_pcwg_err_metrics['PDM NMAE'] = NMAE
+            nme_key = "{0} NME".format(method)
+            nmae_key = "{0} NMAE".format(method)
+
+            self.overall_pcwg_err_metrics[nme_key] = nme
+            self.overall_pcwg_err_metrics[nmae_key] = nmae
             
     def calculate_pcwg_binned_metrics(self):
+        
         reporting_bins = [self.normalisedWSBin, self.hourOfDay, self.calendarMonth, self.pcwgFourCellMatrixGroup, self.pcwgRange]
+        
         if self.hasDirection:
             reporting_bins.append(self.pcwgDirectionBin)
+
         self.binned_pcwg_err_metrics = {}
+        
         for bin_col_name in reporting_bins:
+
             self.binned_pcwg_err_metrics[bin_col_name] = {}
-            self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorBaseline] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name)
-            if self.turbRenormActive:
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorTurbRenor] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTurbRenor, bin_col_name)
-            if self.rewsActive:
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorRews] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorRews, bin_col_name)
-            if (self.turbRenormActive and self.rewsActive):
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorTiRewsCombined] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTiRewsCombined, bin_col_name)
-            if self.powerDeviationMatrixActive:
-                self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name)
+            self.binned_pcwg_err_metrics[bin_col_name][self.pcwgErrorBaseline] = self.calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name)
+
+            for method in self.get_methods():
+                
+                error_column = self.error_column(method)
+
+                self.binned_pcwg_err_metrics[bin_col_name][error_column] = self.calculate_pcwg_error_metric_by_bin(error_column, bin_col_name)
+        
         #Using Inner and Outer range data only to calculate error metrics binned by normalised WS
+        
         bin_col_name = self.normalisedWSBin
+        
         for pcwg_range in ['Inner', 'Outer']:
+
             dict_key = bin_col_name + ' ' + pcwg_range + ' Range'
-            self.binned_pcwg_err_metrics[dict_key] = {}
-            self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorBaseline] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name, pcwg_range = pcwg_range)
-            if self.turbRenormActive:
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorTurbRenor] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTurbRenor, bin_col_name, pcwg_range = pcwg_range)
-            if self.rewsActive:
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorRews] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorRews, bin_col_name, pcwg_range = pcwg_range)
-            if (self.turbRenormActive and self.rewsActive):
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorTiRewsCombined] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorTiRewsCombined, bin_col_name, pcwg_range = pcwg_range)
-            if self.powerDeviationMatrixActive:
-                self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorPdm] = self._calculate_pcwg_error_metric_by_bin(self.pcwgErrorPdm, bin_col_name, pcwg_range = pcwg_range)
             
-    def _calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name, pcwg_range = 'All'):
+            self.binned_pcwg_err_metrics[dict_key] = {}
+            self.binned_pcwg_err_metrics[dict_key][self.pcwgErrorBaseline] = self.calculate_pcwg_error_metric_by_bin(self.pcwgErrorBaseline, bin_col_name, pcwg_range = pcwg_range)
+
+            for method in self.get_methods():
+                
+                error_column = self.error_column(method)
+
+                self.binned_pcwg_err_metrics[dict_key][error_column] = self.calculate_pcwg_error_metric_by_bin(error_column, bin_col_name, pcwg_range = pcwg_range)
+            
+    def calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name, pcwg_range = 'All'):
+        
         def sum_abs(x):
             return x.abs().sum()
+        
         if pcwg_range == 'All':
             grouped = self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], :].groupby(bin_col_name)
         elif pcwg_range == 'Inner':
@@ -268,19 +251,24 @@ class ShareAnalysis01(Analysis):
             grouped = self.dataFrame.loc[np.logical_and(self.dataFrame[self.pcwgErrorValid], (self.dataFrame[self.pcwgRange] == 'Outer')), :].groupby(bin_col_name)
         else:
             raise Exception('Unrecognised pcwg_range argument %s passed to Analysis._calculate_pcwg_error_metric_by_bin() method. Must be Inner, Outer or All.' % pcwg_range)
+
         agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count'], self.actualPower: 'sum'})
         agg.loc[:, (candidate_error, 'NME')] = agg.loc[:, (candidate_error, 'sum')] / agg.loc[:, (self.actualPower, 'sum')]
         agg.loc[:, (candidate_error, 'NMAE')] = agg.loc[:, (candidate_error, 'sum_abs')] / agg.loc[:, (self.actualPower, 'sum')]
         return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis = 1).rename(columns = {'count': self.dataCount})
     
-    def _calculate_pcwg_error_metric(self, candidate_error):
+    def calculate_pcwg_error_metric(self, candidate_error):
+        
         data_count = len(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].dropna())
+        
         NME = (self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
+        
         NMAE = (np.abs(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error]).sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
+        
         return NME, NMAE, data_count
 
 
-class PcwgShare01Config(AnalysisConfiguration):
+class PcwgShareXConfig(AnalysisConfiguration):
 
     pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
                      'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
@@ -295,17 +283,18 @@ class PcwgShare01Config(AnalysisConfiguration):
         
         self.powerCurveMinimumCount = 10
 
-        self.interpolationMode = self.get_interpolation_mode()
+        self.interpolationMode = None
+
         self.powerCurveMode = "InnerMeasured"
         self.powerCurvePaddingMode = "Max"
         self.nominalWindSpeedDistribution = None
         self.powerCurveFirstBin = 1.0
         self.powerCurveLastBin = 30.0
         self.powerCurveBinSize = 1.0
-        self.innerRangeLowerTurbulence = PcwgShare01Config.pcwg_inner_ranges[self.inner_range_id]['LTI']
-        self.innerRangeUpperTurbulence = PcwgShare01Config.pcwg_inner_ranges[self.inner_range_id]['UTI']
-        self.innerRangeLowerShear = PcwgShare01Config.pcwg_inner_ranges[self.inner_range_id]['LSh']
-        self.innerRangeUpperShear = PcwgShare01Config.pcwg_inner_ranges[self.inner_range_id]['USh']
+        self.innerRangeLowerTurbulence = PcwgShareXConfig.pcwg_inner_ranges[self.inner_range_id]['LTI']
+        self.innerRangeUpperTurbulence = PcwgShareXConfig.pcwg_inner_ranges[self.inner_range_id]['UTI']
+        self.innerRangeLowerShear = PcwgShareXConfig.pcwg_inner_ranges[self.inner_range_id]['LSh']
+        self.innerRangeUpperShear = PcwgShareXConfig.pcwg_inner_ranges[self.inner_range_id]['USh']
 
         self.specifiedPowerCurve = None
 
@@ -313,22 +302,18 @@ class PcwgShare01Config(AnalysisConfiguration):
         self.turbRenormActive = False
         self.rewsActive = False
         self.powerDeviationMatrixActive = False
-        
-        self.specified_power_deviation_matrix.absolute_path = os.getcwd() + os.sep + 'Data' + os.sep + 'HypothesisMatrix.xml'
 
         self.datasets.append_absolute(dataset.path)
-
-    def get_interpolation_mode(self):
-        return "Cubic"
         
-class PcwgShare01:
+class PcwgShareX:
     
     MINIMUM_COMPLETE_BINS = 10
     
-    def __init__(self, dataset, output_zip):
+    def __init__(self, dataset, output_zip, share_factory):
         
         self.dataset = dataset
-        
+        self.share_factory = share_factory
+
         self.calculate()
         
         if self.success:
@@ -344,7 +329,7 @@ class PcwgShare01:
 
         successes = 0
         
-        for inner_range_id in PcwgShare01Config.pcwg_inner_ranges:
+        for inner_range_id in PcwgShareXConfig.pcwg_inner_ranges:
             
             analysis, success = self.attempt_calculation(self.dataset, inner_range_id)
             
@@ -373,10 +358,10 @@ class PcwgShare01:
             return False
     
     def new_config(self, dataset, inner_range_id):
-        return PcwgShare01Config(dataset, inner_range_id)     
+        return PcwgShareXConfig(dataset, inner_range_id)     
          
     def new_analysis(self, config):
-        return ShareAnalysis01(config)
+        return self.share_factory.new_share_analysis(config)
         
     def attempt_calculation(self, dataset, inner_range_id):
 
@@ -444,31 +429,34 @@ class PcwgShare01:
          
     def pcwg_data_share_report(self, output_fname):
                 
-        rpt = reports.pcwg_share1_rpt(self.analysis, template = "Share_1_template.xls", version = ver.version, output_fname = output_fname, pcwg_inner_ranges = PcwgShare01Config.pcwg_inner_ranges)
+        rpt = reports.pcwg_share1_rpt(self.analysis, template = "Share_1_template.xls", version = ver.version, output_fname = output_fname, pcwg_inner_ranges = PcwgShareXConfig.pcwg_inner_ranges)
         rpt.report()
         return rpt 
         
-class BaseSharePortfolio(object):
+class ShareXPortfolio(object):
     
-    def __init__(self, portfolio_configuration):
+    def __init__(self, portfolio_configuration, share_factory):
 
-        Status.add("Running Portfolio: {0}".format(self.share_name()))
+        self.share_name = share_factory.share_name
+        self.share_factory = share_factory
+
+        Status.add("Running Portfolio: {0}".format(self.share_name))
         
         self.portfolio_path = portfolio_configuration.path
         self.results_base_path = os.path.join(os.path.dirname(self.portfolio_path), self.portfolio_path.split('/')[-1].split('.')[0])
         self.portfolio = portfolio_configuration
         self.calculate()
-        
-    def share_name(self):
-        raise Exception("Not implemented")
-        
+
+    def new_share(self, dataset, output_zip):
+        return PcwgShareX(dataset, output_zip = output_zip, share_factory = self.share_factory)
+
     def calculate(self):
 
         Status.add("Running portfolio: {0}".format(self.portfolio_path))
         self.shares = []
         
-        zip_file = "{0} ({1}).zip".format(self.results_base_path, self.share_name())
-        summary_file = "{0} ({1}).xls".format(self.results_base_path, self.share_name())
+        zip_file = "{0} ({1}).zip".format(self.results_base_path, self.share_name)
+        summary_file = "{0} ({1}).xls".format(self.results_base_path, self.share_name)
         
         if os.path.exists(zip_file):
             os.remove(zip_file)
@@ -597,22 +585,6 @@ class BaseSharePortfolio(object):
 
         Status.add("Deleting {0}".format(summary_file_for_zip))
         os.remove(summary_file_for_zip)
-        
-    def new_share(self, dataset, output_zip):
-        raise Exception("Not implemented")
-        
-class PcwgShare01Portfolio(BaseSharePortfolio):
-    
-    def __init__(self, portfolio_configuration):
-        
-        BaseSharePortfolio.__init__(self, portfolio_configuration)
-    
-    def new_share(self, dataset, output_zip):
-        return PcwgShare01(dataset, output_zip = output_zip)
-
-    def share_name(self):
-        return "PCWG-Share-01"
-        
 
 
    
