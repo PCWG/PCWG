@@ -10,6 +10,7 @@ import turbine
 import warnings
 
 from power_deviation_matrix import AverageOfDeviationsMatrix
+from power_deviation_matrix import PowerDeviationMatrixDimension
 
 from ..core.status import Status
 
@@ -244,7 +245,7 @@ class ShearExponentCalculator:
 
 class Dataset:
 
-    def __init__(self, config, analysisConfig):
+    def __init__(self, config, analysis):
 
         self.config = config
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight, config.rotor_tilt)
@@ -252,7 +253,7 @@ class Dataset:
         self.name = config.name
         self.timeStepInSeconds = config.timeStepInSeconds
         self.rewsDefined = config.rewsDefined
-        self.turbRenormActive = analysisConfig.turbRenormActive
+        self.turbRenormActive = analysis.turbRenormActive
 
         self.set_columns(config)
 
@@ -260,16 +261,16 @@ class Dataset:
         dataFrame = self.load_direction(config, dataFrame)
         dataFrame = self.load_shear(config, dataFrame)
         dataFrame = self.load_inflow(config, dataFrame)        
-        dataFrame = self.load_wind_speed(config, analysisConfig, dataFrame)
+        dataFrame = self.load_wind_speed(config, analysis, dataFrame)
         dataFrame = self.load_density(config, dataFrame) 
         dataFrame = self.load_power(config, dataFrame)       
 
         dataFrame = self.filterDataFrame(dataFrame, config.filters)
         dataFrame = self.excludeData(dataFrame, config)
 
-        dataFrame = self.load_rews(config, analysisConfig, dataFrame)
+        dataFrame = self.load_rews(config, analysis, dataFrame)
 
-        self.finalise_data(config, analysisConfig, dataFrame)
+        self.finalise_data(config, analysis, dataFrame)
 
     def set_columns(self, config):
 
@@ -313,21 +314,24 @@ class Dataset:
         dataFrame[self.nameColumn] = config.name
         dataFrame[self.timeStamp] = dataFrame.index
 
+        #todo find a why to do this without re-indexing
+        dataFrame.set_index([self.nameColumn, self.timeStamp])
+
         return dataFrame
 
-    def finalise_data(self, config, analysisConfig, dataFrame):
+    def finalise_data(self, config, analysis, dataFrame):
 
         self.fullDataFrame = dataFrame.copy()
-        self.dataFrame = self.extractColumns(dataFrame, analysisConfig).dropna()
+        self.dataFrame = self.extractColumns(dataFrame, analysis).dropna()
         
         if self.windDirection in self.dataFrame.columns:
             self.fullDataFrame[self.windDirection] = self.fullDataFrame[self.windDirection].astype(float)
             self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
 
-    def load_rews(self, config, analysisConfig, dataFrame):
+    def load_rews(self, config, analysis, dataFrame):
 
-        if self.rewsDefined and analysisConfig.rewsActive:
-            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysisConfig.rewsVeer, analysisConfig.rewsUpflow, analysisConfig.rewsExponent)
+        if self.rewsDefined and analysis.rewsActive:
+            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysis.rewsVeer, analysis.rewsUpflow, analysis.rewsExponent)
         else:
             self.windSpeedLevels = {}
 
@@ -415,7 +419,7 @@ class Dataset:
 
         return dataFrame
 
-    def load_wind_speed(self, config, analysisConfig, dataFrame):
+    def load_wind_speed(self, config, analysis, dataFrame):
 
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
         
@@ -423,7 +427,7 @@ class Dataset:
 
         if config.calculateHubWindSpeed:
 
-            dataFrame = self.calculate_hub_wind_speed(config, analysisConfig, dataFrame)
+            dataFrame = self.calculate_hub_wind_speed(config, analysis, dataFrame)
 
         else:
 
@@ -445,11 +449,12 @@ class Dataset:
         else:
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
+        self.hasTurbulence = True
         self.residualWindSpeedMatrix = None
 
         return dataFrame
 
-    def calculate_hub_wind_speed(self, config, analysisConfig, dataFrame):
+    def calculate_hub_wind_speed(self, config, analysis, dataFrame):
 
         self.verify_column_datatype(dataFrame, config.referenceWindSpeed)
 
@@ -475,22 +480,34 @@ class Dataset:
         else:
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
         
+        self.hasTurbulence = True
+
         if config.calibrationMethod != "Specified":
 
             dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
 
+            dimensions = []
             windSpeedBin = "Wind Speed Bin"
             turbulenceBin = "Turbulence Bin"
 
-            windSpeedBins = binning.Bins(analysisConfig.powerCurveFirstBin, analysisConfig.powerCurveBinSize, analysisConfig.powerCurveLastBin)
+            windSpeedBins = binning.Bins(analysis.powerCurveFirstBin, analysis.powerCurveBinSize, analysis.powerCurveLastBin)
             turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
-            aggregations = binning.Aggregations(analysisConfig.powerCurveMinimumCount)
+
+            dimensions.append(PowerDeviationMatrixDimension(self.hubWindSpeed, windSpeedBins.centerOfFirstBin, windSpeedBins.binWidth, windSpeedBins.numberOfBins))    
+            dimensions.append(PowerDeviationMatrixDimension(self.hubTurbulence, turbulenceBins.centerOfFirstBin, turbulenceBins.binWidth, turbulenceBins.numberOfBins))    
+
+            aggregations = binning.Aggregations(analysis.powerCurveMinimumCount)
+
+            windSpeedBins = binning.Bins(analysis.powerCurveFirstBin, analysis.powerCurveBinSize, analysis.powerCurveLastBin)
+            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
+            aggregations = binning.Aggregations(analysis.powerCurveMinimumCount)
 
             dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
             dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
 
-            self.residualWindSpeedMatrix = AverageOfDeviationsMatrix( dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
-                                                            dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count())
+            self.residualWindSpeedMatrix = AverageOfDeviationsMatrix(dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
+                                                                     dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count(),
+                                                                     dimensions)
         else:
 
             self.residualWindSpeedMatrix = None
@@ -689,7 +706,7 @@ class Dataset:
 
         return dataFrame[mask]
 
-    def extractColumns(self, dataFrame, analysisConfig):
+    def extractColumns(self, dataFrame, analysis):
 
         requiredCols = []
         
@@ -719,10 +736,10 @@ class Dataset:
         if self.hasInflowAngle:
             requiredCols.append(self.inflowAngle)
 
-        if self.rewsDefined and analysisConfig.rewsActive:
+        if self.rewsDefined and analysis.rewsActive:
             requiredCols.append(self.rewsToHubRatio)
 
-        if analysisConfig.productionByHeightActive:
+        if analysis.productionByHeightActive:
             for item in self.config.rewsProfileLevels:
                 requiredCols.append(item.wind_speed_column)
 
@@ -877,8 +894,9 @@ class Dataset:
                         Status.add("{0} to {1}".format(dataFrame[~mask][self.timeStamp].min(), dataFrame[~mask][self.timeStamp].max()))
                         componentFilter.applied = True
 
-                    except:
-
+                    except Exception as exception:
+                        
+                        Status.add("Cannot apply filter {0}: {1}".format(componentFilter, exception))                      
                         componentFilter.applied = False
 
         Status.add("", verbosity=2)
@@ -969,3 +987,4 @@ class Dataset:
 
         self.dataFrame[self.productionByHeight] = self.dataFrame.apply(rotorEquivalentWindSpeed.calculate, axis=1)
 
+        return self.dataFrame[self.productionByHeight]

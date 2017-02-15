@@ -88,7 +88,7 @@ class PowerCurve:
 
     def __init__(self, powerCurveLevels, referenceDensity, rotorGeometry, inputHubWindSpeed = None, actualPower = None,
                 hubTurbulence = None, fixedTurbulence = None, ratedPower = None,
-                name = 'Undefined', interpolationMode = 'Cubic', zero_ti_pc_required = False, xLimits = None, sub_power = None,
+                name = 'Undefined', interpolationMode = 'Cubic Spline', zero_ti_pc_required = False, xLimits = None, sub_power = None,
                 relaxation_factory = NoRelaxationFactory()):
                 
         self.name = name
@@ -277,8 +277,10 @@ class PowerCurve:
         
         if self.interpolationMode == 'Linear':
             return interpolators.LinearPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
-        elif self.interpolationMode == 'Cubic':
-            return interpolators.CubicPowerCurveInterpolator(x, y, self.cutOutWindSpeed)
+        elif self.interpolationMode == 'Cubic' or self.interpolationMode == 'Cubic Spline':
+            return interpolators.CubicSplinePowerCurveInterpolator(x, y, self.cutOutWindSpeed)
+        elif self.interpolationMode == 'Cubic Hermite':
+            return interpolators.CubicHermitePowerCurveInterpolator(x, y, self.cutOutWindSpeed)
         elif self.interpolationMode == 'Marmander':
             return interpolators.MarmanderPowerCurveInterpolator(x, y, self.cutOutWindSpeed,
                                                                  xLimits = self.xLimits,

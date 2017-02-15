@@ -17,7 +17,11 @@ import tkMessageBox
 
 from ..update import update
 from ..core import analysis as core_analysis
-from ..core import share
+
+from ..core.share import ShareXPortfolio
+
+from ..core.share_factory import ShareAnalysisFactory
+
 from ..core import benchmark
 
 from ..configuration.preferences_configuration import Preferences
@@ -160,6 +164,10 @@ class UserInterface:
                                               text="Export Time Series",
                                               command=self.ExportTimeSeries)
 
+        export_training_data_button = tk.Button(analyse_group_top,
+                                              text="Export Training Data",
+                                              command=self.ExportTrainingData)
+
         export_pdm_button = tk.Button(analyse_group_top,
                                               text="Export PDM",
                                               command=self.ExportPDM)
@@ -170,6 +178,7 @@ class UserInterface:
         calculate_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_report_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_time_series_button.pack(side=tk.LEFT, padx=5, pady=5)
+        export_training_data_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_pdm_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.analysisFilePathLabel = tk.Label(analyse_group_bottom,
@@ -218,6 +227,12 @@ class UserInterface:
         run_portfolio_button = tk.Button(portfolio_group_top,
                                          text="PCWG-Share-1.1",
                                          command=self.PCWG_Share_1_dot_1_Portfolio)
+
+        run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        run_portfolio_button = tk.Button(portfolio_group_top,
+                                         text="PCWG-Share-2.0",
+                                         command=self.PCWG_Share_2_Portfolio)
 
         run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
 
@@ -614,7 +629,8 @@ class UserInterface:
 
                 ExceptionHandler.add(e, "ERROR Exporting Report")
 
-    def PCWG_Share_1_Portfolio(self):
+
+    def PCWG_Share_X_Portfolio(self, share_name):
 
         if self.portfolioConfiguration is None:
             Status.add("ERROR: Portfolio not loaded", red=True)
@@ -622,25 +638,23 @@ class UserInterface:
 
         try:
 
-            share.PcwgShare01Portfolio(self.portfolioConfiguration)
+            ShareXPortfolio(self.portfolioConfiguration, ShareAnalysisFactory(share_name))
 
         except ExceptionHandler.ExceptionType as e:
 
             ExceptionHandler.add(e)
+
+    def PCWG_Share_1_Portfolio(self):
+
+        self.PCWG_Share_X_Portfolio("Share01")
 
     def PCWG_Share_1_dot_1_Portfolio(self):
 
-        if self.portfolioConfiguration is None:
-            Status.add("ERROR: Portfolio not loaded", red=True)
-            return
+        self.PCWG_Share_X_Portfolio("Share01.1")
 
-        try:
+    def PCWG_Share_2_Portfolio(self):
 
-            share.PcwgShare01dot1Portfolio(self.portfolioConfiguration)
-
-        except ExceptionHandler.ExceptionType as e:
-
-            ExceptionHandler.add(e)
+        self.PCWG_Share_X_Portfolio("Share02")
         
     def new_portfolio(self):
 
@@ -704,8 +718,8 @@ class UserInterface:
             clean, full, calibration = selections.getSelections()
 
             fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                      defaultextension=".dat",
-                                                      initialfile="timeseries.dat",
+                                                      defaultextension=".csv",
+                                                      initialfile="timeseries.csv",
                                                       title="Save Time Series",
                                                       initialdir=preferences.analysis_last_opened_dir())
 
@@ -716,6 +730,29 @@ class UserInterface:
 
             if any((full, calibration)):
                     Status.add("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+
+        except ExceptionHandler.ExceptionType as e:
+            ExceptionHandler.add(e, "ERROR Exporting Time Series")
+
+    def ExportTrainingData(self):
+
+        if self.analysis is None:
+            Status.add("ERROR: Analysis not yet calculated", red=True)
+            return
+
+        try:
+
+            preferences = Preferences.get()
+
+            fileName = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                      defaultextension=".csv",
+                                                      initialfile="training_data.csv",
+                                                      title="Save Training Data",
+                                                      initialdir=preferences.analysis_last_opened_dir())
+
+            self.analysis.export_training_data(fileName)
+
+            Status.add("Time series written to %s" % fileName)
 
         except ExceptionHandler.ExceptionType as e:
             ExceptionHandler.add(e, "ERROR Exporting Time Series")

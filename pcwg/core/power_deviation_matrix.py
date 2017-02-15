@@ -9,7 +9,7 @@ class BaseDeviationMatrix(object):
 		self.count_matrix = count_matrix
 		self.dimensions = dimensions
 
-	def get_2D_value(self, center1, center2):
+	def get_2D_value_from_matrix(self, matrix, center1, center2):
 
 		if len(self.dimensions) != 2:
 			raise Exception("Dimensionality of power deviation matrix is not 2")
@@ -26,7 +26,7 @@ class BaseDeviationMatrix(object):
 				if not matched_center1 in self.deviation_matrix:
 					raise Exception("Matched center not found in matrix: {0}".format(center1))
 
-				matrix_slice = self.deviation_matrix[matched_center1]
+				matrix_slice = matrix[matched_center1]
 
 				for j in range(second_dimension.bins.numberOfBins): 
 
@@ -39,7 +39,15 @@ class BaseDeviationMatrix(object):
 
 						return matrix_slice[matched_center2]
 
-		raise Exception("Cannot match matrix bin: {0}, {1}".format(center1, center2))		
+		raise Exception("Cannot match matrix bin: {0}, {1}".format(center1, center2))	
+
+	def get_2D_value(self, center1, center2):
+		
+		return self.get_2D_value_from_matrix(self.deviation_matrix, center1, center2)
+
+	def get_2D_count(self, center1, center2):
+		
+		return self.get_2D_value_from_matrix(self.count_matrix, center1, center2)
 
 	def match(self, value1, value2):
 

@@ -26,6 +26,7 @@ class BenchmarkAnalysis(Analysis):
         self.calculateTurbRenormBenchmark()
         self.calculationCombinedBenchmark()
         self.calculatePowerDeviationMatrixBenchmark()
+        self.calculateProductionByHeightBenchmark()
 
         #self.dataFrame.to_csv("debug.dat")
 
@@ -115,4 +116,11 @@ class BenchmarkAnalysis(Analysis):
             self.powerDeviationMatrixYieldCount = self.dataFrame[self.get_base_filter()][self.powerDeviationMatrixPower].count()
             self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
             Status.add("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
+
+    def calculateProductionByHeightBenchmark(self):
+        if self.productionByHeightActive:
+            self.productionByHeightYield = self.dataFrame[self.get_base_filter()][self.productionByHeightPower].sum() * self.timeStampHours
+            self.productionByHeightYieldCount = self.dataFrame[self.get_base_filter()][self.productionByHeightPower].count()
+            self.productionByHeightDelta = self.productionByHeightYield / self.baseYield - 1.0
+            Status.add("Production by Height Delta: %f%% (%d)" % (self.productionByHeightDelta * 100.0, self.productionByHeightYieldCount))
 

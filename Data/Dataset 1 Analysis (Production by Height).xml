@@ -1,7 +1,8 @@
 <?xml version="1.0" ?>
 <Configuration xmlns="http://www.pcwg.org">
 	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
-	<FilterMode>All</FilterMode>
+	<NegativePowerPeriodTreatment>Remove</NegativePowerPeriodTreatment>
+	<NegativePowerBinAverageTreatment>Remove</NegativePowerBinAverageTreatment>
 	<InterpolationMode>Linear</InterpolationMode>
 	<PowerCurveMode>Specified</PowerCurveMode>
 	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
@@ -12,7 +13,7 @@
 		<BinSize>1.000000</BinSize>
 	</PowerCurveBins>
 	<Datasets>
-		<Dataset>Dataset 1 config.xml</Dataset>
+		<Dataset>Dataset 1 config (Production by Height).xml</Dataset>
 	</Datasets>
 	<InnerRange>
 		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
@@ -33,12 +34,37 @@
 		<Active>0</Active>
 		<Veer>0</Veer>
 		<Upflow>0</Upflow>
+		<Exponent>3.000000</Exponent>
 	</RotorEquivalentWindSpeed>
 	<PowerDeviationMatrix>
 		<SpecifiedPowerDeviationMatrix>HypothesisMatrix.xml</SpecifiedPowerDeviationMatrix>
-		<Active>1</Active>
+		<Active>0</Active>
+		<CalculatedPowerDeviationMatrix>
+			<PowerDeviationMatrixMethod>Average of Deviations</PowerDeviationMatrixMethod>
+			<PowerDeviationMatrixMinimumCount>10</PowerDeviationMatrixMinimumCount>
+			<Dimensions>
+				<Dimension>
+					<Parameter>Normalised Hub Wind Speed</Parameter>
+					<Index>1</Index>
+					<CenterOfFirstBin>0.100000</CenterOfFirstBin>
+					<BinWidth>0.100000</BinWidth>
+					<NumberOfBins>21</NumberOfBins>
+				</Dimension>
+				<Dimension>
+					<Parameter>Hub Turbulence</Parameter>
+					<Index>2</Index>
+					<CenterOfFirstBin>0.010000</CenterOfFirstBin>
+					<BinWidth>0.020000</BinWidth>
+					<NumberOfBins>25</NumberOfBins>
+				</Dimension>
+			</Dimensions>
+		</CalculatedPowerDeviationMatrix>
 	</PowerDeviationMatrix>
 	<ProductionByHeight>
 		<Active>1</Active>
 	</ProductionByHeight>
+	<WebService>
+		<Active>0</Active>
+		<URL></URL>
+	</WebService>
 </Configuration>

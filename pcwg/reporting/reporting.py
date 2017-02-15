@@ -83,7 +83,7 @@ class TimeSeriesExporter:
                 ds.data.fullDataFrame.to_csv(rootPath + os.sep + "FilteredDataSet_AllColumns_{0}.dat".format(ds.name), sep = '\t')
 
                 if calibration and hasattr(ds.data,"filteredCalibrationDataframe"):
-                    ds.data.filteredCalibrationDataframe.to_csv(rootPath + os.sep + "CalibrationDataSet_{0}.dat".format(ds.name), sep = '\t')
+                    ds.data.filteredCalibrationDataframe.to_csv(rootPath + os.sep + "CalibrationDataSet_{0}.dat".format(ds.name), sep = ',')
 
 class Report:
     

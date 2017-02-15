@@ -5,6 +5,17 @@
 	<Benchmarks>
 	
 		<Benchmark>
+			<AnalysisConfigPath>Dataset 1 Analysis (Production by Height).xml</AnalysisConfigPath>
+			<BaseLineMode>Hub</BaseLineMode>
+			<ExpectedResults>
+				<ExpectedResult>
+					<Field>productionByHeightDelta</Field>
+					<Value>-0.01102206</Value>
+				</ExpectedResult>
+			</ExpectedResults>
+		</Benchmark>
+
+		<Benchmark>
 			<AnalysisConfigPath>Dataset 1 Analysis (Power Deviation Matrix).xml</AnalysisConfigPath>
 			<BaseLineMode>Measured</BaseLineMode>
 
@@ -67,20 +78,35 @@
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>hubPowerDeviations.get_2D_value(0.30, 0.13)</Field>
-					<Value>-0.01734157</Value>
+					<Field>normalisingRatedPower</Field>
+					<Value>1984.15637016</Value>
+				</ExpectedResult>
+
+				<ExpectedResult>
+					<Field>normalisingRatedWindSpeed</Field>
+					<Value>10.608281</Value>
+				</ExpectedResult>
+
+				<ExpectedResult>
+					<Field>normalisingCutInWindSpeed</Field>
+					<Value>4.012920</Value>
 				</ExpectedResult>
 
 				<ExpectedResult>
 					<Field>hubPowerDeviations.get_2D_value(0.30, 0.13)</Field>
-					<Value>-0.01734157</Value>
+					<Value>-0.0182681</Value>
+				</ExpectedResult>
+
+				<ExpectedResult>
+					<Field>hubPowerDeviations.get_2D_count(0.60, 0.13)</Field>
+					<Value>69</Value>
 				</ExpectedResult>
 
 				<ExpectedResult>
 					<Field>hubPowerDeviations.get_2D_value(0.60, 0.13)</Field>
-					<Value>0.00342551</Value>
+					<Value>0.0013373</Value>
 				</ExpectedResult>
-				
+
 			</ExpectedResults>
 		</Benchmark>
 
@@ -108,10 +134,7 @@
 					<Field>powerDeviationMatrixDelta</Field>
 					<Value>0.00224711</Value>
 				</ExpectedResult>
-				<ExpectedResult>
-					<Field>hubPowerDeviations[0.1][0.1]</Field>
-					<Value>0.00224711</Value>
-				</ExpectedResult>
+
 			</ExpectedResults>
 		</Benchmark>
 		<Benchmark>

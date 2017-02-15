@@ -227,7 +227,7 @@ class Filter(XmlBase):
 
     def __str__(self):
         if not self.derived:
-            return str(self.value)
+            return "{0} {1} {2}".format(self.column, self.filterType, self.value)
         else:
             return " * ".join(["({col}*{A} + {B})^{C}".format(col=factor[0],A=factor[1],B=factor[2],C=factor[3])  for factor in self.value])
 
