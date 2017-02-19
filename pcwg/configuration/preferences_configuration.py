@@ -47,6 +47,11 @@ class Preferences(base_configuration.XmlBase):
             self.benchmarkLastOpened = ""
             self.verbosity = 1
             self.debug = False
+            self.isNew = True
+
+        else:
+
+            self.isNew = False
 
     def loadPreferences(self):
 

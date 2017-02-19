@@ -1,6 +1,8 @@
 <?xml version="1.0" ?>
 <Configuration xmlns="http://www.pcwg.org">
 	<PowerCurveMinimumCount>10</PowerCurveMinimumCount>
+	<NegativePowerPeriodTreatment>Remove</NegativePowerPeriodTreatment>
+	<NegativePowerBinAverageTreatment>Remove</NegativePowerBinAverageTreatment>
 	<InterpolationMode>Linear</InterpolationMode>
 	<PowerCurveMode>InnerMeasured</PowerCurveMode>
 	<PowerCurvePaddingMode>None</PowerCurvePaddingMode>
@@ -14,10 +16,18 @@
 		<Dataset>Dataset 1 config (with actual power).xml</Dataset>
 	</Datasets>
 	<InnerRange>
-		<InnerRangeLowerTurbulence>0.100000</InnerRangeLowerTurbulence>
-		<InnerRangeUpperTurbulence>0.140000</InnerRangeUpperTurbulence>
-		<InnerRangeLowerShear>0.150000</InnerRangeLowerShear>
-		<InnerRangeUpperShear>0.250000</InnerRangeUpperShear>
+		<InnerRangeDimensions>
+			<InnerRangeDimension>
+				<InnerRangeParameter>Hub Turbulence Intensity</InnerRangeParameter>
+				<InnerRangeLowerLimit>0.100000</InnerRangeLowerLimit>
+				<InnerRangeUpperLimit>0.140000</InnerRangeUpperLimit>
+			</InnerRangeDimension>
+			<InnerRangeDimension>
+				<InnerRangeParameter>Shear Exponent</InnerRangeParameter>
+				<InnerRangeLowerLimit>0.150000</InnerRangeLowerLimit>
+				<InnerRangeUpperLimit>0.250000</InnerRangeUpperLimit>
+			</InnerRangeDimension>
+		</InnerRangeDimensions>
 	</InnerRange>
 	<Turbine>
 		<SpecifiedPowerCurve>PowerCurve.xml</SpecifiedPowerCurve>
@@ -58,4 +68,16 @@
 			</Dimensions>
 		</CalculatedPowerDeviationMatrix>
 	</PowerDeviationMatrix>
+	<ProductionByHeight>
+		<Active>0</Active>
+	</ProductionByHeight>
+	<WebService>
+		<Active>0</Active>
+		<URL></URL>
+	</WebService>
+	<AlternativeCorrections>
+		<AlternativeCorrection>
+			<Density>0</Density>
+		</AlternativeCorrection>
+	</AlternativeCorrections>
 </Configuration>

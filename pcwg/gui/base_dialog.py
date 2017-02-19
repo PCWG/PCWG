@@ -521,10 +521,8 @@ class BaseConfigurationDialog(BaseDialog):
     def getInitialFolder(self):
         preferences = Preferences.get()
         return preferences.analysis_last_opened_dir()
-                
-    def validate(self):
-
-        if BaseDialog.validate(self) == 0: return
+    
+    def validate_file_path(self):
 
         if len(self.filePath.get()) < 1:
             path = tkFileDialog.asksaveasfilename(parent=self.master,defaultextension=".xml", initialfile="%s.xml" % self.getInitialFileName(), title="Save New Config", initialdir=self.getInitialFolder())
@@ -543,18 +541,37 @@ class BaseConfigurationDialog(BaseDialog):
             "File Overwrite Confirmation",
             "Specified file path already exists, do you wish to overwrite?")
             if not result: return 0
-                
+
         return 1
-        
+
+    def validate(self):
+
+        if BaseDialog.validate(self) == 0: return
+
+        return self.validate_file_path()
+    
+    def save_config(self):
+        self.config.save()
+
+    def execute_callback(self):        
+        if self.callback != None:
+            if self.index == None:
+                self.callback(self.config.path)
+            else:
+                self.callback(self.config.path, self.index)
+
+    def set_file_path(self):
+        self.config.path = self.filePath.get()
+
     def apply(self):
             
         try:
             
-            self.config.path = self.filePath.get()
+            self.set_file_path()
 
             self.setConfigValues()                
             
-            self.config.save()
+            self.save_config()
             
             self.isSaved = True
 
@@ -563,11 +580,7 @@ class BaseConfigurationDialog(BaseDialog):
             else:
                 Status.add("Config updated")
 
-            if self.callback != None:
-                if self.index == None:
-                    self.callback(self.config.path)
-                else:
-                    self.callback(self.config.path, self.index)
+            self.execute_callback()
 
         except ExceptionHandler.ExceptionType as e:
             ExceptionHandler.add(e, "Cannot create/update config")

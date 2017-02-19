@@ -3,11 +3,15 @@ import pandas as pd
 class Status:
 
     Instance = None
+
+    @classmethod
+    def set_verbosity(cls, verbosity):
+        cls.get().verbosity = verbosity
            
     @classmethod
-    def add(cls, message, red = False, verbosity = 1):
-        cls.get().add_message(message, red, verbosity)
-        
+    def add(cls, message, red = False, orange=False, verbosity = 1):
+        cls.get().add_message(message, red, orange, verbosity)
+
     @classmethod
     def initialize_status(cls, status_method, verbosity = 1):
 
@@ -30,7 +34,7 @@ class Status:
 
         self.verbosity = 1
     
-    def add_message(self, message, red, verbosity):
+    def add_message(self, message, red, orange, verbosity):
                
         if verbosity <= self.verbosity:
 
@@ -42,8 +46,8 @@ class Status:
             lines = text.split("\n")
     
             for line in lines:
-                self.status_method(line, red)
+                self.status_method(line, red, orange)
 
-    def status_method(self, message, red):
+    def status_method(self, message, red, orange, verbosity):
 
         print message    

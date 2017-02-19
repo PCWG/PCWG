@@ -9,6 +9,8 @@ import base_configuration
 import path_manager
 
 from power_deviation_matrix_configuration import PowerDeviationMatrixDimension
+from alternative_corrections_configuration import AlternativeCorrection
+from inner_range_configuration import InnerRangeDimension
 
 class AnalysisConfiguration(base_configuration.XmlBase):
 
@@ -66,7 +68,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 self.setDefaultPowerCurveBins()
 
             self.readDatasets(configurationNode)
-            self.readInnerRange(configurationNode)
+            self.read_inner_range(configurationNode)
             self.readTurbine(configurationNode)
 
             self.nominal_wind_speed_distribution.relative_path = self.getNodeValueIfExists(configurationNode,'NominalWindSpeedDistribution',None)
@@ -78,6 +80,8 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.readPowerDeviationMatrix(configurationNode)
             self.readProductionByHeight(configurationNode)
             self.readWebService(configurationNode)
+
+            self.read_alternative_corrections(configurationNode)
 
         else:
 
@@ -92,8 +96,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 
             self.setDefaultPowerCurveBins()
 
-            self.setDefaultInnerRangeTurbulence()
-            self.setDefaultInnerRangeShear()
+            self.set_default_inner_range()
 
             self.rewsActive = False
             self.rewsVeer = True
@@ -112,6 +115,8 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
             self.power_deviation_matrix_minimum_count = 0
             self.power_deviation_matrix_method = 'Average of Deviations'
+
+            self.alternative_corrections = []
 
     @property
     def path(self): 
@@ -145,14 +150,19 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         dimensions.append(PowerDeviationMatrixDimension("Hub Turbulence", 2, 0.01, 0.02, 25))
 
         return dimensions
-        
-    def setDefaultInnerRangeTurbulence(self):
-        self.innerRangeLowerTurbulence = 0.08
-        self.innerRangeUpperTurbulence = 0.12
+    
+    def set_default_inner_range(self):
 
-    def setDefaultInnerRangeShear(self):
-        self.innerRangeLowerShear = 0.05
-        self.innerRangeUpperShear = 0.20
+        self.inner_range_dimensions = []
+
+        self.inner_range_dimensions.append(self.create_default_inner_range_turbulence())
+        self.inner_range_dimensions.append(self.create_default_inner_range_shear())
+
+    def create_default_inner_range_shear(self):
+        return InnerRangeDimension("Shear", 0.05, 0.20)
+
+    def create_default_inner_range_turbulence(self):
+        return InnerRangeDimension("Turbulence", 0.08, 0.12)
 
     def setDefaultPowerCurveBins(self):
         self.powerCurveFirstBin = 1.0
@@ -195,10 +205,13 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         innerRangeNode = self.addNode(doc, root, "InnerRange")
 
-        self.addFloatNode(doc, innerRangeNode, "InnerRangeLowerTurbulence", self.innerRangeLowerTurbulence)
-        self.addFloatNode(doc, innerRangeNode, "InnerRangeUpperTurbulence", self.innerRangeUpperTurbulence)
-        self.addFloatNode(doc, innerRangeNode, "InnerRangeLowerShear", self.innerRangeLowerShear)
-        self.addFloatNode(doc, innerRangeNode, "InnerRangeUpperShear", self.innerRangeUpperShear)
+        innerRangeDimensionsNode = self.addNode(doc, innerRangeNode, "InnerRangeDimensions")
+
+        for dimension in self.inner_range_dimensions:
+            innerRangeDimensionNode = self.addNode(doc, innerRangeDimensionsNode, "InnerRangeDimension")
+            self.addTextNode(doc, innerRangeDimensionNode, "InnerRangeParameter", dimension.parameter)
+            self.addFloatNode(doc, innerRangeDimensionNode, "InnerRangeLowerLimit", dimension.lower_limit)
+            self.addFloatNode(doc, innerRangeDimensionNode, "InnerRangeUpperLimit", dimension.upper_limit)
 
         turbineNode = self.addNode(doc, root, "Turbine")
         self.addTextNode(doc, turbineNode, "SpecifiedPowerCurve", self.specified_power_curve.relative_path)
@@ -246,6 +259,14 @@ class AnalysisConfiguration(base_configuration.XmlBase):
         self.addBoolNode(doc, web_service_node, "Active", self.web_service_active)
         self.addTextNode(doc, web_service_node, "URL", self.web_service_url)
 
+        alternative_correction_nodes = self.addNode(doc, root, "AlternativeCorrections")
+
+        for alternative_correction in self.alternative_corrections:
+
+            alternative_correction_node = self.addNode(doc, alternative_correction_nodes, "AlternativeCorrection")
+
+            self.addBoolNode(doc, alternative_correction_node, "Density", alternative_correction.density)
+
     def readDatasets(self, configurationNode):
 
         datasetsNode = self.getNode(configurationNode, 'Datasets')
@@ -254,17 +275,40 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             dataset_path = self.getValue(datasetNode)
             self.datasets.append_relative(dataset_path)
 
-    def readInnerRange(self, configurationNode):
+    def read_inner_range(self, configurationNode):
+
+        self.inner_range_dimensions = []
 
         innerRangeNode = self.getNode(configurationNode, 'InnerRange')
 
-        self.innerRangeLowerTurbulence = self.getNodeFloat(innerRangeNode, 'InnerRangeLowerTurbulence')
-        self.innerRangeUpperTurbulence = self.getNodeFloat(innerRangeNode, 'InnerRangeUpperTurbulence')
+        #backwards compatibility
+        if not self.nodeExists(innerRangeNode, 'InnerRangeDimensions'):
 
-        self.setDefaultInnerRangeShear()
+            inner_range_lower_turbulence = self.getNodeFloat(innerRangeNode, 'InnerRangeLowerTurbulence')
+            inner_range_upper_turbulence = self.getNodeFloat(innerRangeNode, 'InnerRangeUpperTurbulence')
 
-        if self.nodeExists(innerRangeNode, 'InnerRangeLowerShear'): self.innerRangeLowerShear = self.getNodeFloat(innerRangeNode, 'InnerRangeLowerShear')
-        if self.nodeExists(innerRangeNode, 'InnerRangeUpperShear'): self.innerRangeUpperShear = self.getNodeFloat(innerRangeNode, 'InnerRangeUpperShear')
+            self.inner_range_dimensions.append(InnerRangeDimension("Turbulence", inner_range_lower_turbulence, inner_range_upper_turbulence))
+
+            if self.nodeExists(innerRangeNode, 'InnerRangeLowerShear') and self.nodeExists(innerRangeNode, 'InnerRangeUpperShear'):
+                inner_range_lower_shear = self.getNodeFloat(innerRangeNode, 'InnerRangeLowerShear')
+                inner_range_upper_shear = self.getNodeFloat(innerRangeNode, 'InnerRangeUpperShear')
+                self.inner_range_dimensions.append(InnerRangeDimension("Shear", inner_range_lower_shear, inner_range_upper_shear))
+            else:
+                self.inner_range_dimensions.append(self.create_default_inner_range_shear())
+
+        else:
+
+            dimensions_node = self.getNode(innerRangeNode, 'InnerRangeDimensions')
+
+            for dimension_node in self.getNodes(dimensions_node, 'InnerRangeDimension'):
+    
+                inner_range_parameter = self.getNodeValue(dimension_node, 'InnerRangeParameter')
+    
+                inner_range_lower = self.getNodeFloat(dimension_node, 'InnerRangeLowerLimit')
+                inner_range_upper = self.getNodeFloat(dimension_node, 'InnerRangeUpperLimit')
+    
+                self.inner_range_dimensions.append(InnerRangeDimension(inner_range_parameter, inner_range_lower, inner_range_upper))
+
 
     def readTurbine(self, configurationNode):
 
@@ -394,3 +438,17 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.densityCorrectionActive = self.getNodeBool(densityNode, 'Active')
         else:
             self.densityCorrectionActive = False
+
+    def read_alternative_corrections(self, configurationNode):
+
+        self.alternative_corrections = []
+
+        for alternative_correction_node in self.getNodes(configurationNode, "AlternativeCorrections"):
+            
+            alternative_correction = AlternativeCorrection()
+
+            if self.nodeExists(alternative_correction_node, 'Density'):
+                alternative_correction.density = self.getNodeBool(alternative_correction_node, 'Density')
+
+            self.alternative_corrections.append(alternative_correction)
+

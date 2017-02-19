@@ -245,7 +245,7 @@ class ShearExponentCalculator:
 
 class Dataset:
 
-    def __init__(self, config, analysis):
+    def __init__(self, config):
 
         self.config = config
         self.rotorGeometry = turbine.RotorGeometry(config.diameter, config.hubHeight, config.rotor_tilt)
@@ -253,7 +253,6 @@ class Dataset:
         self.name = config.name
         self.timeStepInSeconds = config.timeStepInSeconds
         self.rewsDefined = config.rewsDefined
-        self.turbRenormActive = analysis.turbRenormActive
 
         self.set_columns(config)
 
@@ -261,16 +260,19 @@ class Dataset:
         dataFrame = self.load_direction(config, dataFrame)
         dataFrame = self.load_shear(config, dataFrame)
         dataFrame = self.load_inflow(config, dataFrame)        
-        dataFrame = self.load_wind_speed(config, analysis, dataFrame)
+        dataFrame = self.load_wind_speed(config, dataFrame)
         dataFrame = self.load_density(config, dataFrame) 
         dataFrame = self.load_power(config, dataFrame)       
 
-        dataFrame = self.filterDataFrame(dataFrame, config.filters)
+        dataFrame = self.filterDataFrame(dataFrame, self.get_filters(config))
         dataFrame = self.excludeData(dataFrame, config)
 
-        dataFrame = self.load_rews(config, analysis, dataFrame)
+        self.profileLevels, self.profileHubWindSpeedCalculator = self.prepare_rews(config, self.rotorGeometry)
 
-        self.finalise_data(config, analysis, dataFrame)
+        self.finalise_data(config, dataFrame)
+
+    def get_filters(self, config):
+        return config.filters
 
     def set_columns(self, config):
 
@@ -281,10 +283,14 @@ class Dataset:
         self.powerMax = "Power Max"
         self.powerSD  = "Power SD"
         self.hubWindSpeed = "Hub Wind Speed"
+        
         self.hubTurbulence = "Hub Turbulence Intensity"
-        self.hubTurbulenceAlias = "Hub Turbulence"
+        self.hubTurbulenceAliasA = "Hub Turbulence"
+        self.hubTurbulenceAliasB = "Turbulence"
+
         self.hubDensity = "Hub Density"
         self.shearExponent = "Shear Exponent"
+        self.shearExponentAlias = "Shear"
         self.referenceShearExponent = "Reference Shear Exponent"
         self.turbineShearExponent = "Turbine Shear Exponent"
         self.windDirection = "Wind Direction"
@@ -319,23 +325,14 @@ class Dataset:
 
         return dataFrame
 
-    def finalise_data(self, config, analysis, dataFrame):
+    def finalise_data(self, config, dataFrame):
 
         self.fullDataFrame = dataFrame.copy()
-        self.dataFrame = self.extractColumns(dataFrame, analysis).dropna()
+        self.dataFrame = self.extractColumns(dataFrame).dropna()
         
         if self.windDirection in self.dataFrame.columns:
             self.fullDataFrame[self.windDirection] = self.fullDataFrame[self.windDirection].astype(float)
             self.analysedDirections = (round(self.fullDataFrame[self.windDirection].min() + config.referenceWindDirectionOffset), round(self.fullDataFrame[self.windDirection].max()+config.referenceWindDirectionOffset))
-
-    def load_rews(self, config, analysis, dataFrame):
-
-        if self.rewsDefined and analysis.rewsActive:
-            dataFrame = self.defineREWS(dataFrame, config, self.rotorGeometry, analysis.rewsVeer, analysis.rewsUpflow, analysis.rewsExponent)
-        else:
-            self.windSpeedLevels = {}
-
-        return dataFrame
 
     def load_power(self, config, dataFrame):
 
@@ -399,6 +396,8 @@ class Dataset:
             self.shearCalibrationCalculator = self.createShearCalibration(dataFrame ,config, config.timeStepInSeconds)
             dataFrame[self.shearExponent] = dataFrame.apply(self.shearCalibrationCalculator.turbineValue, axis=1)
         
+        dataFrame[self.shearExponentAlias] = dataFrame[self.shearExponent]
+
         return dataFrame
 
     def load_direction(self, config, dataFrame):
@@ -419,7 +418,7 @@ class Dataset:
 
         return dataFrame
 
-    def load_wind_speed(self, config, analysis, dataFrame):
+    def load_wind_speed(self, config, dataFrame):
 
         self.hubWindSpeedForTurbulence = self.hubWindSpeed if config.turbulenceWSsource != 'Reference' else config.referenceWindSpeed
         
@@ -427,14 +426,15 @@ class Dataset:
 
         if config.calculateHubWindSpeed:
 
-            dataFrame = self.calculate_hub_wind_speed(config, analysis, dataFrame)
+            dataFrame = self.calculate_hub_wind_speed(config, dataFrame)
 
         else:
 
             dataFrame = self.set_up_specified_hub_wind_speed(config, dataFrame)
 
         #alias columns
-        dataFrame[self.hubTurbulenceAlias] = dataFrame[self.hubTurbulence]
+        dataFrame[self.hubTurbulenceAliasA] = dataFrame[self.hubTurbulence]
+        dataFrame[self.hubTurbulenceAliasB] = dataFrame[self.hubTurbulence]
         
         return dataFrame
 
@@ -454,7 +454,7 @@ class Dataset:
 
         return dataFrame
 
-    def calculate_hub_wind_speed(self, config, analysis, dataFrame):
+    def calculate_hub_wind_speed(self, config, dataFrame):
 
         self.verify_column_datatype(dataFrame, config.referenceWindSpeed)
 
@@ -490,17 +490,13 @@ class Dataset:
             windSpeedBin = "Wind Speed Bin"
             turbulenceBin = "Turbulence Bin"
 
-            windSpeedBins = binning.Bins(analysis.powerCurveFirstBin, analysis.powerCurveBinSize, analysis.powerCurveLastBin)
+            windSpeedBins = binning.Bins(0.0, 1.0, 30.0)
             turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
 
             dimensions.append(PowerDeviationMatrixDimension(self.hubWindSpeed, windSpeedBins.centerOfFirstBin, windSpeedBins.binWidth, windSpeedBins.numberOfBins))    
             dimensions.append(PowerDeviationMatrixDimension(self.hubTurbulence, turbulenceBins.centerOfFirstBin, turbulenceBins.binWidth, turbulenceBins.numberOfBins))    
 
-            aggregations = binning.Aggregations(analysis.powerCurveMinimumCount)
-
-            windSpeedBins = binning.Bins(analysis.powerCurveFirstBin, analysis.powerCurveBinSize, analysis.powerCurveLastBin)
-            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
-            aggregations = binning.Aggregations(analysis.powerCurveMinimumCount)
+            aggregations = binning.Aggregations(0)
 
             dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
             dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
@@ -706,7 +702,7 @@ class Dataset:
 
         return dataFrame[mask]
 
-    def extractColumns(self, dataFrame, analysis):
+    def extractColumns(self, dataFrame):
 
         requiredCols = []
         
@@ -716,13 +712,15 @@ class Dataset:
         requiredCols.append(self.hubWindSpeed)
 
         requiredCols.append(self.hubTurbulence)
-        requiredCols.append(self.hubTurbulenceAlias)
+        requiredCols.append(self.hubTurbulenceAliasA)
+        requiredCols.append(self.hubTurbulenceAliasB)
 
         if self.hasDensity:
             requiredCols.append(self.hubDensity)
 
         if self.hasShear:
             requiredCols.append(self.shearExponent)
+            requiredCols.append(self.shearExponentAlias)
 
         if self.hasDirection:
             requiredCols.append(self.windDirection)
@@ -736,12 +734,13 @@ class Dataset:
         if self.hasInflowAngle:
             requiredCols.append(self.inflowAngle)
 
-        if self.rewsDefined and analysis.rewsActive:
-            requiredCols.append(self.rewsToHubRatio)
-
-        if analysis.productionByHeightActive:
+        if self.rewsDefined:
+            
             for item in self.config.rewsProfileLevels:
-                requiredCols.append(item.wind_speed_column)
+
+                if self.valid_column(item.wind_speed_column): requiredCols.append(item.wind_speed_column)
+                if self.valid_column(item.wind_direction_column): requiredCols.append(item.wind_direction_column)
+                if self.valid_column(item.upflow_column): requiredCols.append(item.upflow_column)  
 
         if self.hasAllPowers:
             requiredCols.append(self.powerMin)
@@ -929,6 +928,10 @@ class Dataset:
 
     def prepare_rews(self, config, rotorGeometry):
 
+        if not config.rewsDefined:
+            self.windSpeedLevels = {}
+            return (None, None)
+
         windSpeedLevels = {}
         directionLevels = {}
         upflowLevels = {}
@@ -967,19 +970,15 @@ class Dataset:
 
         return (profileLevels, profileHubWindSpeedCalculator)
 
-    def defineREWS(self, dataFrame, config, rotorGeometry, rewsVeer, rewsUpflow, rewsExponent):
+    def calculate_rews(self, rewsVeer, rewsUpflow, rewsExponent):
 
-        profileLevels, profileHubWindSpeedCalculator = self.prepare_rews(config, rotorGeometry)
+        rotorEquivalentWindSpeed = rews.RotorEquivalentWindSpeed(self.profileLevels, self.rotor, self.profileHubWindSpeedCalculator, rewsVeer, rewsUpflow, rewsExponent)
 
-        rotorEquivalentWindSpeed = rews.RotorEquivalentWindSpeed(profileLevels, self.rotor, profileHubWindSpeedCalculator, rewsVeer, rewsUpflow, rewsExponent)
+        self.dataFrame[self.rewsToHubRatio] = self.dataFrame.apply(rotorEquivalentWindSpeed.rewsToHubRatio, axis=1)
 
-        dataFrame[self.rewsToHubRatio] = dataFrame.apply(rotorEquivalentWindSpeed.rewsToHubRatio, axis=1)
-
-        return dataFrame
+        return self.dataFrame[self.rewsToHubRatio]
 
     def calculate_production_by_height(self, power_curve):
-
-        self.dataFrame[self.productionByHeight] = 99.99
 
         profileLevels, profileHubWindSpeedCalculator = self.prepare_rews(self.config, self.rotorGeometry)
 

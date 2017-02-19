@@ -6,6 +6,12 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
     def __init__(self, path = None):
 
+        self.out_of_range_count = 0
+        self.total_count = 0
+        self.out_of_range_count_by_dimension = None
+        self.below_count_by_dimension = None
+        self.above_count_by_dimension = None
+
         if path != None:
 
             self.isNew = False
@@ -27,9 +33,13 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
                 parameter = self.getNodeValue(node, 'Parameter')
                 centerOfFirstBin = self.getNodeFloat(node, 'CenterOfFirstBin')
                 binWidth = self.getNodeFloat(node, 'BinWidth')
-                numberOfBins = self.getNodeFloat(node, 'NumberOfBins')
+                numberOfBins = self.getNodeInt(node, 'NumberOfBins')
 
-                self.dimensions.append(PowerDeviationMatrixDimension(parameter, centerOfFirstBin, binWidth, numberOfBins))
+                self.dimensions.append(PowerDeviationMatrixDimension(parameter=parameter,
+                                                                     index=(len(self.dimensions) + 1),
+                                                                     centerOfFirstBin=centerOfFirstBin,
+                                                                     binWidth=binWidth,
+                                                                     numberOfBins=numberOfBins))
 
             if len(self.dimensions) < 1:
                 raise Exception("Matrix has zero dimensions")
@@ -145,13 +155,46 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
     def getBin(self, dimension, value):
         return round(round((value - dimension.centerOfFirstBin) / dimension.binWidth, 0) * dimension.binWidth + dimension.centerOfFirstBin, 4)
-    
+
+    def reset_out_of_range_count(self):
+        self.out_of_range_count = 0
+        self.total_count = 0
+        self.out_of_range_count_by_dimension = None
+        self.below_count_by_dimension = None
+        self.above_count_by_dimension = None
+
+    def out_of_range_fraction(self, parameter=None):
+        if parameter is None:
+            return float(self.out_of_range_count) / float(self.total_count)
+        else:
+            return float(self.out_of_range_count_by_dimension[parameter]) / float(self.total_count)
+
+    def below_fraction(self, parameter):
+        return float(self.below_count_by_dimension[parameter]) / float(self.total_count)
+
+    def above_fraction(self, parameter):
+        return float(self.above_count_by_dimension[parameter]) / float(self.total_count)
+
     def __getitem__(self, parameters):
+
+        self.total_count += 1
 
         if len(self.dimensions) < 1:
             raise Exception("Matrix has zero dimensions")
 
+        if self.out_of_range_count_by_dimension is None:
+            
+            self.out_of_range_count_by_dimension = {}
+            self.below_count_by_dimension = {}
+            self.above_count_by_dimension = {}
+
+            for dimension in self.dimensions:            
+                self.out_of_range_count_by_dimension[dimension.parameter] = 0
+                self.below_count_by_dimension[dimension.parameter] = 0
+                self.above_count_by_dimension[dimension.parameter] = 0
+
         keyList = []
+        out_of_range = False
 
         for dimension in self.dimensions:
         
@@ -160,9 +203,19 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             binValue = self.getBin(dimension, value)
 
             if not dimension.withinRange(binValue):
-                return self.outOfRangeValue
+                
+                self.out_of_range_count_by_dimension[dimension.parameter] += 1
+
+                if value < dimension.centerOfFirstBin: self.below_count_by_dimension[dimension.parameter] += 1
+                if value > dimension.centerOfLastBin: self.above_count_by_dimension[dimension.parameter] += 1
+
+                out_of_range = True
             
             keyList.append(binValue)
+
+        if out_of_range:
+            self.out_of_range_count += 1
+            return self.outOfRangeValue
 
         key = tuple(keyList)
 
@@ -183,6 +236,7 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 class PowerDeviationMatrixDimension(object):
 
     def __init__(self, parameter='Normalised Hub Wind Speed', index=1, centerOfFirstBin=None, binWidth=None, numberOfBins=None):
+
         self.calculate_last_bin = False
         self.parameter = parameter
         self.index = index
@@ -230,7 +284,28 @@ class PowerDeviationMatrixDimension(object):
             self.centerOfLastBin = None
             
     def withinRange(self, value):
+
+        if self.centerOfFirstBin is None \
+           or self.centerOfLastBin is None:
+
+            error = "Limits not well defined for {0} dimension\n".format(self.parameter)
+
+            if self.centerOfFirstBin is None:
+                error += '- PDM center of first bin not defined\n'
+
+            if self.centerOfLastBin is None:
+                error += '- PDM center of last bin not defined\n'
+
+            if self.binWidth is None:
+                error += '- PDM bin width not defined\n'
+
+            if self.numberOfBins is None:
+                error += '- PDM number of bins not defined\n'
+
+            raise Exception(error)
+
         if value < self.centerOfFirstBin: return False
         if value > self.centerOfLastBin: return False
+
         return True
 

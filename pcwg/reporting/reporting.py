@@ -124,8 +124,11 @@ class Report:
         self.reportSettings(settingsSheet, analysis)
         
         if report_power_curve:
+
             rowsAfterCurves = []
+            
             #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specifiedPowerCurve, analysis)) #needs fixing + move to settings sheet
+            
             if analysis.specifiedPowerCurve is not None:
                 if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
                     rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
@@ -170,28 +173,13 @@ class Report:
                     self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (30 if analysis.turbRenormActive else 25), 'NightTime', analysis.nightTimePowerCurve, specifiedLevels)
     
                 self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
-                #self.reportPowerDeviations(book, "HubPowerDeviationsInnerShear", analysis.hubPowerDeviationsInnerShear, gradient)
                 
                 if analysis.rewsActive:
-                    self.reportPowerDeviations(book, "REWSPowerDeviations", analysis.rewsPowerDeviations, gradient)
                     self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
-                    if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Inner Shear", analysis.rewsMatrixInnerShear, gradient)
-                    if analysis.hasShear: self.reportPowerDeviations(book, "REWS Deviation Outer Shear", analysis.rewsMatrixOuterShear, gradient)
 
-                if analysis.turbRenormActive:
-                    self.reportPowerDeviations(book, "TurbPowerDeviations", analysis.turbPowerDeviations, gradient)
-
-                if analysis.turbRenormActive and analysis.rewsActive:
-                    self.reportPowerDeviations(book, "CombPowerDeviations", analysis.combPowerDeviations, gradient)
-
-                if analysis.powerDeviationMatrixActive:
-                    self.reportPowerDeviations(book, "PowerDeviationMatrixDeviations", analysis.powerDeviationMatrixDeviations, gradient)
-
-                if analysis.productionByHeightActive:
-                    self.reportPowerDeviations(book, "ProductionByHeightDeviations", analysis.productionByHeightDeviations, gradient)
-
-                if analysis.web_service_active:
-                    self.reportPowerDeviations(book, "WebServiceDeviations", analysis.webServiceDeviations, gradient)
+                for correction in analysis.corrections:
+                    deviations = analysis.corrected_deviations[correction.name]
+                    self.reportPowerDeviations(book, "{0} Power Deviations".format(correction.name), deviations, gradient)
 
                 if analysis.config.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
@@ -297,7 +285,6 @@ class Report:
                     sh.write(row, col+3, str(filt))
                     sh.write(row, col+4, filt.active) # always true if in list...
                 row += 1
-
 
     def reportSettings(self, sh, analysis):
 

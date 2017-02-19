@@ -1,9 +1,8 @@
 import numpy as np
 
 from analysis import Analysis
-from analysis import PowerCalculator
-from analysis import TurbulencePowerCalculator
-
+from corrections import PowerCalculator
+from corrections import TurbulencePowerCalculator
 
 from ..core.status import Status
 
@@ -43,7 +42,7 @@ class BenchmarkAnalysis(Analysis):
         base_filter = Analysis.get_base_filter(self)
 
         if self.baseLineMode == "Hub":
-            return base_filter & self.dataFrame[self.inputHubWindSpeed].notnull()
+            return base_filter & self.dataFrame[self.baseline.wind_speed_column].notnull()
         elif self.baseLineMode == "Measured":
             return base_filter
         else:
@@ -62,7 +61,7 @@ class BenchmarkAnalysis(Analysis):
             
                 raise Exception(exc_str)
             
-            self.dataFrame[self.basePower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
+            self.dataFrame[self.basePower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.baseline.wind_speed_column).power, axis=1)
 
         elif self.baseLineMode == "Measured":
             
@@ -78,7 +77,7 @@ class BenchmarkAnalysis(Analysis):
         self.baseYield = self.dataFrame[self.get_base_filter()][self.basePower].sum() * self.timeStampHours
 
     def calculateHubBenchmark(self):
-        self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.inputHubWindSpeed).power, axis=1)
+        self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.baseline.wind_speed_column).power, axis=1)
         self.hubYield = self.dataFrame[self.get_base_filter()][self.hubPower].sum() * self.timeStampHours
         self.hubYieldCount = self.dataFrame[self.get_base_filter()][self.hubPower].count()
         self.hubDelta = self.hubYield / self.baseYield - 1.0
@@ -86,41 +85,37 @@ class BenchmarkAnalysis(Analysis):
 
     def calculateREWSBenchmark(self):
         if self.rewsActive:
-            self.dataFrame[self.rewsPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.rotorEquivalentWindSpeed).power, axis=1)
-            self.rewsYield = self.dataFrame[self.get_base_filter()][self.rewsPower].sum() * self.timeStampHours
-            self.rewsYieldCount = self.dataFrame[self.get_base_filter()][self.rewsPower].count()
-            self.rewsDelta = self.rewsYield / self.baseYield - 1.0
-            Status.add("REWS Delta: %.3f%% (%d)" % (self.rewsDelta * 100.0, self.rewsYieldCount))
+            self.rewsYield, self.rewsYieldCount, self.rewsDelta = self.calculate_benchmark_for_correction("REWS")
 
     def calculateTurbRenormBenchmark(self):
+
         if self.turbRenormActive:
-            self.dataFrame[self.turbulencePower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.inputHubWindSpeed, self.hubTurbulence).power, axis=1)
-            self.turbulenceYield = self.dataFrame[self.get_base_filter()][self.turbulencePower].sum() * self.timeStampHours
-            self.turbulenceYieldCount = self.dataFrame[self.get_base_filter()][self.turbulencePower].count()
-            self.turbulenceDelta = self.turbulenceYield / self.baseYield - 1.0
+
+            self.turbulenceYield, self.turbulenceYieldCount, self.turbulenceDelta = self.calculate_benchmark_for_correction("Turbulence")
+
             if self.hasActualPower:
-                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.basePower]).astype('float')
-            Status.add("Turb Delta: %.3f%% (%d)" % (self.turbulenceDelta * 100.0, self.turbulenceYieldCount))
+                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.corrections["Turbulence"].power_column] + self.dataFrame[self.basePower]).astype('float')
 
     def calculationCombinedBenchmark(self):
         if self.rewsActive and self.turbRenormActive:
-            self.dataFrame[self.combinedPower] = self.dataFrame.apply(TurbulencePowerCalculator(self.powerCurve, self.ratedPower, self.rotorEquivalentWindSpeed, self.hubTurbulence).power, axis=1)
-            self.combinedYield = self.dataFrame[self.get_base_filter()][self.combinedPower].sum() * self.timeStampHours
-            self.combinedYieldCount = self.dataFrame[self.get_base_filter()][self.combinedPower].count()
-            self.combinedDelta = self.combinedYield / self.baseYield - 1.0
-            Status.add("Comb Delta: %.3f%% (%d)" % (self.combinedDelta * 100.0, self.combinedYieldCount))
+            self.combinedYield, self.combinedYieldCount, self.combinedDelta = self.calculate_benchmark_for_correction("REWS & Turbulence")
 
     def calculatePowerDeviationMatrixBenchmark(self):
         if self.powerDeviationMatrixActive:
-            self.powerDeviationMatrixYield = self.dataFrame[self.get_base_filter()][self.powerDeviationMatrixPower].sum() * self.timeStampHours
-            self.powerDeviationMatrixYieldCount = self.dataFrame[self.get_base_filter()][self.powerDeviationMatrixPower].count()
-            self.powerDeviationMatrixDelta = self.powerDeviationMatrixYield / self.baseYield - 1.0
-            Status.add("Power Deviation Matrix Delta: %f%% (%d)" % (self.powerDeviationMatrixDelta * 100.0, self.powerDeviationMatrixYieldCount))
+            self.powerDeviationMatrixYield, self.powerDeviationMatrixYieldCount, self.powerDeviationMatrixDelta = self.calculate_benchmark_for_correction("Power Deviation Matrix")
 
     def calculateProductionByHeightBenchmark(self):
         if self.productionByHeightActive:
-            self.productionByHeightYield = self.dataFrame[self.get_base_filter()][self.productionByHeightPower].sum() * self.timeStampHours
-            self.productionByHeightYieldCount = self.dataFrame[self.get_base_filter()][self.productionByHeightPower].count()
-            self.productionByHeightDelta = self.productionByHeightYield / self.baseYield - 1.0
-            Status.add("Production by Height Delta: %f%% (%d)" % (self.productionByHeightDelta * 100.0, self.productionByHeightYieldCount))
+            self.productionByHeightYield, self.productionByHeightYieldCount, self.productionByHeightDelta = self.calculate_benchmark_for_correction("Production by Height")
 
+    def calculate_benchmark_for_correction(self, correction):
+        
+        power_column = self.corrections[correction].power_column
+        
+        energy = self.dataFrame[self.get_base_filter()][power_column].sum() * self.timeStampHours
+        count = self.dataFrame[self.get_base_filter()][power_column].count()
+        delta = energy / self.baseYield - 1.0
+        
+        Status.add("%s Delta: %f%% (%d)" % (correction, delta * 100.0, count))
+
+        return (energy, count, delta)

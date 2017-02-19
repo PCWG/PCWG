@@ -16,13 +16,12 @@ import tkFileDialog
 import tkMessageBox
 
 from ..update import update
-from ..core import analysis as core_analysis
 
-from ..core.share import ShareXPortfolio
-
-from ..core.share_factory import ShareAnalysisFactory
+from ..share.share import ShareXPortfolio
+from ..share.share_factory import ShareAnalysisFactory
 
 from ..core import benchmark
+from ..core import analysis as core_analysis
 
 from ..configuration.preferences_configuration import Preferences
 from ..configuration.benchmark_configuration import BenchmarkConfiguration
@@ -37,7 +36,7 @@ import version as ver
 import base_dialog
 import analysis
 import portfolio
-
+from preferences import PreferencesDialog
 
 class ExportDataSetDialog(base_dialog.BaseDialog):
 
@@ -305,9 +304,14 @@ class UserInterface:
                                  text="About",
                                  command=self.About)
 
+        preferences_button = tk.Button(msic_group_bottom,
+                                 text="Preferences",
+                                 command=self.preferences)
+
         benchmark_button.pack(side=tk.LEFT, padx=5, pady=5)
         clear_console_button.pack(side=tk.LEFT, padx=5, pady=5)
         about_button.pack(side=tk.LEFT, padx=5, pady=5)
+        preferences_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         msic_group_bottom.pack(side=tk.BOTTOM)
         misc_group_top.pack(side=tk.TOP)
@@ -395,8 +399,6 @@ class UserInterface:
 
         preferences = Preferences.get()
 
-        self.LoadAnalysisFromPath("")
-
         self.ClearConsole()
 
         # read the benchmark config xml
@@ -421,18 +423,27 @@ class UserInterface:
 
             benchmarkPassed = True
             totalTime = 0.0
+            failures = []
 
             for i in range(len(benchmarkConfig.benchmarks)):
+                
                 benchmark = benchmarkConfig.benchmarks[i]
                 Status.add("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
-                benchmarkResults = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.base_line_mode, benchmark.expectedResults)
-                benchmarkPassed = benchmarkPassed & benchmarkResults[0]
-                totalTime += benchmarkResults[1]
+                benchmarkResults, time_taken = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.base_line_mode, benchmark.expectedResults)
+                benchmarkPassed = benchmarkPassed & benchmarkResults
+                totalTime += time_taken
+                
+                if not benchmarkPassed:
+                  failures.append(benchmark.absolute_path)
 
             if benchmarkPassed:
                 Status.add("All benchmarks passed")
             else:
-                Status.add("There are failing benchmarks", red=True)
+                
+                Status.add("There are {0} failing benchmark(s):".format(len(failures)), red=True)
+
+                for failure in failures:
+                  Status.add("- {0}".format(failure, red=True))
 
             Status.add("Total Time Taken: %fs" % totalTime)
 
@@ -466,7 +477,8 @@ class UserInterface:
                     try:
                         benchmarkPassed = benchmarkPassed & self.compareBenchmark(field, value, float(eval("analysis.%s" % field)), tolerance)
                     except Exception as e:
-                        raise Exception("Evaluation of analysis.{f} has failed, does this property exist? {e}".format(f=field, e=e))
+                        Status.add("Evaluation of analysis.{f} has failed, does this property exist? {e}".format(f=field, e=e))
+                        benchmarkPassed = False
 
             if benchmarkPassed:
                 Status.add("Benchmark Passed")
@@ -577,6 +589,9 @@ class UserInterface:
                 except ExceptionHandler.ExceptionType as e:
 
                     ExceptionHandler.add(e, "ERROR loading config")
+            else:
+
+              self.portfolioConfiguration = None
 
     def ExportReport(self):
 
@@ -779,7 +794,17 @@ class UserInterface:
 
         tkMessageBox.showinfo("PCWG-Tool About", "Version: {vers} \nVisit http://www.pcwg.org for more info".format(vers=ver.version))
 
-    def add_message(self, message, red=False, verbosity=1):
+    def preferences(self):
+
+        try:
+
+            PreferencesDialog(self.root)
+
+        except ExceptionHandler.ExceptionType as e:
+
+            ExceptionHandler.add(e)
+
+    def add_message(self, message, red=False, orange=False, verbosity=1):
 
         try:
 
@@ -787,6 +812,8 @@ class UserInterface:
 
             if red:
                 self.listbox.itemconfig(tk.END, {'bg': 'red', 'foreground': 'white'})
+            elif orange:
+                self.listbox.itemconfig(tk.END, {'bg': 'orange', 'foreground': 'white'})
 
             self.listbox.see(tk.END)
             self.root.update()

@@ -113,11 +113,6 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.readTurbine(configurationNode)
 
             self.read_meta_data(configurationNode)
-            
-            self.invariant_rand_id = self.getNodeValueIfExists(configurationNode, 'InvariantRandomID', None)
-
-            if self.invariant_rand_id is None:
-                self.save()
 
         else:
 
@@ -184,8 +179,6 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.cutOutWindSpeed = None
             self.ratedPower = None
             self.rotor_tilt = None
-
-            self.invariant_rand_id = None
 
             self.initialize_meta_data()  
 
@@ -285,18 +278,13 @@ class DatasetConfiguration(base_configuration.XmlBase):
         self.saveDocument(doc, self.path)
 
     def writeSettings(self, doc, root):
-        if self.invariant_rand_id is not None:
-            self.addTextNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
-        else:
-            inv_id = str(np.random.rand())[2:8]
-            while len(inv_id) != 6:
-                inv_id = str(np.random.rand())[2:8]
-            self.invariant_rand_id = "D%06d" % int(inv_id)
-            self.addTextNode(doc, root, 'InvariantRandomID', self.invariant_rand_id)
+
         genSettingsNode = self.addNode(doc, root, "GeneralSettings")
         self.addTextNode(doc, genSettingsNode, "Name", self.name)
+
         if self.startDate != None: self.addDateNode(doc, genSettingsNode, "StartDate", self.startDate)
         if self.endDate != None: self.addDateNode(doc, genSettingsNode, "EndDate", self.endDate)
+
         self.addTextNode(doc, genSettingsNode, "HubWindSpeedMode", self.hubWindSpeedMode)
         self.addTextNode(doc, genSettingsNode, "CalibrationMethod", self.calibrationMethod)
         self.addTextNode(doc, genSettingsNode, "DensityMode", self.densityMode)
