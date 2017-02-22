@@ -215,19 +215,8 @@ class ShareAnalysisBase(Analysis):
         self.powerCurveLastBin = 30.0
         self.powerCurveBinSize = 1.0
 
-        self.innerRangeLowerTurbulence = None
-        self.innerRangeUpperTurbulence = None
-        self.innerRangeLowerShear = None
-        self.innerRangeUpperShear = None
-
         self.specifiedPowerCurve = None
         self.specified_power_deviation_matrix = SinglePathManager()
-
-        self.densityCorrectionActive = False
-        self.turbRenormActive = False
-        self.powerDeviationMatrixActive = False
-        self.productionByHeightActive = False
-        self.web_service_active = False
 
         self.calculated_power_deviation_matrix_definition = NullDeviationMatrixDefinition()
         self.rews_deviation_matrix_definition = NullDeviationMatrixDefinition()
@@ -249,13 +238,6 @@ class ShareAnalysisBase(Analysis):
 
     def load_dataset(self, dataset_config):
         return ShareDataset(dataset_config)
-
-    def load_data(self):
-        Analysis.load_data(self)
-        self.auto_activate_corrections()
-
-    def auto_activate_corrections(self):
-        pass
 
     def pcwg_share_metrics_calc(self):
 

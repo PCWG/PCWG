@@ -75,6 +75,16 @@ class Source(object):
 		self.wind_speed_based = True
 		self.power_based = False
 
+	def finalise(self, data_frame, power_curve):
+
+		if power_curve is not None:
+			self.power_column = "{0} Power".format(self.wind_speed_column)
+			data_frame[self.power_column] = data_frame.apply(PowerCalculator(power_curve, self.wind_speed_column).power, axis=1)
+		else:
+			self.power_column = None
+
+		Status.add("{0} Power Complete.".format(self.wind_speed_column))
+
 class Correction(object):
 
 	def __init__(self, correction_name, source, wind_speed_based):
@@ -180,7 +190,22 @@ class RotorEquivalentWindSpeed(WindSpeedBasedCorrection):
 				 deviation_matrix_definition,
 				 power_curve=None):
 
-		WindSpeedBasedCorrection.__init__(self, "REWS", source)
+		if rewsExponent == 3.0:
+			exponent_type = "REWS"
+		elif rewsExponent == 2.0:
+			exponent_type = "RAWS"
+		else:
+			exponent_type = "REWS-Exponent={0}".format(rewsExponent)	
+					
+		rews_type = "Speed"
+
+		if rewsVeer:
+			rews_type += "+Veer" 
+
+		if rewsUpflow:
+			rews_type += "+Upflow" 
+
+		WindSpeedBasedCorrection.__init__(self, "{0} ({1})".format(exponent_type, rews_type), source)
 
 		rews_to_hub_ratios = []
 
@@ -217,7 +242,9 @@ class PowerDeviationMatrixCorrection(PowerBasedCorrection):
 
 	def __init__(self, data_frame, source, power_deviation_matrix, parameter_columns, power_curve):
 
-		PowerBasedCorrection.__init__(self, "Power Deviation Matrix", source, power_curve)
+		dimenionality = "{0}D".format(len(power_deviation_matrix.dimensions))
+
+		PowerBasedCorrection.__init__(self, "{0} Power Deviation Matrix".format(dimenionality), source, power_curve)
 
 		power_deviation_matrix.reset_out_of_range_count() 
 

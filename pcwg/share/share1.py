@@ -8,26 +8,35 @@ from ..core.status import Status
 
 class ShareAnalysis1(ShareAnalysisBase):
 
-    def auto_activate_corrections(self):
+    def should_apply_density_correction_to_baseline(self):
+        return True
 
-        self.densityCorrectionActive = True
-        self.turbRenormActive = True
-        self.powerDeviationMatrixActive = True
+    def should_apply_rews_to_baseline(self):
+        return False
 
-        self.rewsActive = self.rewsDefined
+    def calculate_corrections(self):
+
         self.rewsVeer = False
         self.rewsUpflow = False
         self.rewsExponent = 3.0
 
-        self.set_2D_pdm_path()
+        if self.rewsDefined:
+            self.calculate_REWS()
 
-    def set_interpolation_mode(self):
+        self.calculate_turbulence_correction()
 
-        self.interpolationMode = "Cubic"
+        if self.rewsDefined:        
+            self.calculate_combined_rews_and_turbulence_correction()
 
-    def set_2D_pdm_path(self):
+        self.set_pdm_path('Data', 'HypothesisMatrix.xml')
+        self.calculate_power_deviation_matrix_correction()
 
-        pdm_path = os.path.join(os.getcwd(), 'Data')
-        pdm_path = os.path.join(pdm_path, 'HypothesisMatrix.xml')
+    def get_interpolation_mode(self):
+        return "Cubic"
+
+    def set_pdm_path(self, folder, filename):
+
+        pdm_path = os.path.join(os.getcwd(), folder)
+        pdm_path = os.path.join(pdm_path, filename)
 
         self.specified_power_deviation_matrix.absolute_path = pdm_path

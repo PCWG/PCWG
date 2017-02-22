@@ -946,9 +946,15 @@ class Dataset:
 
         if len(directionLevels) < 3:
             directionLevels = None
+            self.rews_defined_with_veer = False
+        else:
+            self.rews_defined_with_veer = True
 
         if len(upflowLevels) < 3:
             upflowLevels = None
+            self.rews_defined_with_upflow = False
+        else:
+            self.rews_defined_with_upflow = True
 
         profileLevels = rews.ProfileLevels(rotorGeometry, windSpeedLevels, directionLevels, upflowLevels)
         

@@ -13,6 +13,7 @@ import turbine
 
 from power_deviation_matrix import RewsDeviationMatrixDefinition
 from power_deviation_matrix import DeviationMatrixDefinition
+from power_deviation_matrix import PowerDeviationMatrixDimension
 
 import corrections
 
@@ -185,7 +186,6 @@ class Analysis(object):
         self.calculate_measured_turbulence_power()
 
         self.calculate_power_deviation_matrices()
-        self.calculate_REWS_deviation_matrix()
 
         self.calculate_aep()
         
@@ -297,15 +297,13 @@ class Analysis(object):
                                                           zero_ti_pc_required = (self.powerCurveMode == 'Specified'))
             
     def load_specified_power_deviation_matrix(self):
+        
+        Status.add("Loading power deviation matrix...")
+        
+        if self.specified_power_deviation_matrix.absolute_path is None:
+            raise Exception("Power deviation matrix path not set.")
 
-        if self.powerDeviationMatrixActive:
-            
-            Status.add("Loading power deviation matrix...")
-            
-            if self.specified_power_deviation_matrix.absolute_path is None:
-                raise Exception("Power deviation matrix path not set.")
-
-            self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(self.specified_power_deviation_matrix.absolute_path)
+        self.specifiedPowerDeviationMatrix = PowerDeviationMatrixConfiguration(self.specified_power_deviation_matrix.absolute_path)
 
     def calculate_actual_power_curves(self):
 
@@ -457,21 +455,8 @@ class Analysis(object):
             self.baseline_power_deviations = None
 
     def create_calculated_power_deviation_matrix_bins(self):
-
-        self.calculated_power_deviation_matrix_bins = []
-        
-        sorted_dimensions = sorted(self.calculated_power_deviation_matrix_dimensions, key=lambda x: x.index, reverse=False)
-
-        for dimension in sorted_dimensions:
-            
-            pdm_dimension = PowerDeviationMatrixDimension(dimension.parameter,
-                                                          dimension.centerOfFirstBin,
-                                                          dimension.binWidth,
-                                                          dimension.numberOfBins)
-
-            self.dataFrame[pdm_dimension.bin_parameter] = pdm_dimension.create_column(self.dataFrame)
-
-            self.calculated_power_deviation_matrix_bins.append(pdm_dimension)
+        self.calculated_power_deviation_matrix_definition.create_bins(self.dataFrame)
+        self.rews_deviation_matrix_definition.create_bins(self.dataFrame)
 
     def calculate_aep(self):
 
@@ -593,9 +578,8 @@ class Analysis(object):
                 self.datasetName = data.nameColumn
 
                 self.rewsDefined = data.rewsDefined
-
-                if data.rewsDefined:
-                    self.rewsToHubRatio = data.rewsToHubRatio
+                self.rews_defined_with_veer = data.rews_defined_with_veer
+                self.rews_defined_with_upflow = data.rews_defined_with_upflow
 
                 self.actualPower = data.actualPower
                 self.residualWindSpeed = data.residualWindSpeed
@@ -620,6 +604,9 @@ class Analysis(object):
                 self.hasShear = self.hasShear & data.hasShear
                 self.hasDensity = self.hasDensity & data.hasDensity
                 self.rewsDefined = self.rewsDefined & data.rewsDefined
+                self.rews_defined_with_veer = self.rews_defined_with_veer & data.rews_defined_with_veer
+                self.rews_defined_with_upflow = self.rews_defined_with_upflow & data.rews_defined_with_upflow
+                
                 self.hasTurbulence = data.hasTurbulence & data.hasTurbulence
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
@@ -927,9 +914,6 @@ class Analysis(object):
 
     def calculate_baseline_wind_speed(self):
         
-        if self.rewsActive and (not self.rewsDefined):
-            raise Exception("Cannot apply rews, rews not defined.")
-
         baseline = corrections.Source(self.hubWindSpeed)
 
         if self.should_apply_density_correction_to_baseline():

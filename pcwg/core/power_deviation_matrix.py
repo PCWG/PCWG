@@ -12,25 +12,51 @@ class DeviationMatrixDefinition(object):
 	def new_deviation_matrix(self, data_frame, actual_column, modelled_column):
 
 		if self.method == 'Average of Deviations':
-			return self.new_average_of_deviations(self.dataFrame, actual_column, modelled_column, self.dimensions, self.aggregations)
+			return self.new_average_of_deviations(data_frame, actual_column, modelled_column, self.bins, self.aggregations)
 		elif self.method == 'Deviation of Averages':
-			return self.new_deviation_of_averages(self.dataFrame, actual_column, modelled_column, self.dimensions, self.aggregations)
+			return self.new_deviation_of_averages(data_frame, actual_column, modelled_column, self.bins, self.aggregations)
 		else:
 			raise Exception('Unknown PDM method: {0}'.format(self.method))
 
+	def new_average_of_deviations(self, data_frame, actual_column, modelled_column, bins, aggregations):
+		return AverageOfDeviationsMatrix(data_frame, actual_column, modelled_column, bins, aggregations)
+
+	def new_deviation_of_averages(self, data_frame, actual_column, modelled_column, bins, aggregations):
+		return DeviationOfAveragesMatrix(data_frame, actual_column, modelled_column, bins, aggregations)
+
+	def create_bins(self, data_frame):
+
+		self.bins = []
+
+		sorted_dimensions = sorted(self.dimensions, key=lambda x: x.index, reverse=False)
+
+		prefix = self.get_bin_column_prefix()
+
+		for dimension in sorted_dimensions:
+
+			pdm_dimension = PowerDeviationMatrixDimension(prefix,
+															dimension.parameter,
+															dimension.centerOfFirstBin,
+															dimension.binWidth,
+															dimension.numberOfBins)
+
+			data_frame[pdm_dimension.bin_parameter] = pdm_dimension.create_column(data_frame)
+
+			self.bins.append(pdm_dimension)
+
+	def get_bin_column_prefix(self):
+		return "PDM"
+
+class RewsDeviationMatrixDefinition(DeviationMatrixDefinition):
+
 	def new_average_of_deviations(self, data_frame, actual_column, modelled_column, dimensions, aggregations):
-		return AverageOfDeviationsMatrix(self.dataFrame, actual_column, modelled_column, dimensions, aggregations)
+		return RewsAverageOfDeviationsMatrix(data_frame, actual_column, modelled_column, dimensions, aggregations)
 
 	def new_deviation_of_averages(self, data_frame, actual_column, modelled_column, dimensions, aggregations):
-		return DeviationOfAveragesMatrix(self.dataFrame, actual_column, modelled_column, dimensions, aggregations)
+		return RewsDeviationOfAveragesMatrix(data_frame, actual_column, modelled_column, dimensions, aggregations)
 
-class RewsDeviationMatrixDefinition(object):
-
-    def new_average_of_deviations(self, data_frame, actual_column, modelled_column, dimensions, aggregations):
-		return RewsAverageOfDeviationsMatrix(self.dataFrame, actual_column, modelled_column, dimensions, aggregations)
-
-    def new_deviation_of_averages(self, data_frame, actual_column, modelled_column, dimensions, aggregations):
-		return RewsDeviationOfAveragesMatrix(self.dataFrame, actual_column, modelled_column, dimensions, aggregations)
+	def get_bin_column_prefix(self):
+		return "RDM"
 
 class NullDeviationMatrixDefinition(object):
 
@@ -95,6 +121,7 @@ class BaseDeviationMatrix(object):
 		dimension_bins = []
 
 		for dimension in dimensions:
+			print dimension
 			dimension_bins.append(data_frame[dimension.bin_parameter])
 
 		return dimension_bins
@@ -103,7 +130,7 @@ class BaseDeviationMatrix(object):
 
 		mask = (data_frame[actual_column] > 0) & (data_frame[modelled_column] > 0)        
 
-		return self.dataFrame[mask]
+		return data_frame[mask]
 
 	def calculate_deviation_column_name(self, actual_column, modelled_column):
 		return "Deviation of {0} and {1}".format(actual_column, modelled_column)
@@ -118,7 +145,7 @@ class AverageOfDeviationsMatrix(BaseDeviationMatrix):
 
 		BaseDeviationMatrix.__init__(self, count_matrix, dimensions)
 
-		self.deviation_matrix = self.create_matrix(prepared_data_frame, deviation_column, dimensions, aggregations.average)
+		self.deviation_matrix = self.create_matrix(prepared_data_frame, self.deviation_column, dimensions, aggregations.average)
 
 	def prepare_data_frame(self, data_frame, actual_column, modelled_column):
 
@@ -126,7 +153,7 @@ class AverageOfDeviationsMatrix(BaseDeviationMatrix):
 
 		data_frame[self.deviation_column] = self.calculate_deviation(data_frame, actual_column, modelled_column)
 
-		return self.filter_data_frame(data_frame)
+		return self.filter_data_frame(data_frame, actual_column, modelled_column)
 
 	def calculate_deviation(self, data_frame, actual_column, modelled_column):
 		return (data_frame[actual_column] - data_frame[modelled_column]) / data_frame[modelled_column]
@@ -176,10 +203,10 @@ class RewsDeviationOfAveragesMatrix(DeviationOfAveragesMatrix):
 
 class PowerDeviationMatrixDimension(object):
 
-	def __init__(self, parameter, centerOfFirstBin, binWidth, numberOfBins):
+	def __init__(self, prefix, parameter, centerOfFirstBin, binWidth, numberOfBins):
 		
 		self.parameter = parameter
-		self.bin_parameter = "{0} (Bin)".format(parameter)
+		self.bin_parameter = "{0} ({1} Bin)".format(parameter, prefix)
 
 		self.bins = Bins(centerOfFirstBin=centerOfFirstBin,
 						 binWidth=binWidth,

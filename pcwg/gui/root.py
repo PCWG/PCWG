@@ -625,7 +625,7 @@ class UserInterface:
                 Status.add("ERROR: Analysis not yet calculated", red=True)
                 return
 
-            if not hasattr(self.analysis, 'hubPowerDeviations'):
+            if not self.analysis.baseline_power_deviations is None:
                 Status.add("ERROR: PDM not calculated", red=True)
                 return
 
