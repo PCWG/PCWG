@@ -928,7 +928,9 @@ class Dataset:
 
     def prepare_rews(self, config, rotorGeometry):
 
-        if not config.rewsDefined:
+        if not self.rewsDefined:
+            self.rews_defined_with_veer = False
+            self.rews_defined_with_upflow = False
             self.windSpeedLevels = {}
             return (None, None)
 

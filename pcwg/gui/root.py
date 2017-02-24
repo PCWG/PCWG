@@ -625,10 +625,6 @@ class UserInterface:
                 Status.add("ERROR: Analysis not yet calculated", red=True)
                 return
 
-            if not self.analysis.baseline_power_deviations is None:
-                Status.add("ERROR: PDM not calculated", red=True)
-                return
-
             try:
 
                 fileName = tkFileDialog.asksaveasfilename(parent=self.root,

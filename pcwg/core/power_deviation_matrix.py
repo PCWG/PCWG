@@ -121,7 +121,6 @@ class BaseDeviationMatrix(object):
 		dimension_bins = []
 
 		for dimension in dimensions:
-			print dimension
 			dimension_bins.append(data_frame[dimension.bin_parameter])
 
 		return dimension_bins

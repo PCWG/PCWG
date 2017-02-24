@@ -170,7 +170,7 @@ class DensityEquivalentWindSpeed(WindSpeedBasedCorrection):
 
 		self.reference_density = reference_density
 
-		Status.add("Correcting to reference density of %.4f kg/m^3" % self.reference_density)
+		Status.add("Correcting to reference density of {0:.4f} kg/m^3".format(reference_density))
 
 		calculator = DensityCorrectionCalculator(reference_density, source.wind_speed_column, hub_density_column)
 

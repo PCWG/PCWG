@@ -170,10 +170,11 @@ class Analysis(object):
         self.apply_negative_power_period_treatment()           
         self.calculate_dataset_hours()
 
-        self.calculate_actual_power_curves()
-        self.calculate_power_coefficient()               
+        self.calculate_actual_power_curves()         
 
         self.powerCurve = self.selectPowerCurve(self.powerCurveMode)
+        
+        self.calculate_power_coefficient()      
 
         self.calculate_normalised_parameters()
         self.create_calculated_power_deviation_matrix_bins()
@@ -258,8 +259,17 @@ class Analysis(object):
 
     def calculate_power_coefficient(self):
 
-        if not (self.hasDensity or self.densityCorrectionActive):
+        if not self.hasActualPower:
             return 
+
+        if not self.hasDensity:
+            return 
+
+        if not self.densityCorrectionActive:
+            return
+
+        if self.reference_density is None:
+            raise Exception("Reference Density not Defined") 
 
         area = np.pi*(self.rotorGeometry.diameter/2.0)**2
         a = 1000*self.dataFrame[self.actualPower]/(0.5*self.dataFrame[self.hubDensity] *area*np.power(self.dataFrame[self.hubWindSpeed],3))
@@ -422,17 +432,14 @@ class Analysis(object):
     def define_columns(self):
 
         self.nameColumn = "Dataset Name"
-        self.inputHubWindSpeed = "Input Hub Wind Speed"
         self.turbulencePower = "Simulated TI Corrected Power"
         self.windSpeedBin = "Wind Speed Bin"
         self.dataCount = "Data Count"
         self.powerStandDev = "Power Standard Deviation"
-        self.windDirection = "Wind Direction"
         self.powerCoeff = "Power Coefficient"
         self.measuredTurbulencePower = 'Measured TI Corrected Power'
         self.measuredTurbPowerCurveInterp = 'Measured TI Corrected Power Curve Interp'
         self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
-        self.inflowAngle = 'Inflow Angle'
 
     def calculate_power_deviation_matrices(self):
 
@@ -874,7 +881,18 @@ class Analysis(object):
         data_frame.to_csv(path, sep = ',', index=False, columns=[random_stamp, self.normalisedWS, self.rotor_wind_speed_ratio, self.hubTurbulence, deviation])
 
     def report_pdm(self, path):
+
+        if not self.hasActualPower:
+            raise Exception('Cannot export PDM as no actual power defined.')
+
+        if self.baseline_power_deviations is None:
+            raise Exception("ERROR: PDM not calculated")
+
         power_deviation_matrix = PowerDeviationMatrixConfiguration()
+
+        power_deviation_matrix.save(path,
+                                    self.calculated_power_deviation_matrix_definition.bins,
+                                    self.baseline_power_deviations)
 
     def calculate_baseline_power(self):
         self.baseline.finalise(self.dataFrame, self.powerCurve)
@@ -922,7 +940,7 @@ class Analysis(object):
                 raise Exception("Cannot apply density correction to baseline, density not defined.")
 
             if not self.specified_power_curve is None:
-                self.reference_density = self.specified_power_curve
+                self.reference_density = self.specified_power_curve.reference_density
             else:
                 self.reference_density = 1.225 #consider UI setting for this
 

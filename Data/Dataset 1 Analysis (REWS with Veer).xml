@@ -69,7 +69,7 @@
 		</CalculatedPowerDeviationMatrix>
 	</PowerDeviationMatrix>
 	<ProductionByHeight>
-		<Active>1</Active>
+		<Active>0</Active>
 	</ProductionByHeight>
 	<WebService>
 		<Active>0</Active>

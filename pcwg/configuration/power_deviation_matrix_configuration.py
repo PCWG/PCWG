@@ -104,7 +104,7 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
         cells_node = self.addNode(doc, root, "Cells")
 
-        self.add_cells(doc, cells_node, dimensions, matrix.matrix)
+        self.add_cells(doc, cells_node, dimensions, matrix.deviation_matrix)
         
         self.path = path        
         self.saveDocument(doc, self.path)
