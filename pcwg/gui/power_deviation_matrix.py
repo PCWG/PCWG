@@ -30,7 +30,7 @@ class PowerDeviationMatrixDimensionDialog(base_dialog.BaseDialog):
 
         self.addTitleRow(master, "Power Deviation Matrix Dimension Settings:")
 
-        self.parameter = self.addOption(master, "Parameter:", ['Hub Wind Speed', 'Hub Turbulence Intensity', 'Rotor Wind Speed Ratio', 'Normalised Hub Wind Speed'], self.item.parameter)
+        self.parameter = self.addOption(master, "Parameter:", ['Hub Wind Speed', 'Hub Turbulence Intensity', 'Rotor Wind Speed Ratio', 'Normalised Wind Speed'], self.item.parameter)
         self.index = self.addEntry(master, "Index:", validation.ValidatePositiveInteger(master), self.item.index)      
         self.center_of_first_bin = self.addEntry(master, "Center of First Bin:", validation.ValidateFloat(master), self.item.centerOfFirstBin)
         self.bin_width = self.addEntry(master, "Bin Width:", validation.ValidatePositiveFloat(master), self.item.binWidth)

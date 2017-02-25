@@ -123,6 +123,30 @@ class Correction(object):
 
 		return source.wind_speed_based
 
+	def get_chain(self):
+
+		chain = [self.__class__.__name__]
+
+		if not self.source.raw:
+			chain += source.get_chain()
+
+		return chain
+
+	def density_applied(self):
+		return "DensityEquivalentWindSpeed" in self.get_chain()
+
+	def rews_applied(self):
+		return "RotorEquivalentWindSpeed" in self.get_chain()
+
+	def turbulence_applied(self):
+		return "TurbulenceCorrection" in self.get_chain()
+
+	def pdm_applied(self):
+		return "PowerDeviationMatrixCorrection" in self.get_chain()
+
+	def production_by_height_applied(self):
+		return "ProductionByHeightCorrection" in self.get_chain()
+
 class WindSpeedBasedCorrection(Correction):
 
 	def __init__(self, correction_name, source):
@@ -252,25 +276,29 @@ class PowerDeviationMatrixCorrection(PowerBasedCorrection):
 
 		self.finalise(data_frame, calculator)
 
-		fraction_out_of_range = power_deviation_matrix.out_of_range_fraction() 
+		value_not_found_fraction = power_deviation_matrix.value_not_found_fraction() 
 
-		orange = (fraction_out_of_range > 0.05)
-		red = (fraction_out_of_range > 0.20)
+		orange = (value_not_found_fraction > 0.05)
+		red = (value_not_found_fraction > 0.20)
 
-		Status.add("Fraction of PDM values out of range {0:.2f}%".format(power_deviation_matrix.out_of_range_fraction() * 100.0), red=red, orange=orange)
+
+		Status.add("Fraction of PDM values Not Found {0:.2f}%".format(value_not_found_fraction * 100.0), red=red, orange=orange)
+
+		Status.add("-Fraction of PDM values in range unpopulated {0:.2f}%".format(power_deviation_matrix.in_range_unpopulated_fraction() * 100.0), red=red, orange=orange)
+		Status.add("-Fraction of PDM values out of range {0:.2f}%".format(power_deviation_matrix.out_of_range_fraction() * 100.0), red=red, orange=orange)
 
 		for dimension in power_deviation_matrix.dimensions:
 
-			Status.add("-{0} values out of range {1:.2f}% [{2} to {3}]".format(dimension.parameter,
+			Status.add("--{0} values out of range {1:.2f}% [{2} to {3}]".format(dimension.parameter,
 																  power_deviation_matrix.out_of_range_fraction(dimension.parameter) * 100.0,
 																  dimension.centerOfFirstBin,
 																  dimension.centerOfLastBin),
 																  red=red,
 																  orange=orange)
 			
-			Status.add("--{0:.2f}% values below".format(power_deviation_matrix.below_fraction(dimension.parameter) * 100.0), red=red, orange=orange)
+			Status.add("---{0:.2f}% values below".format(power_deviation_matrix.below_fraction(dimension.parameter) * 100.0), red=red, orange=orange)
 
-			Status.add("--{0:.2f}% values above".format(power_deviation_matrix.above_fraction(dimension.parameter) * 100.0), red=red, orange=orange)
+			Status.add("---{0:.2f}% values above".format(power_deviation_matrix.above_fraction(dimension.parameter) * 100.0), red=red, orange=orange)
 
 class ProductionByHeightCorrection(PowerBasedCorrection):
 

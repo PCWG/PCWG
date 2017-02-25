@@ -157,11 +157,25 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
         return round(round((value - dimension.centerOfFirstBin) / dimension.binWidth, 0) * dimension.binWidth + dimension.centerOfFirstBin, 4)
 
     def reset_out_of_range_count(self):
-        self.out_of_range_count = 0
+
         self.total_count = 0
-        self.out_of_range_count_by_dimension = None
-        self.below_count_by_dimension = None
-        self.above_count_by_dimension = None
+        self.value_not_found = 0
+        self.in_range_unpopulated = 0
+        self.out_of_range_count = 0
+        self.out_of_range_count_by_dimension = {}
+        self.below_count_by_dimension = {}
+        self.above_count_by_dimension = {}
+
+        for dimension in self.dimensions:            
+            self.out_of_range_count_by_dimension[dimension.parameter] = 0
+            self.below_count_by_dimension[dimension.parameter] = 0
+            self.above_count_by_dimension[dimension.parameter] = 0
+
+    def value_not_found_fraction(self):
+        return float(self.value_not_found) / float(self.total_count)
+
+    def in_range_unpopulated_fraction(self):
+        return float(self.in_range_unpopulated) / float(self.total_count)
 
     def out_of_range_fraction(self, parameter=None):
         if parameter is None:
@@ -177,21 +191,13 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
     def __getitem__(self, parameters):
 
-        self.total_count += 1
-
         if len(self.dimensions) < 1:
             raise Exception("Matrix has zero dimensions")
 
-        if self.out_of_range_count_by_dimension is None:
-            
-            self.out_of_range_count_by_dimension = {}
-            self.below_count_by_dimension = {}
-            self.above_count_by_dimension = {}
+        if not hasattr(self, 'total_count'):
+            self.reset_out_of_range_count()
 
-            for dimension in self.dimensions:            
-                self.out_of_range_count_by_dimension[dimension.parameter] = 0
-                self.below_count_by_dimension[dimension.parameter] = 0
-                self.above_count_by_dimension[dimension.parameter] = 0
+        self.total_count += 1
 
         keyList = []
         out_of_range = False
@@ -214,22 +220,30 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             keyList.append(binValue)
 
         if out_of_range:
+            
+            self.value_not_found += 1
             self.out_of_range_count += 1
+
             return self.outOfRangeValue
 
         key = tuple(keyList)
 
         if not key in self.cells:
-
-            message = "Matrix value not found:\n"
-
-            for dimension in self.dimensions:
-                value = parameters[dimension.parameter]
-                message += "%s: %f (%f) - (%f to %f)\n" % (dimension.parameter, value, self.getBin(dimension, value), dimension.centerOfFirstBin, dimension.centerOfLastBin)
             
-            Status.add(message)
+            self.value_not_found += 1
+            self.in_range_unpopulated += 1
+            
+            return self.outOfRangeValue        
 
-            raise Exception(message)
+            #message = "Matrix value not found:\n"
+            #
+            #for dimension in self.dimensions:
+            #    value = parameters[dimension.parameter]
+            #    message += "%s: %f (%f) - (%f to %f)\n" % (dimension.parameter, value, self.getBin(dimension, value), dimension.centerOfFirstBin, dimension.centerOfLastBin)
+            #
+            #Status.add(message)
+            #
+            #raise Exception(message)
         
         return self.cells[key]
 

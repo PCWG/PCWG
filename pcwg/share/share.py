@@ -269,14 +269,18 @@ class ShareAnalysisBase(Analysis):
             self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
 
         self.pcwgFourCellMatrixGroup = 'PCWG Four Cell WS-TI Matrix Group'
+
+        lower_turbulence = ShareAnalysisBase.pcwg_inner_ranges[self.inner_range_id]['LTI']
+        upper_turbulence = ShareAnalysisBase.pcwg_inner_ranges[self.inner_range_id]['UTI']
+
         self.dataFrame[self.pcwgFourCellMatrixGroup] = np.nan
-        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
+        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= upper_turbulence)
         self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-HTI'
-        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= self.innerRangeUpperTurbulence)
+        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= upper_turbulence)
         self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-HTI'
-        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
+        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] <= lower_turbulence)
         self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-LTI'
-        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] <= self.innerRangeLowerTurbulence)
+        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] <= lower_turbulence)
         self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-LTI'
         
         self.pcwgRange = 'PCWG Range (Inner or Outer)'

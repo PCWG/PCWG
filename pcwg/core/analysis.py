@@ -254,7 +254,7 @@ class Analysis(object):
         Status.add("Zero TI Rated Wind Speed: {0}".format(self.zero_ti_rated_wind_speed), verbosity=2)
         Status.add("Zero TI Cut-In Wind Speed: {0}".format(self.zero_to_cut_in_wind_speed), verbosity=2)
         
-        self.normalisedWS = 'Normalised Hub Wind Speed'
+        self.normalisedWS = 'Normalised Wind Speed'
         self.dataFrame[self.normalisedWS] = (self.dataFrame[self.baseline.wind_speed_column] - self.zero_to_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_to_cut_in_wind_speed)
 
     def calculate_power_coefficient(self):
@@ -1107,7 +1107,7 @@ class Analysis(object):
             
             parameter = dimension.parameter.lower().replace(" ", "").strip()
 
-            if parameter in ["turbulence", "turbulenceintensity", "hubturbulence"]:
+            if parameter in ["turbulence", "turbulenceintensity", "hubturbulence","hubturbulenceintensity"]:
                 parameter_columns[dimension.parameter] = self.hubTurbulence
             elif parameter == "normalisedwindspeed":
                 parameter_columns[dimension.parameter] = self.normalisedWS
@@ -1146,17 +1146,18 @@ class Analysis(object):
 
     def rews_profile_levels(self, dataset_index):
 
-        if self.rewsActive:
+        if self.datasetConfigs[dataset_index].rewsDefined:
             return len(self.datasetConfigs[dataset_index].rewsProfileLevels)
         else:
             return None
 
-    def rews_has_veer(self, dataset_index):
-
-        if not self.rewsActive:
-            return None
+    def rews_profile_levels_have_veer(self, dataset_index):
 
         conf = self.datasetConfigs[dataset_index]
+
+        if not conf.rewsDefined:
+            return None
+
         direction_count = 0
 
         for item in conf.rewsProfileLevels:

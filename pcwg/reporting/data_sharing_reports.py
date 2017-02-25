@@ -204,7 +204,30 @@ class SubmissionSheet(object):
         styles_dict = {True: _get_cell_style(sh, 17, 2),
                        False: _get_cell_style(sh, 17, 3),
                        'N/A': _get_cell_style(sh, 18, 2)}
+
+        corrections = [self.analysis.baseline] + self.analysis.corrections.values()
+
+        row = 19
+
+        for correction in corrections:
+            self.write_config_row(sh, row, correction, styles_dict)
+            row += 1
         
+    def write_config_row(self, sheet, row, correction, styles):
+
+        self.write_config_cell(sheet, row, 4, correction.density_applied(), styles)
+        self.write_config_cell(sheet, row, 5, correction.rews_applied(), styles)
+        self.write_config_cell(sheet, row, 6, correction.turbulence_applied(), styles)
+        self.write_config_cell(sheet, row, 7, correction.pdm_applied(), styles)
+        self.write_config_cell(sheet, row, 8, correction.production_by_height_applied(), styles)
+
+    def write_config_cell(self, sheet, row, column, value, styles):
+
+        sheet.write(row, column, value)
+        _apply_cell_style(styles[value], sh, row, column)
+
+    def old_code(self):
+
         sh.write(17, 2, self.analysis.densityCorrectionActive)
         
         _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 17, 2)
@@ -212,6 +235,7 @@ class SubmissionSheet(object):
         for col in [3,4,5]:
             sh.write(17, col, False)
             _apply_cell_style(styles_dict[False], sh, 17, col)
+
         if self.analysis.rewsActive:
             sh.write(18, 2, self.analysis.densityCorrectionActive)
             _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 18, 2)
@@ -224,6 +248,7 @@ class SubmissionSheet(object):
             for col in [2,3,4,5]:
                 sh.write(18, col, 'N/A')
                 _apply_cell_style(styles_dict['N/A'], sh, 18, col)
+
         if self.analysis.turbRenormActive:
             sh.write(19, 2, self.analysis.densityCorrectionActive)
             _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 19, 2)
@@ -312,7 +337,7 @@ class MetaDataSheet(object):
 
         self.write_meta_cell(sh, 7, col, dataset.data_type, manual_required_style)
         self.write_meta_cell(sh, 8, col, self.analysis.rews_profile_levels(0), calculated_style)
-        self.write_meta_cell(sh, 9, col, self.analysis.rews_has_veer(0), calculated_style)
+        self.write_meta_cell(sh, 9, col, self.analysis.rews_profile_levels_have_veer(0), calculated_style)
         self.write_meta_cell(sh, 10, col, self.analysis.inner_range_id, calculated_style)
         self.write_meta_cell(sh, 11, col, dataset.outline_site_classification, manual_required_style)
         self.write_meta_cell(sh, 12, col, dataset.outline_forestry_classification, manual_required_style)
