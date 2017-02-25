@@ -128,7 +128,7 @@ class Correction(object):
 		chain = [self.__class__.__name__]
 
 		if not self.source.raw:
-			chain += source.get_chain()
+			chain += self.source.get_chain()
 
 		return chain
 
