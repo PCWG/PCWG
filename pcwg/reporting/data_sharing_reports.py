@@ -345,133 +345,141 @@ class MetricsSheets(object):
     
     def _write_metrics_sheet(self, sh_name, error_col):
         
-        self.__write_overall_metric_sheet(sh_name)
-        self.__write_by_ws_metric_sheet(sh_name, error_col)
-        self.__write_by_ws_metric_inner_sheet(sh_name, error_col)
-        self.__write_by_ws_metric_outer_sheet(sh_name, error_col)
+        offsets = {'ByBin': 0, 'Total': 38}
+
+        for error_type in self.analysis.error_types:
+            self._write_metrics_sheet_section(sh_name, error_col, error_type, offsets[error_type])
+            self._write_metrics_sheet_section(sh_name, error_col, error_type, offsets[error_type])
+
+    def _write_metrics_sheet_section(self, sh_name, error_col, error_type, row_offset):
+        
+        self.__write_overall_metric_sheet(sh_name, error_type, row_offset)
+        self.__write_by_ws_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_ws_metric_inner_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_ws_metric_outer_sheet(sh_name, error_col, error_type, row_offset)
         
         if self.analysis.hasDirection:
-            self.__write_by_dir_metric_sheet(sh_name, error_col)
+            self.__write_by_dir_metric_sheet(sh_name, error_col, error_type, row_offset)
 
-        self.__write_by_time_metric_sheet(sh_name, error_col)
-        self.__write_by_range_metric_sheet(sh_name, error_col)
-        self.__write_by_four_cell_matrix_metric_sheet(sh_name, error_col)
-        self.__write_by_month_metric_sheet(sh_name, error_col)
+        self.__write_by_time_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_range_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_four_cell_matrix_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_month_metric_sheet(sh_name, error_col, error_type, row_offset)
     
-    def __write_overall_metric_sheet(self, sh_name):
+    def __write_overall_metric_sheet(self, sh_name, error_type, row_offset):
         sh = self.sheet_map[sh_name]
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[self.analysis.dataCount], sh, 3, 3)
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NME'], sh, 4, 3)
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NMAE'], sh, 5, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[self.analysis.dataCount], sh, 3 + row_offset, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NME'], sh, 4 + row_offset, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NMAE'], sh, 5 + row_offset, 3)
     
-    def __write_by_ws_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin][err_col]
+    def __write_by_ws_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.normalisedWindSpeedBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 7, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 8, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 9, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 7 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 8 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 9 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_ws_metric_inner_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Inner' + ' Range'][err_col]
+    def __write_by_ws_metric_inner_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Inner' + ' Range'][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.normalisedWindSpeedBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 11, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 12, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 13, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 11 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 12 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 13 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_ws_metric_outer_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Outer' + ' Range'][err_col]
+    def __write_by_ws_metric_outer_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Outer' + ' Range'][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.normalisedWindSpeedBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 15, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 16, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 17, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 15 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 16 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 17 + row_offset, col)
                 col += 1
             except:
                 col += 1
     
-    def __write_by_dir_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgDirectionBin][err_col]
+    def __write_by_dir_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgDirectionBin][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.pcwgWindDirBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 27, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 28, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 29, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 27 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 28 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 29 + row_offset, col)
                 col += 1
             except:
                 col += 1
     
-    def __write_by_time_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.hourOfDay][err_col]
+    def __write_by_time_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.hourOfDay][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in range(0,24):
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 19, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 20, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 21, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 19 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 20 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 21 + row_offset, col)
                 col += 1
             except:
                 col += 1
     
-    def __write_by_range_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgRange][err_col]
+    def __write_by_range_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgRange][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in ['Inner','Outer']:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 31, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 32, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 33, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 31 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 32 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 33 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_four_cell_matrix_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgFourCellMatrixGroup][err_col]
+    def __write_by_four_cell_matrix_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgFourCellMatrixGroup][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in ['LWS-LTI','LWS-HTI','HWS-LTI','HWS-HTI']:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 35, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 36, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 37, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 35 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 36 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 37 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_month_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.calendarMonth][err_col]
+    def __write_by_month_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.calendarMonth][(error_type, err_col)]
         sh = self.sheet_map[sh_name]
         col = 3
         for i in range(1,13):
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 23, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 24, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 25, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 23 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 24 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 25 + row_offset, col)
                 col += 1
             except:
                 col += 1

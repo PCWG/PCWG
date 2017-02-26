@@ -50,6 +50,8 @@ class ShareAnalysisBase(Analysis):
 
     def __init__(self, dataset):
 
+        self.error_types = ['ByBin','Total']
+
         self.datasetConfigs = [dataset]
         self.generate_unique_ids(dataset)
 
@@ -368,13 +370,16 @@ class ShareAnalysisBase(Analysis):
         for bin_col_name in reporting_bins:
 
             self.binned_pcwg_err_metrics[bin_col_name] = {}
-            self.binned_pcwg_err_metrics[bin_col_name][self.base_line_error_column] = self.calculate_pcwg_error_metric_by_bin(self.base_line_error_column, bin_col_name)
 
-            for correction_name in self.corrections:
-                
-                error_column = self.error_column(correction_name)
+            for error_type in self.error_types:
 
-                self.binned_pcwg_err_metrics[bin_col_name][error_column] = self.calculate_pcwg_error_metric_by_bin(error_column, bin_col_name)
+                self.binned_pcwg_err_metrics[bin_col_name][(error_type, self.base_line_error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, self.base_line_error_column, bin_col_name)
+
+                for correction_name in self.corrections:
+                    
+                    error_column = self.error_column(correction_name)
+
+                    self.binned_pcwg_err_metrics[bin_col_name][(error_type, error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, error_column, bin_col_name)
         
         #Using Inner and Outer range data only to calculate error metrics binned by normalised WS
         
@@ -385,15 +390,18 @@ class ShareAnalysisBase(Analysis):
             dict_key = bin_col_name + ' ' + pcwg_range + ' Range'
             
             self.binned_pcwg_err_metrics[dict_key] = {}
-            self.binned_pcwg_err_metrics[dict_key][self.base_line_error_column] = self.calculate_pcwg_error_metric_by_bin(self.base_line_error_column, bin_col_name, pcwg_range = pcwg_range)
 
-            for correction_name in self.corrections:
+            for error_type in self.error_types:
+
+                self.binned_pcwg_err_metrics[dict_key][(error_type, self.base_line_error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, self.base_line_error_column, bin_col_name, pcwg_range = pcwg_range)
+
+                for correction_name in self.corrections:
+                    
+                    error_column = self.error_column(correction_name)
+
+                    self.binned_pcwg_err_metrics[dict_key][(error_type, error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, error_column, bin_col_name, pcwg_range = pcwg_range)
                 
-                error_column = self.error_column(correction_name)
-
-                self.binned_pcwg_err_metrics[dict_key][error_column] = self.calculate_pcwg_error_metric_by_bin(error_column, bin_col_name, pcwg_range = pcwg_range)
-            
-    def calculate_pcwg_error_metric_by_bin(self, candidate_error, bin_col_name, pcwg_range = 'All'):
+    def calculate_pcwg_error_metric_by_bin(self, error_type, candidate_error, bin_col_name, pcwg_range = 'All'):
         
         def sum_abs(x):
             return x.abs().sum()
@@ -408,8 +416,23 @@ class ShareAnalysisBase(Analysis):
             raise Exception('Unrecognised pcwg_range argument %s passed to Analysis._calculate_pcwg_error_metric_by_bin() method. Must be Inner, Outer or All.' % pcwg_range)
 
         agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count'], self.actualPower: 'sum'})
-        agg.loc[:, (candidate_error, 'NME')] = agg.loc[:, (candidate_error, 'sum')] / agg.loc[:, (self.actualPower, 'sum')]
-        agg.loc[:, (candidate_error, 'NMAE')] = agg.loc[:, (candidate_error, 'sum_abs')] / agg.loc[:, (self.actualPower, 'sum')]
+
+        me = agg.loc[:, (candidate_error, 'sum')] 
+        mae = agg.loc[:, (candidate_error, 'sum_abs')] 
+        
+        if error_type == "ByBin":
+            denominator = agg.loc[:, (self.actualPower, 'sum')]
+        elif error_type == "Total":
+            denominator = self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum()
+        else:
+            raise Exception('Unknown error type: {0}'.format(error_type))
+
+        nme = me / denominator
+        nmae = mae/ denominator
+
+        agg.loc[:, (candidate_error, 'NME')] = nme
+        agg.loc[:, (candidate_error, 'NMAE')] = nmae
+
         return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis = 1).rename(columns = {'count': self.dataCount})
     
     def calculate_pcwg_error_metric(self, candidate_error):
