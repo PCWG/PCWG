@@ -618,6 +618,25 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.diameter = self.addEntry(master, "Diameter:", validation.ValidatePositiveFloat(master), self.config.diameter)
         self.rotor_tilt = self.addEntry(master, "Tilt:", validation.ValidateOptionalFloat(master), self.config.rotor_tilt)
 
+    def add_advanced(self, master):
+        
+        self.addTitleRow(master, "Density Pre-Correction:")
+
+        label = tk.Label(master, text="Note: your are unlikely to need to complete the following settings.")
+        label.grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
+        self.row += 1 
+
+        label = tk.Label(master, text="If your time series data file has already been corrected/normalised to a reference density please use the settings below.")
+        label.grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
+        self.row += 1   
+
+        self.pre_density_corrected_wind_speed = self.addPickerEntry(master, "Density Corrected Wind Speed:", None, self.config.pre_density_corrected_wind_speed) 
+
+        self.pre_density_corrected_reference_density = self.addEntry(master,
+                                                                     "Reference Density:",
+                                                                     validation.ValidateOptionalFloat(master),
+                                                                     self.config.pre_density_corrected_reference_density)                
+
     def addFormElements(self, master, path):
 
         self.availableColumnsFile = None
@@ -643,6 +662,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         exclusions_tab = tk.Frame(nb)
         filters_tab = tk.Frame(nb)
         meta_data_tab = tk.Frame(nb)
+        advanced_tab = tk.Frame(nb)
 
         nb.add(general_tab, text='General', padding=3)
         nb.add(turbines_tab, text='Turbine', padding=3)
@@ -657,6 +677,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         nb.add(exclusions_tab, text='Exclusions', padding=3)
         nb.add(filters_tab, text='Filters', padding=3)
         nb.add(meta_data_tab, text='Meta Data', padding=3)
+        nb.add(advanced_tab, text='Advanced', padding=3)
 
         nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
         master.grid_rowconfigure(self.row, weight=1)
@@ -675,6 +696,7 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.add_exclusions(exclusions_tab)
         self.add_filters(filters_tab)
         self.add_meta_data(meta_data_tab)
+        self.add_advanced(advanced_tab)
 
         self.calibrationMethodChange()
         self.densityMethodChange()
@@ -970,6 +992,14 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
             self.config.turbine_technology_vintage = None
 
         self.config.time_zone = self.time_zone.get()           
+
+        #advanced
+        self.config.pre_density_corrected_wind_speed = self.pre_density_corrected_wind_speed.get()
+
+        if len(self.pre_density_corrected_reference_density.get()) > 0:
+            self.config.pre_density_corrected_reference_density = float(self.pre_density_corrected_reference_density.get())
+        else:
+            self.config.pre_density_corrected_reference_density = None
 
 class DatasetGridBox(GridBox):
 

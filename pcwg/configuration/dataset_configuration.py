@@ -114,6 +114,8 @@ class DatasetConfiguration(base_configuration.XmlBase):
 
             self.read_meta_data(configurationNode)
 
+            self.read_pre_density(configurationNode)
+
         else:
 
             self.isNew = True
@@ -179,6 +181,9 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.cutOutWindSpeed = None
             self.ratedPower = None
             self.rotor_tilt = None
+
+            self.pre_density_corrected_wind_speed = None
+            self.pre_density_corrected_reference_density = None
 
             self.initialize_meta_data()  
 
@@ -429,6 +434,8 @@ class DatasetConfiguration(base_configuration.XmlBase):
         #write meta dat
         self.write_meta_data(doc, root)
 
+        self.write_pre_density(doc, root)
+
     def write_meta_data(self, doc, root):
 
         meta_data_node = self.addNode(doc, root, "MetaData")
@@ -533,6 +540,33 @@ class DatasetConfiguration(base_configuration.XmlBase):
             self.rotorMode = ""
             self.hubMode = ""
             self.numberOfRotorLevels = 0
+
+    def read_pre_density(self, configurationNode):
+
+        if self.nodeExists(configurationNode, 'PreDensityCorrection'):
+
+            pre_density_correction_node = self.getNode(configurationNode, 'PreDensityCorrection')
+
+            self.pre_density_corrected_wind_speed = self.getNodeValue(pre_density_correction_node, 'PreDensityCorrectionWindSpeed')
+
+            if self.nodeValueExists(pre_density_correction_node, 'PreDensityCorrectionReferenceDensity'):
+                self.pre_density_corrected_reference_density = self.getNodeFloat(pre_density_correction_node, 'PreDensityCorrectionReferenceDensity')
+            else:
+                self.pre_density_corrected_reference_density = None
+
+        else:
+
+            self.pre_density_corrected_wind_speed = None
+            self.pre_density_corrected_reference_density = None
+
+    def write_pre_density(self, doc, configurationNode):
+
+        pre_density_correction_node = self.addNode(doc, configurationNode, 'PreDensityCorrection')
+
+        self.addTextNode(doc, pre_density_correction_node, 'PreDensityCorrectionWindSpeed', self.pre_density_corrected_wind_speed)
+
+        if not self.pre_density_corrected_reference_density is None:
+            self.addFloatNode(doc, pre_density_correction_node, 'PreDensityCorrectionReferenceDensity', self.pre_density_corrected_reference_density)
 
     def readShearMeasurements(self, node):
 
