@@ -1080,7 +1080,7 @@ class Analysis(object):
         return (self.productionByHeightActive and self.rewsDefined)
 
     def calculate_production_by_height_correction(self):
-        self.register_correction(corrections.ProductionByHeightCorrection(self.dataFrame, self.original_datasets, self.powerCurve))
+        self.register_correction(corrections.ProductionByHeightCorrection(self.dataFrame, self.baseline, self.original_datasets, self.powerCurve))
         
     def should_calculate_web_service_correction(self):
         return self.web_service_active

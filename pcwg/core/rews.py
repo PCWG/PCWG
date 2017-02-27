@@ -379,8 +379,11 @@ class ProductionByHeight(RotorEquivalentWindSpeed):
         self.power_curve = power_curve
 
     def level_value(self, speed, level, hub_direction, direction_profile, upflow_profile):
-
         return self.power_curve.power(speed)
 
     def calculate(self, row):
-        return self.rews(row)
+        
+        hub_speed = self.hubWindSpeedCalculator.hubWindSpeed(row)
+        hub_power = self.power_curve.power(hub_speed)
+
+        return self.rews(row) - hub_power

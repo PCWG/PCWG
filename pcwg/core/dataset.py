@@ -986,7 +986,7 @@ class Dataset:
 
         return self.dataFrame[self.rewsToHubRatio]
 
-    def calculate_production_by_height(self, power_curve):
+    def calculate_production_by_height_delta(self, power_curve):
 
         profileLevels, profileHubWindSpeedCalculator = self.prepare_rews(self.config, self.rotorGeometry)
 

@@ -302,19 +302,21 @@ class PowerDeviationMatrixCorrection(PowerBasedCorrection):
 
 class ProductionByHeightCorrection(PowerBasedCorrection):
 
-	def __init__(self, data_frame, original_datasets, power_curve):
+	def __init__(self, data_frame, source, original_datasets, power_curve):
 
-		PowerBasedCorrection.__init__(self, "Production by Height", Source(None), power_curve)
+		PowerBasedCorrection.__init__(self, "Production by Height", source, power_curve)
+
+		self.delta_column = "Production by Height Delta"
 
 		production_by_height = []
 
 		for i in range(len(original_datasets)):
 
 			original_dataset = original_datasets[i]
-			production_by_height.append(original_dataset.calculate_production_by_height(power_curve))
+			production_by_height.append(original_dataset.calculate_production_by_height_delta(power_curve))
 
-		data_frame[self.power_column] = pd.concat(production_by_height, axis=1, join='inner')
-
+		data_frame[self.delta_column] = pd.concat(production_by_height, axis=1, join='inner')
+		data_frame[self.power_column] = data_frame[source.power_column] + data_frame[self.delta_column]
 
 class WebServiceCorrection(PowerBasedCorrection):
 
