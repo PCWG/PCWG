@@ -1,0 +1,4012 @@
+<?xml version="1.0" ?>
+<PowerDeviationMatrix xmlns="http://www.pcwg.org">
+	<Name></Name>
+	<OutOfRangeValue>0.000000</OutOfRangeValue>
+	<Dimensions>
+		<Dimension>
+			<Parameter>Normalised Wind Speed</Parameter>
+			<CenterOfFirstBin>0.100000</CenterOfFirstBin>
+			<BinWidth>0.100000</BinWidth>
+			<NumberOfBins>21</NumberOfBins>
+		</Dimension>
+		<Dimension>
+			<Parameter>Hub Turbulence Intensity</Parameter>
+			<CenterOfFirstBin>0.010000</CenterOfFirstBin>
+			<BinWidth>0.010000</BinWidth>
+			<NumberOfBins>21</NumberOfBins>
+		</Dimension>
+	</Dimensions>
+	<Cells>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.020000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.293415</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.278518</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.267279</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.175143</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.183669</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.095527</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.176274</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.093944</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.120602</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.106567</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.146373</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.068115</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.145336</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.210000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.164047</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.122246</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.096033</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.073127</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.076088</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.005732</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.104836</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.040915</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.005752</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.049660</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.024545</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.073964</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.055716</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.059670</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.085670</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.210000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.040583</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.055560</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.078155</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.085325</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.032935</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.093132</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.044648</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.022117</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.072292</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.023858</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.012503</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.005056</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.009713</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.067649</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.210000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.100631</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.002217</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.015492</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.017324</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.024883</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.026105</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.047970</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.001460</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.020950</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.006475</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.071997</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.081802</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.025086</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.053835</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.210000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.060482</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.033256</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.034696</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.018542</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.006947</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.021860</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.036687</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.006117</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.025088</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.000712</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.008595</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.042237</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.013635</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.041505</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.034545</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.000348</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.004243</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.016669</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.007717</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.015058</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.016992</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.007606</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.023044</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.069148</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.042888</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.060372</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.040249</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.018786</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.057923</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.015784</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.051097</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.005470</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.046698</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.007595</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.057353</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.030592</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.020611</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.074816</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.080476</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.016505</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.068723</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.063672</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.210000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.016557</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.056608</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.045543</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.039164</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.046677</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>0.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.020000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.030000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.040000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.023954</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.050420</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.069980</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.050975</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.068224</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.052530</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.040546</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.026867</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.043203</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.053248</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.210000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.050000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.034078</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.026769</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.030350</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.036769</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.037435</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.016872</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.031955</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.023005</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.040613</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.030786</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.300000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.210000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.012458</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.023831</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.019197</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.021650</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.020655</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.017571</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.024581</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.025730</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.400000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.012256</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.011336</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.013840</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.011657</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.020788</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.014427</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.500000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.014154</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.010436</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.012288</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.013341</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.012670</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.010600</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.600000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.010405</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.011724</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.009635</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.010094</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.700000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.190000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.080000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.010587</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>-0.010180</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.800000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.200000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.070000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.090000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.900000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.000000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.100000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.110000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.120000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.130000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.140000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.150000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.160000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.170000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>2.100000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence Intensity</Parameter>
+					<BinCenter>0.180000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>nan</Value>
+		</Cell>
+	</Cells>
+</PowerDeviationMatrix>

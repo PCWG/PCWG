@@ -1,23 +1,16 @@
 import os
 import xlrd
 from xlutils.copy import copy
+from copy import deepcopy
 from datetime import datetime as dt
 from PIL import Image
 from shutil import rmtree
 import numpy as np
 import xlwt
 
+from plots import MatplotlibPlotter
+
 from ..core.status import Status
-
-template_name = 'Share_1_template.xls'
-
-sheet_map = {'Submission': 0,
-             'Meta Data': 1,
-             'Baseline': 2,
-             'REWS': 3,
-             'TI Renorm': 4,
-             'REWS and TI Renorm': 5,
-             'PDM': 6}
 
 def wrt_cell_keep_style(value, sheet, row, col):
     style = _get_cell_style(sheet, row, col)
@@ -111,7 +104,7 @@ class PortfolioReport(object):
                         sheet.write(header_row, inner_by_ws_start_col + speed_index, wind_speed, self.bold_style)
                         sheet.write(header_row, outer_by_ws_start_col + speed_index, wind_speed, self.bold_style)
 
-                sheet.write(data_row, uid_col, share.analysis.uniqueAnalysisId)            
+                sheet.write(data_row, uid_col, "Deprecated")            
 
                 self.write_range_errors(share.analysis, sheet, data_row, inner_start_col, analysis_key, 'Inner')
                 self.write_range_errors(share.analysis, sheet, data_row, outer_start_col, analysis_key, 'Outer')
@@ -179,332 +172,439 @@ class PortfolioReport(object):
             except:
                 col += 1
 
-                        
-class pcwg_share1_rpt(object):
-    
-    def __init__(self, analysis, version, template, output_fname, pcwg_inner_ranges):
-        rb = xlrd.open_workbook(template, formatting_info=True)
-        self.workbook = copy(rb)
-        self.analysis = analysis
-        self.no_of_datasets = len(analysis.datasetConfigs)
-        self.output_fname = output_fname
+class SubmissionSheet(object):
+
+    def __init__(self, share_name, version, analysis, sheet):
+        self.share_name = share_name
         self.version = version
-        self.pcwg_inner_ranges = pcwg_inner_ranges
-    
-    def report(self):
-        self.write_submission_data(sheet_map['Submission'])
-        self.write_meta_data()
-        self.write_metrics()
-        self.insert_images()
-        self.export()
+        self.analysis = analysis
+        self.sheet = sheet
 
-    def match_inner_range(self, used_inner_range):
-
-        for key in self.pcwg_inner_ranges:
-            
-            range_x = [self.pcwg_inner_ranges[key]['LSh'], self.pcwg_inner_ranges[key]['USh'], self.pcwg_inner_ranges[key]['LTI'], self.pcwg_inner_ranges[key]['UTI']]
-            
-            if used_inner_range == range_x:
-                return key
+    def write(self):
         
-        raise Exception('The inner range %s is not valid for use in the PCWG Sharing Initiative.' % used_inner_range)
-        
-    def write_meta_data(self):
+        sh = self.sheet
 
-        sh = self.workbook.get_sheet(sheet_map['Meta Data'])
-        col = 2
-
-        used_inner_range = [self.analysis.innerRangeLowerShear, self.analysis.innerRangeUpperShear, self.analysis.innerRangeLowerTurbulence, self.analysis.innerRangeUpperTurbulence]
-        range_id = self.match_inner_range(used_inner_range)
-
-        manual_required_style = _get_cell_style(sh, 7, 2)
-        manual_optional_style = _get_cell_style(sh, 13, 2)
-        calculated_style = _get_cell_style(sh, 8, 2)
-        dset_header_style = _get_cell_style(sh, 6, 2)
-        man_req_rows = [7, 11, 12, 18, 19, 21, 26, 29]
-        man_opt_rows = [13, 14, 15, 16, 17, 20, 22, 28]
-        for conf in self.analysis.datasetConfigs:
-            sh.write(6, col, conf.invariant_rand_id)
-            _apply_cell_style(dset_header_style, sh, 6, col)
-
-            windSpeedLevels = {}
-            windDirectionLevels = {}
-            
-            for item in conf.rewsProfileLevels:
-                windSpeedLevels[item.height] = item.wind_speed_column
-                windDirectionLevels[item.height] = item.wind_direction_column
-                
-            wsl = len(windSpeedLevels) if self.analysis.rewsActive else None
-
-            if self.analysis.rewsActive:
-                rews_has_veer = (windDirectionLevels[windDirectionLevels.keys()[0]] is not None and len(windDirectionLevels[windDirectionLevels.keys()[0]]) > 0)
-            else:
-                rews_has_veer = None
-            sh.write(8, col, wsl)
-            sh.write(9, col, rews_has_veer)
-            _apply_cell_style(calculated_style, sh, 8, col)
-            _apply_cell_style(calculated_style, sh, 9, col)
-            sh.write(10, col, range_id)
-            _apply_cell_style(calculated_style, sh, 10, col)
-            sh.write(23, col, self.analysis.rotorGeometry.diameter)
-            _apply_cell_style(calculated_style, sh, 23, col)
-            sh.write(24, col, self.analysis.rotorGeometry.hubHeight)
-            _apply_cell_style(calculated_style, sh, 24, col)
-            specific_power = self.analysis.ratedPower / (np.pi * (self.analysis.rotorGeometry.diameter / 2.) ** 2.)
-            sh.write(25, col, specific_power)
-            _apply_cell_style(calculated_style, sh, 25, col)
-            sh.write(27, col, int(min(self.analysis.dataFrame.loc[self.analysis.dataFrame[self.analysis.nameColumn] == conf.name, self.analysis.timeStamp].dt.year)))
-            _apply_cell_style(calculated_style, sh, 27, col)
-            
-            sh.write(30, col, self.analysis.config.interpolationMode)
-            _apply_cell_style(calculated_style, sh, 30, col)
-
-            for row in man_req_rows:
-                sh.write(row, col, None)
-                _apply_cell_style(manual_required_style, sh, row, col)
-            for row in man_opt_rows:
-                sh.write(row, col, None)
-                _apply_cell_style(manual_optional_style, sh, row, col)
-            col += 1
-    
-    def write_submission_data(self, sheet_no):
-        sh = self.workbook.get_sheet(sheet_no)
-        wrt_cell_keep_style(self.analysis.uniqueAnalysisId, sh, 5, 2)
+        wrt_cell_keep_style(self.share_name, sh, 5, 2)
         wrt_cell_keep_style(str(dt.now()), sh, 6, 2)
         wrt_cell_keep_style(str(self.version), sh, 7, 2)
+        
         conf_inv_row, conf_row, ts_row, col = 11, 12, 13, 2
         style_fntsz1 = _get_cell_style(sh, conf_row, col)
         style = _get_cell_style(sh, conf_inv_row, col)
-        for conf in self.analysis.datasetConfigs:
-            sh.write(conf_inv_row, col, conf.invariant_rand_id)
-            _apply_cell_style(style, sh, conf_inv_row, col)
-            sh.write(conf_row, col, self.analysis.datasetUniqueIds[conf.name]['Configuration'])
-            _apply_cell_style(style_fntsz1, sh, conf_row, col)
-            sh.write(ts_row, col, self.analysis.datasetUniqueIds[conf.name]['Time Series'])
-            _apply_cell_style(style_fntsz1, sh, ts_row, col)
-            col += 1
+
+        sh.write(conf_inv_row, col, "Deprecated")
+        _apply_cell_style(style, sh, conf_inv_row, col)
+
+        sh.write(conf_row, col, self.analysis.dataset_configuration_unique_id)
+        _apply_cell_style(style_fntsz1, sh, conf_row, col)
+        
+        sh.write(ts_row, col, self.analysis.dataset_time_series_unique_id)
+        _apply_cell_style(style_fntsz1, sh, ts_row, col)
+        
         styles_dict = {True: _get_cell_style(sh, 17, 2),
                        False: _get_cell_style(sh, 17, 3),
-                       'N/A': _get_cell_style(sh, 18, 2)}
-        sh.write(17, 2, self.analysis.densityCorrectionActive)
-        _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 17, 2)
-        for col in [3,4,5]:
-            sh.write(17, col, False)
-            _apply_cell_style(styles_dict[False], sh, 17, col)
-        if self.analysis.rewsActive:
-            sh.write(18, 2, self.analysis.densityCorrectionActive)
-            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 18, 2)
-            for col in [4,5]:
-                sh.write(18, col, False)
-                _apply_cell_style(styles_dict[False], sh, 18, col)
-            sh.write(18, 3, True)
-            _apply_cell_style(styles_dict[True], sh, 18, 3)
+                       'N/A': _get_cell_style(sh, 18, 2),
+                       'Title': _get_cell_style(sh, 17, 1)}
+
+        row = 17
+        self.write_config_row(sh, row, self.analysis.baseline, styles_dict, name='Baseline')
+        row += 1
+
+        for correction in self.analysis.corrections.values():
+            self.write_config_row(sh, row, correction, styles_dict)
+            row += 1
+    
+    def write_config_row(self, sheet, row, correction, styles, name = None):
+
+        if name is None:
+            name = correction.correction_name
+
+        sheet.write(row, 1, name)
+        _apply_cell_style(styles['Title'], sheet, row, 1)
+
+        self.write_config_cell(sheet, row, 2, correction.density_applied(), styles)
+        self.write_config_cell(sheet, row, 3, correction.rews_applied(), styles)
+        self.write_config_cell(sheet, row, 4, correction.turbulence_applied(), styles)
+        self.write_config_cell(sheet, row, 5, correction.pdm_applied(), styles)
+        self.write_config_cell(sheet, row, 6, correction.production_by_height_applied(), styles)
+
+    def write_config_cell(self, sheet, row, column, value, styles):
+
+        sheet.write(row, column, value)
+        _apply_cell_style(styles[value], sheet, row, column)
+
+class MetaDataSheet(object):
+
+    def __init__(self, analysis, sheet):
+        self.analysis = analysis
+        self.sheet = sheet
+
+    def write(self):
+
+        if len(self.analysis.datasetConfigs) > 1:
+            raise Exception("Multiple datasets not supported")
+
+        dataset = self.analysis.datasetConfigs[0]
+
+        #7 Data Type [Mast, LiDAR, SoDAR, Mast & LiDAR, Mast & SoDAR]
+        #8 REWS Definition - Number of Heights
+        #9 REWS Definition - Includes Veer
+        #10 Inner Range Definition [A, B or C]
+        #11 Outline Site Classification [Flat, Complex or Offshore]
+        #12 Outline Forestry Classification [Forested or Non-forested]
+        #13 IEC Site Classification [Flat, Complex or Offshore]
+        #14 Geography - Approximate Latitude [to no decimal places e.g. 53]
+        #15 Geography - Continent
+        #16 Geography - Country
+        #17 Geography - Approximate Elevation Above Sea Level [to nearest 100m] (m)
+        #18 Consistency of measurements with IEC 61400-12-1 (2006) [Yes, No or Unknown]
+        #19 Anemometry Type [Sonic or Cups]
+        #20 Anemometry Heating [Heated or Unheated]
+        #21 Turbulence Measurement Type [LiDAR, SoDAR, Cups or Sonic]
+        #22 Power Measurement Type [Transducer, SCADA, Unknown]
+        #23 Turbine Geometry - Approximate Diameter (m)
+        #24 Turbine Geometry - Approximate Hub Height (m)
+        #25 Turbine Geometry - Specific Power (rated power divided by swept area) (kW/m^2)
+        #26 Turbine Control Type [Pitch, Stall or Active Stall]
+        #27 Vintage - Year of Measurement
+        #Vintage - Year of First Operation of Turbine
+        #Timezone [Local or UTC]
+        #Interpolation Mode
+
+        sh = self.sheet
+        col = 2
+
+        manual_required_style = _get_cell_style(sh, 7, 2)
+        manual_optional_style = _get_cell_style(sh, 13, 2)
+        dataset_header_style = _get_cell_style(sh, 6, 2)
+        calculated_style = _get_cell_style(sh, 8, 2)
+
+        sh.write(6, col, self.analysis.dataset_configuration_unique_id)
+        _apply_cell_style(dataset_header_style, sh, 6, col)
+
+        self.write_meta_cell(sh, 7, col, dataset.data_type, manual_required_style)
+        self.write_meta_cell(sh, 8, col, self.analysis.rews_profile_levels(0), calculated_style)
+        self.write_meta_cell(sh, 9, col, self.analysis.rews_profile_levels_have_veer(0), calculated_style)
+        self.write_meta_cell(sh, 10, col, self.analysis.inner_range_id, calculated_style)
+        self.write_meta_cell(sh, 11, col, dataset.outline_site_classification, manual_required_style)
+        self.write_meta_cell(sh, 12, col, dataset.outline_forestry_classification, manual_required_style)
+        self.write_meta_cell(sh, 13, col, dataset.iec_terrain_classification, manual_optional_style)
+
+        if dataset.latitude is None:
+            latitude = None
         else:
-            for col in [2,3,4,5]:
-                sh.write(18, col, 'N/A')
-                _apply_cell_style(styles_dict['N/A'], sh, 18, col)
-        if self.analysis.turbRenormActive:
-            sh.write(19, 2, self.analysis.densityCorrectionActive)
-            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 19, 2)
-            for col in [3,5]:
-                sh.write(19, col, False)
-                _apply_cell_style(styles_dict[False], sh, 19, col)
-            sh.write(19, 4, True)
-            _apply_cell_style(styles_dict[True], sh, 19, 4)
-        else:
-            for col in [2,3,4,5]:
-                sh.write(19, col, 'N/A')
-                _apply_cell_style(styles_dict['N/A'], sh, 19, col)
-        if (self.analysis.turbRenormActive and self.analysis.rewsActive):
-            sh.write(20, 2, self.analysis.densityCorrectionActive)
-            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 20, 2)
-            sh.write(20, 5, False)
-            _apply_cell_style(styles_dict[False], sh, 20, 5)
-            for col in [3,4]:
-                sh.write(20, col, True)
-                _apply_cell_style(styles_dict[True], sh, 20, col)
-        else:
-            for col in [2,3,4,5]:
-                sh.write(20, col, 'N/A')
-                _apply_cell_style(styles_dict['N/A'], sh, 20, col)
-        if self.analysis.powerDeviationMatrixActive:
-            sh.write(21, 2, self.analysis.densityCorrectionActive)
-            _apply_cell_style(styles_dict[self.analysis.densityCorrectionActive], sh, 21, 2)
-            for col in [3,4]:
-                sh.write(21, col, False)
-                _apply_cell_style(styles_dict[False], sh, 21, col)
-            sh.write(21, 5, True)
-            _apply_cell_style(styles_dict[True], sh, 21, 5)
-        else:
-            for col in [2,3,4,5]:
-                sh.write(21, col, 'N/A')
-                _apply_cell_style(styles_dict['N/A'], sh, 21, col)
+            latitude = round(dataset.latitude,0)
+
+        self.write_meta_cell(sh, 14, col, latitude, manual_optional_style)
         
-    def write_metrics(self):
-        self._write_metrics_sheet('Baseline', self.analysis.pcwgErrorBaseline)
-        if self.analysis.turbRenormActive:
-            self._write_metrics_sheet('TI Renorm', self.analysis.pcwgErrorTurbRenor)
-        if self.analysis.rewsActive:
-            self._write_metrics_sheet('REWS', self.analysis.pcwgErrorRews)
-        if (self.analysis.turbRenormActive and self.analysis.rewsActive):
-            self._write_metrics_sheet('REWS and TI Renorm', self.analysis.pcwgErrorTiRewsCombined)
-        if self.analysis.powerDeviationMatrixActive:
-            self._write_metrics_sheet('PDM', self.analysis.pcwgErrorPdm)
+        self.write_meta_cell(sh, 15, col, dataset.continent, manual_optional_style)
+        self.write_meta_cell(sh, 16, col, dataset.country, manual_optional_style)
+
+        if dataset.elevation_above_sea_level is None:
+            elevation_above_sea_level = None
+        else:
+            elevation_above_sea_level = round(dataset.elevation_above_sea_level / 100.0, 0) * 100.0
+            
+        self.write_meta_cell(sh, 17, col, elevation_above_sea_level, manual_optional_style)
+
+        self.write_meta_cell(sh, 18, col, dataset.measurement_compliance, manual_required_style)
+        self.write_meta_cell(sh, 19, col, dataset.anemometry_type, manual_required_style)
+        self.write_meta_cell(sh, 20, col, dataset.anemometry_heating, manual_optional_style)
+        self.write_meta_cell(sh, 21, col, dataset.turbulence_measurement_type, manual_required_style)
+        self.write_meta_cell(sh, 22, col, dataset.power_measurement_type, manual_optional_style)
+
+        self.write_meta_cell(sh, 23, col, self.analysis.rotorGeometry.diameter, calculated_style)
+        self.write_meta_cell(sh, 24, col, self.analysis.rotorGeometry.hubHeight, calculated_style)
+        self.write_meta_cell(sh, 25, col, self.analysis.specific_power, calculated_style)
+
+        self.write_meta_cell(sh, 26, col, dataset.turbine_control_type, manual_required_style)
+
+        self.write_meta_cell(sh, 27, col, self.analysis.starting_year_of_measurement, calculated_style)
+
+        self.write_meta_cell(sh, 28, col, dataset.turbine_technology_vintage, manual_optional_style)
+        self.write_meta_cell(sh, 29, col, dataset.time_zone, manual_required_style)
+
+        self.write_meta_cell(sh, 30, col, self.analysis.interpolationMode, calculated_style)
+    
+    def write_meta_cell(self, sheet, row, column, value, style):
+        sheet.write(row, column, value)
+        _apply_cell_style(style, sheet, row, column)
+
+class MetricsSheets(object):
+
+    def __init__(self, analysis, sheet_map):
+        self.analysis = analysis
+        self.sheet_map = sheet_map
+
+    def write(self):
+
+        self._write_metrics_sheet('Baseline', self.analysis.base_line_error_column)
+        
+        for correction_name in self.analysis.corrections:
+            self._write_metrics_sheet(correction_name, self.analysis.error_columns[correction_name])
     
     def _write_metrics_sheet(self, sh_name, error_col):
-        self.__write_overall_metric_sheet(sh_name)
-        self.__write_by_ws_metric_sheet(sh_name, error_col)
-        self.__write_by_ws_metric_inner_sheet(sh_name, error_col)
-        self.__write_by_ws_metric_outer_sheet(sh_name, error_col)
+        
+        offsets = {'ByBin': 0, 'Total': 38}
+
+        for error_type in self.analysis.error_types:
+            self._write_metrics_sheet_section(sh_name, error_col, error_type, offsets[error_type])
+            self._write_metrics_sheet_section(sh_name, error_col, error_type, offsets[error_type])
+
+    def _write_metrics_sheet_section(self, sh_name, error_col, error_type, row_offset):
+        
+        self.__write_overall_metric_sheet(sh_name, error_type, row_offset)
+        self.__write_by_ws_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_ws_metric_inner_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_ws_metric_outer_sheet(sh_name, error_col, error_type, row_offset)
+        
         if self.analysis.hasDirection:
-            self.__write_by_dir_metric_sheet(sh_name, error_col)
-        self.__write_by_time_metric_sheet(sh_name, error_col)
-        self.__write_by_range_metric_sheet(sh_name, error_col)
-        self.__write_by_four_cell_matrix_metric_sheet(sh_name, error_col)
-        self.__write_by_month_metric_sheet(sh_name, error_col)
+            self.__write_by_dir_metric_sheet(sh_name, error_col, error_type, row_offset)
+
+        self.__write_by_time_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_range_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_four_cell_matrix_metric_sheet(sh_name, error_col, error_type, row_offset)
+        self.__write_by_month_metric_sheet(sh_name, error_col, error_type, row_offset)
     
-    def __write_overall_metric_sheet(self, sh_name):
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[self.analysis.dataCount], sh, 3, 3)
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NME'], sh, 4, 3)
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NMAE'], sh, 5, 3)
+    def __write_overall_metric_sheet(self, sh_name, error_type, row_offset):
+        sh = self.sheet_map[sh_name]
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[self.analysis.dataCount], sh, 3 + row_offset, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NME'], sh, 4 + row_offset, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NMAE'], sh, 5 + row_offset, 3)
     
-    def __write_by_ws_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_ws_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.normalisedWindSpeedBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 7, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 8, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 9, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 7 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 8 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 9 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_ws_metric_inner_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Inner' + ' Range'][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_ws_metric_inner_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Inner' + ' Range'][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.normalisedWindSpeedBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 11, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 12, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 13, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 11 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 12 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 13 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_ws_metric_outer_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Outer' + ' Range'][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_ws_metric_outer_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin + ' ' + 'Outer' + ' Range'][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.normalisedWindSpeedBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 15, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 16, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 17, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 15 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 16 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 17 + row_offset, col)
                 col += 1
             except:
                 col += 1
     
-    def __write_by_dir_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgDirectionBin][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_dir_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgDirectionBin][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in self.analysis.pcwgWindDirBins.centers:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 27, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 28, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 29, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 27 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 28 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 29 + row_offset, col)
                 col += 1
             except:
                 col += 1
     
-    def __write_by_time_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.hourOfDay][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_time_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.hourOfDay][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in range(0,24):
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 19, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 20, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 21, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 19 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 20 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 21 + row_offset, col)
                 col += 1
             except:
                 col += 1
     
-    def __write_by_range_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgRange][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_range_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgRange][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in ['Inner','Outer']:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 31, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 32, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 33, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 31 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 32 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 33 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_four_cell_matrix_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgFourCellMatrixGroup][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_four_cell_matrix_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.pcwgFourCellMatrixGroup][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in ['LWS-LTI','LWS-HTI','HWS-LTI','HWS-HTI']:
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 35, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 36, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 37, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 35 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 36 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 37 + row_offset, col)
                 col += 1
             except:
                 col += 1
                 
-    def __write_by_month_metric_sheet(self, sh_name, err_col):
-        df = self.analysis.binned_pcwg_err_metrics[self.analysis.calendarMonth][err_col]
-        sh = self.workbook.get_sheet(sheet_map[sh_name])
+    def __write_by_month_metric_sheet(self, sh_name, err_col, error_type, row_offset):
+        df = self.analysis.binned_pcwg_err_metrics[self.analysis.calendarMonth][(error_type, err_col)]
+        sh = self.sheet_map[sh_name]
         col = 3
         for i in range(1,13):
             try:
                 if df.loc[i, 'Data Count'] > 0:
-                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 23, col)
-                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 24, col)
-                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 25, col)
+                    wrt_cell_keep_style(int(df.loc[i, 'Data Count']), sh, 23 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NME'], sh, 24 + row_offset, col)
+                    wrt_cell_keep_style(df.loc[i, 'NMAE'], sh, 25 + row_offset, col)
                 col += 1
             except:
                 col += 1
-    
-    def insert_images(self):
-        from plots import MatplotlibPlotter
+
+class ScatterPlotSheet(object):
+
+    def __init__(self, analysis, sheet):
+        self.analysis = analysis
+        self.sheet = sheet
+
+    def write(self):
+
+        sh = self.sheet
+        
         plt_path = 'Temp'
         plotter = MatplotlibPlotter(plt_path, self.analysis)
-        for conf in self.analysis.datasetConfigs:
-            sh = self.workbook.add_sheet(conf.invariant_rand_id)
-            row_filt = (self.analysis.dataFrame[self.analysis.nameColumn] == conf.name)
-            fname = (conf.invariant_rand_id) + ' Anonymous Power Curve Plot'
-            plotter.plotPowerCurve(self.analysis.inputHubWindSpeed, self.analysis.actualPower, self.analysis.innerMeasuredPowerCurve, anon = True, row_filt = row_filt, fname = fname + '.png', show_analysis_pc = False, mean_title = 'Inner Range Power Curve', mean_pc_color = '#FF0000')
-            im = Image.open(plt_path + os.sep + fname + '.png').convert('RGB')
-            im.save(plt_path + os.sep + fname + '.bmp')
-            sh.write(0, 0, 'Power curve scatter plot for dataset with invariant random ID ' + (conf.invariant_rand_id) + '. The Inner Range Power Curve shown is derived using all datasets.')
-            sh.insert_bitmap(plt_path + os.sep + fname + '.bmp' , 2, 1)
+
+        conf = self.analysis.datasetConfigs[0]
+
+        row_filt = (self.analysis.dataFrame[self.analysis.nameColumn] == conf.name)
+        
+        fname = 'Anonymous Power Curve Plot'
+        plotter.plotPowerCurve(self.analysis.baseline.wind_speed_column, self.analysis.actualPower, self.analysis.innerMeasuredPowerCurve, anon = True, row_filt = row_filt, fname = fname + '.png', show_analysis_pc = False, mean_title = 'Inner Range Power Curve', mean_pc_color = '#FF0000')
+        
+        im = Image.open(plt_path + os.sep + fname + '.png').convert('RGB')
+        im.save(plt_path + os.sep + fname + '.bmp')
+
+        sh.write(0, 0, 'Power curve scatter plot for dataset.')
+        sh.insert_bitmap(plt_path + os.sep + fname + '.bmp' , 2, 1)
+
         try:
             rmtree(plt_path)
         except:
             Status.add('Could not delete folder %s' % (os.getcwd() + os.sep + plt_path), verbosity=2)
+
+class PCWGShareXReport(object):
+    
+    TEMPALTE_PATH = 'Share_1_template.xls'
+
+    TEMPLATE_SHEET_MAP = {'Submission': 0,
+                 'Meta Data': 1,
+                 'Template': 2}
+
+    def __init__(self, analysis, version, template, output_fname, pcwg_inner_ranges, share_name):
+
+        self.analysis = analysis
+        self.sheet_map = {}
+
+        if len(analysis.datasetConfigs) > 1:
+            raise Exception("Analysis must contain one and only one dataset")
+
+        rb = xlrd.open_workbook(PCWGShareXReport.TEMPALTE_PATH, formatting_info=True)
+        wb = copy(rb)
+
+        self.map_sheet(wb, "Submission")
+        self.map_sheet(wb, "Meta Data")
+        
+        self.add_template_sheet(wb, 'Template', 'Baseline')
+
+        for correction_name in analysis.corrections:
+            self.add_template_sheet(wb, 'Template', correction_name)
+        
+        self.delete_template_sheet(wb, 'Template')
+
+        self.workbook = wb
+
+        self.output_fname = output_fname
+        self.version = version
+        self.pcwg_inner_ranges = pcwg_inner_ranges
+        self.share_name = share_name
+
+    def delete_template_sheet(self, workbook, sheet_name):
+
+        new_sheets = []
+        template_index = PCWGShareXReport.TEMPLATE_SHEET_MAP[sheet_name]
+
+        for i in range(len(workbook._Workbook__worksheets)):
+            if i != template_index:
+                new_sheets.append(workbook._Workbook__worksheets[i])
+        
+        workbook._Workbook__worksheets = new_sheets
+
+    def map_sheet(self, workbook, sheet_name):
+        self.sheet_map[sheet_name] = workbook.get_sheet(PCWGShareXReport.TEMPLATE_SHEET_MAP[sheet_name])
+
+    def add_template_sheet(self, workbook, template_sheet_name, new_name):
+        sheet = self.copy_sheet(workbook, PCWGShareXReport.TEMPLATE_SHEET_MAP[template_sheet_name], new_name)
+        self.sheet_map[new_name] = sheet
+
+    def copy_sheet(self, workbook, source_index, new_name): 
+        '''
+        workbook     == source + book in use 
+        source_index == index of sheet you want to copy (0 start) 
+        new_name     == name of new copied sheet 
+        return: copied sheet
+        '''
+
+        source_worksheet = workbook.get_sheet(source_index)
+        #wb_dump(workbook)
+        copied_sheet = deepcopy(source_worksheet) 
+        #copied_workbook = copied_sheet._Worksheet__parent
+        #wb_dump(copied_workbook)
+        workbook._Workbook__worksheets.append(copied_sheet)
+        copied_sheet.set_name(new_name)
+        #workbook._Workbook__sst = copied_workbook._Workbook__sst
+        #workbook._Workbook__styles = copied_workbook._Workbook__styles
+        #wb_dump(workbook)
+        return copied_sheet
+
+    def report(self):
+        
+        SubmissionSheet(self.share_name, self.version, self.analysis, self.sheet_map["Submission"]).write()
+        MetaDataSheet(self.analysis, self.sheet_map["Meta Data"]).write()
+        MetricsSheets(self.analysis, self.sheet_map).write()
+        ScatterPlotSheet(self.analysis, self.workbook.add_sheet("Scatter")).write()
+
+        self.export()        
             
     def export(self):
         self._write_confirmation_of_export()
         Status.add("Exporting the PCWG Share 1 report to:\n\t%s" % (self.output_fname))
+        self.workbook.active_sheet = 0
         self.workbook.save(self.output_fname)
 
     def _write_confirmation_of_export(self):
-        sh = self.workbook.get_sheet(sheet_map['Submission'])
+        sh = self.sheet_map['Submission']
         wrt_cell_keep_style(True, sh, 8, 2)
         

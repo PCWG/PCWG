@@ -181,7 +181,9 @@ class GridBox(object):
 
         for item in items:
             self.add_item(item)
-    
+
+        self.default_sort()
+
     def get_items(self):
         return self.items_dict.values()
 
@@ -232,15 +234,33 @@ class GridBox(object):
             # adjust the column's width to the header string
             self.tree.column(col, width=self.get_header_width(col))
 
+    def change_numeric(self, data):
+
+        new_items = []
+
+        for item in data:
+            new_item = (float(item[0]), item[1])
+            new_items.append(new_item)
+
+        return new_items
+        
+    def preprocess_sort_values(self, data):
+        return data
+
     def sortby(self, tree, col, descending):
         """sort tree contents when a column header is clicked on"""
+
         # grab values to sort
         data = [(tree.set(child, col), child) \
             for child in tree.get_children('')]
+        
         # if the data to be sorted is numeric change to float
         #data =  change_numeric(data)
         # now sort the data in place
+        data = self.preprocess_sort_values(data)
+
         data.sort(reverse=descending)
+
         for ix, item in enumerate(data):
             tree.move(item[1], '', ix)
         # switch the heading so it will sort in the opposite direction
@@ -248,11 +268,14 @@ class GridBox(object):
             int(not descending)))
     
     def default_sort(self):
+        self.sort_by_column_index(0)
+
+    def sort_by_column_index(self, index):
 
         if len(self.headers) < 1:
             return 
 
-        first_column = self.headers[0]
+        first_column = self.headers[index]
         self.sortby(self.tree, first_column, False)
 
 class DialogGridBox(GridBox):

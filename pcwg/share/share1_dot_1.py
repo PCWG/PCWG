@@ -8,7 +8,6 @@ from share1 import ShareAnalysis1
 
 class ShareAnalysis1Dot1(ShareAnalysis1):
 
-    def set_interpolation_mode(self):
-        
-        self.interpolationMode = "Marmander"
+    def get_interpolation_mode(self):
+        return "Marmander"
         

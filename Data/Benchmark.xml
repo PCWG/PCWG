@@ -78,17 +78,17 @@
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>normalisingRatedPower</Field>
+					<Field>zero_ti_rated_power</Field>
 					<Value>1984.15637016</Value>
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>normalisingRatedWindSpeed</Field>
+					<Field>zero_ti_rated_wind_speed</Field>
 					<Value>10.608281</Value>
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>normalisingCutInWindSpeed</Field>
+					<Field>zero_to_cut_in_wind_speed</Field>
 					<Value>4.012920</Value>
 				</ExpectedResult>
 

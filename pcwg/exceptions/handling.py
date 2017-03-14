@@ -7,7 +7,7 @@ Created on Fri Sep 02 13:27:54 2016
 
 from ..configuration.preferences_configuration import Preferences
 
-class ExceptionHandler:
+class ExceptionHandler(object):
 
     Instance = None
     ExceptionType = Exception
@@ -19,7 +19,11 @@ class ExceptionHandler:
     @classmethod
     def initialize_handler(cls, handler_method):
         cls.get().handler_method = handler_method
-        
+
+    @classmethod
+    def set_debug(cls, debug):
+        cls.get().debug = debug
+            
     @classmethod
     def get(cls):
         
@@ -30,11 +34,25 @@ class ExceptionHandler:
         
     def __init__(self):
 
-        self.handler_method = self.console_handler
-        
-        if Preferences.get().debug:
+        self.handler_method = self.console_handler    
+        self.debug = Preferences.get().debug
+
+    @property
+    def debug(self):
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        self._debug = value
+        self.set_exception()
+
+    def set_exception(self):
+
+        if self.debug:
             ExceptionHandler.ExceptionType = None
-            
+        else:
+            ExceptionHandler.ExceptionType = Exception
+
     def console_handler(self, exception, custom_message = "ERROR"):
         
         message = "{0}: {1}".format(custom_message, exception)

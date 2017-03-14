@@ -9,13 +9,13 @@ class ShareAnalysisFactory(object):
 
 		self.share_name = share_name
 
-	def new_share_analysis(self, config):
+	def new_share_analysis(self, dataset):
 
 		if self.share_name == "Share01":
-			return ShareAnalysis1(config)
+			return ShareAnalysis1(dataset)
 		elif self.share_name == "Share01.1":
-			return ShareAnalysis1Dot1(config)
+			return ShareAnalysis1Dot1(dataset)
 		elif self.share_name == "Share02":
-			return ShareAnalysis2(config)
+			return ShareAnalysis2(dataset)
 		else:
 			raise Exception("Unexpected share: {0}".format(self.share_name))

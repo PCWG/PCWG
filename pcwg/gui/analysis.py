@@ -21,6 +21,8 @@ from ..configuration.power_curve_configuration import PowerCurveConfiguration
 from ..configuration.preferences_configuration import Preferences
 
 from power_deviation_matrix import PowerDeviationMatrixGridBox
+from alternative_corrections import AlternativeCorrectionGridBox
+from inner_range import InnerRangeDimensionsGridBox
 
 from ..exceptions.handling import ExceptionHandler
 
@@ -56,10 +58,9 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
     def add_inner_range(self, master):
         
-        self.innerRangeLowerTurbulence = self.addEntry(master, "Inner Range Lower Turbulence:", validation.ValidateNonNegativeFloat(master), self.config.innerRangeLowerTurbulence)
-        self.innerRangeUpperTurbulence = self.addEntry(master, "Inner Range Upper Turbulence:", validation.ValidateNonNegativeFloat(master), self.config.innerRangeUpperTurbulence)
-        self.innerRangeLowerShear = self.addEntry(master, "Inner Range Lower Shear:", validation.ValidatePositiveFloat(master), self.config.innerRangeLowerShear)
-        self.innerRangeUpperShear = self.addEntry(master, "Inner Range Upper Shear:", validation.ValidatePositiveFloat(master), self.config.innerRangeUpperShear)
+        self.inner_range_dimensions_grid_box = InnerRangeDimensionsGridBox(master, self, self.row, self.inputColumn)
+        self.inner_range_dimensions_grid_box.add_items(self.config.inner_range_dimensions)
+        self.row += 1
 
     def add_turbine(self, master):
         
@@ -73,7 +74,6 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
     def add_corrections(self, master):
                                         
-        self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive)
         self.turbulenceCorrectionActive = self.addCheckBox(master, "Turbulence Correction Active", self.config.turbRenormActive)
         self.powerDeviationMatrixActive = self.addCheckBox(master, "PDM Correction Active", self.config.powerDeviationMatrixActive)               
         
@@ -91,7 +91,11 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         web_service_example_label = tk.Label(master, text='e.g. http://www.power.com/<NormalisedWindSpeed>/<TurbulenceIntensity>')        
         web_service_example_label.grid(row=self.row, column=self.inputColumn, columnspan=1,sticky=tk.W)
         self.row += 1
-        
+
+    def add_density(self, master):
+                                        
+        self.densityCorrectionActive = self.addCheckBox(master, "Density Correction Active", self.config.densityCorrectionActive)
+
     def add_rews(self, master):
                                         
         self.rewsCorrectionActive = self.addCheckBox(master, "REWS Active", self.config.rewsActive)  
@@ -125,6 +129,12 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
                
         self.nominalWindSpeedDistribution = self.addFileOpenEntry(master, "Nominal Wind Speed Distribution:", validation.ValidateNominalWindSpeedDistribution(master, self.powerCurveMode), self.config.nominal_wind_speed_distribution.absolute_path, self.filePath)
 
+    def add_alternative_corrections(self, master):
+
+        self.alternative_corrections_grid_box = AlternativeCorrectionGridBox(master, self, self.row, self.inputColumn)
+        self.alternative_corrections_grid_box.add_items(self.config.alternative_corrections)
+        self.row += 1
+
     def addFormElements(self, master, path):            
 
         nb = ttk.Notebook(master, height=400)
@@ -134,21 +144,25 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         power_curve_tab = tk.Frame(nb)
         datasets_tab = tk.Frame(nb)
         inner_range_tab = tk.Frame(nb)
+        density_tab = tk.Frame(nb)
         turbine_tab = tk.Frame(nb)
         rews_tab = tk.Frame(nb)
         corrections_tab = tk.Frame(nb)
         output_pdm_tab = tk.Frame(nb)
         advanced_tab = tk.Frame(nb)
+        alternative_corrections_tab = tk.Frame(nb)
 
         nb.add(general_tab, text='General', padding=3)
         nb.add(power_curve_tab, text='Power Curve', padding=3)
         nb.add(datasets_tab, text='Datasets', padding=3)
         nb.add(turbine_tab, text='Turbine', padding=3)
+        nb.add(density_tab, text='Density', padding=3)
         nb.add(rews_tab, text='REWS', padding=3)
         nb.add(corrections_tab, text='Corrections', padding=3)
         nb.add(inner_range_tab, text='Inner Range', padding=3)
         nb.add(output_pdm_tab, text='Output PDM', padding=3)
         nb.add(advanced_tab, text='Advanced', padding=3)
+        nb.add(alternative_corrections_tab, text='Alternative Corrections', padding=3)
 
         nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
         master.grid_rowconfigure(self.row, weight=1)
@@ -158,11 +172,13 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.add_power_curve(power_curve_tab)
         self.add_datasets(datasets_tab)
         self.add_inner_range(inner_range_tab)
+        self.add_density(density_tab)
         self.add_turbine(turbine_tab)
         self.add_rews(rews_tab)
         self.add_corrections(corrections_tab)     
         self.add_output_pdm(output_pdm_tab)                                                                                                            
-        self.add_advanced(advanced_tab) 
+        self.add_advanced(advanced_tab)
+        self.add_alternative_corrections(alternative_corrections_tab) 
 
     def EditPowerCurve(self):
             
@@ -216,10 +232,6 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.config.powerCurveFirstBin = self.powerCurveFirstBin.get()
         self.config.powerCurveLastBin = self.powerCurveLastBin.get()
         self.config.powerCurveBinSize = self.powerCurveBinSize.get()
-        self.config.innerRangeLowerTurbulence = float(self.innerRangeLowerTurbulence.get())
-        self.config.innerRangeUpperTurbulence = float(self.innerRangeUpperTurbulence.get())
-        self.config.innerRangeLowerShear = float(self.innerRangeLowerShear.get())
-        self.config.innerRangeUpperShear = float(self.innerRangeUpperShear.get())
 
         self.config.specified_power_curve.absolute_path = self.specifiedPowerCurve.get()
 
@@ -238,6 +250,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.dataset_grid_box.datasets_file_manager.set_base(self.config.path)
         self.config.datasets = self.dataset_grid_box.datasets_file_manager
         self.config.calculated_power_deviation_matrix_dimensions = self.power_deviation_matrix_grid_box.get_items()
+        self.config.inner_range_dimensions = self.inner_range_dimensions_grid_box.get_items()
 
         self.config.power_deviation_matrix_minimum_count = int(self.power_deviation_matrix_minimum_count.get())
         self.config.power_deviation_matrix_method = self.power_deviation_matrix_method.get()

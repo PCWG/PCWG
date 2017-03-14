@@ -10,65 +10,78 @@ import Tkinter as tk
 import validation
 import pandas as pd
 
+from grid_box import DialogGridBox
+
+from ..configuration.power_curve_configuration import PowerCurveLevel
 from ..exceptions.handling import ExceptionHandler
 from ..core.status import Status
 
-def encodePowerLevelValueAsText(windSpeed, power):
-    return "%f%s%f" % (windSpeed, base_dialog.columnSeparator, power)
-
-def extractPowerLevelValuesFromText(text):
-    items = text.split(base_dialog.columnSeparator)
-    windSpeed = float(items[0])
-    power = float(items[1])
-    return (windSpeed, power)
-
 class PowerCurveLevelDialog(base_dialog.BaseDialog):
 
-        def __init__(self, master, callback, text = None, index = None):
+    def __init__(self, master, parent_dialog, item = None):
 
-                self.callback = callback
-                self.text = text
-                self.index = index
-                
-                self.callback = callback
+        self.parent_dialog = parent_dialog
 
-                self.isNew = (text == None)
-                
-                base_dialog.BaseDialog.__init__(self, master)
-                        
-        def body(self, master):
+        self.isNew = (item == None)
 
-                self.prepareColumns(master)     
+        if self.isNew:
+            self.item = PowerCurveLevel()
+        else:
+            self.item = item
 
-                if not self.isNew:
-                        items = self.text.split("|")
-                        windSpeed = float(items[0])
-                        power = float(items[1].strip())
-                else:
-                        windSpeed = 0.0
-                        power = 0.0
-                        
-                self.addTitleRow(master, "Power Curve Level Settings:")
-                
-                self.windSpeed = self.addEntry(master, "Wind Speed:", validation.ValidatePositiveFloat(master), windSpeed)
-                self.power = self.addEntry(master, "Power:", validation.ValidateFloat(master), power)
+        base_dialog.BaseDialog.__init__(self, master)
 
-                #dummy label to indent controls
-                tk.Label(master, text=" " * 5).grid(row = (self.row-1), sticky=tk.W, column=self.titleColumn)                
+    def body(self, master):
 
-        def apply(self):
-                        
-                self.text = "%f|%f" % (float(self.windSpeed.get()), float(self.power.get()))
+        self.prepareColumns(master)     
 
-                if self.isNew:
-                        Status.add("Power curve level created")
-                else:
-                        Status.add("Power curve level updated")
+        self.addTitleRow(master, "Power Curve Level Settings:")
 
-                if self.index== None:
-                        self.callback(self.text)
-                else:
-                        self.callback(self.text, self.index)
+        self.wind_speed = self.addEntry(master, "Wind Speed:", validation.ValidateNonNegativeFloat(master), self.item.wind_speed)
+        self.power = self.addEntry(master, "Power:", validation.ValidateNonNegativeFloat(master), self.item.power)
+        self.turbulence = self.addEntry(master, "Turbulence:", validation.ValidateNonNegativeFloat(master), self.item.turbulence)
+
+    def set_item_values(self):
+
+        self.item.wind_speed = float(self.wind_speed.get())
+        self.item.power = float(self.power.get())
+        self.item.turbulence = float(self.turbulence.get())
+
+    def apply(self):
+
+        self.set_item_values()
+
+        if self.isNew:
+            Status.add("Power Curve Level created")
+        else:
+            Status.add("Power Curve Level updated")
+
+class PowerCurveLevelsGridBox(DialogGridBox):
+
+    def get_headers(self):
+        return ["Wind Speed", "Power", "Turbulence"]   
+
+    def get_item_values(self, item):
+
+        values_dict = {}
+
+        values_dict["Wind Speed"] = item.wind_speed
+        values_dict["Power"] = item.power
+        values_dict["Turbulence"] = item.turbulence
+
+        return values_dict
+
+    def new_dialog(self, master, parent_dialog, item):
+        return PowerCurveLevelDialog(master, self.parent_dialog, item)  
+
+    def size(self):
+        return self.item_count()
+
+    def get(self, index):
+        return self.get_items()[index]
+
+    def preprocess_sort_values(self, data):
+        return self.change_numeric(data)
 
 class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
@@ -79,47 +92,17 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
                 self.name = self.addEntry(master, "Name:", None, self.config.name, width = 60)
 
-                self.referenceDensity = self.addEntry(master, "Reference Density:", validation.ValidateNonNegativeFloat(master), self.config.powerCurveDensity)
-                self.referenceTurbulence = self.addEntry(master, "Reference Turbulence:", validation.ValidateNonNegativeFloat(master), self.config.powerCurveTurbulence)
+                self.density = self.addEntry(master, "Reference Density:", validation.ValidateNonNegativeFloat(master), self.config.density)
 
-                tk.Label(master, text="Power Curve Levels:").grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
+                self.power_curve_levels_grid_box = PowerCurveLevelsGridBox(master, self, self.row, self.inputColumn)
+                self.power_curve_levels_grid_box.add_items(self.config.power_curve_levels)
                 self.row += 1
-                self.powerCurveLevelsListBoxEntry = self.addListBox(master, "Power Curve Levels ListBox")                
-                
-                for windSpeed in self.config.powerCurveDictionary:
-                        power = self.config.powerCurveDictionary[windSpeed]
-                        self.powerCurveLevelsListBoxEntry.listbox.insert(tk.END, encodePowerLevelValueAsText(windSpeed, power))
-                                
-                self.powerCurveLevelsListBoxEntry.listbox.grid(row=self.row, sticky=tk.W+tk.E+tk.N+tk.S, column=self.labelColumn, columnspan=2)
-                
-                self.validatedPowerCurveLevels = validation.ValidatePowerCurveLevels(master, self.powerCurveLevelsListBoxEntry.listbox)
+                                             
+                self.validatedPowerCurveLevels = validation.ValidatePowerCurveLevels(master, self.power_curve_levels_grid_box)
                 self.validations.append(self.validatedPowerCurveLevels)
-                self.validatedPowerCurveLevels.messageLabel.grid(row=self.row, sticky=tk.W, column=self.messageColumn)
-
-                self.addPowerCurveLevelButton = tk.Button(master, text="New", command = self.NewPowerCurveLevel, width=5, height=1)
-                self.addPowerCurveLevelButton.grid(row=self.row, sticky=tk.E+tk.S, column=self.secondButtonColumn, pady=30)
-
-                self.addPowerCurveLevelButton = tk.Button(master, text="Edit", command = self.EditPowerCurveLevel, width=5, height=1)
-                self.addPowerCurveLevelButton.grid(row=self.row, sticky=tk.E+tk.S, column=self.secondButtonColumn)
-                
-                self.addPowerCurveLevelButton = tk.Button(master, text="Delete", command = self.removePowerCurveLevels, width=5, height=1)
-                self.addPowerCurveLevelButton.grid(row=self.row, sticky=tk.E+tk.S, column=self.buttonColumn)
 
                 self.addPowerCurveLevelButton = tk.Button(master, text="Parse", command = self.parse_clipboard, width=5, height=1)
                 self.addPowerCurveLevelButton.grid(row=self.row, sticky=tk.E+tk.S, column=self.secondButtonColumn, pady=30)
-
-
-        def EditPowerCurveLevel(self):
-
-                items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
-
-                if len(items) == 1:
-                        idx = items[0]
-                        text = self.powerCurveLevelsListBoxEntry.listbox.get(items[0])
-                        try:                                
-                                PowerCurveLevelDialog(self, self.addPowerCurveLevelFromText, text, idx)
-                        except Exception as e: 
-                               ExceptionHandler.add(e, "ERROR loading config (%s)".format(text))
 
         def parse_clipboard(self):
             
@@ -132,65 +115,27 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 return 
                 
             for index in clip_board_df.index:
-                self.add_row(clip_board_df.ix[index])
-            
-        def add_row(self, row):
-            
-            text = encodePowerLevelValueAsText(row[0], row[1])
-            
-            self.addPowerCurveLevelFromText(text)
-                                        
-        def NewPowerCurveLevel(self):
-                PowerCurveLevelDialog(self, self.addPowerCurveLevelFromText)
-                
-        def addPowerCurveLevelFromText(self, text, index = None):
+                self.add_clip_board_row(clip_board_df.ix[index])
+        
+        def add_clip_board_row(self, row):
 
-                if index != None:
-                        self.powerCurveLevelsListBoxEntry.listbox.delete(index, index)
-                        self.powerCurveLevelsListBoxEntry.listbox.insert(index, text)
-                else:
-                        self.powerCurveLevelsListBoxEntry.listbox.insert(tk.END, text)
+            if len(row) < 2:
+                return
 
-                self.sortLevels()
-                self.validatedPowerCurveLevels.validate()               
+            speed = row[0]
+            power = row[1]
 
-        def removePowerCurveLevels(self):
-                
-                items = self.powerCurveLevelsListBoxEntry.listbox.curselection()
-                pos = 0
-                
-                for i in items:
-                    idx = int(i) - pos
-                    self.powerCurveLevelsListBoxEntry.listbox.delete(idx, idx)
-                    pos += 1
-            
-                self.validatedPowerCurveLevels.validate()
+            if len(row) > 2:
+                turbulence = row[2]
+            else:
+                turbulence = 0.1
 
-        def sortLevels(self):
+            self.power_curve_levels_grid_box.add_item(PowerCurveLevel(speed, power, turbulence))
 
-                levels = {}
-
-                for i in range(self.powerCurveLevelsListBoxEntry.listbox.size()):
-                        text = self.powerCurveLevelsListBoxEntry.listbox.get(i)
-                        windSpeed, power = extractPowerLevelValuesFromText(text)
-                        levels[windSpeed] = power
-
-                self.powerCurveLevelsListBoxEntry.listbox.delete(0, tk.END)
-
-                for windSpeed in sorted(levels):
-                        self.powerCurveLevelsListBoxEntry.listbox.insert(tk.END, encodePowerLevelValueAsText(windSpeed, levels[windSpeed]))
-                        
         def setConfigValues(self):
 
                 self.config.name = self.name.get()
 
-                self.config.powerCurveDensity = float(self.referenceDensity.get())
-                self.config.powerCurveTurbulence = float(self.referenceTurbulence.get())
+                self.config.density = float(self.density.get())
 
-                powerCurveDictionary = {}
-
-                for i in range(self.powerCurveLevelsListBoxEntry.listbox.size()):
-                        windSpeed, power = extractPowerLevelValuesFromText(self.powerCurveLevelsListBoxEntry.listbox.get(i))
-                        powerCurveDictionary[windSpeed] = power
-                                
-                self.config.setPowerCurve(powerCurveDictionary)
+                self.config.power_curve_levels = self.power_curve_levels_grid_box.get_items()
