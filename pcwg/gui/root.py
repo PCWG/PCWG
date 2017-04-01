@@ -430,11 +430,12 @@ class UserInterface:
                 benchmark = benchmarkConfig.benchmarks[i]
                 Status.add("Executing Benchmark %d of %d" % (i + 1, len(benchmarkConfig.benchmarks)))
                 benchmarkResults, time_taken = self.BenchmarkAnalysis(benchmark.absolute_path,  benchmarkConfig.tolerance, benchmark.base_line_mode, benchmark.expectedResults)
+
+                if not benchmarkResults:
+                  failures.append(benchmark.absolute_path)
+
                 benchmarkPassed = benchmarkPassed & benchmarkResults
                 totalTime += time_taken
-                
-                if not benchmarkPassed:
-                  failures.append(benchmark.absolute_path)
 
             if benchmarkPassed:
                 Status.add("All benchmarks passed")

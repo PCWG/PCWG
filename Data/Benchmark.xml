@@ -98,7 +98,7 @@
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>baseline_power_deviationsbaseline_power_deviations.get_2D_count(0.60, 0.13)</Field>
+					<Field>baseline_power_deviations.get_2D_count(0.60, 0.13)</Field>
 					<Value>69</Value>
 				</ExpectedResult>
 
