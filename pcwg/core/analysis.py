@@ -200,9 +200,6 @@ class Analysis(object):
         else:
             self.meanMeasuredSiteDensity = None
 
-    def should_calculate_density_correction(self):
-        return (self.densityCorrectionActive and self.hasDensity)
-
     def calculate_normalised_parameters(self):
         
         self.calculate_normalised_wind_speed()
@@ -255,9 +252,13 @@ class Analysis(object):
         Status.add("Zero TI Cut-In Wind Speed: {0}".format(self.zero_to_cut_in_wind_speed), verbosity=2)
         
         self.normalisedWS = 'Normalised Wind Speed'
+
         self.dataFrame[self.normalisedWS] = (self.dataFrame[self.baseline.wind_speed_column] - self.zero_to_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_to_cut_in_wind_speed)
 
     def calculate_power_coefficient(self):
+
+        if self.density_pre_correction_active:
+            return 
 
         if not self.hasActualPower:
             return 
@@ -588,6 +589,10 @@ class Analysis(object):
                 self.rews_defined_with_veer = data.rews_defined_with_veer
                 self.rews_defined_with_upflow = data.rews_defined_with_upflow
 
+                self.density_pre_correction_active = data.density_pre_correction_active
+                self.density_pre_correction_wind_speed = data.density_pre_correction_wind_speed
+                self.density_pre_correction_reference_density = data.density_pre_correction_reference_density
+
                 self.actualPower = data.actualPower
                 self.residualWindSpeed = data.residualWindSpeed
 
@@ -614,6 +619,12 @@ class Analysis(object):
                 self.rews_defined_with_veer = self.rews_defined_with_veer & data.rews_defined_with_veer
                 self.rews_defined_with_upflow = self.rews_defined_with_upflow & data.rews_defined_with_upflow
                 
+                if self.density_pre_correction_active and data.density_pre_correction_active:
+                    if self.density_pre_correction_reference_density != data.density_pre_correction_reference_density:
+                        raise Exception("Inconsistent pre-density correction reference densities")
+
+                self.density_pre_correction_active = self.density_pre_correction_active & data.density_pre_correction_active 
+
                 self.hasTurbulence = data.hasTurbulence & data.hasTurbulence
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
@@ -932,23 +943,32 @@ class Analysis(object):
 
     def calculate_baseline_wind_speed(self):
         
-        baseline = corrections.Source(self.hubWindSpeed)
-
         if self.should_apply_density_correction_to_baseline():
 
-            if not self.hasDensity:
-                raise Exception("Cannot apply density correction to baseline, density not defined.")
+            if self.density_pre_correction_active:
+    
+                Status.add("Applying density pre-correction")
+                baseline = corrections.PreDensityCorrectedSource(self.density_pre_correction_wind_speed)
+                self.reference_density = self.density_pre_correction_reference_density
 
-            if not self.specified_power_curve is None:
-                self.reference_density = self.specified_power_curve.reference_density
             else:
-                self.reference_density = 1.225 #consider UI setting for this
 
-            baseline = corrections.DensityEquivalentWindSpeed(self.dataFrame, baseline, self.reference_density, self.hubDensity)
+                baseline = corrections.Source(self.hubWindSpeed)
+
+                if not self.hasDensity:
+                    raise Exception("Cannot apply density correction to baseline, density not defined.")
+
+                if not self.specified_power_curve is None:
+                    self.reference_density = self.specified_power_curve.reference_density
+                else:
+                    self.reference_density = 1.225 #consider UI setting for this
+
+                baseline = corrections.DensityEquivalentWindSpeed(self.dataFrame, baseline, self.reference_density, self.hubDensity)
 
         else:
 
             self.reference_density = None
+            baseline = corrections.Source(self.hubWindSpeed)
 
         if self.should_apply_rews_to_baseline():
 
@@ -964,72 +984,6 @@ class Analysis(object):
                                                             deviation_matrix_definition=self.rews_deviation_matrix_definition)
 
         self.baseline = baseline
-
-    def create_configuration(self, density, rews, turbulence, production_by_height, power_deviation_matrix, web_service):
-        
-        if density and (not self.hasDensity):
-            raise Exception("Cannot apply density correction, density not defined.")
-
-        if rews and (not self.rewsDefined):
-            raise Exception("Cannot apply rews, rews not defined.")
-
-        if turbulence and (not self.hasTurbulence):
-            raise Exception("Cannot apply turbulence, turbulence not defined.")
-
-        if production_by_height and (not self.rewsDefined):
-            raise Exception("Cannot apply production by height, rews not defined.")
-
-        if power_deviation_matrix and (self.specifiedPowerDeviationMatrix is None):
-            raise Exception("Cannot power deviation matrix correction, specified power deviation matrix not defined.")
-
-        if web_service and len(self.web_service_url) < 1:
-            raise Exception("Cannot apply web service correction, web service url not defined.")
-
-        if rews and production_by_height:
-            raise Exception("REWS and Production by Height cannot be applied at the same time")
-
-        if turbulence and production_by_height:
-            raise Exception("Turbulence and Production by Height cannot be applied at the same time")
-
-        if power_deviation_matrix and web_service:
-            raise Exception("Power Deviation Matrix and Web Service cannot be applied at the same time")
-
-        configuration = corrections.Source(self.hubWindSpeed)
-
-        if density:
-            configuration = corrections.DensityCorrection(self.dataFrame, configuration, self.referenceDensity)
-
-        if rews:
-            configuration = corrections.RotorEquivalentWindSpeed(self.dataFrame, configuration, self.rewsToHubRatio, self.powerCurve)
-
-        if turbulence:
-            configuration = corrections.TurbulenceCorrection(self.dataFrame, configuration, self.hubTurbulence, self.powerCurve)
-
-        if production_by_height:
-            configuration = corrections.ProductionByHeightCorrection(self.dataframe, self.original_datasets, self.powerCurve)
-
-        if power_deviation_matrix:
-
-            Status.add("Preparing Power Deviation Matrix Columns...")
-            parameter_columns = self.get_pdm_parameter_columns()
-            Status.add("Power Deviation Matrix Columns Complete.")
-
-            configuration = corrections.PowerDeviationMatrixCorrection(self.dataFrame, self.specifiedPowerDeviationMatrix, configuration, parameter_columns, self.powerCurve)
-
-        if web_service:
-
-            web_service_obj = WebService(self.web_service_url, \
-                                     self.powerCurve, \
-                                     input_wind_speed_column = self.baseline.wind_speed_column, \
-                                     normalised_wind_speed_column = self.normalisedWS, \
-                                     turbulence_intensity_column = self.hubTurbulence, \
-                                     rotor_wind_seed_ratio_column = self.rotor_wind_speed_ratio, \
-                                     has_shear = self.hasShear, \
-                                     rows = len(self.dataFrame))
-
-            correction = corrections.WebServiceCorrection(self.dataframe, configuration, web_service_obj)
-
-        return correction
 
     def should_calculate_REWS(self):
         return (self.rewsActive and self.rewsDefined)

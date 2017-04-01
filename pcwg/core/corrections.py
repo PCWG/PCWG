@@ -85,6 +85,16 @@ class Source(object):
 
 		Status.add("{0} Power Complete.".format(self.wind_speed_column))
 
+class PreDensityCorrectedSource(Source):
+
+	def __init__(self, source_column):
+		
+		Source.__init__(self, source_column)
+
+		self.correction_name = "Density"
+
+		Status.add("Using pre-density corrected wind speed...")
+
 class Correction(object):
 
 	def __init__(self, correction_name, source, wind_speed_based):
@@ -133,7 +143,16 @@ class Correction(object):
 		return chain
 
 	def density_applied(self):
-		return "DensityEquivalentWindSpeed" in self.get_chain()
+
+		chain = self.get_chain()
+
+		if "DensityEquivalentWindSpeed" in chain:
+			return True
+
+		if "PreDensityCorrectedSource" in chain:
+			return True
+
+		return False
 
 	def rews_applied(self):
 		return "RotorEquivalentWindSpeed" in self.get_chain()

@@ -630,12 +630,14 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         label.grid(row=self.row, sticky=tk.W, column=self.titleColumn, columnspan = 2)
         self.row += 1   
 
-        self.pre_density_corrected_wind_speed = self.addPickerEntry(master, "Density Corrected Wind Speed:", None, self.config.pre_density_corrected_wind_speed) 
+        self.density_pre_correction_active = self.addCheckBox(master, "Density Pre-Correction Active:", self.config.density_pre_correction_active) 
 
-        self.pre_density_corrected_reference_density = self.addEntry(master,
-                                                                     "Reference Density:",
+        self.density_pre_correction_wind_speed = self.addPickerEntry(master, "Density Pre-Correction Wind Speed:", None, self.config.density_pre_correction_wind_speed) 
+
+        self.density_pre_correction_reference_density = self.addEntry(master,
+                                                                     "Density Pre-Connection Reference Density:",
                                                                      validation.ValidateOptionalFloat(master),
-                                                                     self.config.pre_density_corrected_reference_density)                
+                                                                     self.config.density_pre_correction_reference_density)                
 
     def addFormElements(self, master, path):
 
@@ -994,12 +996,15 @@ class DatasetConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.config.time_zone = self.time_zone.get()           
 
         #advanced
-        self.config.pre_density_corrected_wind_speed = self.pre_density_corrected_wind_speed.get()
+        
+        self.config.density_pre_correction_active = bool(self.density_pre_correction_active.get())
 
-        if len(self.pre_density_corrected_reference_density.get()) > 0:
-            self.config.pre_density_corrected_reference_density = float(self.pre_density_corrected_reference_density.get())
+        self.config.density_pre_correction_wind_speed = self.density_pre_correction_wind_speed.get()
+
+        if len(self.density_pre_correction_reference_density.get()) > 0:
+            self.config.density_pre_correction_reference_density = float(self.density_pre_correction_reference_density.get())
         else:
-            self.config.pre_density_corrected_reference_density = None
+            self.config.density_pre_correction_reference_density = None
 
 class DatasetGridBox(GridBox):
 

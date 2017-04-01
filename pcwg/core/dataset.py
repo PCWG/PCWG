@@ -262,6 +262,7 @@ class Dataset:
         dataFrame = self.load_inflow(config, dataFrame)        
         dataFrame = self.load_wind_speed(config, dataFrame)
         dataFrame = self.load_density(config, dataFrame) 
+        dataFrame = self.load_pre_density(config, dataFrame)
         dataFrame = self.load_power(config, dataFrame)       
 
         dataFrame = self.filterDataFrame(dataFrame, self.get_filters(config))
@@ -301,6 +302,8 @@ class Dataset:
         self.residualWindSpeed = "Residual Wind Speed" 
         self.turbulencePower = 'Turbulence Power'
         self.productionByHeight = 'Production By Height'
+
+        self.density_pre_correction_wind_speed = 'Pre-density correction wind speed'
         self.sensitivityDataColumns = config.sensitivityDataColumns
 
     def load_raw_data(self, config):
@@ -362,6 +365,28 @@ class Dataset:
                 self.hasDensity = True
             else:
                 self.hasDensity = False
+        
+        return dataFrame
+
+    def load_pre_density(self, config, dataFrame):
+
+        if config.density_pre_correction_active:
+            
+            self.density_pre_correction_active = True
+            
+            if (config.density_pre_correction_wind_speed is None) or len(config.density_pre_correction_wind_speed) < 1:
+                raise Exception('Pre-density correction reference density cannot be null.')
+
+            if config.density_pre_correction_reference_density is None:
+                raise Exception('Pre-density correction reference density cannot be null.')
+
+            dataFrame[self.density_pre_correction_wind_speed] = dataFrame[config.density_pre_correction_wind_speed]
+            self.density_pre_correction_reference_density = config.density_pre_correction_reference_density
+
+        else:
+
+            self.density_pre_correction_active = False
+            self.density_pre_correction_reference_density = None
         
         return dataFrame
 
@@ -717,6 +742,9 @@ class Dataset:
 
         if self.hasDensity:
             requiredCols.append(self.hubDensity)
+
+        if self.density_pre_correction_active:
+            requiredCols.append(self.density_pre_correction_wind_speed)
 
         if self.hasShear:
             requiredCols.append(self.shearExponent)
