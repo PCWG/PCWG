@@ -46,7 +46,7 @@ class Status:
             lines = text.split("\n")
     
             for line in lines:
-                self.status_method(line, red, orange)
+                self.status_method(line, red, orange, self.verbosity)
 
     def status_method(self, message, red, orange, verbosity):
 
