@@ -20,5 +20,5 @@ def test_benchmark():
 def check_benchmark(benchmark, tolerance):
     analysis = BenchmarkAnalysis(AnalysisConfiguration(benchmark.absolute_path), benchmark.base_line_mode)
     for (field, expected_value) in benchmark.expectedResults.iteritems():
-    	value = float(eval("analysis.%s" % field)
+    	value = float(eval("analysis.%s" % field))
         assert_almost_equal(expected_value, value, delta=tolerance)
