@@ -10,7 +10,7 @@
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>productionByHeightDelta</Field>
-					<Value>-0.01102206</Value>
+					<Value>-0.00174386</Value>
 				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
