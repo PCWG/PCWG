@@ -596,6 +596,9 @@ class Analysis(object):
                 self.actualPower = data.actualPower
                 self.residualWindSpeed = data.residualWindSpeed
 
+                self.windDirection = data.windDirection
+                self.inflowAngle = data.inflowAngle
+
                 self.dataFrame = data.dataFrame
                 self.hasActualPower = data.hasActualPower
                 self.hasAllPowers = data.hasAllPowers
@@ -603,6 +606,7 @@ class Analysis(object):
                 self.hasDensity = data.hasDensity
                 self.hasDirection = data.hasDirection
                 self.hasTurbulence = data.hasTurbulence
+                self.inflowAngle = data.inflowAngle
 
             else:
 
@@ -625,7 +629,9 @@ class Analysis(object):
 
                 self.density_pre_correction_active = self.density_pre_correction_active & data.density_pre_correction_active 
 
-                self.hasTurbulence = data.hasTurbulence & data.hasTurbulence
+                self.hasTurbulence = self.hasTurbulence & data.hasTurbulence
+                self.hasDirection = self.hasDirection & data.hasDirection
+                self.inflowAngle = self.inflowAngle & data.inflowAngle
 
             self.residualWindSpeedMatrices[data.name] = data.residualWindSpeedMatrix
 
@@ -859,7 +865,7 @@ class Analysis(object):
 
     def report(self, path):
 
-        report = reporting.Report(self.windSpeedBins, self.calculated_power_deviation_matrix_bins)
+        report = reporting.Report(self.windSpeedBins, self.calculated_power_deviation_matrix_definition.bins)
         report.report(path, self)
 
     def export_time_series(self, path, clean = True,  full = True, calibration = True ):
