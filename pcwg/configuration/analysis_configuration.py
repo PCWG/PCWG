@@ -146,7 +146,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         dimensions = []
 
-        dimensions.append(PowerDeviationMatrixDimension("Normalised Wind Speed", 1, 0.1, 0.1, 21))
+        dimensions.append(PowerDeviationMatrixDimension("Normalised Hub Wind Speed", 1, 0.1, 0.1, 21))
         dimensions.append(PowerDeviationMatrixDimension("Hub Turbulence", 2, 0.01, 0.02, 25))
 
         return dimensions

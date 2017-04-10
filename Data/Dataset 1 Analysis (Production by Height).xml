@@ -44,7 +44,7 @@
 			<PowerDeviationMatrixMinimumCount>10</PowerDeviationMatrixMinimumCount>
 			<Dimensions>
 				<Dimension>
-					<Parameter>Normalised Wind Speed</Parameter>
+					<Parameter>Normalised Hub Wind Speed</Parameter>
 					<Index>1</Index>
 					<CenterOfFirstBin>0.100000</CenterOfFirstBin>
 					<BinWidth>0.100000</BinWidth>
