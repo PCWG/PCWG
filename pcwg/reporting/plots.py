@@ -32,7 +32,7 @@ class MatplotlibPlotter(object):
             plt.ioff()
             plotTitle = "Power Curve"
 
-            meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][meanPowerCurveObj.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
+            meanPowerCurve = meanPowerCurveObj.data_frame[[windSpeedCol,powerCol,'Data Count']][meanPowerCurveObj.data_frame['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
             ax = meanPowerCurve[powerCol].plot(color='#00FF00',alpha=0.95,linestyle='--',label='Mean Power Curve')
 
             colourmap = plt.cm.gist_ncar
@@ -108,7 +108,7 @@ class MatplotlibPlotter(object):
             kind = 'scatter'
         else:
             kind = 'line'
-            df=df.powerCurveLevels[df.powerCurveLevels['Input Hub Wind Speed'] <= self.analysis.allMeasuredPowerCurve.cutOutWindSpeed]
+            df=df.data_frame[df.data_frame[self.analysis.baseline.wind_speed_column] <= self.analysis.allMeasuredPowerCurve.cutOutWindSpeed]
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
@@ -142,15 +142,15 @@ class MatplotlibPlotter(object):
             else:
                 ax = df.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.0)
 
-            if self.analysis.specifiedPowerCurve is not None:
-                has_spec_pc = len(self.analysis.specifiedPowerCurve.data_frame.index) != 0
+            if self.analysis.specified_power_curve is not None:
+                has_spec_pc = len(self.analysis.specified_power_curve.data_frame.index) != 0
             else:
                 has_spec_pc = False
 
             if has_spec_pc:
-                ax = self.analysis.specifiedPowerCurve.data_frame.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
+                ax = self.analysis.specified_power_curve.data_frame.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
             
-            if self.analysis.specifiedPowerCurve != self.analysis.powerCurve:
+            if self.analysis.specified_power_curve != self.analysis.powerCurve:
                 if ((self.analysis.powerCurve.name != 'All Measured') and show_analysis_pc):
                     ax = self.analysis.powerCurve.data_frame.sort_index()['Actual Power'].plot(ax = ax, color='#A37ACC',alpha=0.9,label=self.analysis.powerCurve.name)
             
@@ -164,7 +164,7 @@ class MatplotlibPlotter(object):
             ax.legend(loc=4, scatterpoints = 1)
             
             if has_spec_pc:
-                ax.set_xlim([self.analysis.specifiedPowerCurve.data_frame.index.min(), self.analysis.specifiedPowerCurve.data_frame.index.max()+2.0])
+                ax.set_xlim([self.analysis.specified_power_curve.data_frame.index.min(), self.analysis.specified_power_curve.data_frame.index.max()+2.0])
             else:
                 ax.set_xlim([min(df[windSpeedCol].min(),meanPowerCurve.index.min()), max(df[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
             
@@ -194,32 +194,32 @@ class MatplotlibPlotter(object):
         try:
             from matplotlib import pyplot as plt
             plt.ioff()
-            if (windSpeedCol == self.analysis.densityCorrectedHubWindSpeed) or ((windSpeedCol == self.analysis.inputHubWindSpeed) and (self.analysis.densityCorrectionActive)):
+            if (windSpeedCol == self.analysis.densityCorrectedHubWindSpeed) or ((windSpeedCol == self.analysis.baseline.wind_speed_column) and (self.analysis.densityCorrectionActive)):
                 plotTitle = "Power Curve (corrected to {dens} kg/m^3)".format(dens=self.analysis.referenceDensity)
             else:
                 plotTitle = "Power Curve"
             ax = self.analysis.dataFrame.plot(kind='scatter', x=windSpeedCol, y=powerCol, title=plotTitle, alpha=0.15, label='Filtered Data')
-            if self.analysis.specifiedPowerCurve is not None:
-                has_spec_pc = len(self.analysis.specifiedPowerCurve.powerCurveLevels.index) != 0
+            if self.analysis.specified_power_curve is not None:
+                has_spec_pc = len(self.analysis.specified_power_curve.power_curve_levels.index) != 0
             else:
                 has_spec_pc = False
             if has_spec_pc:
-                ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
-            meanPowerCurve = meanPowerCurveObj.powerCurveLevels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.powerCurveLevels['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
+                ax = self.analysis.specified_power_curve.power_curve_levels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label='Specified')
+            meanPowerCurve = meanPowerCurveObj.power_curve_levels[[windSpeedCol,powerCol,'Data Count']][self.analysis.allMeasuredPowerCurve.power_curve_levels['Data Count'] > 0 ].reset_index().set_index(windSpeedCol)
             ax = meanPowerCurve[powerCol].plot(ax = ax,color='#00FF00',alpha=0.95,linestyle='--',
                                   label='Mean Power Curve')
             ax2 = ax.twinx()
             if has_spec_pc:
-                ax.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
-                ax2.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
+                ax.set_xlim([self.analysis.specified_power_curve.power_curve_levels.index.min(), self.analysis.specified_power_curve.power_curve_levels.index.max()+2.0])
+                ax2.set_xlim([self.analysis.specified_power_curve.power_curve_levels.index.min(), self.analysis.specified_power_curve.power_curve_levels.index.max()+2.0])
             else:
                 ax.set_xlim([min(self.analysis.dataFrame[windSpeedCol].min(),meanPowerCurve.index.min()), max(self.analysis.dataFrame[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
                 ax2.set_xlim([min(self.analysis.dataFrame[windSpeedCol].min(),meanPowerCurve.index.min()), max(self.analysis.dataFrame[windSpeedCol].max(),meanPowerCurve.index.max()+2.0)])
             
-            ax.set_xlabel(self.analysis.inputHubWindSpeedSource + ' (m/s)')
+            ax.set_xlabel(self.analysis.baseline.wind_speed_column + ' (m/s)')
             ax.set_ylabel(powerCol + ' (kW)')
             refTurbCol = 'Specified Turbulence' if self.analysis.powerCurveMode == 'Specified' else self.analysis.hubTurbulence
-            ax2.plot(self.analysis.powerCurve.powerCurveLevels.sort_index().index, self.analysis.powerCurve.powerCurveLevels.sort_index()[refTurbCol] * 100., 'm--', label = 'Reference TI')
+            ax2.plot(self.analysis.powerCurve.power_curve_levels.sort_index().index, self.analysis.powerCurve.power_curve_levels.sort_index()[refTurbCol] * 100., 'm--', label = 'Reference TI')
             ax2.set_ylabel('Reference TI (%)')
             h1, l1 = ax.get_legend_handles_labels()
             h2, l2 = ax2.get_legend_handles_labels()
@@ -241,8 +241,8 @@ class MatplotlibPlotter(object):
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Min",alpha=0.2,label='Power Min',color = 'orange')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power Max",alpha=0.2,label='Power Max',color = 'green')
             ax = self.analysis.dataFrame.plot(ax=ax,kind='scatter',x=windSpeedCol,y="Power SD",alpha=0.2,label='Power SD',color = 'purple')
-            ax = self.analysis.specifiedPowerCurve.powerCurveLevels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
-            ax.set_xlim([self.analysis.specifiedPowerCurve.powerCurveLevels.index.min(), self.analysis.specifiedPowerCurve.powerCurveLevels.index.max()+2.0])
+            ax = self.analysis.specified_power_curve.power_curve_levels.sort_index()['Specified Power'].plot(ax = ax, color='#FF0000',alpha=0.9,label=specified_title)
+            ax.set_xlim([self.analysis.specified_power_curve.power_curve_levels.index.min(), self.analysis.specified_power_curve.power_curve_levels.index.max()+2.0])
             ax.legend(loc=4, scatterpoints = 1)
             ax.set_xlabel(windSpeedCol)
             ax.set_ylabel("Power [kW]")

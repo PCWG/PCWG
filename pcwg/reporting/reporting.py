@@ -1,6 +1,7 @@
 import xlwt
 import numpy as np
 import os
+import os.path
 
 import colour
 
@@ -28,8 +29,8 @@ class PNGPlotter:
         
         if analysis.hasActualPower:
             
-            plotter.plotPowerCurve(analysis.inputHubWindSpeed, analysis.actualPower, analysis.allMeasuredPowerCurve, specified_title = 'Warranted', mean_title = 'Measured Mean', gridLines = True)
-            plotter.plotPowerCurve(analysis.inputHubWindSpeed, analysis.actualPower, analysis.allMeasuredPowerCurve, show_scatter = False, fname = "PowerCurve - Warranted vs Measured Mean", specified_title = 'Warranted', mean_title = 'Measured Mean', mean_pc_color = 'blue', gridLines = True)
+            plotter.plotPowerCurve(analysis.baseline.wind_speed_column, analysis.actualPower, analysis.allMeasuredPowerCurve, specified_title = 'Warranted', mean_title = 'Measured Mean', gridLines = True)
+            plotter.plotPowerCurve(analysis.baseline.wind_speed_column, analysis.actualPower, analysis.allMeasuredPowerCurve, show_scatter = False, fname = "PowerCurve - Warranted vs Measured Mean", specified_title = 'Warranted', mean_title = 'Measured Mean', mean_pc_color = 'blue', gridLines = True)
             
             if analysis.turbRenormActive:
                 plotter.plotTurbCorrectedPowerCurve(analysis.inputHubWindSpeed, analysis.measuredTurbulencePower, analysis.allMeasuredTurbCorrectedPowerCurve)
@@ -109,7 +110,7 @@ class Report:
 
         book = xlwt.Workbook()
         
-        plotsDir = analysis.config.path.replace(".xml","_PPAnalysisPlots")
+        plotsDir = os.path.dirname(path)
 
         plotter = PNGPlotter()
         plotter.plot(analysis, plotsDir)
@@ -127,11 +128,11 @@ class Report:
 
             rowsAfterCurves = []
             
-            #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specifiedPowerCurve, analysis)) #needs fixing + move to settings sheet
+            #rowsAfterCurves.append(self.reportPowerCurve(sh, 0, 0, 'uniqueAnalysisId', analysis.specified_power_curve, analysis)) #needs fixing + move to settings sheet
             
-            if analysis.specifiedPowerCurve is not None:
-                if len(analysis.specifiedPowerCurve.powerCurveLevels) != 0:
-                    rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specifiedPowerCurve, analysis))
+            if analysis.specified_power_curve is not None:
+                if len(analysis.specified_power_curve.data_frame) != 0:
+                    rowsAfterCurves.append(  self.reportPowerCurve(sh, 1, 0, 'Specified', analysis.specified_power_curve, analysis))
     
             if analysis.hasActualPower:
     
@@ -152,11 +153,11 @@ class Report:
                 if analysis.turbRenormActive:
                     rowsAfterCurves.append(self.reportPowerCurve(sh, 1, 20, 'TurbulenceRenormalisedPower', analysis.allMeasuredTurbCorrectedPowerCurve, analysis) )
 
-                if analysis.specifiedPowerCurve is not None:
+                if analysis.specified_power_curve is not None:
 
                     rowAfterCurves = max(rowsAfterCurves) + 5
                     sh.write(rowAfterCurves-2, 0, "Power Curves Interpolated to Specified Bins:", self.bold_style)
-                    specifiedLevels = analysis.specifiedPowerCurve.powerCurveLevels.index
+                    specifiedLevels = analysis.specified_power_curve.data_frame.index
         
                     if analysis.hasShear and analysis.innerMeasuredPowerCurve != None:
                         self.reportInterpolatedPowerCurve(sh, rowAfterCurves, 5, 'Inner', analysis.innerMeasuredPowerCurve, specifiedLevels)
@@ -172,16 +173,16 @@ class Report:
                     self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (25 if analysis.turbRenormActive else 20), 'DayTime', analysis.dayTimePowerCurve, specifiedLevels)
                     self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (30 if analysis.turbRenormActive else 25), 'NightTime', analysis.nightTimePowerCurve, specifiedLevels)
     
-                self.reportPowerDeviations(book, "HubPowerDeviations", analysis.hubPowerDeviations, gradient)
+                self.reportPowerDeviations(book, "HubPowerDeviations", analysis.baseline_power_deviations, gradient)
                 
-                if analysis.rewsActive:
-                    self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
+                #if analysis.rewsActive:
+                #    self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
 
                 for correction in analysis.corrections:
                     deviations = analysis.corrected_deviations[correction.name]
                     self.reportPowerDeviations(book, "{0} Power Deviations".format(correction.name), deviations, gradient)
 
-                if analysis.config.nominal_wind_speed_distribution.absolute_path is not None:
+                if analysis.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
                     self.report_aep(sh,analysis)
         
@@ -288,7 +289,7 @@ class Report:
 
     def reportSettings(self, sh, analysis):
 
-        config = analysis.config
+        config = analysis
         sh.write(0, 1, "PCWG Tool Version Number:")
         sh.write(0, 2, self.version)
         sh.write(0, 3, xlwt.Formula('HYPERLINK("http://www.pcwg.org";"PCWG Website")'))
@@ -335,30 +336,24 @@ class Report:
         sh.write(row, labelColumn, "Inner Range", self.bold_style)
         row += 1
 
-        sh.write(row, labelColumn, "Lower Turbulence", self.bold_style)
-        sh.write(row, dataColumn, config.innerRangeLowerTurbulence)
-        row += 1
+        for dimension in config.inner_range_dimensions:
 
-        sh.write(row, labelColumn, "Upper Turbulence", self.bold_style)
-        sh.write(row, dataColumn, config.innerRangeUpperTurbulence)
-        row += 1
+            sh.write(row, labelColumn, "Lower {0}".format(dimension.parameter), self.bold_style)
+            sh.write(row, dataColumn, dimension.lower_limit)
+            row += 1
 
-        sh.write(row, labelColumn, "Lower Shear", self.bold_style)
-        sh.write(row, dataColumn, config.innerRangeLowerShear)
-        row += 1
-
-        sh.write(row, labelColumn, "Upper Shear", self.bold_style)
-        sh.write(row, dataColumn, config.innerRangeUpperShear)
-        row += 1
+            sh.write(row, labelColumn, "Upper {0}".format(dimension.parameter), self.bold_style)
+            sh.write(row, dataColumn, dimension.upper_limit)
+            row += 1
 
         #Turbine
-        row += 1
-        sh.write(row, labelColumn, "Turbine", self.bold_style)
-        row += 1
+        #row += 1
+        #sh.write(row, labelColumn, "Turbine", self.bold_style)
+        #row += 1
 
-        sh.write(row, labelColumn, "Specified Power Curve", self.bold_style)
-        sh.write(row, dataColumn, config.specified_power_curve.absolute_path)
-        row += 1
+        #sh.write(row, labelColumn, "Specified Power Curve", self.bold_style)
+        #sh.write(row, dataColumn, config.specified_power_curve.absolute_path)
+        #row += 1
 
         #datasets
         row += 1
@@ -564,33 +559,35 @@ class Report:
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve, analysis):
 
-        powerCurveLevels = powerCurve.powerCurveLevels.copy()
+        powerCurveLevels = powerCurve.data_frame.copy()
 
-        if powerCurve.inputHubWindSpeed is None:
+        if powerCurve.wind_speed_column is None:
             powerCurveLevels['Specified Wind Speed'] = powerCurveLevels.index
             windSpeedCol = 'Specified Wind Speed'
         else:
-            windSpeedCol = analysis.inputHubWindSpeed #'Input Hub Wind Speed'
+            windSpeedCol = analysis.baseline.wind_speed_column #'Input Hub Wind Speed'
 
-        powerCurveLevels = powerCurveLevels.sort(windSpeedCol)
+        powerCurveLevels = powerCurveLevels.sort(powerCurve.wind_speed_column)
 
         sh.write(rowOffset, columnOffset + 2, name, self.bold_style)
 
         sh.col(columnOffset + 1).width = 256 * 15 
         sh.col(columnOffset + 2).width = 256 * 15 
         sh.col(columnOffset + 3).width = 256 * 15
-        if powerCurve.inputHubWindSpeed is None:
+        
+        if powerCurve.wind_speed_column is None:
             sh.col(columnOffset + 5).width = 256 * 5
         else:
             sh.col(columnOffset + 4).width = 256 * 15
+
         sh.col(columnOffset + 5).width = 256 * 5
 
         rowOrders = { 'Data Count':4,
-                     analysis.actualPower:2,   analysis.hubTurbulence:3, analysis.inputHubWindSpeed:1,
+                     analysis.actualPower:2,   analysis.hubTurbulence:3, analysis.baseline.wind_speed_column:1,
                      'Specified Power':2,'Specified Turbulence':3,  'Specified Wind Speed':1,
                      analysis.measuredTurbulencePower:2}
 
-        styles = { 'Data Count':self.no_dp_style, analysis.inputHubWindSpeed:self.two_dp_style,
+        styles = { 'Data Count':self.no_dp_style, analysis.baseline.wind_speed_column:self.two_dp_style,
                    analysis.actualPower: self.no_dp_style,  analysis.hubTurbulence:self.percent_no_dp_style,
                    'Specified Power':self.no_dp_style,'Specified Turbulence':self.percent_no_dp_style,
                    'Specified Wind Speed':self.two_dp_style,analysis.measuredTurbulencePower:self.no_dp_style}
@@ -812,8 +809,8 @@ class Report:
         #sh.write(row,8, "NOT YET CALCULATED")
 
         row += 3
-        if hasattr(analysis.specifiedPowerCurve,"referenceDensity"):
-            sh.write_merge(row,row,2,6, "Measured Power Curve\n Reference Air Density = {ref} kg/m^3".format(ref=analysis.specifiedPowerCurve.referenceDensity), self.bold_style)
+        if hasattr(analysis.specified_power_curve,"referenceDensity"):
+            sh.write_merge(row,row,2,6, "Measured Power Curve\n Reference Air Density = {ref} kg/m^3".format(ref=analysis.specified_power_curve.referenceDensity), self.bold_style)
         #sh.write(row,7, "Category A Uncertainty", self.bold_style)
         #sh.write(row,8, "Category B Uncertainty", self.bold_style)
         #sh.write(row,9, "Category C Uncertainty", self.bold_style)
@@ -865,7 +862,7 @@ class Report:
                 
                 sh.write(row,3, ws, self.one_dp_style)
                 
-                sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.inputHubWindSpeed][ws], self.two_dp_style)
+                sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.baseline.wind_speed_column][ws], self.two_dp_style)
                 sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.actualPower][ws], self.two_dp_style)
                 if analysis.powerCoeff in analysis.allMeasuredPowerCurve.powerCurveLevels.columns:
                     sh.write(row,6, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
@@ -944,8 +941,8 @@ class Report:
             
             text = "%0.4f\t" % windSpeed
 
-            if windSpeed in self.specifiedPowerCurve.powerCurveLevels:
-                text += "%0.4f\t" % self.specifiedPowerCurve.powerCurveLevels[windSpeed]
+            if windSpeed in self.specified_power_curve.data_frame:
+                text += "%0.4f\t" % self.specified_power_curve.data_frame[windSpeed]
             else:
                 text += "\t"
             

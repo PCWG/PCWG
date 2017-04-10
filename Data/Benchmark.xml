@@ -10,7 +10,7 @@
 			<ExpectedResults>
 				<ExpectedResult>
 					<Field>productionByHeightDelta</Field>
-					<Value>-0.01102206</Value>
+					<Value>-0.00174386</Value>
 				</ExpectedResult>
 			</ExpectedResults>
 		</Benchmark>
@@ -93,17 +93,17 @@
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>hubPowerDeviations.get_2D_value(0.30, 0.13)</Field>
+					<Field>baseline_power_deviations.get_2D_value(0.30, 0.13)</Field>
 					<Value>-0.0182681</Value>
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>hubPowerDeviations.get_2D_count(0.60, 0.13)</Field>
+					<Field>baseline_power_deviations.get_2D_count(0.60, 0.13)</Field>
 					<Value>69</Value>
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>hubPowerDeviations.get_2D_value(0.60, 0.13)</Field>
+					<Field>baseline_power_deviations.get_2D_value(0.60, 0.13)</Field>
 					<Value>0.0013373</Value>
 				</ExpectedResult>
 

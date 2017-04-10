@@ -31,6 +31,11 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             for node in self.getNodes(dimensionsNode, 'Dimension'):
 
                 parameter = self.getNodeValue(node, 'Parameter')
+
+                if parameter == "Normalised Hub Wind Speed":
+                    #Backwards compatibility
+                    parameter = "Normalised Wind Speed"
+                    
                 centerOfFirstBin = self.getNodeFloat(node, 'CenterOfFirstBin')
                 binWidth = self.getNodeFloat(node, 'BinWidth')
                 numberOfBins = self.getNodeInt(node, 'NumberOfBins')

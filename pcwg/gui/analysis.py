@@ -150,7 +150,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         corrections_tab = tk.Frame(nb)
         output_pdm_tab = tk.Frame(nb)
         advanced_tab = tk.Frame(nb)
-        alternative_corrections_tab = tk.Frame(nb)
+        #alternative_corrections_tab = tk.Frame(nb)
 
         nb.add(general_tab, text='General', padding=3)
         nb.add(power_curve_tab, text='Power Curve', padding=3)
@@ -162,7 +162,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         nb.add(inner_range_tab, text='Inner Range', padding=3)
         nb.add(output_pdm_tab, text='Output PDM', padding=3)
         nb.add(advanced_tab, text='Advanced', padding=3)
-        nb.add(alternative_corrections_tab, text='Alternative Corrections', padding=3)
+        #nb.add(alternative_corrections_tab, text='Alternative Corrections', padding=3)
 
         nb.grid(row=self.row, sticky=tk.E+tk.W+tk.N+tk.S, column=self.titleColumn, columnspan=8)
         master.grid_rowconfigure(self.row, weight=1)
@@ -178,7 +178,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.add_corrections(corrections_tab)     
         self.add_output_pdm(output_pdm_tab)                                                                                                            
         self.add_advanced(advanced_tab)
-        self.add_alternative_corrections(alternative_corrections_tab) 
+        #self.add_alternative_corrections(alternative_corrections_tab) 
 
     def EditPowerCurve(self):
             
