@@ -729,19 +729,20 @@ class UserInterface:
             selections = ExportDataSetDialog(self.root)
             clean, full, calibration = selections.getSelections()
 
-            fileName = tkFileDialog.asksaveasfilename(parent=self.root,
-                                                      defaultextension=".csv",
-                                                      initialfile="timeseries.csv",
-                                                      title="Save Time Series",
-                                                      initialdir=preferences.analysis_last_opened_dir())
-
-            self.analysis.export_time_series(fileName, clean, full, calibration)
+            file_name = tkFileDialog.asksaveasfilename(parent=self.root,
+                                                       defaultextension=".csv",
+                                                       initialfile="timeseries.csv",
+                                                       title="Save Time Series",
+                                                       initialdir=preferences.analysis_last_opened_dir())
+            full_df_output_dir = "TimeSeriesData"
+            self.analysis.export_time_series(file_name, clean, full, calibration, full_df_output_dir=full_df_output_dir)
 
             if clean:
-                    Status.add("Time series written to %s" % fileName)
+                Status.add("Time series written to %s" % file_name)
 
             if any((full, calibration)):
-                    Status.add("Extra time series have been written to %s" % self.analysis.config.path.split(".")[0] + "_TimeSeriesData")
+                Status.add("Extra time series have been written to %s" % os.path.join(os.path.dirname(file_name),
+                                                                                      full_df_output_dir))
 
         except ExceptionHandler.ExceptionType as e:
             ExceptionHandler.add(e, "ERROR Exporting Time Series")
