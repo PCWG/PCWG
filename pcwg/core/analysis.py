@@ -428,7 +428,7 @@ class Analysis(object):
             if not isinstance(dataset, DatasetConfiguration):
                 self.datasetConfigs.append(DatasetConfiguration(dataset.absolute_path))
             else:
-                self.datasetConfigs.append(datasets[i])
+                self.datasetConfigs.append(dataset)
 
     def define_columns(self):
 
