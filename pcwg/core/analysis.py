@@ -378,7 +378,9 @@ class Analysis(object):
         Status.add("Applying settings...")            
 
         self.densityCorrectionActive = config.densityCorrectionActive
-        
+
+        self.Name = config.Name
+
         self.rewsActive = config.rewsActive
         self.rewsVeer = config.rewsVeer
         self.rewsUpflow = config.rewsUpflow
@@ -475,10 +477,13 @@ class Analysis(object):
                 self.windSpeedAt85pctX1pnt5 = self.specified_power_curve.getThresholdWindSpeed()
             if hasattr(self.datasetConfigs[0].data,"analysedDirections"):
                 self.analysedDirectionSectors = self.datasetConfigs[0].data.analysedDirections # assume a single for now.
-            if len(self.powerCurve.powerCurveLevels) != 0:
-                self.aepCalc,self.aepCalcLCB = aep.run(self,self.nominal_wind_speed_distribution.absolute_path, self.allMeasuredPowerCurve)
+            if len(self.powerCurve.data_frame) != 0:
+                self.aepCalc, self.aepCalcLCB = aep.run(self, self.nominal_wind_speed_distribution.absolute_path,
+                                                        self.allMeasuredPowerCurve)
                 if self.turbRenormActive:
-                    self.turbCorrectedAepCalc,self.turbCorrectedAepCalcLCB = aep.run(self,self.nominal_wind_speed_distribution.absolute_path, self.allMeasuredTurbCorrectedPowerCurve)
+                    self.turbCorrectedAepCalc, self.turbCorrectedAepCalcLCB \
+                    = aep.run(self, self.nominal_wind_speed_distribution.absolute_path,
+                              self.allMeasuredTurbCorrectedPowerCurve)
             else:
                 Status.add("A specified power curve is required for AEP calculation. No specified curve defined.")
 

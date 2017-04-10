@@ -796,12 +796,12 @@ class Report:
         sh.write(row,7, "Measured Hours", self.bold_style)
         #sh.write(row,8, "Annual Energy Yield Uncertainty as a percentage of the Warranted Annual Yield (%)", self.bold_style)
         row += 1
-        sh.write(row,2, analysis.config.Name)
+        sh.write(row,2, analysis.Name)
         sh.write(row,3, analysis.aepCalcLCB.AEP*100, self.two_dp_style)
         sh.write(row,4, analysis.aepCalc.AEP*100, self.two_dp_style)
         sh.write(row,5, analysis.aepCalcLCB.lcb, self.two_dp_style)
         sh.write(row,6, "{mi} - {ma}".format(mi=analysis.dataFrame[analysis.windDirection].min(),ma=analysis.dataFrame[analysis.windDirection].max()))
-        timeCovered = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount].sum() * hrsMultiplier
+        timeCovered = analysis.allMeasuredPowerCurve.data_frame[analysis.dataCount].sum() * hrsMultiplier
         sh.write(row,7, timeCovered, self.two_dp_style)
         #sh.write(row,8, "NOT YET CALCULATED")
 
@@ -852,24 +852,24 @@ class Report:
         #sh.write(row,8, "[kW]", self.bold_style)
         #sh.write(row,9, "[kW]", self.bold_style)
         
-        for binNo,ws in enumerate(analysis.allMeasuredPowerCurve.powerCurveLevels .index):
-            if ws <= analysis.aepCalcLCB.lcb and analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws] > 0:
+        for binNo,ws in enumerate(analysis.allMeasuredPowerCurve.data_frame.index):
+            if ws <= analysis.aepCalcLCB.lcb and analysis.allMeasuredPowerCurve.data_frame[analysis.dataCount][ws] > 0:
                 row+=1
                 sh.write(row,2, binNo+1, self.no_dp_style)
                 
                 sh.write(row,3, ws, self.one_dp_style)
                 
-                sh.write(row,4, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.baseline.wind_speed_column][ws], self.two_dp_style)
-                sh.write(row,5, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.actualPower][ws], self.two_dp_style)
-                if analysis.powerCoeff in analysis.allMeasuredPowerCurve.powerCurveLevels.columns:
-                    sh.write(row,6, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerCoeff][ws], self.two_dp_style)
+                sh.write(row,4, analysis.allMeasuredPowerCurve.data_frame[analysis.baseline.wind_speed_column][ws], self.two_dp_style)
+                sh.write(row,5, analysis.allMeasuredPowerCurve.data_frame[analysis.actualPower][ws], self.two_dp_style)
+                if analysis.powerCoeff in analysis.allMeasuredPowerCurve.data_frame.columns:
+                    sh.write(row,6, analysis.allMeasuredPowerCurve.data_frame[analysis.powerCoeff][ws], self.two_dp_style)
                 else:
                     sh.write(row,6, "-", self.no_dp_style)
-                datCount = analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.dataCount][ws]
+                datCount = analysis.allMeasuredPowerCurve.data_frame[analysis.dataCount][ws]
                 sh.write(row,7, datCount, self.no_dp_style)
                 
-                if analysis.powerStandDev in analysis.allMeasuredPowerCurve.powerCurveLevels.columns:
-                    sh.write(row,8, analysis.allMeasuredPowerCurve.powerCurveLevels[analysis.powerStandDev][ws])
+                if analysis.powerStandDev in analysis.allMeasuredPowerCurve.data_frame.columns:
+                    sh.write(row,8, analysis.allMeasuredPowerCurve.data_frame[analysis.powerStandDev][ws])
                 else:
                     sh.write(row,8, "-", self.no_dp_style)
                 
@@ -943,18 +943,18 @@ class Report:
             else:
                 text += "\t"
             
-            if windSpeed in self.innerMeasuredPowerCurve.powerCurveLevels:
-                text += "%0.4f\t" % self.innerMeasuredPowerCurve.powerCurveLevels[windSpeed]
+            if windSpeed in self.innerMeasuredPowerCurve.data_frame:
+                text += "%0.4f\t" % self.innerMeasuredPowerCurve.data_frame[windSpeed]
             else:
                 text += "\t"
 
-            if windSpeed in self.outerMeasuredPowerCurve.powerCurveLevels:
-                text += "%0.4f\t" % self.outerMeasuredPowerCurve.powerCurveLevels[windSpeed]
+            if windSpeed in self.outerMeasuredPowerCurve.data_frame:
+                text += "%0.4f\t" % self.outerMeasuredPowerCurve.data_frame[windSpeed]
             else:
                 text += "\t"                
 
-            if windSpeed in self.allMeasuredPowerCurve.powerCurveLevels:
-                text += "%0.4f\t" % self.allMeasuredPowerCurve.powerCurveLevels[windSpeed]
+            if windSpeed in self.allMeasuredPowerCurve.data_frame:
+                text += "%0.4f\t" % self.allMeasuredPowerCurve.data_frame[windSpeed]
             else:
                 text += "\t"
                 

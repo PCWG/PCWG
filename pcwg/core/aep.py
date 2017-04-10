@@ -1,7 +1,7 @@
 # calculates two Gross/Ideal yields from a nominal wind speed distribution
 # creates a percentage value
 import numpy as np
-from configuration import XmlBase
+from ..configuration.base_configuration import XmlBase
 import pandas as pd
 from scipy.interpolate import interp1d
 import rebin
@@ -13,15 +13,13 @@ def run(analysis,fileName, measuredPowerCurve):
     ans = aepCalc.calculate_AEP()
     aepCalcLCB = AEPCalculatorLCB(analysis.powerCurve,measuredPowerCurve,distributionPath=fileName)
     ansLCB = aepCalcLCB.calculate_AEP()
-    if analysis.status:
-        analysis.status.addMessage("Calculating AEP using %s power curve:" % measuredPowerCurve.name)
-        analysis.status.addMessage("    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield/1000.0))
-        analysis.status.addMessage("    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield/1000.0))
-        analysis.status.addMessage("    AEP (Extrapolated): {aep1:0.08} % \n".format(aep1 =aepCalc.AEP*100) )
-        analysis.status.addMessage("    AEP (LCB): {aep1:0.08} % \n".format(aep1 =aepCalcLCB.AEP*100) )
-        analysis.status.addMessage("    Number of Hours in test: {hrs} \n".format(hrs =analysis.hours) )
-        #analysis.status.addMessage("    Category A Uncertainty in AEP: {unc} %\n".format(unc ="%.2f" % (aepCalcLCB.cat_a_unc * 100.)) )
-        #analysis.status.addMessage("    [In test] Total Measured AEP Uncertainty: {unc:.02f}% \n".format(unc =aepCalc.totalUncertainty*100) )
+    if Status:
+        Status.add("Calculating AEP using %s power curve:" % measuredPowerCurve.name)
+        Status.add("    Reference Yield: {ref} MWh".format(ref=aepCalc.refYield/1000.0))
+        Status.add("    Measured Yield: {mes} MWh".format(mes=aepCalc.measuredYield/1000.0))
+        Status.add("    AEP (Extrapolated): {aep1:0.08} % ".format(aep1 =aepCalc.AEP*100))
+        Status.add("    AEP (LCB): {aep1:0.08} % ".format(aep1 =aepCalcLCB.AEP*100))
+        Status.add("    Number of Hours in test: {hrs} ".format(hrs =analysis.hours))
 
     return aepCalc,aepCalcLCB
 
@@ -80,20 +78,20 @@ class AEPCalculator:
         for bin in self.distribution.df_rebinned.index:
             if not hasattr(self,"lcb") or (hasattr(self,"lcb") and bin <= self.lcb):
                 upper = curve.power(bin)
-                lower = 0.0 if bin-self.distribution.rebin_width < min(curve.powerCurveLevels.index) else curve.power(bin-self.distribution.rebin_width)
+                lower = 0.0 if bin-self.distribution.rebin_width < min(curve.data_frame.index) else curve.power(bin-self.distribution.rebin_width)
                 power=(upper+lower)/2.0
                 freq = max(0,self.distribution.cumulativeFunction(bin)-self.distribution.cumulativeFunction(bin-self.distribution.rebin_width))
                 self.energy_distribution.loc[bin, energyColumns] = [float(upper),lower,freq,power,freq*power]
                 energySum += freq*power
-                if 'Measured' == curveType and bin in curve.powerCurveLevels.index:
-                    self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.powerCurveLevels.loc[bin,"Power Standard Deviation"]/(curve.powerCurveLevels.loc[bin,"Data Count"])**0.5)*self.distribution.df_rebinned[bin]
+                if 'Measured' == curveType and bin in curve.data_frame.index:
+                    self.uncertainty_distribution.loc[bin, 'TypeA'] = (curve.data_frame.loc[bin,"Power Standard Deviation"]/(curve.data_frame.loc[bin,"Data Count"])**0.5)*self.distribution.df_rebinned[bin]
                     self.uncertainty_distribution.loc[bin, 'TypeB'] =  0.0 # todo: calculate this properly
         return energySum        
 
 class AEPCalculatorLCB(AEPCalculator):
     def __init__(self,referenceCurve, measuredCurve, distribution = None, distributionPath = None):
         AEPCalculator.__init__(self, referenceCurve, measuredCurve, distribution, distributionPath)
-        self.lcb = max(self.measuredCurve.powerCurveLevels[self.measuredCurve.powerCurveLevels['Data Count'] > 0].index)
+        self.lcb = max(self.measuredCurve.data_frame[self.measuredCurve.data_frame['Data Count'] > 0].index)
 
 class WindSpeedDistribution(XmlBase):
     rebin_width = 0.5
