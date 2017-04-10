@@ -77,31 +77,15 @@ class BenchmarkAnalysis(Analysis):
         self.baseYield = self.dataFrame[self.get_base_filter()][self.basePower].sum() * self.timeStampHours
 
     def calculateHubBenchmark(self):
-        self.dataFrame[self.basePower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.baseline.wind_speed_column).power, axis=1)
-        self.hubYield = self.dataFrame[self.get_base_filter()][self.basePower].sum() * self.timeStampHours
-        self.hubYieldCount = self.dataFrame[self.get_base_filter()][self.basePower].count()
+        self.dataFrame[self.hubPower] = self.dataFrame.apply(PowerCalculator(self.powerCurve, self.baseline.wind_speed_column).power, axis=1)
+        self.hubYield = self.dataFrame[self.get_base_filter()][self.hubPower].sum() * self.timeStampHours
+        self.hubYieldCount = self.dataFrame[self.get_base_filter()][self.hubPower].count()
         self.hubDelta = self.hubYield / self.baseYield - 1.0
         Status.add("Hub Delta: %.3f%% (%d)" % (self.hubDelta * 100.0, self.hubYieldCount))
 
     def calculateREWSBenchmark(self):
         if self.rewsActive:
-            self.rewsYield, self.rewsYieldCount, self.rewsDelta = \
-                self.calculate_benchmark_for_correction(self._get_rews_correction_string())
-
-    def _get_rews_correction_string(self):
-        if self.rewsExponent == 3.:
-            rews_str = "REWS"
-        elif self.rewsExponent == 2.:
-            rews_str = "RAWS"
-        else:
-            rews_str = "REWS-Exponent={0}".format(self.rewsExponent)
-        if (not self.rewsVeer) and (not self.rewsUpflow):
-            correction = "{0} (Speed)"
-        elif (self.rewsVeer) and (not self.rewsUpflow):
-            correction = "{0} (Speed+Veer)"
-        elif (self.rewsVeer) and (self.rewsUpflow):
-            correction = "{0} (Speed+Veer+Upflow)"
-        return correction.format(rews_str)
+            self.rewsYield, self.rewsYieldCount, self.rewsDelta = self.calculate_benchmark_for_correction("REWS")
 
     def calculateTurbRenormBenchmark(self):
 
@@ -114,20 +98,20 @@ class BenchmarkAnalysis(Analysis):
 
     def calculationCombinedBenchmark(self):
         if self.rewsActive and self.turbRenormActive:
-            self.combinedYield, self.combinedYieldCount, self.combinedDelta = \
-                self.calculate_benchmark_for_correction(self._get_rews_correction_string() + " & Turbulence")
+            self.combinedYield, self.combinedYieldCount, self.combinedDelta = self.calculate_benchmark_for_correction("REWS & Turbulence")
 
     def calculatePowerDeviationMatrixBenchmark(self):
         if self.powerDeviationMatrixActive:
-            self.powerDeviationMatrixYield, self.powerDeviationMatrixYieldCount, self.powerDeviationMatrixDelta = self.calculate_benchmark_for_correction("2D Power Deviation Matrix")
+            self.powerDeviationMatrixYield, self.powerDeviationMatrixYieldCount, self.powerDeviationMatrixDelta = self.calculate_benchmark_for_correction("Power Deviation Matrix")
 
     def calculateProductionByHeightBenchmark(self):
         if self.productionByHeightActive:
             self.productionByHeightYield, self.productionByHeightYieldCount, self.productionByHeightDelta = self.calculate_benchmark_for_correction("Production by Height")
 
     def calculate_benchmark_for_correction(self, correction):
+        
         power_column = self.corrections[correction].power_column
-
+        
         energy = self.dataFrame[self.get_base_filter()][power_column].sum() * self.timeStampHours
         count = self.dataFrame[self.get_base_filter()][power_column].count()
         delta = energy / self.baseYield - 1.0
