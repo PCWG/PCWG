@@ -60,31 +60,28 @@ class PNGPlotter:
 
 class TimeSeriesExporter:
 
-    def export(self, analysis, time_series_path, clean = True,  full = True, calibration = True ):
+    def export(self, analysis, time_series_path, clean=True,  full=True, calibration=True,
+               full_df_output_dir="TimeSeriesData"):
 
         data_frame = analysis.dataFrame
-        analysis_config = analysis.config
         dataset_configs = analysis.datasetConfigs
 
-        plotsDir = analysis_config.path.replace(".xml", "_PPAnalysisPlots")
-
-        plotter = PNGPlotter()
-        plotter.plot(analysis, plotsDir)
-
         if clean:
-            data_frame.to_csv(time_series_path, sep = '\t')
+            data_frame.to_csv(time_series_path, sep='\t')
         
         if full:
         
-            rootPath = analysis_config.path.split(".")[0] + "_TimeSeriesData"
-            chckMake(rootPath)
+            root_path = os.path.join(os.path.dirname(time_series_path), )
+            chckMake(root_path)
         
             for ds in dataset_configs:
-                
-                ds.data.fullDataFrame.to_csv(rootPath + os.sep + "FilteredDataSet_AllColumns_{0}.dat".format(ds.name), sep = '\t')
+
+                ds.data.fullDataFrame.to_csv(root_path + os.sep + "FilteredDataSet_AllColumns_{0}.dat".format(ds.name),
+                                             sep='\t')
 
                 if calibration and hasattr(ds.data,"filteredCalibrationDataframe"):
-                    ds.data.filteredCalibrationDataframe.to_csv(rootPath + os.sep + "CalibrationDataSet_{0}.dat".format(ds.name), sep = ',')
+                    ds.data.filteredCalibrationDataframe.to_csv(
+                        root_path + os.sep + "CalibrationDataSet_{0}.dat".format(ds.name), sep=',')
 
 class Report:
     

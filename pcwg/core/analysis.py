@@ -868,10 +868,11 @@ class Analysis(object):
         report = reporting.Report(self.windSpeedBins, self.calculated_power_deviation_matrix_definition.bins)
         report.report(path, self)
 
-    def export_time_series(self, path, clean = True,  full = True, calibration = True ):
+    def export_time_series(self, path, clean=True,  full=True, calibration=True , full_df_output_dir="TimeSeriesData"):
 
         exporter = reporting.TimeSeriesExporter()        
-        exporter.export(self, path, clean = clean,  full = full, calibration = calibration)
+        exporter.export(self, path, clean=clean,  full=full, calibration=calibration,
+                        full_df_output_dir=full_df_output_dir)
 
     def export_training_data(self, path):
         
