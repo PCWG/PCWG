@@ -71,7 +71,7 @@ class TimeSeriesExporter:
         
         if full:
         
-            root_path = os.path.join(os.path.dirname(time_series_path), )
+            root_path = os.path.join(os.path.dirname(time_series_path), full_df_output_dir)
             chckMake(root_path)
         
             for ds in dataset_configs:
