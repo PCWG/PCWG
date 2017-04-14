@@ -267,7 +267,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                 ynew.append(0.0)
                 rated_new.append(False)
                 operating_new.append(False)
-                
+        
         if cutInWindSpeed == None:
             
             Status.add("ERROR", verbosity=3)
@@ -291,12 +291,20 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         Status.add("Pre-processed Bins", verbosity=3)        
         Status.add("Speed Power Adjust", verbosity=3)
         
+        adjust_active = True
+
         for i in range(numberOfNewBins):
 
-            if rated_new[i] == False and operating_new[i] == True:
+            if rated_new[i] == False and operating_new[i] and adjust_active:
+            
                 adjust.append(True)
+            
             else:
+                
                 adjust.append(False)
+
+                if rated_new[i]:
+                    adjust_active = False
             
             Status.add("{0} {1} {2}".format(xnew[i], ynew[i], adjust[i]), verbosity=3)
             
