@@ -37,6 +37,7 @@ import base_dialog
 import analysis
 import portfolio
 from preferences import PreferencesDialog
+from visualisation import VisualisationDialogFactory
 
 class ExportDataSetDialog(base_dialog.BaseDialog):
 
@@ -170,6 +171,23 @@ class UserInterface:
         export_pdm_button = tk.Button(analyse_group_top,
                                               text="Export PDM",
                                               command=self.ExportPDM)
+        
+        visualise_button = tk.Button(analyse_group_top,
+                                              text="Visulalise",
+                                              command=self.visualise)
+
+        self.visualisation = tk.StringVar(analyse_group_top, "Power Curve")
+
+        visualisation_options = ['Power Curve',
+                                  'Turbulence by Direction',
+                                  'Turbulence by Speed', 
+                                  'Turbulence by Shear', 
+                                  'Shear by Direction', 
+                                  'Shear by Speed',
+                                  'Power Coefficient by Speed']
+
+        self.visualation_menu = apply(tk.OptionMenu, (analyse_group_top, self.visualisation) + tuple(visualisation_options))
+
 
         load_button.pack(side=tk.RIGHT, padx=5, pady=5)
         edit_button.pack(side=tk.RIGHT, padx=5, pady=5)
@@ -179,6 +197,8 @@ class UserInterface:
         export_time_series_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_training_data_button.pack(side=tk.LEFT, padx=5, pady=5)
         export_pdm_button.pack(side=tk.LEFT, padx=5, pady=5)
+        visualise_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.visualation_menu.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.analysisFilePathLabel = tk.Label(analyse_group_bottom,
                                               text="Analysis File")
@@ -640,6 +660,20 @@ class UserInterface:
             except ExceptionHandler.ExceptionType as e:
 
                 ExceptionHandler.add(e, "ERROR Exporting Report")
+
+    def visualise(self):
+
+            if self.analysis is None:
+                Status.add("ERROR: Analysis not yet calculated", red=True)
+                return
+
+            try:
+
+              VisualisationDialogFactory(self.analysis).new_visualisaton(self.visualisation.get())
+
+            except ExceptionHandler.ExceptionType as e:
+
+                ExceptionHandler.add(e, "ERROR Visualising")
 
 
     def PCWG_Share_X_Portfolio(self, share_name):
