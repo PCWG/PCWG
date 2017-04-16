@@ -31,9 +31,23 @@ class RandomizeYear:
     def __call__(self, row):
         
         date_time = row[self.time_stamp_column]
-        
-        year = random.randint(1980, 2020)
-        
+
+        if date_time.month == 2 and date_time.day == 29:    
+            
+            #deal with leap years
+            year = date_time.year + 4 * random.randint(-5, 5)
+
+            #if year is divisible by 100 it may not be a leap year
+            if year % 100 == 0:
+
+                # if it is divisible by 100 and not divisible by 400 it is not a leap year
+                if year % 400 != 0:
+                    year = year + 4 #shift by four years
+
+        else:
+
+            year = random.randint(1980, 2020)
+
         return datetime.datetime(year = year,
                                  month = date_time.month,
                                  day = date_time.day, 
