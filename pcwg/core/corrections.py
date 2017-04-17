@@ -70,6 +70,8 @@ class Source(object):
 
 		self.source = None
 		self.wind_speed_column = source_column
+		self.correction_name = ""
+		self.short_correction_name = ""
 
 		self.raw = True
 		self.wind_speed_based = True
@@ -92,12 +94,13 @@ class PreDensityCorrectedSource(Source):
 		Source.__init__(self, source_column)
 
 		self.correction_name = "Density"
+		self.short_correction_name = "Den"
 
 		Status.add("Using pre-density corrected wind speed...")
 
 class Correction(object):
 
-	def __init__(self, correction_name, source, wind_speed_based):
+	def __init__(self, correction_name, short_correction_name, source, wind_speed_based):
 
 		if not self.can_chain(source):
 			raise Exception("{0} cannot follow {1}".format(correction_name, source.correction_name))
@@ -105,14 +108,15 @@ class Correction(object):
 		self.wind_speed_based = wind_speed_based
 		self.power_based = (not self.wind_speed_based)
 
-		self.correction_name = self.calculate_name(source, correction_name)
+		self.correction_name = self.calculate_name(source, source.correction_name, correction_name)
+		self.short_correction_name = self.calculate_name(source, source.short_correction_name, short_correction_name)
 
 		self.source = source
 		self.raw = False 
 
 		Status.add("Performing {0} Correction...".format(self.correction_name))
 
-	def calculate_name(self, source, correction_name):
+	def calculate_name(self, source, source_correction_name, correction_name):
 
 		if source.raw:
 
@@ -120,7 +124,7 @@ class Correction(object):
 
 		else:
 
-			name = source.correction_name
+			name = source_correction_name
 
 			if "&" in name:
 				name = name.replace(" & ", ", ")
@@ -168,10 +172,11 @@ class Correction(object):
 
 class WindSpeedBasedCorrection(Correction):
 
-	def __init__(self, correction_name, source):
+	def __init__(self, correction_name, short_correction_name, source):
 
 		Correction.__init__(self,
 							correction_name=correction_name,
+							short_correction_name =short_correction_name,
 							source=source,
 							wind_speed_based=True)
 
@@ -189,14 +194,15 @@ class WindSpeedBasedCorrection(Correction):
 
 class PowerBasedCorrection(Correction):
 
-	def __init__(self, correction_name, source, power_curve):
+	def __init__(self, correction_name, short_correction_name, source, power_curve):
 
 		Correction.__init__(self,
 							correction_name=correction_name,
+							short_correction_name =short_correction_name,
 							source=source,
 							wind_speed_based=False)
 
-		self.power_column = "{0} Power".format(self.calculate_name(source, correction_name))
+		self.power_column = "{0} Power".format(self.calculate_name(source, source.correction_name, correction_name))
 		self.power_curve = power_curve
 
 	def finalise(self, data_frame, calculator):
@@ -209,7 +215,7 @@ class DensityEquivalentWindSpeed(WindSpeedBasedCorrection):
 
 	def __init__(self, data_frame, source, reference_density, hub_density_column, power_curve=None):
 
-		WindSpeedBasedCorrection.__init__(self, "Density", source)
+		WindSpeedBasedCorrection.__init__(self, "Density", "Den", source)
 
 		self.reference_density = reference_density
 
@@ -241,14 +247,20 @@ class RotorEquivalentWindSpeed(WindSpeedBasedCorrection):
 			exponent_type = "REWS-Exponent={0}".format(rewsExponent)	
 					
 		rews_type = "Speed"
+		rews_short_type = "S"
 
 		if rewsVeer:
 			rews_type += "+Veer" 
+			rews_short_type = "+V"
 
 		if rewsUpflow:
 			rews_type += "+Upflow" 
+			rews_short_type = "+U"
 
-		WindSpeedBasedCorrection.__init__(self, "{0} ({1})".format(exponent_type, rews_type), source)
+		correction_name = "{0} ({1})".format(exponent_type, rews_type)
+		short_correction_name = "{0} ({1})".format(exponent_type, rews_short_type)
+
+		WindSpeedBasedCorrection.__init__(self, correction_name, short_correction_name, source)
 
 		rews_to_hub_ratios = []
 
@@ -275,7 +287,7 @@ class TurbulenceCorrection(PowerBasedCorrection):
 
 	def __init__(self, data_frame, source, hub_turbulence_column, power_curve):
 
-		PowerBasedCorrection.__init__(self, "Turbulence", source, power_curve)
+		PowerBasedCorrection.__init__(self, "Turbulence", "Turb", source, power_curve)
 
 		calculator = TurbulencePowerCalculator(self.power_curve, self.power_curve.ratedPower, source.wind_speed_column, hub_turbulence_column)
 
@@ -287,7 +299,7 @@ class PowerDeviationMatrixCorrection(PowerBasedCorrection):
 
 		dimenionality = "{0}D".format(len(power_deviation_matrix.dimensions))
 
-		PowerBasedCorrection.__init__(self, "{0} Power Deviation Matrix".format(dimenionality), source, power_curve)
+		PowerBasedCorrection.__init__(self, "{0} Power Deviation Matrix".format(dimenionality), "{0} PDM".format(dimenionality), source, power_curve)
 
 		power_deviation_matrix.reset_out_of_range_count() 
 
@@ -323,7 +335,7 @@ class ProductionByHeightCorrection(PowerBasedCorrection):
 
 	def __init__(self, data_frame, source, original_datasets, power_curve):
 
-		PowerBasedCorrection.__init__(self, "Production by Height", source, power_curve)
+		PowerBasedCorrection.__init__(self, "Production by Height", "P by H", source, power_curve)
 
 		self.delta_column = "Production by Height Delta"
 
@@ -341,6 +353,6 @@ class WebServiceCorrection(PowerBasedCorrection):
 
 	def __init__(self, data_frame, web_service):
 
-		PowerBasedCorrection.__init__(self, "WebService", Source(None))
+		PowerBasedCorrection.__init__(self, "WebService", "Web", Source(None))
 
 		self.finalise(data_frame, web_service)

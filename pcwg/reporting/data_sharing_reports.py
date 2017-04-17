@@ -40,25 +40,35 @@ class PortfolioReport(object):
         
         self.book = xlwt.Workbook()
 
-        self.write_sheet(shares, "Baseline")
-        self.write_sheet(shares, "TI Renormalisation")
-        self.write_sheet(shares, "REWS")
-        self.write_sheet(shares, "Combined TI Renorm and REWS")
-        self.write_sheet(shares, "PDM")
+        cols = []
+        names = {}
+
+        cols.append('Baseline')
+        names['Baseline'] = 'Baseline'
+
+        for share in shares:            
+            if share.analysis != None:
+                for correction_name in share.analysis.corrections:
+                    if not correction_name in cols:
+                        cols.append(correction_name)
+                        names[correction_name] = share.analysis.corrections[correction_name].short_correction_name
+
+        for col in cols:
+            self.write_sheet(shares, col, names[col])
                 
         self.book.save(path)
 
     def get_analysis_key(self, report_type):
-        return '{0} Error'.format(report_type)
+        return ('ByBin', "{0} Error".format(report_type))
         
-    def write_sheet(self, shares, report_type):
+    def write_sheet(self, shares, report_type, sheet_name):
         
         analysis_key = self.get_analysis_key(report_type)
 
         by_wind_speed_header_row = 0
         header_row = by_wind_speed_header_row + 1
 
-        sheet = self.book.add_sheet(report_type, cell_overwrite_ok=True)    
+        sheet = self.book.add_sheet(sheet_name, cell_overwrite_ok=True)    
 
         uid_col = 0
         inner_start_col = 1
@@ -201,9 +211,9 @@ class SubmissionSheet(object):
         sh.write(ts_row, col, self.analysis.dataset_time_series_unique_id)
         _apply_cell_style(style_fntsz1, sh, ts_row, col)
         
-        styles_dict = {True: _get_cell_style(sh, 17, 2),
-                       False: _get_cell_style(sh, 17, 3),
-                       'N/A': _get_cell_style(sh, 18, 2),
+        styles_dict = {True: _get_cell_style(sh, 17, 3),
+                       False: _get_cell_style(sh, 17, 4),
+                       'N/A': _get_cell_style(sh, 18, 3),
                        'Title': _get_cell_style(sh, 17, 1)}
 
         row = 17
@@ -222,11 +232,14 @@ class SubmissionSheet(object):
         sheet.write(row, 1, name)
         _apply_cell_style(styles['Title'], sheet, row, 1)
 
-        self.write_config_cell(sheet, row, 2, correction.density_applied(), styles)
-        self.write_config_cell(sheet, row, 3, correction.rews_applied(), styles)
-        self.write_config_cell(sheet, row, 4, correction.turbulence_applied(), styles)
-        self.write_config_cell(sheet, row, 5, correction.pdm_applied(), styles)
-        self.write_config_cell(sheet, row, 6, correction.production_by_height_applied(), styles)
+        sheet.write(row, 2, correction.short_correction_name)
+        _apply_cell_style(styles['Title'], sheet, row, 2)
+
+        self.write_config_cell(sheet, row, 3, correction.density_applied(), styles)
+        self.write_config_cell(sheet, row, 4, correction.rews_applied(), styles)
+        self.write_config_cell(sheet, row, 5, correction.turbulence_applied(), styles)
+        self.write_config_cell(sheet, row, 6, correction.pdm_applied(), styles)
+        self.write_config_cell(sheet, row, 7, correction.production_by_height_applied(), styles)
 
     def write_config_cell(self, sheet, row, column, value, styles):
 
@@ -338,22 +351,22 @@ class MetricsSheets(object):
 
     def write(self):
 
-        self._write_metrics_sheet('Baseline', self.analysis.base_line_error_column)
+        self._write_metrics_sheet('Baseline', 'Baseline', self.analysis.base_line_error_column)
         
         for correction_name in self.analysis.corrections:
-            self._write_metrics_sheet(correction_name, self.analysis.error_columns[correction_name])
+            correction = self.analysis.corrections[correction_name]
+            self._write_metrics_sheet(correction.short_correction_name, correction.correction_name, self.analysis.error_columns[correction_name])
     
-    def _write_metrics_sheet(self, sh_name, error_col):
+    def _write_metrics_sheet(self, sheet_name, correction_name, error_col):
         
         offsets = {'ByBin': 0, 'Total': 38}
 
         for error_type in self.analysis.error_types:
-            self._write_metrics_sheet_section(sh_name, error_col, error_type, offsets[error_type])
-            self._write_metrics_sheet_section(sh_name, error_col, error_type, offsets[error_type])
+            self._write_metrics_sheet_section(sheet_name, correction_name, error_col, error_type, offsets[error_type])
 
-    def _write_metrics_sheet_section(self, sh_name, error_col, error_type, row_offset):
-        
-        self.__write_overall_metric_sheet(sh_name, error_type, row_offset)
+    def _write_metrics_sheet_section(self, sh_name, correction_name, error_col, error_type, row_offset):
+
+        self.__write_overall_metric_sheet(sh_name, correction_name, error_type, row_offset)
         self.__write_by_ws_metric_sheet(sh_name, error_col, error_type, row_offset)
         self.__write_by_ws_metric_inner_sheet(sh_name, error_col, error_type, row_offset)
         self.__write_by_ws_metric_outer_sheet(sh_name, error_col, error_type, row_offset)
@@ -366,11 +379,11 @@ class MetricsSheets(object):
         self.__write_by_four_cell_matrix_metric_sheet(sh_name, error_col, error_type, row_offset)
         self.__write_by_month_metric_sheet(sh_name, error_col, error_type, row_offset)
     
-    def __write_overall_metric_sheet(self, sh_name, error_type, row_offset):
+    def __write_overall_metric_sheet(self, sh_name, correction_name, error_type, row_offset):
         sh = self.sheet_map[sh_name]
         wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[self.analysis.dataCount], sh, 3 + row_offset, 3)
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NME'], sh, 4 + row_offset, 3)
-        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[sh_name + ' NMAE'], sh, 5 + row_offset, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[correction_name + ' NME'], sh, 4 + row_offset, 3)
+        wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[correction_name + ' NMAE'], sh, 5 + row_offset, 3)
     
     def __write_by_ws_metric_sheet(self, sh_name, err_col, error_type, row_offset):
         df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin][(error_type, err_col)]
@@ -517,7 +530,7 @@ class ScatterPlotSheet(object):
 
 class PCWGShareXReport(object):
     
-    TEMPALTE_PATH = 'Share_1_template.xls'
+    TEMPALTE_PATH = 'Share_X_template.xls'
 
     TEMPLATE_SHEET_MAP = {'Submission': 0,
                  'Meta Data': 1,
@@ -540,7 +553,8 @@ class PCWGShareXReport(object):
         self.add_template_sheet(wb, 'Template', 'Baseline')
 
         for correction_name in analysis.corrections:
-            self.add_template_sheet(wb, 'Template', correction_name)
+            correction = analysis.corrections[correction_name]
+            self.add_template_sheet(wb, 'Template', correction.short_correction_name)
         
         self.delete_template_sheet(wb, 'Template')
 
