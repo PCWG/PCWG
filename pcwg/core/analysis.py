@@ -409,7 +409,7 @@ class Analysis(object):
         self.specified_power_deviation_matrix = config.specified_power_deviation_matrix
 
         self.powerCurveMinimumCount = config.powerCurveMinimumCount
-        self.powerCurvePaddingMode = config.powerCurvePaddingMode
+        self.powerCurveExtrapolationMode = config.powerCurveExtrapolationMode
 
         self.interpolationMode = config.interpolationMode
         self.powerCurveMode = config.powerCurveMode
@@ -804,21 +804,21 @@ class Analysis(object):
 
         if len(dfPowerLevels.index) != 0:
             
-            #padding
+            #extrapolation
             # To deal with data missing between cutOut and last measured point:
             # Specified : Use specified rated power
             # Last : Use last observed power
             # Linear : linearly interpolate from last observed power at last observed ws to specified power at specified ws.
             
-            powerCurvePadder = PadderFactory().generate(self.powerCurvePaddingMode, 
+            powerCurveExtrapolation = ExtrapolationFactory().generate(self.powerCurveExtrapolationMode, 
                                                         powerColumn, 
                                                         self.baseline.wind_speed_column, 
                                                         self.hubTurbulence, 
                                                         self.dataCount)
 
-            Status.add("Padder: {0}".format(powerCurvePadder.__class__.__name__, verbosity=2))
+            Status.add("Extrapolation: {0}".format(powerCurveExtrapolation.__class__.__name__, verbosity=2))
 
-            powerLevels = powerCurvePadder.pad(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower, self.windSpeedBins)
+            powerLevels = powerCurveExtrapolation.extrapolate(dfPowerLevels,cutInWindSpeed,cutOutWindSpeed,ratedPower, self.windSpeedBins)
 
             if dfPowerCoeff is not None:
                 powerLevels[self.powerCoeff] = dfPowerCoeff
@@ -1146,24 +1146,24 @@ class Analysis(object):
             
         return (direction_count > 0)
 
-class PadderFactory:
+class ExtrapolationFactory:
     @staticmethod
-    def generate(strPadder, powerCol, wsCol, turbCol, countCol):
+    def generate(strExtrapolation, powerCol, wsCol, turbCol, countCol):
 
-        strPadder = strPadder.lower()
+        strExtrapolation = strExtrapolation.lower()
         
-        if strPadder  == 'none':
-            return NonePadder(powerCol, wsCol, turbCol, countCol)
-        elif strPadder  == 'last observed':
-            return LastObservedPadder(powerCol, wsCol, turbCol, countCol)
-        elif strPadder  == 'max':
-            return MaxPadder(powerCol, wsCol, turbCol, countCol)
-        elif strPadder == 'rated':
-            return RatedPowerPadder(powerCol, wsCol, turbCol, countCol)
+        if strExtrapolation  == 'none':
+            return NoneExtrapolation(powerCol, wsCol, turbCol, countCol)
+        elif strExtrapolation  == 'last observed':
+            return LastObservedExtrapolation(powerCol, wsCol, turbCol, countCol)
+        elif strExtrapolation  == 'max':
+            return MaxExtrapolation(powerCol, wsCol, turbCol, countCol)
+        elif strExtrapolation == 'rated':
+            return RatedPowerExtrapolation(powerCol, wsCol, turbCol, countCol)
         else:
-            raise Exception("Power curve padding option not detected/recognised: %s" % strPadder)
+            raise Exception("Power curve extrapolation option not detected/recognised: %s" % strExtrapolation)
 
-class Padder:
+class Extrapolation:
 
     def __init__(self, powerCol, wsCol, turbCol, countCol):
 
@@ -1172,7 +1172,7 @@ class Padder:
         self.turbCol = turbCol
         self.countCol = countCol
 
-        self.is_pad_col = 'Is Pad'
+        self.is_extrapolation_col = 'Is Extrapolation'
         
     def getWindSpeedBins(self, bins):
 
@@ -1191,11 +1191,11 @@ class Padder:
         except:
             return False
             
-    def turbulencePadValue(self, powerLevels, windSpeed):
+    def turbulenceExtrapolationValue(self, powerLevels, windSpeed):
 
-        return self.getPadValue(powerLevels, windSpeed, self.turbCol)
+        return self.getExtrapolationValue(powerLevels, windSpeed, self.turbCol)
 
-    def getPadValue(self, powerLevels, windSpeed, column):
+    def getExtrapolationValue(self, powerLevels, windSpeed, column):
 
         #revisit this logic
         
@@ -1206,7 +1206,7 @@ class Padder:
         else:
             return powerLevels.loc[self.max_key, column]
 
-    def pad(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):
+    def extrapolate(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):
 
         self.min_key = min(powerLevels.index)
         self.max_key = max(powerLevels.index)
@@ -1214,19 +1214,19 @@ class Padder:
         self.ratedPower = ratedPower
         self.max_power = powerLevels[self.powerCol].max()
         
-        powerPadValue = self.powerPadValue()
+        powerExtrapolationValue = self.powerExtrapolationValue()
         
         for windSpeed in self.getWindSpeedBins(bins):
             
             if not self.levelExists(powerLevels, windSpeed):
 
-                powerLevels.loc[windSpeed, self.is_pad_col] = True
+                powerLevels.loc[windSpeed, self.is_extrapolation_col] = True
 
-                turbulencePadValue = self.turbulencePadValue(powerLevels, windSpeed)
+                turbulenceExtrapolationValue = self.turbulenceExtrapolationValue(powerLevels, windSpeed)
                 
                 if windSpeed < self.min_key or windSpeed > self.max_key:
 
-                    powerLevels.loc[windSpeed, self.turbCol] = turbulencePadValue
+                    powerLevels.loc[windSpeed, self.turbCol] = turbulenceExtrapolationValue
                     powerLevels.loc[windSpeed, self.wsCol] = windSpeed
                     powerLevels.loc[windSpeed, self.countCol] = 0
 
@@ -1239,32 +1239,32 @@ class Padder:
                         if windSpeed < cutInWindSpeed or windSpeed > cutOutWindSpeed:
                             powerLevels.loc[windSpeed, self.powerCol] = 0.0                                            
                         else:
-                            powerLevels.loc[windSpeed, self.powerCol] = powerPadValue
+                            powerLevels.loc[windSpeed, self.powerCol] = powerExtrapolationValue
             
             else:
 
-                powerLevels.loc[windSpeed, self.is_pad_col] = False
+                powerLevels.loc[windSpeed, self.is_extrapolation_col] = False
 
         powerLevels.sort_index(inplace=True)
         
         return powerLevels
     
-class NonePadder(Padder):
+class NoneExtrapolation(Extrapolation):
 
-    def pad(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):
+    def extrapolate(self, powerLevels, cutInWindSpeed, cutOutWindSpeed, ratedPower, bins):
         return powerLevels
     
-class MaxPadder(Padder):
+class MaxExtrapolation(Extrapolation):
 
-    def powerPadValue(self):
+    def powerExtrapolationValue(self):
         return self.max_power
   
-class LastObservedPadder(Padder):
+class LastObservedExtrapolation(Extrapolation):
 
-    def powerPadValue(self):
+    def powerExtrapolationValue(self):
         return self.last_observed
 
-class RatedPowerPadder(Padder):
+class RatedPowerExtrapolation(Extrapolation):
     
-    def powerPadValue(self):
+    def powerExtrapolationValue(self):
         return self.ratedPower
