@@ -232,7 +232,7 @@ class Analysis(object):
     def define_wind_speed_bins(self):
 
         self.windSpeedBins = binning.Bins(self.powerCurveFirstBin, self.powerCurveBinSize, self.powerCurveLastBin)
-        self.dataFrame[self.windSpeedBin] = self.dataFrame[self.baseline.wind_speed_column].map(self.windSpeedBins.binCenter)        
+        self.dataFrame.loc[:, self.windSpeedBin] = self.dataFrame.loc[:, self.baseline.wind_speed_column].map(self.windSpeedBins.binCenter)        
 
     def apply_negative_power_period_treatment(self):
 
@@ -267,7 +267,7 @@ class Analysis(object):
         
         self.normalisedWS = 'Normalised Wind Speed'
 
-        self.dataFrame[self.normalisedWS] = (self.dataFrame[self.baseline.wind_speed_column] - self.zero_to_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_to_cut_in_wind_speed)
+        self.dataFrame.loc[:, self.normalisedWS] = (self.dataFrame.loc[:, self.baseline.wind_speed_column] - self.zero_to_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_to_cut_in_wind_speed)
 
     def calculate_power_coefficient(self):
 
@@ -377,7 +377,7 @@ class Analysis(object):
 
         if self.hasShear:
             self.rotor_wind_speed_ratio = 'Rotor Wind Speed Ratio'
-            self.dataFrame[self.rotor_wind_speed_ratio] = self.dataFrame[self.shearExponent].map(RotorWindSpeedRatio(self.rotorGeometry.diameter, self.rotorGeometry.hubHeight))
+            self.dataFrame.loc[:, self.rotor_wind_speed_ratio] = self.dataFrame.loc[:, self.shearExponent].map(RotorWindSpeedRatio(self.rotorGeometry.diameter, self.rotorGeometry.hubHeight))
         else:
             self.rotor_wind_speed_ratio = None
 
@@ -385,7 +385,7 @@ class Analysis(object):
 
         if self.hasActualPower:
             self.normalisedPower = 'Normalised Power'
-            self.dataFrame[self.normalisedPower] = self.dataFrame[self.actualPower] / self.ratedPower
+            self.dataFrame.loc[:, self.normalisedPower] = self.dataFrame.loc[:, self.actualPower] / self.ratedPower
 
     def apply_settings(self, config):
 

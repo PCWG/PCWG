@@ -81,7 +81,7 @@ class Source(object):
 
 		if power_curve is not None:
 			self.power_column = "{0} Power".format(self.wind_speed_column)
-			data_frame[self.power_column] = data_frame.apply(PowerCalculator(power_curve, self.wind_speed_column).power, axis=1)
+			data_frame.loc[:, self.power_column] = data_frame.apply(PowerCalculator(power_curve, self.wind_speed_column).power, axis=1)
 		else:
 			self.power_column = None
 
