@@ -23,7 +23,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
         self.path = path
 
-        defaultPaddingMode = 'None'
+        defaultExtrapolationMode = 'None'
 
         if path != None:
 
@@ -54,10 +54,18 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 self.interpolationMode = "Cubic Spline"
                 
             self.powerCurveMode = self.getNodeValue(configurationNode, 'PowerCurveMode')
-            self.powerCurvePaddingMode = self.getNodeValueIfExists(configurationNode, 'PowerCurvePaddingMode', defaultPaddingMode)
-            
-            if self.powerCurvePaddingMode == "Observed":
-                self.powerCurvePaddingMode = "Last Observed"
+
+            if self.nodeExists(configurationNode, 'PowerCurveExtrapolationMode'):
+                self.powerCurveExtrapolationMode = self.getNodeValue(configurationNode, 'PowerCurveExtrapolationMode')
+            else:
+                if self.nodeExists(configurationNode, 'PowerCurvePaddingMode'):
+                    self.powerCurveExtrapolationMode = self.getNodeValue(configurationNode, 'PowerCurvePaddingMode')
+                else:
+                    self.powerCurveExtrapolationMode = defaultExtrapolationMode
+
+            #backwards compatibility
+            if self.powerCurveExtrapolationMode == "Observed":
+                self.powerCurveExtrapolationMode = "Last Observed"
                 
             if self.nodeExists(configurationNode, 'PowerCurveBins'):
                 powerCurveBinsNode = self.getNode(configurationNode, 'PowerCurveBins')
@@ -89,7 +97,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.Name = ""
             self.powerCurveMinimumCount = 10
             self.powerCurveMode = 'Specified'
-            self.powerCurvePaddingMode = defaultPaddingMode
+            self.powerCurveExtrapolationMode = defaultExtrapolationMode
 
             self.negative_power_period_treatment = 'Remove'
             self.negative_power_bin_average_treatment = 'Remove'
@@ -189,7 +197,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
                 
         self.addTextNode(doc, root, "InterpolationMode", self.interpolationMode)
         self.addTextNode(doc, root, "PowerCurveMode", self.powerCurveMode)
-        self.addTextNode(doc, root, "PowerCurvePaddingMode", self.powerCurvePaddingMode)
+        self.addTextNode(doc, root, "PowerCurveExtrapolationMode", self.powerCurveExtrapolationMode)
         self.addTextNode(doc, root, "NominalWindSpeedDistribution", self.nominal_wind_speed_distribution.relative_path)
         
         powerCurveBinsNode = self.addNode(doc, root, "PowerCurveBins")

@@ -1,3 +1,8 @@
+import matplotlib
+
+#matplotlib.use("TkAgg")
+matplotlib.use('Qt4Agg')
+
 import pcwg.configuration.preferences_configuration as pref
 import pcwg.gui.root as gui
 
@@ -6,4 +11,4 @@ if __name__ == "__main__":
     user_interface = gui.UserInterface(preferences)
     preferences.save()
     print "Done"
-   
+    

@@ -38,7 +38,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         powerCurveModes = ["Specified", "AllMeasured", "InnerMeasured", "OuterMeasured"]
         self.powerCurveMode = self.addOption(master, "Reference Power Curve Mode:", powerCurveModes, self.config.powerCurveMode)
         
-        self.powerCurvePaddingMode = self.addOption(master, "Power Curve Padding Mode:", ["None", "Last Observed", "Max", "Rated"], self.config.powerCurvePaddingMode)
+        self.powerCurveExtrapolationMode = self.addOption(master, "Power Curve Extrapolation Mode:", ["None", "Last Observed", "Max", "Rated"], self.config.powerCurveExtrapolationMode)
 
     def add_power_curve(self, master):
 
@@ -227,7 +227,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         
         self.config.interpolationMode = self.interpolationMode.get()
         self.config.powerCurveMode = self.powerCurveMode.get()
-        self.config.powerCurvePaddingMode = self.powerCurvePaddingMode.get()
+        self.config.powerCurveExtrapolationMode = self.powerCurveExtrapolationMode.get()
         self.config.nominal_wind_speed_distribution.absolute_path = self.nominalWindSpeedDistribution.get()
         self.config.powerCurveFirstBin = self.powerCurveFirstBin.get()
         self.config.powerCurveLastBin = self.powerCurveLastBin.get()

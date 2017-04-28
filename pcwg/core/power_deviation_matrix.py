@@ -40,7 +40,7 @@ class DeviationMatrixDefinition(object):
 															dimension.binWidth,
 															dimension.numberOfBins)
 
-			data_frame[pdm_dimension.bin_parameter] = pdm_dimension.create_column(data_frame)
+			data_frame.loc[:, pdm_dimension.bin_parameter] = pdm_dimension.create_column(data_frame)
 
 			self.bins.append(pdm_dimension)
 
@@ -150,12 +150,12 @@ class AverageOfDeviationsMatrix(BaseDeviationMatrix):
 
 		self.deviation_column = self.calculate_deviation_column_name(actual_column, modelled_column)
 
-		data_frame[self.deviation_column] = self.calculate_deviation(data_frame, actual_column, modelled_column)
+		data_frame.loc[:, self.deviation_column] = self.calculate_deviation(data_frame, actual_column, modelled_column)
 
 		return self.filter_data_frame(data_frame, actual_column, modelled_column)
 
 	def calculate_deviation(self, data_frame, actual_column, modelled_column):
-		return (data_frame[actual_column] - data_frame[modelled_column]) / data_frame[modelled_column]
+		return (data_frame.loc[:, actual_column] - data_frame.loc[:, modelled_column]) / data_frame.loc[:, modelled_column]
 
 	def create_matrix(self, data_frame, deviation_column, dimensions, aggregation):
 
