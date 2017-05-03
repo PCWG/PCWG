@@ -449,7 +449,6 @@ class Analysis(object):
     def define_columns(self):
 
         self.nameColumn = "Dataset Name"
-        self.turbulencePower = "Simulated TI Corrected Power"
         self.windSpeedBin = "Wind Speed Bin"
         self.dataCount = "Data Count"
         self.powerStandDev = "Power Standard Deviation"
@@ -468,9 +467,9 @@ class Analysis(object):
 
             self.baseline_power_deviations = self.calculatePowerDeviationMatrix(self.baseline.power_column)
 
-            for correction in self.corrections:
-
-                self.corrected_deviations[correction] = self.calculatePowerDeviationMatrix(correction.power_column)
+            for correction_name in self.corrections:
+                correction = self.corrections[correction_name]
+                self.corrected_deviations[correction_name] = self.calculatePowerDeviationMatrix(correction.power_column)
                 
             Status.add("Power Curve Deviation Matrices Complete.")
 
@@ -1033,7 +1032,9 @@ class Analysis(object):
         return (self.turbRenormActive and self.hasTurbulence)
 
     def calculate_turbulence_correction(self):
-        self.register_correction(corrections.TurbulenceCorrection(self.dataFrame, self.baseline, self.hubTurbulence, self.powerCurve))
+        correction = corrections.TurbulenceCorrection(self.dataFrame, self.baseline, self.hubTurbulence, self.powerCurve)
+        self.register_correction(correction)
+        self.turbulencePower = correction.power_column
 
     def should_calculate_combined_rews_and_turbulence_correction(self):
         return (self.should_calculate_turbulence_correction() and self.should_calculate_REWS())
@@ -1108,13 +1109,12 @@ class Analysis(object):
         if self.hasActualPower:
 
             if self.rewsActive:
-                rews_correction = self.corrections["REWS"]
-                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[rews_correction.power_column])
+                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.rews_correction.power_column])
             else:
                 self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.baseline.power_column])
 
         if self.hasActualPower:
-            self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(self.get_base_filter(), self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected', zero_ti_pc_required = False)
+            self.allMeasuredTurbCorrectedPowerCurve = self.calculateMeasuredPowerCurve(self.get_base_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.measuredTurbulencePower, 'Turbulence Corrected', zero_ti_pc_required = False)
 
     @property
     def specific_power(self):
