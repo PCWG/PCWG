@@ -14,10 +14,23 @@ from plots import MatplotlibPlotter
 
 import version as ver
 
+
+def get_valid_excel_sheet_name(sheet_name, if_too_long_replace={}):
+    max_chars = 31
+    invalid_chars = ':|\\/*?[]'
+    for c in invalid_chars:
+        sheet_name = sheet_name.replace(c, '')
+    if len(sheet_name) > max_chars:
+        for sub_str in if_too_long_replace:
+            sheet_name = sheet_name.replace(sub_str, if_too_long_replace[sub_str])
+    return sheet_name[:max_chars]
+
+
 def chckMake(path):
     """Make a folder if it doesn't exist"""
     if not os.path.exists(path):
         os.makedirs(path)
+
 
 class PNGPlotter:
 
@@ -33,7 +46,7 @@ class PNGPlotter:
             plotter.plotPowerCurve(analysis.baseline.wind_speed_column, analysis.actualPower, analysis.allMeasuredPowerCurve, show_scatter = False, fname = "PowerCurve - Warranted vs Measured Mean", specified_title = 'Warranted', mean_title = 'Measured Mean', mean_pc_color = 'blue', gridLines = True)
             
             if analysis.turbRenormActive:
-                plotter.plotTurbCorrectedPowerCurve(analysis.inputHubWindSpeed, analysis.measuredTurbulencePower, analysis.allMeasuredTurbCorrectedPowerCurve)
+                plotter.plotTurbCorrectedPowerCurve(analysis.baseline.wind_speed_column, analysis.measuredTurbulencePower, analysis.allMeasuredTurbCorrectedPowerCurve)
             
             if analysis.hasAllPowers:
                 plotter.plotPowerLimits(specified_title = 'Warranted', gridLines = True)
@@ -56,7 +69,7 @@ class PNGPlotter:
         if analysis.hasActualPower:
 
             if analysis.multiple_datasets:
-                plotter.plot_multiple(analysis.inputHubWindSpeed, analysis.actualPower, analysis.allMeasuredPowerCurve)
+                plotter.plot_multiple(analysis.baseline.wind_speed_column, analysis.actualPower, analysis.allMeasuredPowerCurve)
 
 class TimeSeriesExporter:
 
@@ -170,18 +183,21 @@ class Report:
                     self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (25 if analysis.turbRenormActive else 20), 'DayTime', analysis.dayTimePowerCurve, specifiedLevels)
                     self.reportInterpolatedPowerCurve(sh, rowAfterCurves, (30 if analysis.turbRenormActive else 25), 'NightTime', analysis.nightTimePowerCurve, specifiedLevels)
     
-                self.reportPowerDeviations(book, "HubPowerDeviations", analysis.baseline_power_deviations, gradient)
+                self.reportPowerDeviations(book, "Baseline Power Deviations", analysis.baseline_power_deviations, gradient)
                 
                 #if analysis.rewsActive:
                 #    self.reportPowerDeviations(book, "REWS Deviation", analysis.rewsMatrix, gradient)
 
-                for correction in analysis.corrections:
-                    deviations = analysis.corrected_deviations[correction.name]
-                    self.reportPowerDeviations(book, "{0} Power Deviations".format(correction.name), deviations, gradient)
+                for correction_name in analysis.corrections:
+                    correction = analysis.corrections[correction_name]
+                    deviations = analysis.corrected_deviations[correction.correction_name]
+                    sheet_name = get_valid_excel_sheet_name("{0} Power Deviations".format(
+                        correction.short_correction_name), if_too_long_replace={'Power Deviations': 'PowDevs'})
+                    self.reportPowerDeviations(book, sheet_name, deviations, gradient)
 
                 if analysis.nominal_wind_speed_distribution.absolute_path is not None:
                     sh = book.add_sheet("EnergyAnalysis", cell_overwrite_ok=True)
-                    self.report_aep(sh,analysis)
+                    self.report_aep(sh, analysis)
         
         if len(analysis.calibrations) == 1:
             calSheet = book.add_sheet("Calibration", cell_overwrite_ok=True)
@@ -544,14 +560,15 @@ class Report:
                 row += 1
 
     def writeShear(self,sh,labelColumn,dataColumn,row,shearList,prefix=""):
-        i=0
+        i = 0
         for sh_meas in shearList:
             sh.write(row, labelColumn, prefix+"Shear Measurement " + str(i+1), self.bold_style)
-            sh.write(row, dataColumn, sh_meas.height)
-            row += 1
-            sh.write(row, labelColumn, prefix+"Shear Measurement {0} Height ".format(i+1), self.bold_style)
             sh.write(row, dataColumn, sh_meas.wind_speed_column)
             row += 1
+            sh.write(row, labelColumn, prefix+"Shear Measurement {0} Height ".format(i+1), self.bold_style)
+            sh.write(row, dataColumn, sh_meas.height)
+            row += 1
+            i += 1
         return row
 
     def reportPowerCurve(self, sh, rowOffset, columnOffset, name, powerCurve, analysis):
