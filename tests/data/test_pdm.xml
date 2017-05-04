@@ -1,0 +1,33 @@
+<PowerDeviationMatrix xmlns="http://www.pcwg.org">
+	<Name>PCWG Hypothesis Power Deviation Matrix</Name>
+	<OutOfRangeValue>0</OutOfRangeValue>
+	<Dimensions>
+		<Dimension>
+			<Parameter>Turbulence</Parameter>
+			<CenterOfFirstBin>0.1</CenterOfFirstBin>
+			<BinWidth>1</BinWidth>
+			<NumberOfBins>1</NumberOfBins>
+		</Dimension>
+		<Dimension>
+			<Parameter>NormalisedWindSpeed</Parameter>
+			<CenterOfFirstBin>1</CenterOfFirstBin>
+			<BinWidth>3</BinWidth>
+			<NumberOfBins>1</NumberOfBins>
+		</Dimension>
+	</Dimensions>
+	<Cells>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>NormalisedWindSpeed</Parameter>
+					<BinCenter>1</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Turbulence</Parameter>
+					<BinCenter>0.1</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0</Value>
+		</Cell>
+	</Cells>
+</PowerDeviationMatrix>
