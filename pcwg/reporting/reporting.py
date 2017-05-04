@@ -577,11 +577,11 @@ class Report:
 
         if powerCurve.wind_speed_column is None:
             powerCurveLevels['Specified Wind Speed'] = powerCurveLevels.index
-            windSpeedCol = 'Specified Wind Speed'
+            wind_speed_col = 'Specified Wind Speed'
         else:
-            windSpeedCol = analysis.baseline.wind_speed_column #'Input Hub Wind Speed'
+            wind_speed_col = powerCurve.wind_speed_column
 
-        powerCurveLevels = powerCurveLevels.sort(powerCurve.wind_speed_column)
+        powerCurveLevels = powerCurveLevels.sort(wind_speed_col)
 
         sh.write(rowOffset, columnOffset + 2, name, self.bold_style)
 
@@ -596,15 +596,15 @@ class Report:
 
         sh.col(columnOffset + 5).width = 256 * 5
 
-        rowOrders = { 'Data Count':4,
-                     analysis.actualPower:2,   analysis.hubTurbulence:3, analysis.baseline.wind_speed_column:1,
-                     'Specified Power':2,'Specified Turbulence':3,  'Specified Wind Speed':1,
-                     analysis.measuredTurbulencePower:2}
+        rowOrders = {'Data Count': 4, analysis.actualPower: 2,   analysis.hubTurbulence: 3,
+                     analysis.baseline.wind_speed_column: 1, 'Specified Power': 2, 'Specified Turbulence': 3,
+                     'Specified Wind Speed': 1, analysis.measuredTurbulencePower:2, wind_speed_col: 1}
 
-        styles = { 'Data Count':self.no_dp_style, analysis.baseline.wind_speed_column:self.two_dp_style,
-                   analysis.actualPower: self.no_dp_style,  analysis.hubTurbulence:self.percent_no_dp_style,
-                   'Specified Power':self.no_dp_style,'Specified Turbulence':self.percent_no_dp_style,
-                   'Specified Wind Speed':self.two_dp_style,analysis.measuredTurbulencePower:self.no_dp_style}
+        styles = {'Data Count': self.no_dp_style, analysis.baseline.wind_speed_column: self.two_dp_style,
+                  analysis.actualPower: self.no_dp_style,  analysis.hubTurbulence: self.percent_no_dp_style,
+                  'Specified Power': self.no_dp_style, 'Specified Turbulence': self.percent_no_dp_style,
+                  'Specified Wind Speed': self.two_dp_style, analysis.measuredTurbulencePower: self.no_dp_style,
+                  wind_speed_col: self.two_dp_style}
 
         for colname in powerCurveLevels.columns:
             if colname in styles.keys():
@@ -633,7 +633,7 @@ class Report:
                 for ws in pc.index:
                     sh.write(rowOffset + countRow + 1, columnOffset + 1, ws, styles['Specified Wind Speed'])
                     sh.write(rowOffset + countRow + 1, columnOffset + 2, pc.loc[ws, 'Power'], styles['Specified Wind Speed'])
-                    countRow += 1                
+                    countRow += 1
             except:
                 sh.write(rowOffset + countRow, columnOffset + 2,'Zero TI Power Curve not calculated successfully for %s power curve.' % name)
                 countRow+=1
