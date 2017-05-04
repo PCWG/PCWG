@@ -295,11 +295,15 @@ class PowerCurve(object):
         for i in y_data.index:
             
             if i in x_data.index and not np.isnan(x_data[i]):
-                    x.append(x_data[i])
+                x_val = x_data[i]
             else:
-                x.append(i)
-            
-            y.append(y_data[i])
+                x_val = i
+
+            y_val = y_data[i]
+
+            if (not np.isnan(x_val)) and (not np.isnan(y_val)):
+                x.append(x_val)
+                y.append(y_val)
 
             Status.add("{0} {1} {2}".format(i, x[-1], y[-1]), verbosity=3)
         
@@ -325,7 +329,7 @@ class PowerCurve(object):
     def power(self, windSpeed, turbulence = None, extraTurbCorrection = False):
 
         referencePower = self.powerFunction(windSpeed)
-            
+
         if turbulence == None:
             power = referencePower
         else:
