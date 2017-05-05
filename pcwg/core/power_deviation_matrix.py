@@ -34,11 +34,8 @@ class DeviationMatrixDefinition(object):
 
 		for dimension in sorted_dimensions:
 
-			pdm_dimension = PowerDeviationMatrixDimension(prefix,
-															dimension.parameter,
-															dimension.centerOfFirstBin,
-															dimension.binWidth,
-															dimension.numberOfBins)
+			pdm_dimension = PowerDeviationMatrixDimension(dimension.parameter, dimension.centerOfFirstBin,
+                                                          dimension.binWidth, dimension.numberOfBins)
 
 			data_frame.loc[:, pdm_dimension.bin_parameter] = pdm_dimension.create_column(data_frame)
 
