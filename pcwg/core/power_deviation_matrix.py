@@ -202,10 +202,10 @@ class RewsDeviationOfAveragesMatrix(DeviationOfAveragesMatrix):
 
 class PowerDeviationMatrixDimension(object):
 
-	def __init__(self, prefix, parameter, centerOfFirstBin, binWidth, numberOfBins):
+	def __init__(self, parameter, centerOfFirstBin, binWidth, numberOfBins):
 		
 		self.parameter = parameter
-		self.bin_parameter = "{0} ({1} Bin)".format(parameter, prefix)
+		self.bin_parameter = "{0}".format(parameter)
 
 		self.bins = Bins(centerOfFirstBin=centerOfFirstBin,
 						 binWidth=binWidth,
