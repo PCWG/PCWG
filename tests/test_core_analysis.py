@@ -18,13 +18,34 @@ class TestCoreAnalysis:
         cls.tolerance = 1e-10
         cls.analysis_config = AnalysisConfiguration(os.path.join(FILE_DIR, 'data', 'test_analysis_config.xml'))
         cls.report_dir = os.path.join(FILE_DIR, 'data', 'temp_report_outputs')
+        if not os.path.isdir(cls.report_dir):
+            os.makedirs(cls.report_dir)
         cls.analysis = Analysis(cls.analysis_config)
+
+    @classmethod
+    def teardown(cls):
+        if os.path.isdir(cls.report_dir):
+            rmtree(cls.report_dir)
 
     def test_report(self):
         rpt_path = os.path.join(self.report_dir, ANY_STRING + '.xls')
         self.analysis.report(rpt_path)
         assert_true(os.path.isfile(rpt_path))
-        rmtree(self.report_dir)
+
+    def test_export_pdm(self):
+        rpt_path = os.path.join(self.report_dir, ANY_STRING + '.xml')
+        self.analysis.report_pdm(rpt_path)
+        assert_true(os.path.isfile(rpt_path))
+
+    def test_export_timeseries(self):
+        rpt_path = os.path.join(self.report_dir, ANY_STRING + '.csv')
+        self.analysis.export_time_series(rpt_path, True, True, True)
+        assert_true(os.path.isfile(rpt_path))
+
+    def test_export_training_data(self):
+        rpt_path = os.path.join(self.report_dir, ANY_STRING + '.csv')
+        self.analysis.export_training_data(rpt_path)
+        assert_true(os.path.isfile(rpt_path))
 
     def test_aep(self):
         assert_almost_equal(self.analysis.aepCalc.AEP, 1., delta=self.tolerance)
