@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<WindSpeedDistribution xmlns="http://www.pcwg.org">
+	<Bin><BinCentre>0</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>1</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>2</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>3</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>4</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>5</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>6</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>7</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>8</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>9</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>10</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>11</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>12</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>13</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>14</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>15</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>16</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>17</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>18</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>19</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>20</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>21</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>22</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>23</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>24</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>25</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>26</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>27</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>28</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>29</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+	<Bin><BinCentre>30</BinCentre><BinValue>282.7741935483870</BinValue></Bin>
+</WindSpeedDistribution>

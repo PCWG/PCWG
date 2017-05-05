@@ -1,7 +1,13 @@
 import matplotlib
 
-#matplotlib.use("TkAgg")
-matplotlib.use('Qt4Agg')
+# matplotlib.use("TkAgg")
+try:
+    import PyQt5 as pyqt
+    matplotlib.use('Qt5Agg')
+except:
+    import PyQt4 as pyqt
+    matplotlib.use('Qt4Agg')
+del pyqt
 
 import pcwg.configuration.preferences_configuration as pref
 import pcwg.gui.root as gui

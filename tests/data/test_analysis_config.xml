@@ -1,0 +1,83 @@
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<PowerCurveMinimumCount>3</PowerCurveMinimumCount>
+	<NegativePowerPeriodTreatment>Remove</NegativePowerPeriodTreatment>
+	<NegativePowerBinAverageTreatment>Remove</NegativePowerBinAverageTreatment>
+	<InterpolationMode>Cubic Spline</InterpolationMode>
+	<PowerCurveMode>Specified</PowerCurveMode>
+	<PowerCurveExtrapolationMode>Last Observed</PowerCurveExtrapolationMode>
+	<NominalWindSpeedDistribution>test_wind_speed_distribution.xml</NominalWindSpeedDistribution>
+	<PowerCurveBins>
+		<FirstBinCentre>3.000000</FirstBinCentre>
+		<LastBinCentre>25.000000</LastBinCentre>
+		<BinSize>1.000000</BinSize>
+	</PowerCurveBins>
+	<Datasets>
+		<Dataset>test_dataset_config.xml</Dataset>
+	</Datasets>
+	<InnerRange>
+		<InnerRangeDimensions>
+			<InnerRangeDimension>
+				<InnerRangeParameter>Shear</InnerRangeParameter>
+				<InnerRangeLowerLimit>0.050000</InnerRangeLowerLimit>
+				<InnerRangeUpperLimit>0.200000</InnerRangeUpperLimit>
+			</InnerRangeDimension>
+			<InnerRangeDimension>
+				<InnerRangeParameter>Turbulence</InnerRangeParameter>
+				<InnerRangeLowerLimit>0.080000</InnerRangeLowerLimit>
+				<InnerRangeUpperLimit>0.120000</InnerRangeUpperLimit>
+			</InnerRangeDimension>
+		</InnerRangeDimensions>
+	</InnerRange>
+	<Turbine>
+		<SpecifiedPowerCurve>test_power_curve.xml</SpecifiedPowerCurve>
+	</Turbine>
+	<DensityCorrection>
+		<Active>1</Active>
+	</DensityCorrection>
+	<TurbulenceRenormalisation>
+		<Active>1</Active>
+	</TurbulenceRenormalisation>
+	<RotorEquivalentWindSpeed>
+		<Active>1</Active>
+		<Veer>1</Veer>
+		<Upflow>1</Upflow>
+		<Exponent>3.000000</Exponent>
+	</RotorEquivalentWindSpeed>
+	<PowerDeviationMatrix>
+		<SpecifiedPowerDeviationMatrix>test_pdm.xml</SpecifiedPowerDeviationMatrix>
+		<Active>1</Active>
+		<CalculatedPowerDeviationMatrix>
+			<PowerDeviationMatrixMethod>Average of Deviations</PowerDeviationMatrixMethod>
+			<PowerDeviationMatrixMinimumCount>0</PowerDeviationMatrixMinimumCount>
+			<Dimensions>
+				<Dimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<Index>1</Index>
+					<CenterOfFirstBin>0.100000</CenterOfFirstBin>
+					<BinWidth>0.100000</BinWidth>
+					<NumberOfBins>21</NumberOfBins>
+				</Dimension>
+				<Dimension>
+					<Parameter>Hub Turbulence</Parameter>
+					<Index>2</Index>
+					<CenterOfFirstBin>0.010000</CenterOfFirstBin>
+					<BinWidth>0.020000</BinWidth>
+					<NumberOfBins>25</NumberOfBins>
+				</Dimension>
+			</Dimensions>
+		</CalculatedPowerDeviationMatrix>
+	</PowerDeviationMatrix>
+	<ProductionByHeight>
+		<Active>1</Active>
+	</ProductionByHeight>
+	<WebService>
+		<Active>0</Active>
+		<URL></URL>
+	</WebService>
+	<AlternativeCorrections>
+		<AlternativeCorrection>
+			<Density>0</Density>
+		</AlternativeCorrection>
+	</AlternativeCorrections>
+</Configuration>
