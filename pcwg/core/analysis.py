@@ -23,6 +23,7 @@ from web_service import WebService
 from ..reporting import reporting
 from ..core.status import Status
 
+
 class RandomizeYear:
     
     def __init__(self, time_stamp_column):
@@ -34,15 +35,15 @@ class RandomizeYear:
 
         if date_time.month == 2 and date_time.day == 29:    
             
-            #deal with leap years
+            # deal with leap years
             year = date_time.year + 4 * random.randint(-5, 5)
 
-            #if year is divisible by 100 it may not be a leap year
+            # if year is divisible by 100 it may not be a leap year
             if year % 100 == 0:
 
                 # if it is divisible by 100 and not divisible by 400 it is not a leap year
                 if year % 400 != 0:
-                    year = year + 4 #shift by four years
+                    year = year + 4 # shift by four years
 
         else:
 
@@ -55,23 +56,31 @@ class RandomizeYear:
                                  minute = date_time.minute,
                                  second = date_time.second)
 
+
 class SubPower:
             
-    def __init__(self, unfiltered_data_frame, filtered_data_frame, aggregations, wind_speed_column, power_polumn, wind_speed_bins, sub_divisions = 4):
+    def __init__(self,
+                 unfiltered_data_frame,
+                 filtered_data_frame,
+                 aggregations,
+                 wind_speed_column,
+                 power_column,
+                 wind_speed_bins,
+                 sub_divisions=4):
 
         self.sub_divisions = sub_divisions
         self.aggregations = aggregations
         
         self.wind_speed_column = wind_speed_column
-        self.power_polumn = power_polumn
+        self.power_column = power_column
         
         self.data_count = "Data Count"
         self.wind_speed_sub_bin_col = "Wind Speed Sub Bin"
              
         Status.add("Creating sub-power bins", verbosity=2)
 
-        self.wind_speed_sub_bins = binning.Bins(self.center_of_first_sub_bin(wind_speed_bins), \
-                            self.sub_width(wind_speed_bins), \
+        self.wind_speed_sub_bins = binning.Bins(self.center_of_first_sub_bin(wind_speed_bins),
+                            self.sub_width(wind_speed_bins),
                             self.center_of_last_sub_bin(wind_speed_bins))
 
         self.unfiltered_sub_power = self.calculate_sub_power(unfiltered_data_frame)   
@@ -81,20 +90,13 @@ class SubPower:
         self.cut_in_wind_speed = self.calculate_cut_in_speed(self.unfiltered_sub_power)
     
     def calculate_sub_power(self, data_frame):
-        
-        # TODO this line generates the following pandas warning
-        # data_frame[self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
-        # SettingWithCopyWarning: 
-        # A value is trying to be set on a copy of a slice from a DataFrame.
-        # Try using .loc[row_indexer,col_indexer] = value instead
-        # See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
 
         data_frame.loc[:, self.wind_speed_sub_bin_col] = data_frame[self.wind_speed_column].map(self.wind_speed_sub_bins.binCenter)
 
         Status.add("Creating sub-power distribution", verbosity=2)
 
-        sub_distribution = data_frame[self.power_polumn].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.data_count:'count'})
-        sub_power = data_frame[[self.power_polumn]].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.power_polumn:'mean'})
+        sub_distribution = data_frame[self.power_column].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.data_count:'count'})
+        sub_power = data_frame[[self.power_column]].groupby(data_frame[self.wind_speed_sub_bin_col]).agg({self.power_column:'mean'})
                 
         sub_power = sub_power.join(sub_distribution, how = 'inner')
         sub_power.dropna(inplace = True)                           
@@ -116,14 +118,16 @@ class SubPower:
         sub_start = start + sub_index * self.wind_speed_sub_bins.binWidth
         sub_end = sub_start + self.wind_speed_sub_bins.binWidth
 
-        return (sub_start, sub_end)
+        return sub_start, sub_end
         
     def get_count_for_range(self, start, end):
         
         width = end - start
         
         if width != self.wind_speed_sub_bins.binWidth:
-            raise Exception("Unexpected implied bin width for range {0} to {1}. Implied width = {2} vs Expected Width = {3}".format(start, end, width, self.wind_speed_sub_bins.binWidth))
+            raise Exception("Unexpected implied bin width for range {0} to {1}. "
+                            "Implied width = {2} vs Expected Width = {3}"
+                            .format(start, end, width, self.wind_speed_sub_bins.binWidth))
             
         center = 0.5 * (start + end)
 
@@ -143,7 +147,7 @@ class SubPower:
     def calculate_cut_in_speed(self, sub_power):
             
         first_center = None
-        powers = sub_power[self.power_polumn]
+        powers = sub_power[self.power_column]
         
         for speed in powers.index:    
             
@@ -717,7 +721,7 @@ class Analysis(object):
             raise Exception("Unrecognised power curve mode: {0}".format(powerCurveMode))
 
     def get_base_filter(self):
-        #dummy line to create all true
+        # dummy line to create all true
         return self.dataFrame[self.timeStamp].dt.hour >= 0
 
     def get_inner_dimension_filter(self, dimension):
