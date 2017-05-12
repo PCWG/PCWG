@@ -8,6 +8,7 @@ import os
 import os.path
 import zipfile
 import hashlib
+import datetime
 
 from shutil import copyfile
 
@@ -19,7 +20,6 @@ from ..core.binning import Bins
 from ..core.power_deviation_matrix import NullDeviationMatrixDefinition
 
 from ..reporting import data_sharing_reports as reports
-from ..configuration.analysis_configuration import AnalysisConfiguration
 from ..configuration.dataset_configuration import DatasetConfiguration
 from ..configuration.base_configuration import Filter
 from ..configuration.path_manager import SinglePathManager
@@ -29,6 +29,7 @@ from ..exceptions.handling import ExceptionHandler
 from ..core.status import Status
 
 import version as ver
+
 
 class ShareDataset(Dataset):
 
@@ -40,22 +41,26 @@ class ShareDataset(Dataset):
 
         return config.filters
 
+
 class ShareAnalysisBase(Analysis):
 
     MINIMUM_COMPLETE_BINS = 10
 
     pcwg_inner_ranges = {'A': {'LTI': 0.08, 'UTI': 0.12, 'LSh': 0.05, 'USh': 0.25},
-                     'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
-                     'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
+                         'B': {'LTI': 0.05, 'UTI': 0.09, 'LSh': 0.05, 'USh': 0.25},
+                         'C': {'LTI': 0.1, 'UTI': 0.14, 'LSh': 0.1, 'USh': 0.3}}
 
     def __init__(self, dataset):
 
-        self.error_types = ['ByBin','Total']
+        self.error_types = ['ByBin', 'Total']
+
+        self.dataset_configuration_unique_id = None
+        self.dataset_time_series_unique_id = None
 
         self.datasetConfigs = [dataset]
         self.generate_unique_ids(dataset)
 
-        Analysis.__init__(self, config = None)
+        Analysis.__init__(self, config=None)
 
         self.pcwg_share_metrics_calc()
 
@@ -113,17 +118,22 @@ class ShareAnalysisBase(Analysis):
 
                 try:
 
-                    #ensure zero ti curve can be calculated
-                    Status.add("Calculating zero turbulence curve for Inner Range {0}".format(inner_range_id), verbosity=3)
+                    # ensure zero ti curve can be calculated
+                    Status.add("Calculating zero turbulence curve for Inner Range {0}"
+                               .format(inner_range_id), verbosity=3)
+
                     power_curve.zero_ti_pc_required = True
-                    dummy = power_curve.zeroTurbulencePowerCurve
+                    _ = power_curve.zeroTurbulencePowerCurve
 
                 except ExceptionHandler.ExceptionType as e:
 
                     Status.add("Could not calculate zero TI curve for Inner range {0}: {1}".format(inner_range_id, e))
 
                     for i in range(len(power_curve.wind_speed_points)):
-                        Status.add("{0}\t{1}".format(power_curve.wind_speed_points[i], power_curve.power_points[i]), verbosity=3)
+
+                        Status.add("{0}\t{1}".format(power_curve.wind_speed_points[i],
+                                   power_curve.power_points[i]),
+                                   verbosity=3)
 
                     success = False
 
@@ -138,11 +148,16 @@ class ShareAnalysisBase(Analysis):
                 successes += 1
            
         if successes < 1:
+
             error = "No successful calculation for any inner range (insufficient complete bins)"
             Status.add(error)
             raise Exception('Cannot complete share analysis: {0}'.format(error))
+
         else:
-            Status.add("Inner Range {0} Selected with {1} complete bins.".format(max_complete_range_id, max_complete_bins))  
+
+            Status.add("Inner Range {0} Selected with {1} complete bins."
+                       .format(max_complete_range_id, max_complete_bins))
+
             return max_complete_range_id, max_complete_power_curve
 
     def attempt_power_curve_calculation(self, inner_range_id):
@@ -160,11 +175,15 @@ class ShareAnalysisBase(Analysis):
             complete_bins = self.get_complete_bins(power_curve)
 
             if not self.is_sufficient_complete_bins(power_curve):
-                Status.add("Power Curve insufficient complete bins using Inner Range definition {0} ({1} complete bins).".format(inner_range_id, complete_bins))
-                return (None, False, complete_bins)
+
+                Status.add("Power Curve insufficient complete bins"
+                           " using Inner Range definition {0} ({1} complete bins)."
+                           .format(inner_range_id, complete_bins))
+
+                return None, False, complete_bins
             
             Status.add("Power Curve success using Inner Range definition {0} ({1} complete bins).".format(inner_range_id, complete_bins))
-            return (power_curve, True, complete_bins)
+            return power_curve, True, complete_bins
         
         except ExceptionHandler.ExceptionType as e:
 
@@ -305,15 +324,15 @@ class ShareAnalysisBase(Analysis):
         self.calendarMonth = 'Calendar Month'
         self.dataFrame[self.calendarMonth] = self.dataFrame[self.timeStamp].dt.month
 
-        #self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower, 
+        # self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower,
         #                                                                       windBin = self.normalisedWSBin,
         #                                                                       turbBin = self.turbulenceBin)
         #
-        #if self.config.turbRenormActive:
+        # if self.config.turbRenormActive:
         #    self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, 
         #                                                                           windBin = self.normalisedWSBin,
         #                                                                           turbBin = self.turbulenceBin)
-        #else:
+        # else:
         #    self.normalisedTurbPowerDeviations = None
             
     def calculate_pcwg_error_fields(self):
@@ -391,7 +410,7 @@ class ShareAnalysisBase(Analysis):
 
                     self.binned_pcwg_err_metrics[bin_col_name][(error_type, error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, error_column, bin_col_name)
         
-        #Using Inner and Outer range data only to calculate error metrics binned by normalised WS
+        # Using Inner and Outer range data only to calculate error metrics binned by normalised WS
         
         bin_col_name = self.normalisedWSBin
         
@@ -454,6 +473,7 @@ class ShareAnalysisBase(Analysis):
         NMAE = (np.abs(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error]).sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
         
         return NME, NMAE, data_count
+
 
 class PcwgShareX:
     
@@ -536,6 +556,7 @@ class ShareXPortfolio(object):
 
     def calculate(self):
 
+        start_time = datetime.datetime.now()
         Status.add("Running portfolio: {0}".format(self.portfolio_path))
         self.shares = []
         
@@ -579,9 +600,11 @@ class ShareXPortfolio(object):
                 Status.add("No successful results to summarise")
 
             self.report_summary(summary_file, output_zip)       
-       
+
+        end_time = datetime.datetime.now()
         Status.add("Portfolio Run Complete")
-            
+        Status.add("Time taken: {0}".format((end_time - start_time).total_seconds()))
+
     def verify_share_configs(self, config):
         
         valid = True
