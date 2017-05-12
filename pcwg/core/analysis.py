@@ -361,17 +361,17 @@ class Analysis(object):
             self.innerMeasuredPowerCurve = None
             self.outerMeasuredPowerCurve = None
 
-    def calculate_inner_measured_power_curve(self, supress_zero_turbulence_curve_creation=False):
+    def calculate_inner_measured_power_curve(self, supress_zero_turbulence_curve_creation=False, override_interpolation_method=None):
             
             if supress_zero_turbulence_curve_creation:
                 zero_ti_pc_required = False
             else:
                 zero_ti_pc_required = (self.powerCurveMode == 'InnerMeasured')
 
-            return self.calculateMeasuredPowerCurve(self.get_inner_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', zero_ti_pc_required = zero_ti_pc_required)            
+            return self.calculateMeasuredPowerCurve(self.get_inner_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', zero_ti_pc_required = zero_ti_pc_required, override_interpolation_method=override_interpolation_method)
 
     def calculate_outer_measured_power_curve(self):
-            return self.calculateMeasuredPowerCurve(self.get_outer_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', zero_ti_pc_required = (self.powerCurveMode == 'OuterMeasured'))
+            return self.calculateMeasuredPowerCurve(self.get_outer_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', zero_ti_pc_required = (self.powerCurveMode == 'OuterMeasured'), override_interpolation_method=override_interpolation_method)
 
     def calculate_rotor_wind_speed_ratio(self):
 
@@ -456,6 +456,7 @@ class Analysis(object):
         self.measuredTurbulencePower = 'Measured TI Corrected Power'
         self.measuredTurbPowerCurveInterp = 'Measured TI Corrected Power Curve Interp'
         self.measuredPowerCurveInterp = 'All Measured Power Curve Interp'
+        self.baseline_wind_speed = "Baseline Wind Speed"
 
     def calculate_power_deviation_matrices(self):
 
@@ -713,12 +714,12 @@ class Analysis(object):
                 raise Exception("Cannot use all measured power curvve: Power data not specified")
 
         else:
-            raise Exception("Unrecognised power curve mode: %s" % powerCurveMode)
+            raise Exception("Unrecognised power curve mode: {0}".format(powerCurveMode))
 
     def get_base_filter(self):
         #dummy line to create all true
         return self.dataFrame[self.timeStamp].dt.hour >= 0
-        
+
     def get_inner_dimension_filter(self, dimension):
         return (self.dataFrame[dimension.parameter] >= dimension.lower_limit) & (self.dataFrame[dimension.parameter] <= dimension.upper_limit)
 
@@ -756,7 +757,7 @@ class Analysis(object):
     def interpolatePowerCurve(self, powerCurveLevels, ws_col, interp_power_col):
         self.dataFrame[interp_power_col] = self.dataFrame[ws_col].apply(powerCurveLevels.power)
 
-    def calculateMeasuredPowerCurve(self, filter_func, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name, zero_ti_pc_required = False):
+    def calculateMeasuredPowerCurve(self, filter_func, cutInWindSpeed, cutOutWindSpeed, ratedPower, powerColumn, name, zero_ti_pc_required = False, override_interpolation_method=None):
 
         Status.add("Calculating %s power curve." % name, verbosity=2)       
         
@@ -830,6 +831,11 @@ class Analysis(object):
                             
             Status.add("Creating turbine", verbosity=2)     
 
+            if override_interpolation_method is None:
+                interpolation_mode = self.interpolationMode
+            else:
+                interpolation_mode = override_interpolation_method
+
             turb = turbine.PowerCurve(self.rotorGeometry,
                                       reference_density = self.reference_density,
                                       data_frame=powerLevels,
@@ -838,12 +844,16 @@ class Analysis(object):
                                       power_column = powerColumn,
                                       count_column = 'Data Count',
                                       name = name,
-                                      interpolation_mode = self.interpolationMode, 
+                                      interpolation_mode = interpolation_mode,
                                       zero_ti_pc_required = zero_ti_pc_required,
                                       x_limits = self.windSpeedBins.limits, 
                                       sub_power = sub_power)
                 
             return turb
+
+        else:
+            Status.add("Failed to generate power curve: zero valid levels")
+            return None
 
     def calculatePowerDeviationMatrix(self, power):
         return self.calculated_power_deviation_matrix_definition.new_deviation_matrix(self.dataFrame, self.actualPower, power)
@@ -1009,6 +1019,9 @@ class Analysis(object):
                                                             deviation_matrix_definition=self.rews_deviation_matrix_definition)
 
         self.baseline = baseline
+
+        #alias
+        self.dataFrame[self.baseline_wind_speed] = self.dataFrame[self.baseline.wind_speed_column]
 
     def should_calculate_REWS(self):
         return (self.rewsActive and self.rewsDefined)

@@ -138,11 +138,32 @@ class XmlBase(object):
         else:
                 return valueNotExist
 
+    def read_filter_column(self, parent_node, query):
+
+        column = self.getNodeValue(parent_node, query)
+
+        if column.lower() == 'input hub wind speed':
+            #backwards compatibility
+            old_column = column
+            column = 'Baseline Wind Speed'
+            Status.add("Remapping Filter column {0} to {1}".format(old_column, column))
+        elif column.lower() == 'density corrected hub wind speed':
+            #backwards compatibility
+            old_column = column
+            column = 'Density Wind Speed'
+            Status.add("Remapping Filter column {0} to {1}".format(old_column, column))
+        else:
+            Status.add("Using Filter column {0}".format(column))
+
+        return column
+
     def readSimpleFilter(self,node,active=True):
-        column = self.getNodeValue(node, 'DataColumn')
+
+        column = self.read_filter_column(node, 'DataColumn')
         inclusive = self.getNodeBool(node, 'Inclusive')
         filterType = self.getNodeValue(node, 'FilterType')
         active = active if active else self.getNodeBool(node, 'Active')
+
         if not len(self.getNode(node, 'FilterValue').childNodes) >1:
             value = self.getNodeValue(node, 'FilterValue')
             if not "," in value:

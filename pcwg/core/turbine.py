@@ -167,7 +167,7 @@ class PowerCurve(object):
 
     def get_raw_levels(self):
     
-        padded_levels = (self.data_frame['Is Pad'] == True)
+        padded_levels = (self.data_frame['Is Extrapolation'] == True)
 
         return self.data_frame[~padded_levels]
 

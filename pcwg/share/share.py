@@ -94,7 +94,8 @@ class ShareAnalysisBase(Analysis):
         inner_range_id, power_curve = self.calculate_best_inner_range()
 
         self.set_inner_range(inner_range_id)
-        self.innerMeasuredPowerCurve = power_curve
+
+        self.innerMeasuredPowerCurve = self.calculate_inner_measured_power_curve()
 
     def calculate_best_inner_range(self):
 
@@ -115,13 +116,7 @@ class ShareAnalysisBase(Analysis):
                     #ensure zero ti curve can be calculated
                     Status.add("Calculating zero turbulence curve for Inner Range {0}".format(inner_range_id), verbosity=3)
                     power_curve.zero_ti_pc_required = True
-
                     dummy = power_curve.zeroTurbulencePowerCurve
-
-                    if successes == 0 or complete_bins > max_complete_bins:
-                        max_complete_bins = complete_bins
-                        max_complete_range_id = inner_range_id
-                        max_complete_power_curve = power_curve
 
                 except ExceptionHandler.ExceptionType as e:
 
@@ -130,26 +125,38 @@ class ShareAnalysisBase(Analysis):
                     for i in range(len(power_curve.wind_speed_points)):
                         Status.add("{0}\t{1}".format(power_curve.wind_speed_points[i], power_curve.power_points[i]), verbosity=3)
 
+                    success = False
+
+            if success:
+
+                if successes == 0 or complete_bins > max_complete_bins:
+
+                    max_complete_bins = complete_bins
+                    max_complete_range_id = inner_range_id
+                    max_complete_power_curve = power_curve
+
                 successes += 1
            
         if successes < 1:
-            Status.add("No successful calculation for any inner range (insufficient complete bins)")
-            return None
+            error = "No successful calculation for any inner range (insufficient complete bins)"
+            Status.add(error)
+            raise Exception('Cannot complete share analysis: {0}'.format(error))
         else:
-            
-
             Status.add("Inner Range {0} Selected with {1} complete bins.".format(max_complete_range_id, max_complete_bins))  
             return max_complete_range_id, max_complete_power_curve
 
     def attempt_power_curve_calculation(self, inner_range_id):
 
-        Status.add("Attempting power curve calculation using Inner Range definition %s." % inner_range_id)
+        Status.add("Attempting power curve calculation using Inner Range definition {0}.".format(inner_range_id))
 
         try:
 
             self.set_inner_range(inner_range_id)
 
-            power_curve = self.calculate_inner_measured_power_curve(supress_zero_turbulence_curve_creation=True)
+            # use linear interpolation mode in trial calculation for speed
+            power_curve = self.calculate_inner_measured_power_curve(supress_zero_turbulence_curve_creation=True,
+                                                                    override_interpolation_method='Linear')
+
             complete_bins = self.get_complete_bins(power_curve)
 
             if not self.is_sufficient_complete_bins(power_curve):
@@ -167,7 +174,10 @@ class ShareAnalysisBase(Analysis):
             return (None, False, 0)
 
     def get_complete_bins(self, power_curve):
-        return len(power_curve.get_raw_levels())
+        if power_curve is None:
+            return 0
+        else:
+            return len(power_curve.get_raw_levels())
 
     def is_sufficient_complete_bins(self, power_curve):
         
@@ -211,7 +221,7 @@ class ShareAnalysisBase(Analysis):
         self.interpolationMode = self.get_interpolation_mode()
 
         self.powerCurveMode = "InnerMeasured"
-        self.powerCurvePaddingMode = "Max"
+        self.powerCurveExtrapolationMode = "Max"
 
         self.powerCurveFirstBin = 1.0
         self.powerCurveLastBin = 30.0
@@ -464,6 +474,7 @@ class PcwgShareX:
         try:
             self.analysis = self.new_analysis(self.dataset)
             self.success = True
+            #self.analysis.dataFrame.to_csv(r"data_new.csv")
         except ExceptionHandler.ExceptionType as e:
             self.analysis = None
             self.success = False
