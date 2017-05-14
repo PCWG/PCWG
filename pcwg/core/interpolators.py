@@ -129,15 +129,29 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         #- if bin average value is zero (min value), all values in this bin must have been zero.
         #- if bin average value is rated (max value), all values in this bin must have been rated.
 
-        inputX, sortedY = zip(*sorted(zip(x,y)))
-        
-        numberOfBins = len(inputX)
+        sortedX, sortedY = zip(*sorted(zip(x,y)))
+
+        inputX = []
+        trimmedY = []
 
         roundedY = []
         inputY = []
-        
+
         rated = []
         operating = []
+
+        #make sure a zero has not be padded in before cut in
+
+        for i in range(len(sortedX)):
+            if (sortedX[i] > cutInWindSpeed) and\
+               (sortedX[i] < cutOutWindSpeed) and\
+               (sortedY[i] == 0.0):
+                pass
+            else:
+                inputX.append(sortedX[i])
+                trimmedY.append(sortedY[i])
+
+        numberOfBins = len(inputX)
 
         lastBinBeforeCutIn = None
         firstBinAfterCutIn = None
@@ -149,7 +163,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
 
         #round power curve      
         for i in range(numberOfBins):
-            roundedY.append(round(sortedY[i], 0))
+            roundedY.append(round(trimmedY[i], 0))
 
         roundedRatedPower = max(roundedY)
         minRoundedPower = min(roundedY)
@@ -162,7 +176,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
             if roundedY[i] == 0:
                 inputY.append(0.0)
             else:
-                inputY.append(sortedY[i])
+                inputY.append(trimmedY[i])
             
         #determine which bins are operating and rated
         for i in range(numberOfBins):

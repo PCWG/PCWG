@@ -92,6 +92,9 @@ class ShareAnalysisBase(Analysis):
         self.dayTimePowerCurve = None
         self.nightTimePowerCurve = None
 
+    def calculate_all_measured_power_curves(self):
+        self.allMeasuredPowerCurve = None
+
     def calculate_inner_outer_measured_power_curves(self):
 
         self.outerMeasuredPowerCurve = None
@@ -494,7 +497,6 @@ class PcwgShareX:
         try:
             self.analysis = self.new_analysis(self.dataset)
             self.success = True
-            #self.analysis.dataFrame.to_csv(r"data_new.csv")
         except ExceptionHandler.ExceptionType as e:
             self.analysis = None
             self.success = False
@@ -603,7 +605,10 @@ class ShareXPortfolio(object):
 
         end_time = datetime.datetime.now()
         Status.add("Portfolio Run Complete")
-        Status.add("Time taken: {0}".format((end_time - start_time).total_seconds()))
+
+        time_message = "Time taken: {0}".format((end_time - start_time).total_seconds())
+        print(time_message)
+        Status.add(time_message)
 
     def verify_share_configs(self, config):
         

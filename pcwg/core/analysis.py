@@ -375,7 +375,7 @@ class Analysis(object):
             return self.calculateMeasuredPowerCurve(self.get_inner_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Inner Range', zero_ti_pc_required = zero_ti_pc_required, override_interpolation_method=override_interpolation_method)
 
     def calculate_outer_measured_power_curve(self):
-            return self.calculateMeasuredPowerCurve(self.get_outer_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', zero_ti_pc_required = (self.powerCurveMode == 'OuterMeasured'), override_interpolation_method=override_interpolation_method)
+            return self.calculateMeasuredPowerCurve(self.get_outer_range_filter, self.cutInWindSpeed, self.cutOutWindSpeed, self.ratedPower, self.actualPower, 'Outer Range', zero_ti_pc_required = (self.powerCurveMode == 'OuterMeasured'))
 
     def calculate_rotor_wind_speed_ratio(self):
 
