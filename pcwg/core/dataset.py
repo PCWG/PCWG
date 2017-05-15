@@ -228,7 +228,19 @@ class ShearExponentCalculator:
         if len(windspeeds[~np.isnan(windspeeds)]) < 2:
             return np.nan
 
-        polyfitResult = np.polyfit(windspeeds[~np.isnan(windspeeds)], heights[~np.isnan(windspeeds)], deg, rcond=None, full=False)
+        try:
+            polyfitResult = np.polyfit(windspeeds[~np.isnan(windspeeds)], heights[~np.isnan(windspeeds)], deg, rcond=None, full=False)
+        except Exception as e:
+
+            error = "Cannot fit polynomial in points:\n"
+
+            for windspeed in windspeeds:
+                error += "- {0}\n".format(windspeed)
+
+            error += str(e)
+
+            raise Exception(error)
+
         shearThreePT = 1.0 / polyfitResult[0]
         
         return shearThreePT

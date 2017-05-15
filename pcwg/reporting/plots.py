@@ -156,7 +156,8 @@ class MatplotlibPlotter(object):
             
             index = meanPowerCurveObj.data_frame.index
             columns = [windSpeedCol,powerCol,'Data Count']
-            rows = self.analysis.allMeasuredPowerCurve.data_frame.loc[index, 'Data Count'] > 0
+
+            rows = meanPowerCurveObj.data_frame.loc[index, 'Data Count'] > 0
 
             meanPowerCurve = meanPowerCurveObj.data_frame[columns][rows].reset_index().set_index(windSpeedCol)
 

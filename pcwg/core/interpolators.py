@@ -117,7 +117,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         raise Exception("Cannot determine limit for {0}".format(speed))
             
     def preprocessBins(self,x,y,limits, cutOutWindSpeed):        
-        
+
         if self.sub_power != None:
             cutInWindSpeed = self.sub_power.cut_in_wind_speed
         else:
@@ -125,11 +125,14 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
             
         ratedWindSpeed = None
         
-        #assumptions:
-        #- if bin average value is zero (min value), all values in this bin must have been zero.
-        #- if bin average value is rated (max value), all values in this bin must have been rated.
+        # assumptions:
+        # - if bin average value is zero (min value), all values in this bin must have been zero.
+        # - if bin average value is rated (max value), all values in this bin must have been rated.
 
         sortedX, sortedY = zip(*sorted(zip(x,y)))
+
+        sortedX = list(sortedX)
+        sortedY = list(sortedY)
 
         inputX = []
         trimmedY = []
@@ -233,12 +236,13 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                     cutInWindSpeed = limits[inputX[0]].start
 
                 #add point below cut-in (force interpolation shape)
-                xnew.append(cutInWindSpeed - 1.0)
+                one_below_cut_in = cutInWindSpeed - 1.0
+                xnew.append(one_below_cut_in)
                 ynew.append(0.0)
                 rated_new.append(False)
                 operating_new.append(False)
 
-                #add point at cut-in
+                # add point at cut-in
                 xnew.append(cutInWindSpeed)
                 ynew.append(0.0)
                 rated_new.append(False)
@@ -297,19 +301,32 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                 Status.add("{0} {1}".format(inputX[i], inputY[i]), verbosity=3)
 
             raise Exception("Could not determine rated wind speed")
-        
+
+        x_final = []
+        y_final = []
+        rated_final = []
+        operating_final = []
+
+        #Ensure no duplicates
+        for i in range(len(xnew)):
+            if xnew[i] not in x_final:
+                x_final.append(xnew[i])
+                y_final.append(ynew[i])
+                rated_final.append(rated_new[i])
+                operating_final.append(operating_new[i])
+
         #determine whcih bins can be adjusted
-        numberOfNewBins = len(ynew)
+        numberOfFinalBins = len(y_final)
         adjust = []
 
         Status.add("Pre-processed Bins", verbosity=3)        
         Status.add("Speed Power Adjust", verbosity=3)
-        
+
         adjust_active = True
 
-        for i in range(numberOfNewBins):
+        for i in range(numberOfFinalBins):
 
-            if rated_new[i] == False and operating_new[i] and adjust_active:
+            if rated_final[i] == False and operating_final[i] and adjust_active:
             
                 adjust.append(True)
             
@@ -317,12 +334,12 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                 
                 adjust.append(False)
 
-                if rated_new[i]:
+                if rated_final[i]:
                     adjust_active = False
             
-            Status.add("{0} {1} {2}".format(xnew[i], ynew[i], adjust[i]), verbosity=3)
+            Status.add("{0} {1} {2}".format(x_final[i], y_final[i], adjust[i]), verbosity=3)
             
-        return xnew,ynew,adjust,cutInWindSpeed,ratedWindSpeed
+        return x_final,y_final,adjust,cutInWindSpeed,ratedWindSpeed
     
     def calculate_limits(self, binCenters, sub_power = None):
 

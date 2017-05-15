@@ -573,9 +573,11 @@ class ShareXPortfolio(object):
             
         Status.add("Detailed results will be stored in: {0}".format(zip_file))
         Status.add("Summary results will be stored in: {0}".format(summary_file))
-        
+
+        Status.set_portfolio_status(0, len(self.portfolio.datasets), False)
+
         with zipfile.ZipFile(zip_file, 'w') as output_zip:
-            
+
             for index, item in enumerate(self.portfolio.datasets):
 
                 Status.add("Loading dataset {0}".format(index + 1)) 
@@ -598,10 +600,14 @@ class ShareXPortfolio(object):
                     if share.success:
                         self.shares.append(share)
 
+                Status.set_portfolio_status(index + 1, len(self.portfolio.datasets), False)
+
             if len(self.shares) < 1:
                 Status.add("No successful results to summarise")
 
-            self.report_summary(summary_file, output_zip)       
+            self.report_summary(summary_file, output_zip)
+
+        Status.set_portfolio_status(len(self.shares), len(self.portfolio.datasets), True)
 
         end_time = datetime.datetime.now()
         Status.add("Portfolio Run Complete")
