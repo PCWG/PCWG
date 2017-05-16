@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['C:\\Git\\PCWG\\pcwg_tool.py'],
-             pathex=['C:\\GIT\\PCWG\\Build'],
+a = Analysis(['C:\\Data\\Git\\PCWG\\pcwg_tool.py'],
+             pathex=['C:\\Data\\GIT\\PCWG\\Build'],
              binaries=[],
              datas=[],
              hiddenimports=[],
