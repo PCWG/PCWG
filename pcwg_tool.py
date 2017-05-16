@@ -1,13 +1,18 @@
 import matplotlib
 
-# matplotlib.use("TkAgg")
-try:
-    import PyQt5 as pyqt
-    matplotlib.use('Qt5Agg')
-except:
-    import PyQt4 as pyqt
+from sys import platform as sys_pf
+
+if sys_pf == 'darwin':
+    #matplotlib.use("TkAgg")
     matplotlib.use('Qt4Agg')
-del pyqt
+else:
+    try:
+        import PyQt5 as pyqt
+        matplotlib.use('Qt5Agg')
+    except:
+        import PyQt4 as pyqt
+        matplotlib.use('Qt4Agg')
+    del pyqt
 
 import pcwg.configuration.preferences_configuration as pref
 import pcwg.gui.root as gui

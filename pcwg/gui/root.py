@@ -112,7 +112,7 @@ class UserInterface:
     def __init__(self, preferences):
 
         ExceptionHandler.initialize_handler(self.add_exception)
-        Status.initialize_status(self.add_message, preferences.verbosity)
+        Status.initialize_status(self.add_message, self.set_portfolio_status, preferences.verbosity)
 
         self.analysis = None
         self.analysisConfiguration = None
@@ -254,6 +254,15 @@ class UserInterface:
                                          command=self.PCWG_Share_2_Portfolio)
 
         run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.portfolio_status = tk.StringVar()
+
+        portfolio_status_label = tk.Label(portfolio_group_top,
+                                          font = "Verdana 10 bold",
+                                          textvariable=self.portfolio_status,
+                                          fg = "blue")
+
+        portfolio_status_label.pack(side=tk.RIGHT, padx=5, pady=5)
 
         load_portfolio_button = tk.Button(portfolio_group_bottom,
                                           text="Load",
@@ -853,6 +862,15 @@ class UserInterface:
         except:
 
             print "Can't write message: {0}".format(message)
+
+    def set_portfolio_status(self, completed, total, finished):
+
+        if finished:
+            self.portfolio_status.set("{0}/{1} Successful".format(completed, total))
+        else:
+            self.portfolio_status.set("{0}/{1} In Progress".format(completed, total))
+
+        self.root.update()
 
     def add_exception(self, exception, custom_message=None):
 

@@ -5,12 +5,10 @@ import math
 import os
 
 import rews
-import binning
 import turbine
 import warnings
 
-from power_deviation_matrix import AverageOfDeviationsMatrix
-from power_deviation_matrix import PowerDeviationMatrixDimension
+from power_deviation_matrix import ResidualWindSpeedMatrix
 
 from ..core.status import Status
 
@@ -230,7 +228,19 @@ class ShearExponentCalculator:
         if len(windspeeds[~np.isnan(windspeeds)]) < 2:
             return np.nan
 
-        polyfitResult = np.polyfit(windspeeds[~np.isnan(windspeeds)], heights[~np.isnan(windspeeds)], deg, rcond=None, full=False)
+        try:
+            polyfitResult = np.polyfit(windspeeds[~np.isnan(windspeeds)], heights[~np.isnan(windspeeds)], deg, rcond=None, full=False)
+        except Exception as e:
+
+            error = "Cannot fit polynomial in points:\n"
+
+            for windspeed in windspeeds:
+                error += "- {0}\n".format(windspeed)
+
+            error += str(e)
+
+            raise Exception(error)
+
         shearThreePT = 1.0 / polyfitResult[0]
         
         return shearThreePT
@@ -509,26 +519,11 @@ class Dataset:
 
         if config.calibrationMethod != "Specified":
 
-            dataFrame[self.residualWindSpeed] = (dataFrame[self.hubWindSpeed] - dataFrame[config.turbineLocationWindSpeed]) / dataFrame[self.hubWindSpeed]
-
-            dimensions = []
-            windSpeedBin = "Wind Speed Bin"
-            turbulenceBin = "Turbulence Bin"
-
-            windSpeedBins = binning.Bins(0.0, 1.0, 30.0)
-            turbulenceBins = binning.Bins(0.01, 0.01/windSpeedBins.numberOfBins, 0.02)
-
-            dimensions.append(PowerDeviationMatrixDimension(self.hubWindSpeed, windSpeedBins.centerOfFirstBin, windSpeedBins.binWidth, windSpeedBins.numberOfBins))    
-            dimensions.append(PowerDeviationMatrixDimension(self.hubTurbulence, turbulenceBins.centerOfFirstBin, turbulenceBins.binWidth, turbulenceBins.numberOfBins))    
-
-            aggregations = binning.Aggregations(0)
-
-            dataFrame[windSpeedBin] = dataFrame[self.hubWindSpeed].map(windSpeedBins.binCenter)
-            dataFrame[turbulenceBin] = dataFrame[self.hubTurbulence].map(turbulenceBins.binCenter)
-
-            self.residualWindSpeedMatrix = AverageOfDeviationsMatrix(dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).aggregate(aggregations.average),
-                                                                     dataFrame[self.residualWindSpeed].groupby([dataFrame[windSpeedBin], dataFrame[turbulenceBin]]).count(),
-                                                                     dimensions)
+            self.residualWindSpeedMatrix = ResidualWindSpeedMatrix(data_frame=dataFrame,
+                                                                   actual_wind_speed_column=self.turbineLocationWindSpeed,
+                                                                   modelled_wind_speed_column=self.hubWindSpeed,
+                                                                   turbulence_column=self.hubTurbulence)
+                                                                     
         else:
 
             self.residualWindSpeedMatrix = None
@@ -782,7 +777,22 @@ class Dataset:
             if col not in requiredCols:
                 requiredCols.append(col)
 
-        if len(dataFrame[requiredCols].dropna()[requiredCols[0]]) > 0:
+        errors = ""
+
+        for required_column in requiredCols:
+
+            if  required_column not in dataFrame.columns:
+                error = "Configured column not found in dataset: {0}".format(required_column)
+                Status.add(error, red=True)
+                errors += "{0}\n".format(error)
+
+        if len(errors) > 0:
+            raise Exception("Time series data file is missing specified column(s) - Check data set config:\n{0}".format(errors))
+
+        required_drop_na = dataFrame[requiredCols].dropna()
+        required_drop_na_first_col = required_drop_na[requiredCols[0]]
+
+        if len(required_drop_na_first_col) > 0:
 
             return dataFrame[requiredCols]
 
@@ -928,7 +938,7 @@ class Dataset:
 
         Status.add("", verbosity=2)
 
-        return dataFrame[~mask]
+        return dataFrame.loc[~mask,:]
 
     def addFilterBelow(self, dataFrame, mask, filterColumn, filterValue, filterInclusive):
 

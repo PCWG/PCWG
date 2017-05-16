@@ -153,7 +153,7 @@ class TestMarmanderPowerCurveInterpolator(unittest.TestCase):
         for i in range(len(expectedX)):
 
             if expectedX[i] < 6.0:
-                tolerancePercent = 0.02
+                tolerancePercent = 0.06
             else:
                 tolerancePercent = 0.005
                 
