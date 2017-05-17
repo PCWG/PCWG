@@ -214,44 +214,43 @@ class ShearExponentCalculator:
     def __init__(self, shearMeasurements):
         self.shearMeasurements = shearMeasurements
 
-    def calculateMultiPointShear(self, row):
+    def shearExponent(self, row):
 
         if len(self.shearMeasurements) < 1:
             raise Exception("No shear heights have been defined")
+        elif len(self.shearMeasurements) == 1:
+            raise Exception("Only one shear height has been defined (two need to be defined as a minimum)")
+        else:
 
-        # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
-        windspeeds = np.array([np.log(row[item.wind_speed_column]) for item in self.shearMeasurements])
-        heights = np.array([np.log(item.height) for item in self.shearMeasurements])
-        
-        deg = 1 # linear
-        
-        if len(windspeeds[~np.isnan(windspeeds)]) < 2:
-            return np.nan
+            # 3 point measurement: return shear= 1/ (numpy.polyfit(x, y, deg, rcond=None, full=False) )
+            log_windspeeds = np.array([np.log(row[item.wind_speed_column]) for item in self.shearMeasurements])
+            log_heights = np.array([np.log(item.height) for item in self.shearMeasurements])
 
-        try:
-            polyfitResult = np.polyfit(windspeeds[~np.isnan(windspeeds)], heights[~np.isnan(windspeeds)], deg, rcond=None, full=False)
-        except Exception as e:
+            deg = 1  # linear
 
-            error = "Cannot fit polynomial in points:\n"
+            if len(log_windspeeds[~np.isnan(log_windspeeds)]) < 2:
+                return np.nan
 
-            for windspeed in windspeeds:
-                error += "- {0}\n".format(windspeed)
+            try:
 
-            error += str(e)
+                polyfit_result = np.polyfit(log_heights[~np.isnan(log_windspeeds)],
+                                            log_windspeeds[~np.isnan(log_windspeeds)], deg, rcond=None, full=False)
 
-            raise Exception(error)
+                polyfit_slope = polyfit_result[0]
 
-        shearThreePT = 1.0 / polyfitResult[0]
-        
-        return shearThreePT
+            except Exception as e:
 
-    def calculateTwoPointShear(self,row):
-        # superseded by self.calculateMultiPointShear
-        return math.log(row[self.upperColumn] / row[self.lowerColumn]) * self.overOneLogHeightRatio
+                error = "Cannot fit polynomial in points:\n"
+                error += "LogHeight, LogWindSpeed\n"
 
-    def shearExponent(self, row):
-        return self.calculateMultiPointShear(row)
+                for i in range(len(log_windspeeds)):
+                    error += "{0}, {1}\n".format(log_heights[i], log_windspeeds[i])
 
+                error += str(e)
+
+                raise Exception(error)
+
+            return polyfit_slope
 
 class Dataset:
 
