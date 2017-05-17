@@ -3,11 +3,13 @@ from nose.tools import assert_true, assert_equal, assert_in
 import pandas as pd
 from zipfile import ZipFile
 
+from mock_path_builder import MockPathBuilder
+from pcwg.core.path_builder import PathBuilder
+PathBuilder.Instance = MockPathBuilder()
 from pcwg.configuration.portfolio_configuration import PortfolioConfiguration
 from pcwg.gui.root import UserInterface
 
-
-FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class MockUserInterface(UserInterface):

@@ -19,7 +19,7 @@ from ..core.analysis import Analysis
 from ..core.binning import Bins
 from ..core.power_deviation_matrix import NullDeviationMatrixDefinition
 
-from ..reporting import data_sharing_reports as reports
+from ..reporting.data_sharing_reports import PCWGShareXReport, PortfolioReport
 from ..configuration.dataset_configuration import DatasetConfiguration
 from ..configuration.base_configuration import Filter
 from ..configuration.path_manager import SinglePathManager
@@ -528,7 +528,7 @@ class PcwgShareX:
 
     def pcwg_data_share_report(self, output_fname):
                 
-        rpt = reports.PCWGShareXReport(self.analysis,
+        rpt = PCWGShareXReport(self.analysis,
                                       version = ver.version,
                                       output_fname = output_fname,
                                       pcwg_inner_ranges = ShareAnalysisBase.pcwg_inner_ranges,
@@ -688,7 +688,7 @@ class ShareXPortfolio(object):
     def report_summary(self, summary_file, output_zip):
         
         Status.add("Exporting results to {0}".format(summary_file))                
-        report = reports.PortfolioReport()
+        report = PortfolioReport()
         report.report(self.shares, summary_file)
         Status.add("Report written to {0}".format(summary_file))
 

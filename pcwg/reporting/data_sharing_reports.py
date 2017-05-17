@@ -10,8 +10,8 @@ import xlwt
 
 from plots import MatplotlibPlotter
 
+from ..core.path_builder import PathBuilder
 from ..core.status import Status
-from .. import REPO_HEAD
 
 
 def wrt_cell_keep_style(value, sheet, row, col):
@@ -532,11 +532,11 @@ class ScatterPlotSheet(object):
 
 class PCWGShareXReport(object):
     
-    TEMPALTE_PATH = os.path.join(REPO_HEAD, 'Share_X_template.xls')
+    TEMPALTE_PATH = PathBuilder.get_path('Share_X_template.xls')
 
     TEMPLATE_SHEET_MAP = {'Submission': 0,
-                 'Meta Data': 1,
-                 'Template': 2}
+                          'Meta Data': 1,
+                          'Template': 2}
 
     def __init__(self, analysis, version, output_fname, pcwg_inner_ranges, share_name):
 
