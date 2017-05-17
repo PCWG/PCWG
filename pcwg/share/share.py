@@ -526,11 +526,9 @@ class PcwgShareX:
 
             Status.add("ERROR Exporting Report: %s" % e, red = True)
 
-         
     def pcwg_data_share_report(self, output_fname):
                 
         rpt = reports.PCWGShareXReport(self.analysis,
-                                      template = "Share_1_template.xls",
                                       version = ver.version,
                                       output_fname = output_fname,
                                       pcwg_inner_ranges = ShareAnalysisBase.pcwg_inner_ranges,

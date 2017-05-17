@@ -4,7 +4,9 @@ import os
 
 from share import ShareAnalysisBase
 
+from .. import REPO_HEAD
 from ..core.status import Status
+
 
 class ShareAnalysis1(ShareAnalysisBase):
 
@@ -36,7 +38,7 @@ class ShareAnalysis1(ShareAnalysisBase):
 
     def set_pdm_path(self, folder, filename):
 
-        pdm_path = os.path.join(os.getcwd(), folder)
+        pdm_path = os.path.join(REPO_HEAD, folder)
         pdm_path = os.path.join(pdm_path, filename)
 
         self.specified_power_deviation_matrix.absolute_path = pdm_path
