@@ -310,7 +310,7 @@ class PowerDeviationMatrixCorrection(PowerBasedCorrection):
 		value_not_found_fraction = power_deviation_matrix.value_not_found_fraction() 
 
 		orange = (value_not_found_fraction > 0.05)
-		red = (value_not_found_fraction > 0.20)
+		red = (value_not_found_fraction > 0.50)
 
 
 		Status.add("Fraction of PDM values Not Found {0:.2f}%".format(value_not_found_fraction * 100.0), red=red, orange=orange)
