@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<Portfolio xmlns="http://www.pcwg.org">
+	<Description>test</Description>
+	<Datasets>
+		<Dataset>test_dataset_config.xml</Dataset>
+		<Dataset>test_dataset_extended_config.xml</Dataset>
+	</Datasets>
+</Portfolio>

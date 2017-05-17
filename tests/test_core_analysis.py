@@ -14,7 +14,7 @@ FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 class TestCoreAnalysis:
 
     @classmethod
-    def setup(cls):
+    def setup_class(cls):
         cls.tolerance = 1e-10
         cls.analysis_config = AnalysisConfiguration(os.path.join(FILE_DIR, 'data', 'test_analysis_config.xml'))
         cls.report_dir = os.path.join(FILE_DIR, 'data', 'temp_report_outputs')
@@ -23,7 +23,7 @@ class TestCoreAnalysis:
         cls.analysis = Analysis(cls.analysis_config)
 
     @classmethod
-    def teardown(cls):
+    def teardown_class(cls):
         if os.path.isdir(cls.report_dir):
             rmtree(cls.report_dir)
 

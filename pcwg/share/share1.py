@@ -5,6 +5,8 @@ import os
 from share import ShareAnalysisBase
 
 from ..core.status import Status
+from ..core.path_builder import PathBuilder
+
 
 class ShareAnalysis1(ShareAnalysisBase):
 
@@ -28,15 +30,14 @@ class ShareAnalysis1(ShareAnalysisBase):
         if self.rewsDefined:        
             self.calculate_combined_rews_and_turbulence_correction()
 
-        self.set_pdm_path('Data', 'HypothesisMatrix.xml')
+        self.set_pdm_path('HypothesisMatrix.xml')
         self.calculate_power_deviation_matrix_correction()
 
     def get_interpolation_mode(self):
         return "Cubic"
 
-    def set_pdm_path(self, folder, filename):
+    def set_pdm_path(self, filename):
 
-        pdm_path = os.path.join(os.getcwd(), folder)
-        pdm_path = os.path.join(pdm_path, filename)
+        pdm_path = PathBuilder.get_path(filename, folder_relative_to_root='Data')
 
         self.specified_power_deviation_matrix.absolute_path = pdm_path

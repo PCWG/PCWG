@@ -22,17 +22,17 @@ class ShareAnalysis2(ShareAnalysis1Dot1):
 
         self.calculate_rews_based(self.calculate_combined_rews_and_turbulence_correction, 3.0)
 
-        self.calculate_pdm_based('Data', 'HypothesisMatrix_2D_Share2.xml')
-        self.calculate_pdm_based('Data', 'HypothesisMatrix_3D_Share2.xml')
+        self.calculate_pdm_based('HypothesisMatrix_2D_Share2.xml')
+        self.calculate_pdm_based('HypothesisMatrix_3D_Share2.xml')
 
         self.calculate_rews_based(self.calculate_REWS, 2.0)
 
         if self.rewsDefined:
             self.calculate_production_by_height_correction()
 
-    def calculate_pdm_based(self, folder, filename):
+    def calculate_pdm_based(self, filename):
 
-        self.set_pdm_path(folder, filename)
+        self.set_pdm_path(filename)
         self.calculate_power_deviation_matrix_correction()
 
     def calculate_rews_based(self, method, exponent):

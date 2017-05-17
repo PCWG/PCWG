@@ -191,7 +191,10 @@ class Analysis(object):
         self.calculate_actual_power_curves()         
 
         self.powerCurve = self.selectPowerCurve(self.powerCurveMode)
-        
+
+        if self.powerCurve is None:
+            raise Exception("Selected power curve is not defined. PowerCurveMode: {0}".format(self.powerCurveMode))
+
         self.calculate_power_coefficient()      
 
         self.calculate_normalised_parameters()
