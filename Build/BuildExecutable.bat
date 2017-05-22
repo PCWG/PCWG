@@ -69,8 +69,7 @@ copy %gitfolder%\Data\*.dat %tool%\Data\
 copy "%gitfolder%\%helpdoc%" "%tool%\%helpdoc%"
 copy "%gitfolder%\LICENSE" "%tool%\LICENSE"
 copy "%gitfolder%\README.md" "%tool%\README.md"
-copy "%gitfolder%\Share_1_template.xls" "%tool%\Share_1_template.xls"
-copy "%gitfolder%\Share_1_template.xls" "%tool%\Share_1_template.xls"
+copy "%gitfolder%\Share_X_template.xls" "%tool%\Share_X_template.xls"
 
 echo zipping
 
