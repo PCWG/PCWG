@@ -4,5 +4,6 @@
 	<Datasets>
 		<Dataset>test_dataset_config.xml</Dataset>
 		<Dataset>test_dataset_extended_config.xml</Dataset>
+		<Dataset>test_dataset_config_pre_density.xml</Dataset>
 	</Datasets>
 </Portfolio>

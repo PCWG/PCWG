@@ -5,7 +5,7 @@ from zipfile import ZipFile
 
 from mock_path_builder import MockPathBuilder
 from pcwg.core.path_builder import PathBuilder
-PathBuilder.Instance = MockPathBuilder()
+
 from pcwg.configuration.portfolio_configuration import PortfolioConfiguration
 from pcwg.gui.root import UserInterface
 
@@ -22,6 +22,9 @@ class TestUserInterfaceShareX:
 
     @classmethod
     def setup_class(cls):
+
+        PathBuilder.Instance = MockPathBuilder()
+
         cls.mock_app = MockUserInterface(PortfolioConfiguration(os.path.join(FILE_DIR, "data",
                                                                              "test_portfolio_config.xml")))
         cls.output_file_name = 'test_portfolio_config (Share{share_num}).{ext}'
@@ -45,8 +48,8 @@ class TestUserInterfaceShareX:
         self.mock_app.PCWG_Share_1_Portfolio()
         assert_true(os.path.isfile(xls_out))
         assert_true(os.path.isfile(zip_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 1)
-        self.check_zip_file_contains_n_files(zip_out, 2)
+        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+        self.check_zip_file_contains_n_files(zip_out, 3)
         self.check_zip_file_contains_file_of_name(zip_out, 'Summary.xls')
 
     def test_share_1_dot_1(self):
@@ -55,8 +58,8 @@ class TestUserInterfaceShareX:
         self.mock_app.PCWG_Share_1_dot_1_Portfolio()
         assert_true(os.path.isfile(xls_out))
         assert_true(os.path.isfile(zip_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 1)
-        self.check_zip_file_contains_n_files(zip_out, 2)
+        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+        self.check_zip_file_contains_n_files(zip_out, 3)
         self.check_zip_file_contains_file_of_name(zip_out, 'Summary.xls')
 
     def test_share_2(self):
@@ -65,8 +68,8 @@ class TestUserInterfaceShareX:
         self.mock_app.PCWG_Share_2_Portfolio()
         assert_true(os.path.isfile(xls_out))
         assert_true(os.path.isfile(zip_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 1)
-        self.check_zip_file_contains_n_files(zip_out, 2)
+        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+        self.check_zip_file_contains_n_files(zip_out, 3)
         self.check_zip_file_contains_file_of_name(zip_out, 'Summary.xls')
 
     @classmethod

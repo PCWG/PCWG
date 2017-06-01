@@ -366,12 +366,26 @@ class Dataset:
     def load_density(self, config, dataFrame):
 
         if config.calculateDensity:
+
+            if config.pressure == '':
+                raise Exception('Pressure is not defined')
+
+            if config.temperature == '':
+                raise Exception('Temperature is not defined')
+
             dataFrame[self.hubDensity] = 100.0 * dataFrame[config.pressure] / (273.15 + dataFrame[config.temperature]) / 287.058
             self.hasDensity = True
+
         else:
+
             if config.density != None:
+
+                if not config.density in dataFrame:
+                    raise Exception('Specified density column ({0}) not found'.format(config.density))
+
                 dataFrame[self.hubDensity] = dataFrame[config.density]
                 self.hasDensity = True
+
             else:
                 self.hasDensity = False
         
@@ -474,13 +488,20 @@ class Dataset:
 
     def set_up_specified_hub_wind_speed(self, config, dataFrame):
 
-        self.verify_column_datatype(dataFrame, config.hubWindSpeed)
-
-        dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
+        if (config.hubWindSpeed == ''):
+            if not config.density_pre_correction_active:
+                raise Exception("Dataset hub height wind speed is not well defined")
+        else:
+            self.verify_column_datatype(dataFrame, config.hubWindSpeed)
+            dataFrame[self.hubWindSpeed] = dataFrame[config.hubWindSpeed]
         
         if (config.hubTurbulence != ''):
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
         else:
+
+            if (config.hubWindSpeedForTurbulence == ''):
+                raise Exception("Dataset hub height wind speed for turbulence is not well defined")
+
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
 
         self.hasTurbulence = True
@@ -728,7 +749,8 @@ class Dataset:
         requiredCols.append(self.nameColumn)
         requiredCols.append(self.timeStamp)
 
-        requiredCols.append(self.hubWindSpeed)
+        if not self.density_pre_correction_active:
+            requiredCols.append(self.hubWindSpeed)
 
         requiredCols.append(self.hubTurbulence)
         requiredCols.append(self.hubTurbulenceAliasA)

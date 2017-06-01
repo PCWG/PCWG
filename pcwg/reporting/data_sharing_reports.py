@@ -83,7 +83,7 @@ class PortfolioReport(object):
         
         inner_by_ws_start_col = 18
         
-        sheet.write(header_row, uid_col,             "Analysis", self.bold_style)
+        sheet.write(header_row, uid_col,             "DatasetID", self.bold_style)
         sheet.write(header_row, inner_start_col,     "IR-Count", self.bold_style)
         sheet.write(header_row, inner_start_col + 1, "IR-NME", self.bold_style)
         sheet.write(header_row, inner_start_col + 2, "IR-NMAE", self.bold_style)
@@ -116,7 +116,7 @@ class PortfolioReport(object):
                         sheet.write(header_row, inner_by_ws_start_col + speed_index, wind_speed, self.bold_style)
                         sheet.write(header_row, outer_by_ws_start_col + speed_index, wind_speed, self.bold_style)
 
-                sheet.write(data_row, uid_col, "Deprecated")            
+                sheet.write(data_row, uid_col, share.analysis.dataset_configuration_unique_id)
 
                 self.write_range_errors(share.analysis, sheet, data_row, inner_start_col, analysis_key, 'Inner')
                 self.write_range_errors(share.analysis, sheet, data_row, outer_start_col, analysis_key, 'Outer')
@@ -531,8 +531,6 @@ class ScatterPlotSheet(object):
             Status.add('Could not delete folder %s' % (os.getcwd() + os.sep + plt_path), verbosity=2)
 
 class PCWGShareXReport(object):
-    
-    TEMPALTE_PATH = PathBuilder.get_path('Share_X_template.xls')
 
     TEMPLATE_SHEET_MAP = {'Submission': 0,
                           'Meta Data': 1,
@@ -540,13 +538,15 @@ class PCWGShareXReport(object):
 
     def __init__(self, analysis, version, output_fname, pcwg_inner_ranges, share_name):
 
+        template_path = PathBuilder.get_path('Share_X_template.xls')
+
         self.analysis = analysis
         self.sheet_map = {}
 
         if len(analysis.datasetConfigs) > 1:
             raise Exception("Analysis must contain one and only one dataset")
 
-        rb = xlrd.open_workbook(PCWGShareXReport.TEMPALTE_PATH, formatting_info=True)
+        rb = xlrd.open_workbook(template_path, formatting_info=True)
         wb = copy(rb)
 
         self.map_sheet(wb, "Submission")

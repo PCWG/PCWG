@@ -9,7 +9,7 @@ class TestMarmanderPowerCurveInterpolator(unittest.TestCase):
     def test_spreadsheet_benchmark(self):
 
         x = [1.00,
-            2.00,
+             2.00,
             3.00,
             4.10,
             5.06,
