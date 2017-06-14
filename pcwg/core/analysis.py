@@ -498,7 +498,7 @@ class Analysis(object):
             Status.add("Attempting AEP Calculation...")
             import aep
             if self.powerCurve is self.specified_power_curve:
-                self.windSpeedAt85pctX1pnt5 = self.specified_power_curve.getThresholdWindSpeed()
+                self.windSpeedAt85pctX1pnt5 = self.specified_power_curve.get_threshold_wind_speed()
             if hasattr(self.datasetConfigs[0].data,"analysedDirections"):
                 self.analysedDirectionSectors = self.datasetConfigs[0].data.analysedDirections # assume a single for now.
             if len(self.powerCurve.data_frame) != 0:
