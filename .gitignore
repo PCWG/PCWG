@@ -24,3 +24,4 @@ Build/pcwg_tool.spec
 Build/pcwg_tool/Resources/logo.ico
 *.spec
 Build/pcwg_tool.spec
+tests/data/test_portfolio_config (Share01).xls

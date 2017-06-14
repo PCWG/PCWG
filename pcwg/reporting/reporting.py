@@ -656,8 +656,8 @@ class Report:
         count = 1
         for windSpeed in sorted(levels):
             sh.write(rowOffset + count + 1, columnOffset + 1, windSpeed, self.two_dp_style)
-            sh.write(rowOffset + count + 1, columnOffset + 2, float(powerCurve.powerFunction(windSpeed)), self.no_dp_style)
-            sh.write(rowOffset + count + 1, columnOffset + 3, float(powerCurve.turbulenceFunction(windSpeed)), self.percent_no_dp_style)
+            sh.write(rowOffset + count + 1, columnOffset + 2, float(powerCurve.power_function(windSpeed)), self.no_dp_style)
+            sh.write(rowOffset + count + 1, columnOffset + 3, float(powerCurve.turbulence_function(windSpeed)), self.percent_no_dp_style)
             count += 1
 
 
