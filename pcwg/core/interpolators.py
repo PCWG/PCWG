@@ -40,7 +40,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
     ## Method contributed by Daniel Marmander of Natural Power
     ##
 
-    def __init__(self, x, y, cutOutWindSpeed, xLimits = None, sub_power = None, debug = False):
+    def __init__(self, x, y, cutOutWindSpeed, x_limits = None, sub_power = None, debug = False):
 
         self.debug = debug
         self.debugText = ""
@@ -48,13 +48,13 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         self.cutOutWindSpeed = cutOutWindSpeed
         self.sub_power = sub_power
 
-        if xLimits == None:
+        if x_limits == None:
             Status.add("Calculating bin limts", verbosity=3)
             limits_dict = self.calculate_limits(x, sub_power)
             Status.add("Bin limits calculated", verbosity=3)
         else: 
             Status.add("Preparing bin limits", verbosity=3)
-            limits_dict = self.prepare_limits_dict(x, xLimits, sub_power)
+            limits_dict = self.prepare_limits_dict(x, x_limits, sub_power)
             Status.add("Bin limits prepared", verbosity=3)
 
         try:

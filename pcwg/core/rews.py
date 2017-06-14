@@ -51,7 +51,7 @@ class ProfileLevels:
         lowest = None
 
         for height in self.windSpeedLevels:
-            if self.rotorGeometry.withinRotor(height) and height > level:
+            if self.rotorGeometry.within_rotor(height) and height > level:
                 if lowest == None or height < lowest:
                     lowest = height
 
@@ -62,7 +62,7 @@ class ProfileLevels:
         highest = None
 
         for height in self.windSpeedLevels:
-            if self.rotorGeometry.withinRotor(height) and height < level:
+            if self.rotorGeometry.within_rotor(height) and height < level:
                 if highest == None or height > highest:
                     highest = height
 
@@ -94,7 +94,7 @@ class EvenlySpacedRotor(RotorBase):
             raise Exception("Number of levels must be odd") 
         
         step = self.rotorGeometry.diameter / numberOfRotorLevels
-        level = self.rotorGeometry.hubHeight - self.rotorGeometry.radius + step / 2
+        level = self.rotorGeometry.hub_height - self.rotorGeometry.radius + step / 2
         
         for i in range(numberOfRotorLevels):
 
@@ -108,18 +108,18 @@ class ProfileLevelsRotor(RotorBase):
         RotorBase.__init__(self, rotorGeometry)
 
         for height in profileLevels.windSpeedLevels:
-            if self.rotorGeometry.withinRotor(height):
+            if self.rotorGeometry.within_rotor(height):
                 
                 lowestAbove = profileLevels.findLowestAbove(height)
                 highestBelow = profileLevels.findHighestBelow(height)
 
-                if highestBelow == None:
-                    bottom = self.rotorGeometry.lowerTip
+                if highestBelow is None:
+                    bottom = self.rotorGeometry.lower_tip
                 else:
                     bottom = (height + highestBelow) / 2
 
-                if lowestAbove == None:
-                    top = self.rotorGeometry.upperTip
+                if lowestAbove is None:
+                    top = self.rotorGeometry.upper_tip
                 else:
                     top = (height + lowestAbove) / 2              
                 
@@ -135,7 +135,7 @@ class RotorLevel:
         
         self.middle = (self.top + self.bottom) / 2.0
         
-        self.area = self.calculateLevelArea(rotorGeometry.hubHeight, rotorGeometry.radius, self.middle, top - bottom)
+        self.area = self.calculateLevelArea(rotorGeometry.hub_height, rotorGeometry.radius, self.middle, top - bottom)
         self.areaFraction  = self.area / rotorGeometry.area
         
     def calculateLevelArea(self, hubHeight, radius, level, step):
@@ -198,7 +198,7 @@ class InterpolatedHubWindSpeed(HubParameterBase):
 
     def hubWindSpeed(self, row):
 
-        return self.profileLevels.getWindSpeedProfile(row)(self.rotorGeometry.hubHeight)  
+        return self.profileLevels.getWindSpeedProfile(row)(self.rotorGeometry.hub_height)
 
 class PiecewiseHubBase(HubParameterBase):
 
@@ -206,8 +206,8 @@ class PiecewiseHubBase(HubParameterBase):
 
         HubParameterBase.__init__(self, profileLevels, rotorGeometry)
 
-        self.highestBelow = profileLevels.findHighestBelow(self.rotorGeometry.hubHeight)
-        self.lowestAbove = profileLevels.findLowestAbove(self.rotorGeometry.hubHeight)
+        self.highestBelow = profileLevels.findHighestBelow(self.rotorGeometry.hub_height)
+        self.lowestAbove = profileLevels.findLowestAbove(self.rotorGeometry.hub_height)
 
 class PiecewiseExponentHubWindSpeed(PiecewiseHubBase):
 
@@ -224,7 +224,7 @@ class PiecewiseExponentHubWindSpeed(PiecewiseHubBase):
 
         exponent = math.log(speedAbove / speedBelow) / math.log(self.lowestAbove / self.highestBelow)
 
-        return speedBelow * (self.rotorGeometry.hubHeight / self.highestBelow) ** exponent
+        return speedBelow * (self.rotorGeometry.hub_height / self.highestBelow) ** exponent
 
 class PiecewiseInterpolationHubDirection(PiecewiseHubBase):
 
@@ -272,7 +272,7 @@ class PiecewiseInterpolationHubDirection(PiecewiseHubBase):
             
             inter = interpolate.interp1d(self.x, y, kind='linear')
 
-            return inter(self.rotorGeometry.hubHeight)
+            return inter(self.rotorGeometry.hub_height)
 
 class RotorEquivalentWindSpeed:
 
@@ -290,7 +290,7 @@ class RotorEquivalentWindSpeed:
         else:
             self.hubDirectionCalculator = None
 
-        if self.rotor.rotorGeometry.tilt != None:
+        if self.rotor.rotorGeometry.tilt is not None:
             self.tilt_rad = self.to_radians(self.rotor.rotorGeometry.tilt)
         else:
             self.tilt_rad = None

@@ -137,7 +137,7 @@ class TestMarmanderPowerCurveInterpolator(unittest.TestCase):
                     0.0
                     ]
 
-        interpolator = interpolators.MarmanderPowerCurveInterpolator(x, y, cutOutWindSpeed, xLimits = limits, debug = False)
+        interpolator = interpolators.MarmanderPowerCurveInterpolator(x, y, cutOutWindSpeed, x_limits= limits, debug = False)
 
         if interpolator.debug:
             print interpolator.debugText

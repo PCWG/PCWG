@@ -8,9 +8,9 @@ from ..core.status import Status
 
 
 class PowerCalculator:
-    def __init__(self, powerCurve, windSpeedColumn):
-        self.powerCurve = powerCurve
-        self.windSpeedColumn = windSpeedColumn
+    def __init__(self, power_curve, wind_speed_column):
+        self.powerCurve = power_curve
+        self.windSpeedColumn = wind_speed_column
 
     def power(self, row):
         return self.powerCurve.power(row[self.windSpeedColumn])
@@ -27,14 +27,15 @@ class DensityCorrectionCalculator:
 
 
 class TurbulencePowerCalculator:
-    def __init__(self, powerCurve, ratedPower, windSpeedColumn, turbulenceColumn):
+    def __init__(self, powerCurve, ratedPower, windSpeedColumn, turbulenceColumn, extra_turbulence_correction=False):
         self.powerCurve = powerCurve
         self.ratedPower = ratedPower
         self.windSpeedColumn = windSpeedColumn
         self.turbulenceColumn = turbulenceColumn
+        self.extra_turbulence_correction = extra_turbulence_correction
 
     def power(self, row):
-        return self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn])
+        return self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn], self.extra_turbulence_correction)
 
 
 class PowerDeviationMatrixPowerCalculator:
@@ -68,6 +69,7 @@ class Source(object):
         self.raw = True
         self.wind_speed_based = True
         self.power_based = False
+        self.has_correction = False
 
     def finalise(self, data_frame, power_curve):
 
@@ -87,6 +89,7 @@ class PreDensityCorrectedSource(Source):
 
         self.correction_name = "Density"
         self.short_correction_name = "Den"
+        self.has_correction = True
 
         Status.add("Using pre-density corrected wind speed...")
 
@@ -120,12 +123,13 @@ class Correction(object):
 
         self.source = source
         self.raw = False
+        self.has_correction = True
 
         Status.add("Performing {0} Correction...".format(self.correction_name))
 
     def calculate_name(self, source, source_correction_name, correction_name):
 
-        if source.raw:
+        if source.raw and not source.has_correction:
 
             return correction_name
 
@@ -246,7 +250,7 @@ class RotorEquivalentWindSpeed(WindSpeedBasedCorrection):
 
         if rewsExponent == 3.0:
             exponent_type = "REWS"
-        elif rewsExponent == 2.0:
+        elif rewsExponent == 1.0:
             exponent_type = "RAWS"
         else:
             exponent_type = "REWS-Exponent={0}".format(rewsExponent)
@@ -256,11 +260,11 @@ class RotorEquivalentWindSpeed(WindSpeedBasedCorrection):
 
         if rewsVeer:
             rews_type += "+Veer"
-            rews_short_type = "+V"
+            rews_short_type += "+V"
 
         if rewsUpflow:
             rews_type += "+Upflow"
-            rews_short_type = "+U"
+            rews_short_type += "+U"
 
         correction_name = "{0} ({1})".format(exponent_type, rews_type)
         short_correction_name = "{0} ({1})".format(exponent_type, rews_short_type)
@@ -291,21 +295,39 @@ class RotorEquivalentWindSpeed(WindSpeedBasedCorrection):
 
 
 class TurbulenceCorrection(PowerBasedCorrection):
-    def __init__(self, data_frame, source, hub_turbulence_column, power_curve):
-        PowerBasedCorrection.__init__(self, "Turbulence", "Turb", source, power_curve)
+    def __init__(self,
+                 data_frame,
+                 source,
+                 hub_turbulence_column,
+                 power_curve,
+                 augment=False,
+                 relaxed=False):
 
-        calculator = TurbulencePowerCalculator(self.power_curve, self.power_curve.ratedPower, source.wind_speed_column,
-                                               hub_turbulence_column)
+        if not augment:
+            name = "Turbulence"
+            short_name = "Turb"
+        else:
+            name = "Augmented Turbulence"
+            short_name = "Aug Turb"
+
+        if relaxed:
+            name += " (Relaxed)"
+            short_name += " (Relaxed)"
+
+        PowerBasedCorrection.__init__(self, name, short_name, source, power_curve)
+
+        calculator = TurbulencePowerCalculator(self.power_curve, self.power_curve.rated_power, source.wind_speed_column,
+                                               hub_turbulence_column, extra_turbulence_correction=augment)
 
         self.finalise(data_frame, calculator)
 
 
 class PowerDeviationMatrixCorrection(PowerBasedCorrection):
     def __init__(self, data_frame, source, power_deviation_matrix, parameter_columns, power_curve):
-        dimenionality = "{0}D".format(len(power_deviation_matrix.dimensions))
+        dimensionality = "{0}D".format(len(power_deviation_matrix.dimensions))
 
-        PowerBasedCorrection.__init__(self, "{0} Power Deviation Matrix".format(dimenionality),
-                                      "{0} PDM".format(dimenionality), source, power_curve)
+        PowerBasedCorrection.__init__(self, "{0} Power Deviation Matrix".format(dimensionality),
+                                      "{0} PDM".format(dimensionality), source, power_curve)
 
         power_deviation_matrix.reset_out_of_range_count()
 

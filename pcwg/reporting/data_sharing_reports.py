@@ -329,7 +329,7 @@ class MetaDataSheet(object):
         self.write_meta_cell(sh, 22, col, dataset.power_measurement_type, manual_optional_style)
 
         self.write_meta_cell(sh, 23, col, self.analysis.rotorGeometry.diameter, calculated_style)
-        self.write_meta_cell(sh, 24, col, self.analysis.rotorGeometry.hubHeight, calculated_style)
+        self.write_meta_cell(sh, 24, col, self.analysis.rotorGeometry.hub_height, calculated_style)
         self.write_meta_cell(sh, 25, col, self.analysis.specific_power, calculated_style)
 
         self.write_meta_cell(sh, 26, col, dataset.turbine_control_type, manual_required_style)

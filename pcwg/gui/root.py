@@ -255,6 +255,12 @@ class UserInterface:
 
         run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
 
+        run_portfolio_button = tk.Button(portfolio_group_top,
+                                         text="PCWG-Share-3.0",
+                                         command=self.PCWG_Share_3_Portfolio)
+
+        run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
+
         self.portfolio_status = tk.StringVar()
 
         portfolio_status_label = tk.Label(portfolio_group_top,
@@ -710,7 +716,11 @@ class UserInterface:
     def PCWG_Share_2_Portfolio(self):
 
         self.PCWG_Share_X_Portfolio("Share02")
-        
+
+    def PCWG_Share_3_Portfolio(self):
+
+        self.PCWG_Share_X_Portfolio("Share03")
+
     def new_portfolio(self):
 
         try:

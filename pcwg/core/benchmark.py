@@ -86,9 +86,16 @@ class BenchmarkAnalysis(Analysis):
 
     def get_rews(self):
 
+        Status.add("Locating REWS from {0} corrections".format(len(self.corrections)), verbosity=3)
+
         for correction in self.corrections:
-            if "REWS" in correction:
+            if  self.corrections[correction].rews_applied() and not self.corrections[correction].turbulence_applied():
+                Status.add("Match: {0}".format(correction))
                 return correction
+            else:
+                Status.add("No match: {0}".format(correction))
+
+        raise Exception("Could not locate REWS correction")
 
     def calculateREWSBenchmark(self):
         if self.rewsActive:
