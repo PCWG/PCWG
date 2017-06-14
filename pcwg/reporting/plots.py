@@ -108,7 +108,7 @@ class MatplotlibPlotter(object):
             kind = 'scatter'
         else:
             kind = 'line'
-            df=df.data_frame[df.data_frame[self.analysis.baseline.wind_speed_column] <= self.analysis.allMeasuredPowerCurve.cutOutWindSpeed]
+            df=df.data_frame[df.data_frame[self.analysis.baseline.wind_speed_column] <= self.analysis.allMeasuredPowerCurve.cut_out_wind_speed]
         try:
             from matplotlib import pyplot as plt
             plt.ioff()

@@ -85,17 +85,17 @@ class TestCoreAnalysis:
 
     def test_measured_power_curve(self):
         pc = self.analysis.allMeasuredPowerCurve
-        assert_almost_equal(pc.ratedPower, 2000., delta=self.tolerance)
-        assert_almost_equal(pc.firstWindSpeed, 3., delta=self.tolerance)
-        assert_almost_equal(pc.cutInWindSpeed, 3., delta=self.tolerance)
-        assert_almost_equal(pc.cutOutWindSpeed, 25., delta=self.tolerance)
+        assert_almost_equal(pc.rated_power, 2000., delta=self.tolerance)
+        assert_almost_equal(pc.first_wind_speed, 3., delta=self.tolerance)
+        assert_almost_equal(pc.cut_in_wind_speed, 3., delta=self.tolerance)
+        assert_almost_equal(pc.cut_out_wind_speed, 25., delta=self.tolerance)
         assert_almost_equal(pc.reference_density, 1.18833926364, delta=self.tolerance)
         assert_almost_equal(pc.rotor_geometry.diameter, 100., delta=self.tolerance)
-        assert_almost_equal(pc.rotor_geometry.hubHeight, 100., delta=self.tolerance)
+        assert_almost_equal(pc.rotor_geometry.hub_height, 100., delta=self.tolerance)
         assert_almost_equal(pc.rotor_geometry.radius, 50., delta=self.tolerance)
         assert_almost_equal(pc.rotor_geometry.area, np.pi * 50. ** 2., delta=self.tolerance)
-        assert_almost_equal(pc.rotor_geometry.lowerTip, 50., delta=self.tolerance)
-        assert_almost_equal(pc.rotor_geometry.upperTip, 150., delta=self.tolerance)
+        assert_almost_equal(pc.rotor_geometry.lower_tip, 50., delta=self.tolerance)
+        assert_almost_equal(pc.rotor_geometry.upper_tip, 150., delta=self.tolerance)
 
     def test_measured_power_curve_df(self):
         df = self.analysis.allMeasuredPowerCurve.data_frame.copy()
