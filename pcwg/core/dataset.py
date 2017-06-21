@@ -144,22 +144,13 @@ class LeastSquares(CalibrationBase):
 class SiteCalibrationCalculator:
 
     def __init__(self, directionBinColumn, valueColumn, calibrationSectorDataframe, actives = None, path = os.getcwd()):
-
         self.calibrationSectorDataframe = calibrationSectorDataframe
         self.valueColumn = valueColumn
         self.directionBinColumn = directionBinColumn
         self.path = path
-
         if actives != None:
-
-            activeSectors = []
-
-            for direction in actives:
-                if actives[direction]:
-                    activeSectors.append(int(direction))
-                    
+            activeSectors = [int(direction) for direction in actives if actives[direction]]                    
             self.calibrationSectorDataframe = self.calibrationSectorDataframe.loc[activeSectors,:]
- 
         self.calibrationSectorDataframe['SpeedUpAt10'] = (10*self.calibrationSectorDataframe['Slope'] + self.calibrationSectorDataframe['Offset'])/10.0
         self.IECLimitCalculator()
 
