@@ -17,6 +17,7 @@ import numpy as np
 from ..core.dataset import Dataset
 from ..core.analysis import Analysis
 from ..core.binning import Bins
+from ..core.binning import DirectionBins
 from ..core.power_deviation_matrix import NullDeviationMatrixDefinition
 
 from ..reporting.data_sharing_reports import PCWGShareXReport, PortfolioReport
@@ -295,17 +296,14 @@ class ShareAnalysisBase(Analysis):
 
         if self.hasDirection:
             self.pcwgDirectionBin = 'Wind Direction Bin Centre'
-            dir_bin_width = 10.
-            wdir_centre_first_bin = 0.
-            self.pcwgWindDirBins = Bins(wdir_centre_first_bin, dir_bin_width, 350.)
-            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection] - wdir_centre_first_bin) / dir_bin_width
-            self.dataFrame[self.pcwgDirectionBin] = np.round(self.dataFrame[self.pcwgDirectionBin], 0) * dir_bin_width + wdir_centre_first_bin
-            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.pcwgDirectionBin] + 360) % 360
+            self.pcwgWindDirBins = DirectionBins(36)
+            self.dataFrame[self.pcwgDirectionBin] = (self.dataFrame[self.windDirection]).map(self.pcwgWindDirBins.binCenter)
 
         self.pcwgFourCellMatrixGroup = 'PCWG Four Cell WS-TI Matrix Group'
 
         lower_turbulence = ShareAnalysisBase.pcwg_inner_ranges[self.inner_range_id]['LTI']
         upper_turbulence = ShareAnalysisBase.pcwg_inner_ranges[self.inner_range_id]['UTI']
+        mid_turbulence = 0.5 * (upper_turbulence)
 
         self.dataFrame[self.pcwgFourCellMatrixGroup] = np.nan
         filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= upper_turbulence)

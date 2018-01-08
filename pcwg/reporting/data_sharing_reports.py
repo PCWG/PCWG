@@ -530,18 +530,35 @@ class ScatterPlotSheet(object):
         except:
             Status.add('Could not delete folder %s' % (os.getcwd() + os.sep + plt_path), verbosity=2)
 
+class TimeSeriesSheet:
+
+    def __init__(self, analysis, sheet):
+        self.analysis = analysis
+        self.sheet = sheet
+
+    def write(self):
+        #pass
+        self.analysis.dataFrame.to_csv('share.csv')
+        #
+        #rows = len(self.analysis.dataFrame)
+        #column = 0
+        #
+        #for row in range(rows):
+        #    self.sheet.write(row, column, self.analysis.dataFrame.loc[row, column])
+
 class PCWGShareXReport(object):
 
     TEMPLATE_SHEET_MAP = {'Submission': 0,
                           'Meta Data': 1,
                           'Template': 2}
 
-    def __init__(self, analysis, version, output_fname, pcwg_inner_ranges, share_name):
+    def __init__(self, analysis, version, output_fname, pcwg_inner_ranges, share_name, export_time_series=True):
 
         template_path = PathBuilder.get_path('Share_X_template.xls')
 
         self.analysis = analysis
         self.sheet_map = {}
+        self.export_time_series = export_time_series
 
         if len(analysis.datasetConfigs) > 1:
             raise Exception("Analysis must contain one and only one dataset")
@@ -611,6 +628,9 @@ class PCWGShareXReport(object):
         MetaDataSheet(self.analysis, self.sheet_map["Meta Data"]).write()
         MetricsSheets(self.analysis, self.sheet_map).write()
         ScatterPlotSheet(self.analysis, self.workbook.add_sheet("Scatter")).write()
+
+        if self.export_time_series:
+            TimeSeriesSheet(self.analysis, self.workbook.add_sheet("TimeSeries")).write()
 
         self.export()        
             

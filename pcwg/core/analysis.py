@@ -273,7 +273,11 @@ class Analysis(object):
         Status.add("Zero TI Wind Speeds", verbosity=2)
         Status.add("Zero TI Rated Wind Speed: {0}".format(self.zero_ti_rated_wind_speed), verbosity=2)
         Status.add("Zero TI Cut-In Wind Speed: {0}".format(self.zero_to_cut_in_wind_speed), verbosity=2)
-        
+        Status.add("Zero TI Curve", verbosity=2)
+
+        for i in range(len(self.powerCurve.zeroTurbulencePowerCurve.wind_speeds)):
+            Status.add("{0} {1}".format(self.powerCurve.zeroTurbulencePowerCurve.wind_speeds[i], self.powerCurve.zeroTurbulencePowerCurve.powers[i]), verbosity=2)
+
         self.normalisedWS = 'Normalised Wind Speed'
 
         self.dataFrame.loc[:, self.normalisedWS] = (self.dataFrame.loc[:, self.baseline.wind_speed_column] - self.zero_to_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_to_cut_in_wind_speed)

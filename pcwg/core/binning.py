@@ -92,6 +92,23 @@ class Bins:
 
         return self.binCenterByIndex(index)
 
+
+class DirectionBins(Bins):
+
+    def __init__(self, number_of_bins):
+
+        bin_width = 360.0 / number_of_bins
+
+        Bins.__init__(self, 0.0, bin_width, numberOfBins=number_of_bins)
+
+    def binCenter(self, x):
+
+        center = Bins.binCenter(self, x)
+
+        center = (center + 360.0) % 360
+
+        return center
+
 class Aggregations:
 
     def __init__(self, minimumCount = 0):

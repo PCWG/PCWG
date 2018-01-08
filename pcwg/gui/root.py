@@ -116,6 +116,7 @@ class UserInterface:
 
         self.analysis = None
         self.analysisConfiguration = None
+        self.portfolioConfiguration = None
 
         self.root = tk.Tk()
         self.root.geometry("860x400")

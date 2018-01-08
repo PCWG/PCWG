@@ -413,13 +413,17 @@ class PowerCurve(object):
 
             reference_turbulence = self.reference_turbulence(wind_speed)
 
-            correction = (self.simulatedPower.power(wind_speed, turbulence)
-                          - self.simulatedPower.power(wind_speed, reference_turbulence))
+            simulated_power_site = self.simulatedPower.power(wind_speed, turbulence)
+            simulated_power_reference = self.simulatedPower.power(wind_speed, reference_turbulence)
 
-            power = reference_power + self.relaxation.relax(correction,
-                                                            wind_speed,
-                                                            reference_turbulence,
-                                                            turbulence)
+            correction = simulated_power_site - simulated_power_reference
+
+            relaxed_correction = self.relaxation.relax(correction,
+                                               wind_speed,
+                                               reference_turbulence,
+                                               turbulence)
+
+            power = reference_power + relaxed_correction
 
             if extra_turbulence_correction:
                 power *= self.calculate_extra_turbulence_correction(wind_speed,
@@ -592,6 +596,10 @@ class ZeroTurbulencePowerCurve(object):
         self.wind_speeds = reference_wind_speeds
         self.powers = []
 
+        self.min_wind_speed = None
+        self.last_wind_speed = None
+        self.last_power = None
+
         for i in range(len(self.wind_speeds)):
 
             correct_to_zero_turbulence = (-simulated_reference_power_curve.powers[i]
@@ -601,22 +609,24 @@ class ZeroTurbulencePowerCurve(object):
                                                            self.wind_speeds[i],
                                                            reference_turbulence_values[i],
                                                            0.0)
+            if reference_powers[i] > 0:
+                if self.last_wind_speed is None or self.wind_speeds[i] > self.last_wind_speed:
+                    self.last_wind_speed = self.wind_speeds[i]
+                    self.last_power = power
 
             self.powers.append(power)
 
         self.powerFunction = scipy.interpolate.interp1d(self.wind_speeds, self.powers)
         
         self.min_wind_speed = min(self.wind_speeds)
-        self.max_wind_speed = max(self.wind_speeds)
-        self.max_power = max(self.powers)
         self.df_power_levels = pd.DataFrame(self.powers, index=self.wind_speeds, columns=['Power'])
 
     def power(self, wind_speed):
         
-        if wind_speed <= self.min_wind_speed:
+        if wind_speed < self.min_wind_speed:
             return 0.0
-        elif wind_speed >= self.max_wind_speed:
-            return self.max_power
+        elif wind_speed > self.last_wind_speed:
+            return self.last_power
         else:
             return self.powerFunction(wind_speed)
 
