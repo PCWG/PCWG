@@ -1,6 +1,7 @@
 
 import base_configuration
 from ..core.status import Status
+import numpy as np
 
 class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
@@ -66,17 +67,19 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
 
                 value = self.getNodeFloat(cellNode, 'Value')
 
-                cellKeyList = []
+                if not np.isnan(value):
 
-                for i in range(len(self.dimensions)):
-                    dimension = self.dimensions[i]
-                    parameter = dimension.parameter
-                    binCenter = cellDimensions[parameter]
-                    cellKeyList.append(self.getBin(dimension, binCenter))
+                    cellKeyList = []
 
-                key = tuple(cellKeyList)
+                    for i in range(len(self.dimensions)):
+                        dimension = self.dimensions[i]
+                        parameter = dimension.parameter
+                        binCenter = cellDimensions[parameter]
+                        cellKeyList.append(self.getBin(dimension, binCenter))
 
-                self.cells[key] = value
+                    key = tuple(cellKeyList)
+
+                    self.cells[key] = value
 
         else:
 
@@ -144,6 +147,9 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
                     self.add_cells(doc, cells_node, dimensions, value, next_centers)
 
     def write_cell(self, doc, cells_node, dimensions, centers, value):
+
+        if np.isnan(value):
+            return
 
         cell_node = self.addNode(doc, cells_node, "Cell")
 
@@ -238,17 +244,7 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             self.value_not_found += 1
             self.in_range_unpopulated += 1
             
-            return self.outOfRangeValue        
-
-            #message = "Matrix value not found:\n"
-            #
-            #for dimension in self.dimensions:
-            #    value = parameters[dimension.parameter]
-            #    message += "%s: %f (%f) - (%f to %f)\n" % (dimension.parameter, value, self.getBin(dimension, value), dimension.centerOfFirstBin, dimension.centerOfLastBin)
-            #
-            #Status.add(message)
-            #
-            #raise Exception(message)
+            return self.outOfRangeValue
         
         return self.cells[key]
 
