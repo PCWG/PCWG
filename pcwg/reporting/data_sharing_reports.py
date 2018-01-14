@@ -5,7 +5,6 @@ from copy import deepcopy
 from datetime import datetime as dt
 from PIL import Image
 from shutil import rmtree
-import numpy as np
 import xlwt
 
 from plots import MatplotlibPlotter
@@ -563,8 +562,12 @@ class PCWGShareXReport(object):
         if len(analysis.datasetConfigs) > 1:
             raise Exception("Analysis must contain one and only one dataset")
 
+        Status.add("Loading template: {0}".format(template_path))
+
         rb = xlrd.open_workbook(template_path, formatting_info=True)
         wb = copy(rb)
+
+        Status.add("Setting up worksheets")
 
         self.map_sheet(wb, "Submission")
         self.map_sheet(wb, "Meta Data")
@@ -574,7 +577,9 @@ class PCWGShareXReport(object):
         for correction_name in analysis.corrections:
             correction = analysis.corrections[correction_name]
             self.add_template_sheet(wb, 'Template', correction.short_correction_name)
-        
+
+        Status.add("Deleting template worksheets")
+
         self.delete_template_sheet(wb, 'Template')
 
         self.workbook = wb
@@ -623,15 +628,24 @@ class PCWGShareXReport(object):
         return copied_sheet
 
     def report(self):
-        
+
+        Status.add("Adding submission sheet")
         SubmissionSheet(self.share_name, self.version, self.analysis, self.sheet_map["Submission"]).write()
+
+        Status.add("Adding meta data sheet")
         MetaDataSheet(self.analysis, self.sheet_map["Meta Data"]).write()
+
+        Status.add("Adding metrics sheets")
         MetricsSheets(self.analysis, self.sheet_map).write()
+
+        Status.add("Adding scatter plot sheets")
         ScatterPlotSheet(self.analysis, self.workbook.add_sheet("Scatter")).write()
 
         if self.export_time_series:
+            Status.add("Adding time series sheet")
             TimeSeriesSheet(self.analysis, self.workbook.add_sheet("TimeSeries")).write()
 
+        Status.add("Saving report")
         self.export()        
             
     def export(self):
