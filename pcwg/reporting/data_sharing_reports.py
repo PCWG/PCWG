@@ -571,12 +571,31 @@ class PCWGShareXReport(object):
 
         self.map_sheet(wb, "Submission")
         self.map_sheet(wb, "Meta Data")
-        
-        self.add_template_sheet(wb, 'Template', 'Baseline')
 
+        Status.add('Setting up baseline worksheet')
+        templates_to_finish = []
+        templates_to_finish.append(('Baseline', self.add_template_sheet(wb, 'Template')))
+
+        sheet_count = 1
         for correction_name in analysis.corrections:
             correction = analysis.corrections[correction_name]
-            self.add_template_sheet(wb, 'Template', correction.short_correction_name)
+            Status.add(
+                'Setting up correction sheet worksheet: {0} of {1}'.format(sheet_count, len(analysis.corrections)))
+            templates_to_finish.append((correction.short_correction_name, self.add_template_sheet(wb, 'Template')))
+            sheet_count += 1
+
+        # note: attaching copied sheets to workbook after they are all copied seems
+        # seems to manage memory better which avoids a memory error in deepcopy
+
+        Status.add('Finishing Template Sheets')
+        sheet_count = 1
+        for template_to_finish in templates_to_finish:
+            Status.add(
+                'Finishing Template Sheets: {0} of {1}'.format(sheet_count, len(analysis.corrections)))
+            wb._Workbook__worksheets.append(template_to_finish[1])
+            template_to_finish[1].set_name(template_to_finish[0])
+            self.sheet_map[template_to_finish[0]] = template_to_finish[1]
+            sheet_count += 1
 
         Status.add("Deleting template worksheets")
 
@@ -603,11 +622,11 @@ class PCWGShareXReport(object):
     def map_sheet(self, workbook, sheet_name):
         self.sheet_map[sheet_name] = workbook.get_sheet(PCWGShareXReport.TEMPLATE_SHEET_MAP[sheet_name])
 
-    def add_template_sheet(self, workbook, template_sheet_name, new_name):
-        sheet = self.copy_sheet(workbook, PCWGShareXReport.TEMPLATE_SHEET_MAP[template_sheet_name], new_name)
-        self.sheet_map[new_name] = sheet
+    def add_template_sheet(self, workbook, template_sheet_name):
+        return self.copy_sheet(workbook, PCWGShareXReport.TEMPLATE_SHEET_MAP[template_sheet_name])
 
-    def copy_sheet(self, workbook, source_index, new_name): 
+    def copy_sheet(self, workbook, source_index):
+
         '''
         workbook     == source + book in use 
         source_index == index of sheet you want to copy (0 start) 
@@ -616,15 +635,9 @@ class PCWGShareXReport(object):
         '''
 
         source_worksheet = workbook.get_sheet(source_index)
-        #wb_dump(workbook)
-        copied_sheet = deepcopy(source_worksheet) 
-        #copied_workbook = copied_sheet._Worksheet__parent
-        #wb_dump(copied_workbook)
-        workbook._Workbook__worksheets.append(copied_sheet)
-        copied_sheet.set_name(new_name)
-        #workbook._Workbook__sst = copied_workbook._Workbook__sst
-        #workbook._Workbook__styles = copied_workbook._Workbook__styles
-        #wb_dump(workbook)
+
+        copied_sheet = deepcopy(source_worksheet)
+
         return copied_sheet
 
     def report(self):
