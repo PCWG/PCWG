@@ -16,15 +16,13 @@ class FourCellRelaxationFactory(object):
         self.hws_lti = hws_lti
         self.hws_hti = hws_hti
         
-    def new_relaxation(self, power_function, lower_wind_speed, upper_wind_speed):
+    def new_relaxation(self, inflection_point):
                 
         return Relaxation(self.lws_lti,
                           self.lws_hti,
                           self.hws_lti,
                           self.hws_hti,
-                          power_function,
-                          lower_wind_speed,
-                          upper_wind_speed)
+                          inflection_point)
 
 
 class TwoCellRelaxationFactory(FourCellRelaxationFactory):
@@ -35,19 +33,16 @@ class TwoCellRelaxationFactory(FourCellRelaxationFactory):
                                            hws_lti=high_wind_speed,
                                            hws_hti=high_wind_speed)
 
-    def new_relaxation(self, power_function, lower_wind_speed, upper_wind_speed):
-        return Relaxation(self.lws_lti, self.lws_hti, self.hws_lti, self.hws_hti, power_function, lower_wind_speed,
-                          upper_wind_speed)
+    def new_relaxation(self, inflection_point):
+        return Relaxation(self.lws_lti, self.lws_hti, self.hws_lti, self.hws_hti, inflection_point)
 
 
 class NoRelaxationFactory(object):
 
-    def new_relaxation(self, power_function, lower_wind_speed, upper_wind_speed):
+    def new_relaxation(self, inflection_point):
 
         # suppress unused parameter message in PyCharm
-        _ = power_function
-        _ = lower_wind_speed
-        _ = upper_wind_speed
+        _ = inflection_point
 
         return NoRelaxation()
 
@@ -64,37 +59,20 @@ class NoRelaxation(object):
         return correction
 
 
-class Relaxation(object):
-    
-    def __init__(self, lws_lti, lws_hti, hws_lti, hws_hti, power_function, lower_wind_speed, upper_wind_speed):
-        
-        self.lws_lti = lws_lti
-        self.lws_hti = lws_hti
-        self.hws_lti = hws_lti
-        self.hws_hti = hws_hti
+class InflectionPoint:
 
-        self.inflection_point = self.calculate_inflection_point(power_function, lower_wind_speed, upper_wind_speed)
-        Status.add("Inflection point: {0}".format(self.inflection_point), verbosity=3)
+    def __init__(self, power_function, lower_wind_speed, upper_wind_speed, rated_power):
+        self.value = self.calculate(power_function, lower_wind_speed, upper_wind_speed, rated_power)
 
-    def relax(self, correction, wind_speed, reference_turbulence, target_turbulence):
-        
-        if target_turbulence > reference_turbulence:
-            if wind_speed > self.inflection_point:
-                return (1.0 - self.hws_hti) * correction
-            else:
-                return (1.0 - self.lws_hti) * correction
-        else:
-            if wind_speed > self.inflection_point:
-                return (1.0 - self.hws_lti) * correction
-            else:
-                return (1.0 - self.lws_lti) * correction
-                
-    def calculate_inflection_point(self, power_function, lower_wind_speed, upper_wind_speed):
+    def calculate(self, power_function, lower_wind_speed, upper_wind_speed, rated_power):
 
         derivative = None
         previous_derivative = None
-        wind_speed = lower_wind_speed
+        wind_speed = 0.0
         delta = 0.1
+
+        minimum_power = 0.25 * rated_power
+        maximum_power = 0.75 * rated_power
 
         Status.add("Determining Power Curve Inflection Point")
 
@@ -105,18 +83,23 @@ class Relaxation(object):
 
         while wind_speed < upper_wind_speed:
 
-            derivative = self.power_second_derivative(power_function, wind_speed, delta)
+            if wind_speed > lower_wind_speed:
 
-            Status.add("{0} {1}".format(wind_speed, derivative), verbosity=3)
+                power = power_function(wind_speed)
 
-            if previous_derivative is not None:
-                if abs(derivative) > 0.0 and abs(previous_derivative) > 0.0:
-                    if (derivative * previous_derivative) < 0.0:
-                        Status.add("Inflection point found: {0}".format(wind_speed))
-                        return wind_speed
-                                  
+                derivative = self.power_second_derivative(power_function, wind_speed, delta)
+
+                Status.add("{0} {1}".format(wind_speed, derivative), verbosity=3)
+
+                if minimum_power < power < maximum_power:
+                    if previous_derivative is not None:
+                        if abs(derivative) > 0.0 and abs(previous_derivative) > 0.0:
+                            if (derivative * previous_derivative) < 0.0:
+                                Status.add("Inflection point found: {0}".format(wind_speed))
+                                return wind_speed
+
             wind_speed += delta
-            previous_derivative = derivative    
+            previous_derivative = derivative
 
         raise Exception("Cannot calculate inflection point:\n"
                         "lower wind speed: {0}\n"
@@ -136,14 +119,41 @@ class Relaxation(object):
         return (derivative_p - derivative_m) / (wind_speed_p - wind_speed_m)
 
     def power_derivative(self, power_function, wind_speed, delta):
-        
-        wind_speed_m = wind_speed - delta        
-        wind_speed_p = wind_speed + delta        
+
+        wind_speed_m = wind_speed - delta
+        wind_speed_p = wind_speed + delta
 
         power_m = power_function(wind_speed_m)
         power_p = power_function(wind_speed_p)
-        
+
         return (power_p - power_m) / (wind_speed_p - wind_speed_m)
+
+
+class Relaxation(object):
+    
+    def __init__(self, lws_lti, lws_hti, hws_lti, hws_hti, inflection_point):
+        
+        self.lws_lti = lws_lti
+        self.lws_hti = lws_hti
+        self.hws_lti = hws_lti
+        self.hws_hti = hws_hti
+
+        self.inflection_point = inflection_point
+        Status.add("Inflection point: {0}".format(self.inflection_point), verbosity=3)
+
+    def relax(self, correction, wind_speed, reference_turbulence, target_turbulence):
+        
+        if target_turbulence > reference_turbulence:
+            if wind_speed > self.inflection_point:
+                return (1.0 - self.hws_hti) * correction
+            else:
+                return (1.0 - self.lws_hti) * correction
+        else:
+            if wind_speed > self.inflection_point:
+                return (1.0 - self.hws_lti) * correction
+            else:
+                return (1.0 - self.lws_lti) * correction
+                
 
 
 class PowerCurve(object):
@@ -206,6 +216,11 @@ class PowerCurve(object):
 
         self.rated_power = self.get_rated_power(rated_power, data_frame[self.power_column])
 
+        self.inflection_point = InflectionPoint(self.power_function,
+                                                self.cut_in_wind_speed,
+                                                self.cut_out_wind_speed,
+                                                self.rated_power).value
+
         self.set_relaxation_factory(relaxation_factory)
 
         self.zero_ti_pc_required = zero_ti_pc_required
@@ -241,9 +256,7 @@ class PowerCurve(object):
 
         self.relaxation_factory = relaxation_factory
 
-        self.relaxation = self.relaxation_factory.new_relaxation(self.power_function,
-                                                                 self.cut_in_wind_speed,
-                                                                 self.cut_out_wind_speed)
+        self.relaxation = self.relaxation_factory.new_relaxation(self.inflection_point)
 
     def update_zero_ti(self, relaxation_factory=None):
 
@@ -315,7 +328,7 @@ class PowerCurve(object):
                                                                  self.available_power,
                                                                  self.reference_density,
                                                                  self.relaxation)
-                                                                 
+
         self.simulatedPower = SimulatedPower(self.zeroTurbulencePowerCurve, integration_range)
 
     def get_rated_power(self, rated_power, power_curve_levels):
@@ -432,13 +445,12 @@ class PowerCurve(object):
 
         power = max([0.0, power])
         power = min([self.rated_power, power])
+
         return power
 
     def calculate_extra_turbulence_correction(self, wind_speed, turbulence, reference_turbulence):
 
-        saddle = 9.0
-
-        xprime = saddle - wind_speed
+        xprime = self.inflection_point - wind_speed
         tprime = (reference_turbulence - turbulence) / reference_turbulence
 
         if xprime < 0.0 or tprime < 0.0:
@@ -447,9 +459,7 @@ class PowerCurve(object):
         a = -0.02 * math.tanh(2.0 * tprime)
         b = -0.03 * (math.exp(1.5 * tprime) - 1.0)
 
-        loss = a * xprime + b
-        
-        return 1 + loss
+        return 1.0 + a * xprime + b
 
     def reference_turbulence(self, wind_speed):
         if wind_speed < self.first_wind_speed:
