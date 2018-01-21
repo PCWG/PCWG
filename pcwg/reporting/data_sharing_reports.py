@@ -551,7 +551,7 @@ class PCWGShareXReport(object):
                           'Meta Data': 1,
                           'Template': 2}
 
-    def __init__(self, analysis, version, output_fname, pcwg_inner_ranges, share_name, export_time_series=True):
+    def __init__(self, analysis, version, output_fname, pcwg_inner_ranges, share_name, export_time_series=False):
 
         template_path = PathBuilder.get_path('Share_X_template.xls')
 

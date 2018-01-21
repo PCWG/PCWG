@@ -19,6 +19,7 @@ from ..update import update
 
 from ..share.share import ShareXPortfolio
 from ..share.share_factory import ShareAnalysisFactory
+from ..share.share_matrix import ShareMatrix
 
 from ..core import benchmark
 from ..core import analysis as core_analysis
@@ -39,6 +40,7 @@ import portfolio
 from preferences import PreferencesDialog
 from visualisation import VisualisationDialogFactory
 
+
 class ExportDataSetDialog(base_dialog.BaseDialog):
 
     def __init__(self, master):
@@ -50,7 +52,7 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
 
     def validate(self):
 
-        valid = any(self.getSelections())
+        valid = any(self.get_selections())
 
         if valid:
             return 1
@@ -72,13 +74,13 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
 
         self.row += 1
 
-        cleanDataset = self.cleanDataset
+        clean_dataset = self.cleanDataset
         allDatasets = self.allDatasets
         calibrationDatasets = self.calibrationDatasets
 
         self.cleanDataset = self.addCheckBox(master,
                                              "Clean Combined Dataset:",
-                                             cleanDataset)
+                                             clean_dataset)
 
         spacer = tk.Label(master, text="Extra Time Series:")
 
@@ -96,7 +98,7 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
                                                     "    Calibration Datasets:",
                                                     calibrationDatasets)
 
-    def getSelections(self):
+    def get_selections(self):
 
         return (bool(self.cleanDataset.get()),
                 bool(self.allDatasets.get()),
@@ -104,7 +106,7 @@ class ExportDataSetDialog(base_dialog.BaseDialog):
 
     def apply(self):
 
-        return self.getSelections()
+        return self.get_selections()
 
         
 class UserInterface:
@@ -129,11 +131,11 @@ class UserInterface:
             
         self.verbosity = Preferences.get().verbosity
 
-        consoleframe = tk.Frame(self.root)
-        commandframe = tk.Frame(self.root)
+        console_frame = tk.Frame(self.root)
+        command_frame = tk.Frame(self.root)
 
         # analyse
-        analyse_group = tk.LabelFrame(commandframe,
+        analyse_group = tk.LabelFrame(command_frame,
                                       text="Analysis",
                                       padx=5,
                                       pady=5)
@@ -180,15 +182,15 @@ class UserInterface:
         self.visualisation = tk.StringVar(analyse_group_top, "Power Curve")
 
         visualisation_options = ['Power Curve',
-                                  'Turbulence by Direction',
-                                  'Turbulence by Speed', 
-                                  'Turbulence by Shear', 
-                                  'Shear by Direction', 
-                                  'Shear by Speed',
-                                  'Power Coefficient by Speed']
+                                 'Turbulence by Direction',
+                                 'Turbulence by Speed',
+                                 'Turbulence by Shear',
+                                 'Shear by Direction',
+                                 'Shear by Speed',
+                                 'Power Coefficient by Speed']
 
-        self.visualation_menu = apply(tk.OptionMenu, (analyse_group_top, self.visualisation) + tuple(visualisation_options))
-
+        self.visualation_menu = apply(tk.OptionMenu, (analyse_group_top, self.visualisation)
+                                      + tuple(visualisation_options))
 
         load_button.pack(side=tk.RIGHT, padx=5, pady=5)
         edit_button.pack(side=tk.RIGHT, padx=5, pady=5)
@@ -230,7 +232,7 @@ class UserInterface:
                            expand=1)
 
         # portfolio
-        portfolio_group = tk.LabelFrame(commandframe,
+        portfolio_group = tk.LabelFrame(command_frame,
                                         text="PCWG-Share-X",
                                         padx=5,
                                         pady=5)
@@ -259,6 +261,12 @@ class UserInterface:
         run_portfolio_button = tk.Button(portfolio_group_top,
                                          text="PCWG-Share-3.0",
                                          command=self.PCWG_Share_3_Portfolio)
+
+        run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        run_portfolio_button = tk.Button(portfolio_group_top,
+                                         text="Share Matrix",
+                                         command=self.Share_Matrix)
 
         run_portfolio_button.pack(side=tk.LEFT, padx=5, pady=5)
 
@@ -320,7 +328,7 @@ class UserInterface:
                              expand=1)
 
         # misc
-        misc_group = tk.LabelFrame(commandframe,
+        misc_group = tk.LabelFrame(command_frame,
                                    text="Miscellaneous",
                                    padx=5,
                                    pady=5)
@@ -355,10 +363,10 @@ class UserInterface:
         misc_group.pack(side=tk.RIGHT, padx=10, pady=5)
 
         # console
-        scrollbar = tk.Scrollbar(consoleframe,
+        scrollbar = tk.Scrollbar(console_frame,
                                  orient=tk.VERTICAL)
 
-        self.listbox = tk.Listbox(consoleframe,
+        self.listbox = tk.Listbox(console_frame,
                                   yscrollcommand=scrollbar.set,
                                   selectmode=tk.EXTENDED)
 
@@ -367,12 +375,12 @@ class UserInterface:
         self.listbox.grid(column=0, row=0, sticky='nsew')
         scrollbar.grid(column=1, row=0, sticky='ns')
 
-        consoleframe.grid_columnconfigure(0, weight=1)
-        consoleframe.grid_columnconfigure(1, weight=0)
-        consoleframe.grid_rowconfigure(0, weight=1)
+        console_frame.grid_columnconfigure(0, weight=1)
+        console_frame.grid_columnconfigure(1, weight=0)
+        console_frame.grid_rowconfigure(0, weight=1)
 
-        commandframe.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
-        consoleframe.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+        command_frame.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+        console_frame.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
 
         self.root.grid_columnconfigure(0, weight=1)
         self.root.grid_rowconfigure(0, weight=0)
@@ -691,6 +699,15 @@ class UserInterface:
 
                 ExceptionHandler.add(e, "ERROR Visualising")
 
+    def Share_Matrix(self):
+
+        try:
+
+            ShareMatrix(self.portfolioConfiguration)
+
+        except ExceptionHandler.ExceptionType as e:
+
+            ExceptionHandler.add(e)
 
     def PCWG_Share_X_Portfolio(self, share_name):
 
@@ -781,7 +798,7 @@ class UserInterface:
 
             preferences = Preferences.get()
             selections = ExportDataSetDialog(self.root)
-            clean, full, calibration = selections.getSelections()
+            clean, full, calibration = selections.get_selections()
 
             file_name = tkFileDialog.asksaveasfilename(parent=self.root,
                                                        defaultextension=".csv",

@@ -29,7 +29,7 @@ class BaseInterpolator(object):
                 
         return (xNew, yNew)
     
-class MarmanderPowerCurveInterpolator(BaseInterpolator):
+class MarmanderPowerCurveInterpolatorBase(BaseInterpolator):
 
     PostCutOutStep = 0.01
     ConvergenceConstant = 1.0
@@ -281,7 +281,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                     rated_new.append(True)
                     operating_new.append(True)
 
-                xnew.append(cutOutWindSpeed + MarmanderPowerCurveInterpolator.PostCutOutStep)
+                xnew.append(cutOutWindSpeed + MarmanderPowerCurveInterpolatorBase.PostCutOutStep)
                 ynew.append(0.0)
                 rated_new.append(False)
                 operating_new.append(False)
@@ -366,7 +366,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
         if adjustedBinPowers == None:
             adjustedBinPowers = binAverages
 
-        f = CubicHermitePowerCurveInterpolator(binCenters, adjustedBinPowers, self.cutOutWindSpeed)
+        f = self.new_interpolator(binCenters, adjustedBinPowers, self.cutOutWindSpeed)
 
         intergatedPowers = []
         errors = []
@@ -384,7 +384,7 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
                 
                 error = intergatedPower - binAverages[i]
 
-                nextPower = adjustedBinPowers[i] - MarmanderPowerCurveInterpolator.ConvergenceConstant * error
+                nextPower = adjustedBinPowers[i] - MarmanderPowerCurveInterpolatorBase.ConvergenceConstant * error
                 
                 nextPowers.append(nextPower)
 
@@ -404,9 +404,9 @@ class MarmanderPowerCurveInterpolator(BaseInterpolator):
 
         Status.add("Iteration: {0} {1}".format(iteration, rmse), verbosity=3)
         
-        if rmse > MarmanderPowerCurveInterpolator.Tolerance:
+        if rmse > MarmanderPowerCurveInterpolatorBase.Tolerance:
 
-            if iteration > MarmanderPowerCurveInterpolator.MaximumNumberOfIterations:
+            if iteration > MarmanderPowerCurveInterpolatorBase.MaximumNumberOfIterations:
 
                 self.debugText = "Maximum number of iterations exceeded\n"
                 self.debugText += self.prepareDebugText(binCenters, binLimits,binAverages, adjustedBinPowers, adjust, intergatedPowers, errors, f)
@@ -516,7 +516,19 @@ class MarmanderLimitPartition:
     def normalise(self, total_weight):
         if total_weight > 0:
             self.weight /= total_weight
-        
+
+
+class MarmanderPowerCurveInterpolatorCubicSpline(MarmanderPowerCurveInterpolatorBase):
+
+    def new_interpolator(self, binCenters, adjustedBinPowers, cutOutWindSpeed):
+        return CubicSplinePowerCurveInterpolator(binCenters, adjustedBinPowers, cutOutWindSpeed)
+
+
+class MarmanderPowerCurveInterpolatorHermite(MarmanderPowerCurveInterpolatorBase):
+
+    def new_interpolator(self, binCenters, adjustedBinPowers, cutOutWindSpeed):
+        return CubicHermitePowerCurveInterpolator(binCenters, adjustedBinPowers, cutOutWindSpeed)
+
 class MarmanderLimit:
     
     def __init__(self, start, end, sub_power = None):
@@ -618,4 +630,28 @@ class LinearTurbulenceInterpolator:
 
     def __call__(self, x):
         return float(self.interpolator(x))
-    
+
+class CubicSplinePowerCurveInterpolator(BaseInterpolator):
+
+    def __init__(self, x, y, cutOutWindSpeed):
+
+        self.cubicInterpolator = interpolate.interp1d(x, y, kind='cubic', fill_value=0.0, bounds_error=False)
+        self.linearInterpolator = interpolate.interp1d(x, y, kind='linear', fill_value=0.0, bounds_error=False)
+        self.cutOutWindSpeed = cutOutWindSpeed
+
+        highestNonZero = 0.0
+        self.lastCubicWindSpeed = 0.0
+
+        for i in range(len(x)):
+            if y[i] > 0 and x[i] > highestNonZero:
+                self.lastCubicWindSpeed = x[i - 3]
+                highestNonZero = x[i]
+
+    def __call__(self, x):
+        if x > self.cutOutWindSpeed:
+            return 0.0
+        else:
+            if x > self.lastCubicWindSpeed:
+                return float(self.linearInterpolator(x))
+            else:
+                return float(self.cubicInterpolator(x))

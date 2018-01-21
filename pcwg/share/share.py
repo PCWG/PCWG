@@ -463,7 +463,7 @@ class ShareAnalysisBase(Analysis):
         agg.loc[:, (candidate_error, 'NME')] = nme
         agg.loc[:, (candidate_error, 'NMAE')] = nmae
 
-        return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis = 1).rename(columns = {'count': self.dataCount})
+        return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis= 1).rename(columns = {'count': self.dataCount})
     
     def calculate_pcwg_error_metric(self, candidate_error):
         
@@ -550,7 +550,17 @@ class ShareXPortfolio(object):
         self.calculate()
 
     def new_share(self, dataset, output_zip):
-        return PcwgShareX(dataset, output_zip = output_zip, share_factory = self.share_factory)
+        return PcwgShareX(dataset, output_zip = output_zip, share_factory=self.share_factory)
+
+    def output_paths_status(self, zip_file, summary_file):
+        Status.add("Detailed results will be stored in: {0}".format(zip_file))
+        Status.add("Summary results will be stored in: {0}".format(summary_file))
+
+    def get_summary_file_path(self):
+        return "{0} ({1}).xls".format(self.results_base_path, self.share_name)
+
+    def get_zip_file_path(self):
+        return "{0} ({1}).zip".format(self.results_base_path, self.share_name)
 
     def calculate(self):
 
@@ -558,8 +568,8 @@ class ShareXPortfolio(object):
         Status.add("Running portfolio: {0}".format(self.portfolio_path))
         self.shares = []
         
-        zip_file = "{0} ({1}).zip".format(self.results_base_path, self.share_name)
-        summary_file = "{0} ({1}).xls".format(self.results_base_path, self.share_name)
+        zip_file = self.get_zip_file_path()
+        summary_file = self.get_summary_file_path()
         
         if os.path.exists(zip_file):
             os.remove(zip_file)
@@ -567,8 +577,7 @@ class ShareXPortfolio(object):
         if os.path.exists(summary_file):
             os.remove(summary_file)
             
-        Status.add("Detailed results will be stored in: {0}".format(zip_file))
-        Status.add("Summary results will be stored in: {0}".format(summary_file))
+        self.output_paths_status(zip_file, summary_file)
 
         Status.set_portfolio_status(0, len(self.portfolio.datasets), False)
 
@@ -582,7 +591,7 @@ class ShareXPortfolio(object):
                 
                 Status.add("Verifying dataset {0}".format(dataset.name))
                 
-                if self.verify_share_configs(dataset) == False:
+                if not self.verify_share_configs(dataset):
 
                     Status.add("Dataset Verification Failed for {0}".format(dataset.name), red=True)
                     
@@ -603,6 +612,8 @@ class ShareXPortfolio(object):
 
             self.report_summary(summary_file, output_zip)
 
+        self.clean_up(zip_file)
+
         Status.set_portfolio_status(len(self.shares), len(self.portfolio.datasets), True)
 
         end_time = datetime.datetime.now()
@@ -611,6 +622,9 @@ class ShareXPortfolio(object):
         time_message = "Time taken: {0}".format((end_time - start_time).total_seconds())
         print(time_message)
         Status.add(time_message)
+
+    def clear_up(self):
+        pass
 
     def verify_share_configs(self, config):
         
@@ -704,6 +718,3 @@ class ShareXPortfolio(object):
 
         Status.add("Deleting {0}".format(summary_file_for_zip))
         os.remove(summary_file_for_zip)
-
-
-   

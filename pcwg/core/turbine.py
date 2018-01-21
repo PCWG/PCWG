@@ -409,8 +409,12 @@ class PowerCurve(object):
             return interpolators.CubicSplinePowerCurveInterpolator(x, y, self.cut_out_wind_speed)
         elif self.interpolation_mode == 'Cubic Hermite':
             return interpolators.CubicHermitePowerCurveInterpolator(x, y, self.cut_out_wind_speed)
-        elif self.interpolation_mode == 'Marmander':
-            return interpolators.MarmanderPowerCurveInterpolator(x, y, self.cut_out_wind_speed,
+        elif self.interpolation_mode == 'Marmander' or self.interpolation_mode == 'Marmander (Cubic Spline)':
+            return interpolators.MarmanderPowerCurveInterpolatorCubicSpline(x, y, self.cut_out_wind_speed,
+                                                                 x_limits=self.x_limits,
+                                                                 sub_power=self.sub_power)
+        elif self.interpolation_mode == 'Marmander (Cubic Hermite)':
+            return interpolators.MarmanderPowerCurveInterpolatorCubicHermite(x, y, self.cut_out_wind_speed,
                                                                  x_limits=self.x_limits,
                                                                  sub_power=self.sub_power)
         else:

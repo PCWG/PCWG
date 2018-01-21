@@ -2,7 +2,7 @@ from share1 import ShareAnalysis1
 from share1_dot_1 import ShareAnalysis1Dot1
 from share2 import ShareAnalysis2
 from share3 import ShareAnalysis3
-
+from share_matrix import ShareMatrix
 
 class ShareAnalysisFactory(object):
 
@@ -20,5 +20,7 @@ class ShareAnalysisFactory(object):
             return ShareAnalysis2(dataset)
         elif self.share_name == "Share03":
             return ShareAnalysis3(dataset)
+        elif self.share_name == "ShareMatrix":
+            return ShareMatrix(dataset)
         else:
             raise Exception("Unexpected share: {0}".format(self.share_name))
