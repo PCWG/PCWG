@@ -524,7 +524,7 @@ class MarmanderPowerCurveInterpolatorCubicSpline(MarmanderPowerCurveInterpolator
         return CubicSplinePowerCurveInterpolator(binCenters, adjustedBinPowers, cutOutWindSpeed)
 
 
-class MarmanderPowerCurveInterpolatorHermite(MarmanderPowerCurveInterpolatorBase):
+class MarmanderPowerCurveInterpolatorCubicHermite(MarmanderPowerCurveInterpolatorBase):
 
     def new_interpolator(self, binCenters, adjustedBinPowers, cutOutWindSpeed):
         return CubicHermitePowerCurveInterpolator(binCenters, adjustedBinPowers, cutOutWindSpeed)

@@ -59,9 +59,12 @@ class RewsDeviationMatrixDefinition(DeviationMatrixDefinition):
 
 
 class NullDeviationMatrixDefinition(object):
+
     def new_deviation_matrix(self, data_frame, actual_column, modelled_column):
         return None
 
+    def create_bins(self, data_frame):
+        pass
 
 class BaseDeviationMatrix(object):
     TOLERANCE = 0.00000000001
@@ -229,6 +232,7 @@ class ResidualWindSpeedMatrix(AverageOfDeviationsMatrix):
 
 
 class PowerDeviationMatrixDimension(object):
+
     def __init__(self,
                  parameter,
                  centerOfFirstBin,

@@ -4,6 +4,7 @@ from share2 import ShareAnalysis2
 from share3 import ShareAnalysis3
 from share_matrix import ShareMatrix
 
+
 class ShareAnalysisFactory(object):
 
     def __init__(self, share_name):
@@ -20,7 +21,5 @@ class ShareAnalysisFactory(object):
             return ShareAnalysis2(dataset)
         elif self.share_name == "Share03":
             return ShareAnalysis3(dataset)
-        elif self.share_name == "ShareMatrix":
-            return ShareMatrix(dataset)
         else:
             raise Exception("Unexpected share: {0}".format(self.share_name))

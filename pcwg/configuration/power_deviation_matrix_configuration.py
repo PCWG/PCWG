@@ -248,6 +248,7 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
         
         return self.cells[key]
 
+
 class PowerDeviationMatrixDimension(object):
 
     def __init__(self, parameter='Normalised Hub Wind Speed', index=1, centerOfFirstBin=None, binWidth=None, numberOfBins=None):
