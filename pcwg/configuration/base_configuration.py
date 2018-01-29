@@ -13,6 +13,7 @@ from ..core.status import Status
 
 isoDateFormat = "%Y-%m-%dT%H:%M:00"
 
+
 class XmlBase(object):
 
     def readDoc(self, path):
@@ -45,6 +46,12 @@ class XmlBase(object):
 
     def getNodeDate(self, node, query):
         return dateutil.parser.parse(self.getNodeValue(node, query))
+
+    def getAttributeBoolIfExists(self, node, attribute_name, value_not_exists):
+        if attribute_name in node.attributes.keys():
+            return node.attributes[attribute_name] == "1"
+        else:
+            return value_not_exists
 
     def getNodeBool(self, node, query):
         return self.getNodeValue(node, query) == "1"

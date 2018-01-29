@@ -8,24 +8,24 @@ Created on Thu Aug 11 05:33:20 2016
 import base_configuration
 import path_manager
 
+
 class PortfolioConfiguration(base_configuration.XmlBase):
 
-    def __init__(self, path = None):
+    def __init__(self, path=None):
 
-        #todo include meta data
-
+        self.actives = {}
         self.datasets = path_manager.PathManager()
         
         self.path = path
         
-        if path != None:
+        if path is not None:
             
             doc = self.readDoc(path)
 
-            portfolioNode = self.getNode(doc, 'Portfolio')
-            self.description = self.getNodeValueIfExists(portfolioNode, 'Description', None)
+            portfolio_node = self.getNode(doc, 'Portfolio')
+            self.description = self.getNodeValueIfExists(portfolio_node, 'Description', None)
 
-            self.readDatasets(portfolioNode)
+            self.read_datasets(portfolio_node)
             
             self.isNew = False
             
@@ -43,17 +43,28 @@ class PortfolioConfiguration(base_configuration.XmlBase):
         self._path = value
         self.datasets.set_base(self._path)
 
-    def readDatasets(self, portfolioNode):
+    def get_active_datasets(self):
 
-        self.read_datasets_from_node(portfolioNode)
+        print self.actives
+        datasets = []
+
+        for dataset in self.datasets:
+            if self.actives[dataset.absolute_path]:
+                datasets.append(dataset)
+
+        return datasets
+
+    def read_datasets(self, portfolio_node):
+
+        self.read_datasets_from_node(portfolio_node)
         
-        if self.nodeExists(portfolioNode, 'Datasets'):
-            self.read_datasets_from_node(self.getNode(portfolioNode, 'Datasets'))
+        if self.nodeExists(portfolio_node, 'Datasets'):
+            self.read_datasets_from_node(self.getNode(portfolio_node, 'Datasets'))
         
-        #backwards compatibility
-        if self.nodeExists(portfolioNode, 'PortfolioItems'):
-            itemsNode = self.getNode(portfolioNode, 'PortfolioItems')
-            for itemNode in self.getNodes(itemsNode, 'PortfolioItem'):        
+        # backwards compatibility
+        if self.nodeExists(portfolio_node, 'PortfolioItems'):
+            items_node = self.getNode(portfolio_node, 'PortfolioItems')
+            for itemNode in self.getNodes(items_node, 'PortfolioItem'):
                 self.read_datasets_from_node(itemNode)
                            
     def read_datasets_from_node(self, parent_node):
@@ -68,7 +79,8 @@ class PortfolioConfiguration(base_configuration.XmlBase):
             dataset_path = self.getValue(datasetNode)
             
             if not self.datasets.contains(dataset_path):
-                self.datasets.append_relative(dataset_path)
+                dataset = self.datasets.append_relative(dataset_path)
+                self.actives[dataset.absolute_path] = self.getAttributeBoolIfExists(datasetNode, "active", True)
 
     def save(self):
 
@@ -77,11 +89,9 @@ class PortfolioConfiguration(base_configuration.XmlBase):
 
         self.addTextNode(doc, root, "Description", self.description)
         
-        datasetsNode = self.addNode(doc, root, "Datasets")
+        datasets_node = self.addNode(doc, root, "Datasets")
         
         for dataset in self.datasets:
-            self.addTextNode(doc, datasetsNode, "Dataset", dataset.relative_path) 
+            self.addTextNode(doc, datasets_node, "Dataset", dataset.relative_path)
             
         self.saveDocument(doc, self.path)
-        
-        

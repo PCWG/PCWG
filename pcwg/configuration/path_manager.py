@@ -110,7 +110,7 @@ class PathManager(list):
         
         absolute_path = os.path.normpath(os.path.join(self.base_folder, relative_path))
         
-        self.append_absolute(absolute_path)
+        return self.append_absolute(absolute_path)
         
     def append_absolute(self, absolute_path):
         managed_path = ManagedPath(self, absolute_path)

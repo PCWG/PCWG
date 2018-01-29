@@ -34,6 +34,7 @@ class PowerDeviationMatrixSheet:
 
         else:
 
+            powerDeviations.deviation_matrix.to_csv('debug.dat')
             top_dimension = self.calculated_power_deviation_matrix_dimensions[0]
 
             for i in range(top_dimension.bins.numberOfBins):
@@ -167,13 +168,32 @@ class PowerDeviationMatrixSheet:
 
                 if pdm_slice is not None:
 
-                    if first_value in pdm_slice:
-                        if second_value in pdm_slice[first_value]:
+                    #first_value_key = self.find_match(pdm_slice.index.levels[0], first_value)
+                    #second_value_key = self.find_match(pdm_slice.index.levels[1], second_value)
+                    first_value_key = first_value
+                    second_value_key = second_value
 
-                            deviation = pdm_slice[first_value][second_value]
-                            count = int(count_slice[first_value][second_value])
+                    if first_value_key in pdm_slice:
+
+                        if second_value_key in pdm_slice[first_value_key]:
+
+                            sub_slice = pdm_slice[first_value_key]
+                            sub_slice_count = count_slice[first_value_key]
+
+                            deviation = sub_slice[second_value_key]
+                            count = int(sub_slice_count[second_value_key])
 
                             sh.write(row + row_offset, col + count_col_offset, count)
 
                             if not np.isnan(deviation):
                                 sh.write(row + row_offset, col, deviation, gradient.getStyle(deviation))
+
+    def find_match(self, index, value):
+
+        tolerance = 0.0001
+
+        for index_value in index:
+            if abs(index_value - value) < tolerance:
+                return index_value
+
+        return None

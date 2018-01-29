@@ -121,7 +121,15 @@ class UserInterface:
         self.portfolioConfiguration = None
 
         self.root = tk.Tk()
-        self.root.geometry("860x400")
+
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        if screen_width > 1100 and screen_height > 500:
+            self.root.geometry("1100x500")
+        else:
+            self.root.geometry("860x400")
+
         self.root.title("PCWG")
         
         try:

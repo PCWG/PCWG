@@ -106,6 +106,9 @@ class ShareAnalysisBase(Analysis):
 
         self.innerMeasuredPowerCurve = self.calculate_inner_measured_power_curve()
 
+    def get_inner_ranges(self):
+        return ShareAnalysisBase.pcwg_inner_ranges
+
     def calculate_best_inner_range(self):
 
         successes = 0
@@ -114,7 +117,7 @@ class ShareAnalysisBase(Analysis):
         max_complete_range_id = None
         max_complete_power_curve = None
 
-        for inner_range_id in sorted(ShareAnalysisBase.pcwg_inner_ranges):
+        for inner_range_id in sorted(self.get_inner_ranges()):
             
             power_curve, success, complete_bins = self.attempt_power_curve_calculation(inner_range_id)
             
@@ -579,11 +582,13 @@ class ShareXPortfolio(object):
             
         self.output_paths_status(zip_file, summary_file)
 
-        Status.set_portfolio_status(0, len(self.portfolio.datasets), False)
+        active_datasets = self.portfolio.get_active_datasets()
+
+        Status.set_portfolio_status(0, len(active_datasets), False)
 
         with zipfile.ZipFile(zip_file, 'w') as output_zip:
 
-            for index, item in enumerate(self.portfolio.datasets):
+            for index, item in enumerate(active_datasets):
 
                 Status.add("Loading dataset {0}".format(index + 1)) 
                 dataset = DatasetConfiguration(item.absolute_path)                
@@ -605,7 +610,7 @@ class ShareXPortfolio(object):
                     if share.success:
                         self.shares.append(share)
 
-                Status.set_portfolio_status(index + 1, len(self.portfolio.datasets), False)
+                Status.set_portfolio_status(index + 1, len(active_datasets), False)
 
             if len(self.shares) < 1:
                 Status.add("No successful results to summarise")
@@ -614,7 +619,7 @@ class ShareXPortfolio(object):
 
         self.clean_up(zip_file)
 
-        Status.set_portfolio_status(len(self.shares), len(self.portfolio.datasets), True)
+        Status.set_portfolio_status(len(self.shares), len(active_datasets), True)
 
         end_time = datetime.datetime.now()
         Status.add("Portfolio Run Complete")
