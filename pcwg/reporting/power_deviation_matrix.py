@@ -34,7 +34,6 @@ class PowerDeviationMatrixSheet:
 
         else:
 
-            powerDeviations.deviation_matrix.to_csv('debug.dat')
             top_dimension = self.calculated_power_deviation_matrix_dimensions[0]
 
             for i in range(top_dimension.bins.numberOfBins):

@@ -150,9 +150,6 @@ class ShareMatrix(ShareXPortfolio):
         Status.add("Exporting excel results to {0}".format(summary_file))
         report = report_constructor()
 
-        #post_processed.average_of_matrices_matrix.deviation_matrix.to_csv('debug1.dat')
-        #post_processed.average_of_matrices_matrix.count_matrix.to_csv('debug1c.dat')
-
         report.report(post_processed.bins,
                       post_processed.shares,
                       post_processed.average_of_matrices_matrix,
@@ -244,8 +241,8 @@ class ShareAnalysisMatrix(ShareAnalysisBase):
 
     def share_power_deviation_matrix_dimensions_three_dimensional(self):
 
-        dimensions = self.share_power_deviation_matrix_dimensions_two_dimensional()
-
-        dimensions.append((PowerDeviationMatrixDimension("Rotor Wind Speed Ratio", 3, -1, 0.1, 2)))
-
-        return dimensions
+        return [
+                PowerDeviationMatrixDimension("Rotor Wind Speed Ratio", 3, -1, 0.1, 31),
+                PowerDeviationMatrixDimension("Normalised Wind Speed", 1, 0.1, 0.1, 20),
+                PowerDeviationMatrixDimension("Hub Turbulence", 2, 0.01, 0.01, 30)
+               ]

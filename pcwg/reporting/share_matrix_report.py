@@ -84,7 +84,8 @@ class ShareMatrixReport2D(object):
     def get_deviations(self, analysis):
         return analysis.baseline_power_deviations
 
-class ShareMatrixReport3D(object):
+
+class ShareMatrixReport3D(ShareMatrixReport2D):
 
     def get_deviations(self, analysis):
-        return analysis.baseline_power_deviations
+        return analysis.baseline_power_deviations_3D
