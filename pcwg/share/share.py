@@ -77,9 +77,6 @@ class ShareAnalysisBase(Analysis):
         self.dataset_configuration_unique_id = self.hash_file_contents(dataset_config.path)
         self.dataset_time_series_unique_id = self.hash_file_contents(dataset_config.input_time_series.absolute_path)
 
-    def calculate_REWS_deviation_matrix(self):
-        pass
-
     def calculate_measured_turbulence_power(self):
         pass
 
@@ -189,15 +186,17 @@ class ShareAnalysisBase(Analysis):
 
                 return None, False, complete_bins
             
-            Status.add("Power Curve success using Inner Range definition {0} ({1} complete bins).".format(inner_range_id, complete_bins))
+            Status.add("Power Curve success using Inner Range definition {0} ({1} complete bins)."
+                       .format(inner_range_id, complete_bins))
+
             return power_curve, True, complete_bins
         
         except ExceptionHandler.ExceptionType as e:
 
-            Status.add(str(e), red = True)
+            Status.add(str(e), red=True)
 
-            Status.add("Power Curve failed using Inner Range definition %s." % inner_range_id, red = True)
-            return (None, False, 0)
+            Status.add("Power Curve failed using Inner Range definition %s." % inner_range_id, red=True)
+            return None, False, 0
 
     def get_complete_bins(self, power_curve):
         if power_curve is None:
@@ -207,7 +206,7 @@ class ShareAnalysisBase(Analysis):
 
     def is_sufficient_complete_bins(self, power_curve):
         
-        #Todo refine to be fully consistent with PCWG-Share-01 definition document
+        # Todo refine to be fully consistent with PCWG-Share-01 definition document
         number_of_complete_bins = self.get_complete_bins(power_curve)
 
         if number_of_complete_bins >= ShareAnalysisBase.MINIMUM_COMPLETE_BINS:
@@ -263,15 +262,15 @@ class ShareAnalysisBase(Analysis):
         return "Linear"
 
     def calculate_power_deviation_matrices(self):
-        #speed optimisation (output power deviation matrices not required for PCWG-Share-X)
+        # speed optimisation (output power deviation matrices not required for PCWG-Share-X)
         pass
 
     def create_calculated_power_deviation_matrix_bins(self):
-        #speed optimisation (output power deviation matrices not required for PCWG-Share-X)
+        # speed optimisation (output power deviation matrices not required for PCWG-Share-X)
         pass
 
     def calculate_aep(self):
-        #speed optimisation (aep not required for PCWG-Share-X)
+        # speed optimisation (aep not required for PCWG-Share-X)
         pass
 
     def load_dataset(self, dataset_config):
@@ -290,11 +289,11 @@ class ShareAnalysisBase(Analysis):
 
         self.normalisedWSBin = 'Normalised WS Bin Centre'
 
-        firstNormWSbin = 0.05
-        lastNormWSbin = 2.95
-        normWSstep = 0.1
+        first_norm_wind_speed_bin = 0.05
+        last_norm_wind_speed_bin = 2.95
+        norm_wind_speed_step = 0.1
 
-        self.normalisedWindSpeedBins = Bins(firstNormWSbin, normWSstep, lastNormWSbin)
+        self.normalisedWindSpeedBins = Bins(first_norm_wind_speed_bin, norm_wind_speed_step, last_norm_wind_speed_bin)
         self.dataFrame[self.normalisedWSBin] = (self.dataFrame[self.normalisedWS]).map(self.normalisedWindSpeedBins.binCenter)
 
         if self.hasDirection:
@@ -306,17 +305,16 @@ class ShareAnalysisBase(Analysis):
 
         lower_turbulence = ShareAnalysisBase.pcwg_inner_ranges[self.inner_range_id]['LTI']
         upper_turbulence = ShareAnalysisBase.pcwg_inner_ranges[self.inner_range_id]['UTI']
-        mid_turbulence = 0.5 * (upper_turbulence)
 
         self.dataFrame[self.pcwgFourCellMatrixGroup] = np.nan
-        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= upper_turbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-HTI'
-        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= upper_turbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-HTI'
-        filt = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] <= lower_turbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'HWS-LTI'
-        filt = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] <= lower_turbulence)
-        self.dataFrame.loc[filt, self.pcwgFourCellMatrixGroup] = 'LWS-LTI'
+        mask = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] >= upper_turbulence)
+        self.dataFrame.loc[mask, self.pcwgFourCellMatrixGroup] = 'HWS-HTI'
+        mask = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] >= upper_turbulence)
+        self.dataFrame.loc[mask, self.pcwgFourCellMatrixGroup] = 'LWS-HTI'
+        mask = (self.dataFrame[self.normalisedWS] >= 0.5) & (self.dataFrame[self.hubTurbulence] <= lower_turbulence)
+        self.dataFrame.loc[mask, self.pcwgFourCellMatrixGroup] = 'HWS-LTI'
+        mask = (self.dataFrame[self.normalisedWS] < 0.5) & (self.dataFrame[self.hubTurbulence] <= lower_turbulence)
+        self.dataFrame.loc[mask, self.pcwgFourCellMatrixGroup] = 'LWS-LTI'
         
         self.pcwgRange = 'PCWG Range (Inner or Outer)'
         self.dataFrame[self.pcwgRange] = np.nan
@@ -328,21 +326,10 @@ class ShareAnalysisBase(Analysis):
         self.calendarMonth = 'Calendar Month'
         self.dataFrame[self.calendarMonth] = self.dataFrame[self.timeStamp].dt.month
 
-        # self.normalisedHubPowerDeviations = self.calculatePowerDeviationMatrix(self.hubPower,
-        #                                                                       windBin = self.normalisedWSBin,
-        #                                                                       turbBin = self.turbulenceBin)
-        #
-        # if self.config.turbRenormActive:
-        #    self.normalisedTurbPowerDeviations = self.calculatePowerDeviationMatrix(self.turbulencePower, 
-        #                                                                           windBin = self.normalisedWSBin,
-        #                                                                           turbBin = self.turbulenceBin)
-        # else:
-        #    self.normalisedTurbPowerDeviations = None
-            
     def calculate_pcwg_error_fields(self):
-        
+
         self.calculate_anonymous_values()
-        
+
         self.base_line_error_column = 'Baseline Error'
         self.error_columns = {}
 
@@ -426,15 +413,15 @@ class ShareAnalysisBase(Analysis):
 
             for error_type in self.error_types:
 
-                self.binned_pcwg_err_metrics[dict_key][(error_type, self.base_line_error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, self.base_line_error_column, bin_col_name, pcwg_range = pcwg_range)
+                self.binned_pcwg_err_metrics[dict_key][(error_type, self.base_line_error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, self.base_line_error_column, bin_col_name, pcwg_range=pcwg_range)
 
                 for correction_name in self.corrections:
                     
                     error_column = self.error_column(correction_name)
 
-                    self.binned_pcwg_err_metrics[dict_key][(error_type, error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, error_column, bin_col_name, pcwg_range = pcwg_range)
+                    self.binned_pcwg_err_metrics[dict_key][(error_type, error_column)] = self.calculate_pcwg_error_metric_by_bin(error_type, error_column, bin_col_name, pcwg_range=pcwg_range)
                 
-    def calculate_pcwg_error_metric_by_bin(self, error_type, candidate_error, bin_col_name, pcwg_range = 'All'):
+    def calculate_pcwg_error_metric_by_bin(self, error_type, candidate_error, bin_col_name, pcwg_range='All'):
         
         def sum_abs(x):
             return x.abs().sum()
@@ -446,7 +433,8 @@ class ShareAnalysisBase(Analysis):
         elif pcwg_range == 'Outer':
             grouped = self.dataFrame.loc[np.logical_and(self.dataFrame[self.pcwgErrorValid], (self.dataFrame[self.pcwgRange] == 'Outer')), :].groupby(bin_col_name)
         else:
-            raise Exception('Unrecognised pcwg_range argument %s passed to Analysis._calculate_pcwg_error_metric_by_bin() method. Must be Inner, Outer or All.' % pcwg_range)
+            raise Exception('Unrecognised pcwg_range argument %s passed to Analysis. \
+                             calculate_pcwg_error_metric_by_bin() method. Must be Inner, Outer or All.' % pcwg_range)
 
         agg = grouped.agg({candidate_error: ['sum', sum_abs, 'count'], self.actualPower: 'sum'})
 
@@ -461,22 +449,24 @@ class ShareAnalysisBase(Analysis):
             raise Exception('Unknown error type: {0}'.format(error_type))
 
         nme = me / denominator
-        nmae = mae/ denominator
+        nmae = mae / denominator
 
         agg.loc[:, (candidate_error, 'NME')] = nme
         agg.loc[:, (candidate_error, 'NMAE')] = nmae
 
-        return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis= 1).rename(columns = {'count': self.dataCount})
+        return agg.loc[:, candidate_error].drop(['sum', 'sum_abs'], axis=1).rename(columns={'count': self.dataCount})
     
     def calculate_pcwg_error_metric(self, candidate_error):
         
         data_count = len(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].dropna())
         
-        NME = (self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
+        nme = (self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error].sum()
+               / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
         
-        NMAE = (np.abs(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error]).sum() / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
+        mnae = (np.abs(self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], candidate_error]).sum()
+                / self.dataFrame.loc[self.dataFrame[self.pcwgErrorValid], self.actualPower].sum())
         
-        return NME, NMAE, data_count
+        return nme, mnae, data_count
 
 
 class PcwgShareX:
@@ -491,7 +481,7 @@ class PcwgShareX:
         if self.success:
             self.export_report(output_zip)
         else:
-            Status.add("Calculation unsuccessful. No results to export.", red = True)
+            Status.add("Calculation unsuccessful. No results to export.", red=True)
 
     def calculate(self):
 
@@ -501,7 +491,7 @@ class PcwgShareX:
         except ExceptionHandler.ExceptionType as e:
             self.analysis = None
             self.success = False
-            Status.add("ERROR Calculating PCWG-Share Analysis: {0}".format(e), red = True)
+            Status.add("ERROR Calculating PCWG-Share Analysis: {0}".format(e), red=True)
 
     def new_analysis(self, dataset):
         return self.share_factory.new_share_analysis(dataset)
@@ -513,7 +503,7 @@ class PcwgShareX:
             temp_file_name = "{0}.xls".format(self.analysis.dataset_configuration_unique_id)
 
             Status.add("Exporting results to {0}".format(temp_file_name))                
-            self.pcwg_data_share_report(output_fname = temp_file_name)
+            self.pcwg_data_share_report(output_file_name=temp_file_name)
             Status.add("Report written to {0}".format(temp_file_name))
             
             Status.add("Adding {0} to output zip.".format(temp_file_name))
@@ -525,19 +515,20 @@ class PcwgShareX:
             
         except ExceptionHandler.ExceptionType as e:
 
-            Status.add("ERROR Exporting Report: %s" % e, red = True)
+            Status.add("ERROR Exporting Report: %s" % e, red=True)
 
-    def pcwg_data_share_report(self, output_fname):
+    def pcwg_data_share_report(self, output_file_name):
                 
         rpt = PCWGShareXReport(self.analysis,
-                                      version = ver.version,
-                                      output_fname = output_fname,
-                                      pcwg_inner_ranges = ShareAnalysisBase.pcwg_inner_ranges,
-                                      share_name = self.share_factory.share_name)
+                               version=ver.version,
+                               output_fname=output_file_name,
+                               pcwg_inner_ranges=ShareAnalysisBase.pcwg_inner_ranges,
+                               share_name=self.share_factory.share_name)
 
         rpt.report()
         return rpt 
-        
+
+
 class ShareXPortfolio(object):
     
     def __init__(self, portfolio_configuration, share_factory):
@@ -548,12 +539,15 @@ class ShareXPortfolio(object):
         Status.add("Running Portfolio: {0}".format(self.share_name))
         
         self.portfolio_path = portfolio_configuration.path
-        self.results_base_path = os.path.join(os.path.dirname(self.portfolio_path), self.portfolio_path.split('/')[-1].split('.')[0])
+
+        self.results_base_path = os.path.join(os.path.dirname(self.portfolio_path),
+                                              self.portfolio_path.split('/')[-1].split('.')[0])
+
         self.portfolio = portfolio_configuration
         self.calculate()
 
     def new_share(self, dataset, output_zip):
-        return PcwgShareX(dataset, output_zip = output_zip, share_factory=self.share_factory)
+        return PcwgShareX(dataset, output_zip=output_zip, share_factory=self.share_factory)
 
     def output_paths_status(self, zip_file, summary_file):
         Status.add("Detailed results will be stored in: {0}".format(zip_file))
@@ -628,7 +622,7 @@ class ShareXPortfolio(object):
         print(time_message)
         Status.add(time_message)
 
-    def clear_up(self):
+    def clean_up(self, zip_file):
         pass
 
     def verify_share_configs(self, config):

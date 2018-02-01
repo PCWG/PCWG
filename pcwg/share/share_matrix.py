@@ -12,6 +12,7 @@ from ..configuration.power_deviation_matrix_configuration import PowerDeviationM
 from ..reporting.share_matrix_report import ShareMatrixReport2D
 from ..reporting.share_matrix_report import ShareMatrixReport3D
 
+
 class ShareMatrixAnalysisFactory(object):
 
     def __init__(self, inner_ranges=None):
@@ -22,14 +23,15 @@ class ShareMatrixAnalysisFactory(object):
 
         return ShareAnalysisMatrix(dataset, self.inner_ranges)
 
-class CombinedMatrix:
+
+class CombinedMatrix(object):
 
     def __init__(self, deviation_matrix, count_matrix):
         self.deviation_matrix = deviation_matrix
         self.count_matrix = count_matrix
 
 
-class PostProcessMatrices2D:
+class PostProcessMatrices2D(object):
 
     def __init__(self, shares):
 
@@ -122,8 +124,8 @@ class PostProcessMatrices3D(PostProcessMatrices2D):
 class ShareMatrix(ShareXPortfolio):
 
     def __init__(self, portfolio_configuration):
-        selected_ranges = ['A']
-        ShareXPortfolio.__init__(self, portfolio_configuration, ShareMatrixAnalysisFactory(selected_ranges))
+        self.available_inner_ranges = ['A']
+        ShareXPortfolio.__init__(self, portfolio_configuration, ShareMatrixAnalysisFactory(self.available_inner_ranges))
 
     def new_share(self, dataset, output_zip):
         return PcwgShareMatrix(dataset, output_zip=output_zip, share_factory=self.share_factory)
@@ -136,8 +138,13 @@ class ShareMatrix(ShareXPortfolio):
 
     def report_summary(self, summary_file, output_zip):
 
-        self.report_summary_base(summary_file.replace('ShareMatrix','ShareMatrix-2D'), PostProcessMatrices2D, ShareMatrixReport2D)
-        self.report_summary_base(summary_file.replace('ShareMatrix','ShareMatrix-3D'), PostProcessMatrices3D, ShareMatrixReport3D)
+        self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-2D'),
+                                 PostProcessMatrices2D,
+                                 ShareMatrixReport2D)
+
+        self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-3D'),
+                                 PostProcessMatrices3D,
+                                 ShareMatrixReport3D)
 
     def report_summary_base(self, summary_file, post_process_constructor, report_constructor):
 
@@ -158,7 +165,26 @@ class ShareMatrix(ShareXPortfolio):
 
         Status.add("Excel Report written to {0}".format(summary_file))
 
-        xml_path = summary_file.replace('.xls', '.xml')
+        if len(self.available_inner_ranges) == 0:
+            raise Exception('No available inner ranges')
+        elif len(self.available_inner_ranges) == 1:
+            portfolio_tag = 'Inner Range {0}'.format(self.available_inner_ranges[0])
+        else:
+
+            portfolio_tag = 'Best From Inner Ranges '
+            sorted_ranges = sorted(self.available_inner_ranges)
+
+            for i in range(len(sorted_ranges)):
+
+                inner_range = sorted_ranges[i]
+                portfolio_tag += inner_range
+
+                if i < (len(sorted_ranges) - 2):
+                    portfolio_tag += inner_range + ', '
+                elif i < (len(sorted_ranges) - 1):
+                    portfolio_tag += inner_range + ' & '
+
+        xml_path = summary_file.replace('.xls', ' ({0}).xml'.format(portfolio_tag))
 
         Status.add("Exporting  XML results to {0}".format(xml_path))
 
@@ -198,11 +224,16 @@ class ShareAnalysisMatrix(ShareAnalysisBase):
         return inner_ranges
 
     def calculate_power_deviation_matrices(self):
+
         Analysis.calculate_power_deviation_matrices(self)
-        self.baseline_power_deviations_3D = self.calculated_power_deviation_matrix_definition_3D.new_deviation_matrix(self.dataFrame, self.actualPower, self.baseline.power_column)
+
+        self.baseline_power_deviations_3D = \
+            self.calculated_power_deviation_matrix_definition_3D.new_deviation_matrix(self.dataFrame,
+                                                                                      self.actualPower,
+                                                                                      self.baseline.power_column)
 
     def create_calculated_power_deviation_matrix_bins(self):
-        Analysis.create_calculated_power_deviation_matrix_bins(self) # reverse speed optimisation in ShareAnalysisBase
+        Analysis.create_calculated_power_deviation_matrix_bins(self)  # reverse speed optimisation in ShareAnalysisBase
         self.calculated_power_deviation_matrix_definition_3D.create_bins(self.dataFrame)
 
     def should_apply_density_correction_to_baseline(self):
@@ -242,7 +273,7 @@ class ShareAnalysisMatrix(ShareAnalysisBase):
     def share_power_deviation_matrix_dimensions_three_dimensional(self):
 
         return [
-                PowerDeviationMatrixDimension("Rotor Wind Speed Ratio", 3, -1, 0.1, 31),
-                PowerDeviationMatrixDimension("Normalised Wind Speed", 1, 0.1, 0.1, 20),
-                PowerDeviationMatrixDimension("Hub Turbulence", 2, 0.01, 0.01, 30)
+                PowerDeviationMatrixDimension("Rotor Wind Speed Ratio", 1, -1, 0.5, 7),
+                PowerDeviationMatrixDimension("Normalised Wind Speed", 2, 0.1, 0.1, 20),
+                PowerDeviationMatrixDimension("Hub Turbulence", 3, 0.01, 0.01, 30)
                ]

@@ -3,6 +3,7 @@ import pandas as pd
 from power_deviation_matrix import AverageOfDeviationsMatrix
 from power_deviation_matrix import DeviationOfAveragesMatrix
 from power_deviation_matrix import PowerDeviationMatrixDimension
+from empirical_turbulence import EmpiricalTurbulencePowerCalculator
 
 from ..core.status import Status
 
@@ -388,3 +389,26 @@ class WebServiceCorrection(PowerBasedCorrection):
         PowerBasedCorrection.__init__(self, "WebService", "Web", Source(None))
 
         self.finalise(data_frame, web_service)
+
+
+class EmpiricalTurbulenceCorrection(PowerBasedCorrection):
+
+    def __init__(self,
+                 data_frame,
+                 source,
+                 power_curve,
+                 normalised_wind_speed_column,
+                 turbulence_column,
+                 reference_turbulence):
+
+        PowerBasedCorrection.__init__(self, "Empirical Turbulence",
+                                      "EMP", source, power_curve)
+
+        calculator = EmpiricalTurbulencePowerCalculator(power_curve,
+                                                        source.wind_speed_column,
+                                                        normalised_wind_speed_column,
+                                                        turbulence_column,
+                                                        reference_turbulence)
+
+        self.finalise(data_frame, calculator)
+

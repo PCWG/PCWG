@@ -18,13 +18,17 @@ class ShareAnalysis2(ShareAnalysis1Dot1):
 
         self.calculate_rews_based(self.calculate_combined_rews_and_turbulence_correction, 3.0)
 
-        self.calculate_pdm_based('HypothesisMatrix_2D_Share2.xml')
-        self.calculate_pdm_based('HypothesisMatrix_3D_Share2.xml')
+        self.calculate_pdm_corrections()
 
+        # rotor average wind speed
         self.calculate_rews_based(self.calculate_REWS, 1.0)
 
         if self.rewsDefined:
             self.calculate_production_by_height_correction()
+
+    def calculate_pdm_corrections(self):
+        self.calculate_pdm_based('HypothesisMatrix_2D_Share2.xml')
+        self.calculate_pdm_based('HypothesisMatrix_3D_Share2.xml')
 
     def calculate_pdm_based(self, filename):
 

@@ -216,10 +216,14 @@ class PowerCurve(object):
 
         self.rated_power = self.get_rated_power(rated_power, data_frame[self.power_column])
 
-        self.inflection_point = InflectionPoint(self.power_function,
-                                                self.cut_in_wind_speed,
-                                                self.cut_out_wind_speed,
-                                                self.rated_power).value
+        try:
+            self.inflection_point = InflectionPoint(self.power_function,
+                                                    self.cut_in_wind_speed,
+                                                    self.cut_out_wind_speed,
+                                                    self.rated_power).value
+        except Exception as e:
+            Status.add("Inflection point calculation failed: {0}".format(e), red=True)
+            self.inflection_point = None
 
         self.set_relaxation_factory(relaxation_factory)
 
