@@ -1,6 +1,8 @@
 import os
 
 from share import ShareAnalysisBase
+from share3 import ShareAnalysis3
+
 from share import ShareXPortfolio
 from share import PcwgShareX
 
@@ -203,7 +205,7 @@ class PcwgShareMatrix(PcwgShareX):
         pass
 
 
-class ShareAnalysisMatrix(ShareAnalysisBase):
+class ShareAnalysisMatrix(ShareAnalysisBase): #(ShareAnalysisBase):
 
     MINIMUM_COUNT = 10
 
@@ -226,6 +228,7 @@ class ShareAnalysisMatrix(ShareAnalysisBase):
     def calculate_power_deviation_matrices(self):
 
         Analysis.calculate_power_deviation_matrices(self)
+        self.baseline_power_deviations = self.corrected_deviations[self.corrections.keys()[0]]
 
         self.baseline_power_deviations_3D = \
             self.calculated_power_deviation_matrix_definition_3D.new_deviation_matrix(self.dataFrame,
@@ -243,6 +246,9 @@ class ShareAnalysisMatrix(ShareAnalysisBase):
         return False
 
     def calculate_corrections(self):
+        # self.calculate_empirical_turbulence()
+        # self.calculate_turbulence_correction()
+        # self.calculate_augmented_turbulence_correction_with_relaxation()
         pass
 
     def get_interpolation_mode(self):

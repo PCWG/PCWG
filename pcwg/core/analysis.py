@@ -1059,15 +1059,15 @@ class Analysis(object):
         return (self.turbRenormActive and self.hasTurbulence)
 
     def calculate_turbulence_correction(self):
-        correction = corrections.TurbulenceCorrection(self.dataFrame, self.baseline, self.hubTurbulence, self.powerCurve)
+        correction = corrections.TurbulenceCorrection(self.dataFrame, self.baseline, self.hubTurbulence, self.normalisedWS, self.powerCurve)
         self.register_correction(correction)
         self.turbulencePower = correction.power_column
 
     def should_calculate_combined_rews_and_turbulence_correction(self):
-        return (self.should_calculate_turbulence_correction() and self.should_calculate_REWS())
+        return self.should_calculate_turbulence_correction() and self.should_calculate_REWS()
 
     def calculate_combined_rews_and_turbulence_correction(self):
-        correction = corrections.TurbulenceCorrection(self.dataFrame, self.rews_correction, self.hubTurbulence, self.powerCurve)
+        correction = corrections.TurbulenceCorrection(self.dataFrame, self.rews_correction, self.hubTurbulence, self.normalisedWS, self.powerCurve)
         self.register_correction(correction)
 
     def should_calculate_power_deviation_matrix_correction(self):

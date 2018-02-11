@@ -1,48 +1,42 @@
 import math
 
 
-class EmpiricalTurbulencePowerCalculator(object):
+class AugmentedTurbulenceCorrection(object):
 
-    LOW_TI = 3.0
-    HIGH_TI = 2.0
-    LAG = 0.02
-    CONSTANT = -1.175
+    # LOW_TI = 3.0
+    # HIGH_TI = 2.0
+    # LAG = 0.02
+    # CONSTANT = -1.175
+    # BALANCE_WIND_SPEED = 0.9
+    # APPLY_ABOVE_AND_BELOW = True
+
+    LOW_TI = 3.5
+    HIGH_TI = 1.0
+    LAG = 0.05
+    CONSTANT = -1.216
     BALANCE_WIND_SPEED = 0.9
+    APPLY_ABOVE_AND_BELOW = False
 
-    def __init__(self,
-                 power_curve,
-                 input_wind_speed_column,
-                 normalised_wind_speed_column,
-                 turbulence_intensity_column,
-                 reference_turbulence):
+    def calculate(self, normalised_wind_speed, turbulence_intensity, reference_turbulence):
 
-        self.power_curve = power_curve
+        delta_turbulence = turbulence_intensity - reference_turbulence
+        delta_wind_speed = normalised_wind_speed - AugmentedTurbulenceCorrection.BALANCE_WIND_SPEED
 
-        self.input_wind_speed_column = input_wind_speed_column
-        self.normalised_wind_speed_column = normalised_wind_speed_column
-        self.turbulence_intensity_column = turbulence_intensity_column
+        if AugmentedTurbulenceCorrection.APPLY_ABOVE_AND_BELOW or delta_wind_speed < 0.0:
 
-        self.reference_turbulence = reference_turbulence
+            predictor = min([0.0, AugmentedTurbulenceCorrection.LAG
+                            + math.tanh(delta_turbulence * AugmentedTurbulenceCorrection.LOW_TI)
+                            ]) \
+                            + max([0.0,
+                            + math.tanh(delta_turbulence * AugmentedTurbulenceCorrection.HIGH_TI)
+                            ])
 
-    def power(self, row):
-        wind_speed = row[self.input_wind_speed_column]
-        normalised_wind_speed = row[self.normalised_wind_speed_column]
-        turbulence_intensity = row[self.turbulence_intensity_column]
+            slope = AugmentedTurbulenceCorrection.CONSTANT * predictor
 
-        delta_turbulence = turbulence_intensity - self.reference_turbulence
-        delta_wind_speed = normalised_wind_speed - EmpiricalTurbulencePowerCalculator.BALANCE_WIND_SPEED
+            deviation = delta_wind_speed * slope
 
-        predictor = min([0.0, EmpiricalTurbulencePowerCalculator.LAG
-                         + math.tanh(delta_turbulence * EmpiricalTurbulencePowerCalculator.LOW_TI)
-                         ]) \
-                    + max([0.0, EmpiricalTurbulencePowerCalculator.LAG
-                           + math.tanh(delta_turbulence * EmpiricalTurbulencePowerCalculator.HIGH_TI)
-                           ])
+            return deviation
 
-        slope = EmpiricalTurbulencePowerCalculator.CONSTANT * predictor
+        else:
 
-        power = self.power_curve.power(wind_speed)
-
-        deviation = delta_wind_speed * slope
-
-        return power * (1.0 + deviation)
+            return 0.0

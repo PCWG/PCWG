@@ -1,4 +1,12 @@
-refine/finalisation empirical correction and test
-range specific matrixes
+refine/finalisation empirical/relax correction and test
+add all range specific matrixes
+experiment with interpolation method cange impact on matrices
+matrix export all ranges
+round trip ABC matrixes
+
+Done:
 export of 3D matrices
-finalise relaxed turblence test
+try/catch on inflection_point calc
+
+Share4
+experiment inclusion of density in inner range (wide range?)

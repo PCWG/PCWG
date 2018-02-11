@@ -1,10 +1,4 @@
 import pandas as pd
-
-from power_deviation_matrix import AverageOfDeviationsMatrix
-from power_deviation_matrix import DeviationOfAveragesMatrix
-from power_deviation_matrix import PowerDeviationMatrixDimension
-from empirical_turbulence import EmpiricalTurbulencePowerCalculator
-
 from ..core.status import Status
 
 
@@ -28,15 +22,16 @@ class DensityCorrectionCalculator:
 
 
 class TurbulencePowerCalculator:
-    def __init__(self, powerCurve, ratedPower, windSpeedColumn, turbulenceColumn, extra_turbulence_correction=False):
+    def __init__(self, powerCurve, ratedPower, windSpeedColumn, turbulenceColumn, augment_turbulence_correction=False, normalised_wind_speed_column=None):
         self.powerCurve = powerCurve
         self.ratedPower = ratedPower
         self.windSpeedColumn = windSpeedColumn
         self.turbulenceColumn = turbulenceColumn
-        self.extra_turbulence_correction = extra_turbulence_correction
+        self.normalised_wind_speed_column = normalised_wind_speed_column
+        self.augment_turbulence_correction = augment_turbulence_correction
 
     def power(self, row):
-        return self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn], self.extra_turbulence_correction)
+        return self.powerCurve.power(row[self.windSpeedColumn], row[self.turbulenceColumn],self.augment_turbulence_correction, row[self.normalised_wind_speed_column])
 
 
 class PowerDeviationMatrixPowerCalculator:
@@ -296,10 +291,12 @@ class RotorEquivalentWindSpeed(WindSpeedBasedCorrection):
 
 
 class TurbulenceCorrection(PowerBasedCorrection):
+
     def __init__(self,
                  data_frame,
                  source,
                  hub_turbulence_column,
+                 normalised_wind_speed_column,
                  power_curve,
                  augment=False,
                  relaxed=False):
@@ -317,8 +314,12 @@ class TurbulenceCorrection(PowerBasedCorrection):
 
         PowerBasedCorrection.__init__(self, name, short_name, source, power_curve)
 
-        calculator = TurbulencePowerCalculator(self.power_curve, self.power_curve.rated_power, source.wind_speed_column,
-                                               hub_turbulence_column, extra_turbulence_correction=augment)
+        calculator = TurbulencePowerCalculator(self.power_curve,
+                                               self.power_curve.rated_power,
+                                               source.wind_speed_column,
+                                               hub_turbulence_column,
+                                               augment_turbulence_correction=augment,
+                                               normalised_wind_speed_column=normalised_wind_speed_column)
 
         self.finalise(data_frame, calculator)
 
@@ -390,25 +391,4 @@ class WebServiceCorrection(PowerBasedCorrection):
 
         self.finalise(data_frame, web_service)
 
-
-class EmpiricalTurbulenceCorrection(PowerBasedCorrection):
-
-    def __init__(self,
-                 data_frame,
-                 source,
-                 power_curve,
-                 normalised_wind_speed_column,
-                 turbulence_column,
-                 reference_turbulence):
-
-        PowerBasedCorrection.__init__(self, "Empirical Turbulence",
-                                      "EMP", source, power_curve)
-
-        calculator = EmpiricalTurbulencePowerCalculator(power_curve,
-                                                        source.wind_speed_column,
-                                                        normalised_wind_speed_column,
-                                                        turbulence_column,
-                                                        reference_turbulence)
-
-        self.finalise(data_frame, calculator)
 
