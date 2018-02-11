@@ -1,12 +1,18 @@
-refine/finalisation empirical/relax correction and test
 add all range specific matrixes
 experiment with interpolation method cange impact on matrices
 matrix export all ranges
 round trip ABC matrixes
+record % of datapoints in matrix
+restore original zero ti after relxedcorrection
+test matrix export
+
+profile?
 
 Done:
 export of 3D matrices
 try/catch on inflection_point calc
+refine/finalisation empirical/relax correction and test
+
 
 Share4
 experiment inclusion of density in inner range (wide range?)

@@ -1,7 +1,7 @@
 import os
 
 from share import ShareAnalysisBase
-from share3 import ShareAnalysis3
+# from share3 import ShareAnalysis3
 
 from share import ShareXPortfolio
 from share import PcwgShareX
@@ -205,7 +205,7 @@ class PcwgShareMatrix(PcwgShareX):
         pass
 
 
-class ShareAnalysisMatrix(ShareAnalysisBase): #(ShareAnalysisBase):
+class ShareAnalysisMatrix(ShareAnalysisBase):  # (ShareAnalysisBase):
 
     MINIMUM_COUNT = 10
 

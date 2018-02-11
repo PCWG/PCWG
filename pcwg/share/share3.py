@@ -53,6 +53,11 @@ class ShareAnalysis3(ShareAnalysis2):
 
         self.powerCurve.update_zero_ti(RelaxationFactory(0.7, 0.7))
 
+        Status.add("Relaxed Zero-TI Curve")
+        for i in range(len(self.powerCurve.zeroTurbulencePowerCurve.wind_speeds)):
+            Status.add("{0} {1}".format(self.powerCurve.zeroTurbulencePowerCurve.wind_speeds[i],
+                                        self.powerCurve.zeroTurbulencePowerCurve.powers[i]), verbosity=2)
+
         correction = TurbulenceCorrection(self.dataFrame,
                                           self.baseline,
                                           self.hubTurbulence,
