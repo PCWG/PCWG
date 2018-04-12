@@ -254,6 +254,8 @@ class ValidatePowerCurveLevels:
                 self.messageLabel = tk.Label(master, text="", fg="red")
                 self.validate()
 
+                self.title = "Power Curve Validation"
+
         def validate(self):
                 
                 self.valid = True

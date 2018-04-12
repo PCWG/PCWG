@@ -70,6 +70,8 @@ class PowerCurveConfiguration(base_configuration.XmlBase):
             self.isNew = True
             self.name = ""
             self.data_frame = pd.Series()
+
+            self.density = 1.225
     
     @property
     def power_curve_levels(self):
@@ -116,7 +118,7 @@ class PowerCurveConfiguration(base_configuration.XmlBase):
         self.addTextNode(doc, root, "Name", self.name)
         self.addFloatNode(doc, root, "PowerCurveDensity", self.density)
 
-        for speed in self.data_frame.index:
+        for speed in sorted(self.data_frame.index):
 
             levelNode = self.addNode(doc, root, "PowerCurveLevel")
 

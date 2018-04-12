@@ -381,11 +381,19 @@ class MetricsSheets(object):
         self.__write_by_month_metric_sheet(sh_name, error_col, error_type, row_offset)
     
     def __write_overall_metric_sheet(self, sh_name, correction_name, error_type, row_offset):
+
         sh = self.sheet_map[sh_name]
         wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[self.analysis.dataCount], sh, 3 + row_offset, 3)
         wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[correction_name + ' NME'], sh, 4 + row_offset, 3)
         wrt_cell_keep_style(self.analysis.overall_pcwg_err_metrics[correction_name + ' NMAE'], sh, 5 + row_offset, 3)
-    
+
+        if correction_name != 'Baseline':
+
+            correction = self.analysis.corrections[correction_name]
+
+            if correction.is_matrix():
+                wrt_cell_keep_style(correction.value_found_fraction, sh, 2 + row_offset, 7)
+
     def __write_by_ws_metric_sheet(self, sh_name, err_col, error_type, row_offset):
         df = self.analysis.binned_pcwg_err_metrics[self.analysis.normalisedWSBin][(error_type, err_col)]
         sh = self.sheet_map[sh_name]

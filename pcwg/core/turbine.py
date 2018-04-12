@@ -198,6 +198,11 @@ class PowerCurve(object):
             Status.add("Inflection point calculation failed: {0}".format(e), red=True)
             self.inflection_point = None
 
+        self._reverted_relaxation_factory = None
+        self._reverted_relaxation = None
+        self._reverted_simulated_power = None
+        self._reverted_zero_turbulence_power_curve = None
+
         self.set_relaxation_factory(relaxation_factory)
 
         self.zero_ti_pc_required = zero_ti_pc_required
@@ -235,7 +240,31 @@ class PowerCurve(object):
 
         self.relaxation = self.relaxation_factory.new_relaxation(self.inflection_point)
 
+    def revert_zero_ti(self):
+
+        if self._reverted_zero_turbulence_power_curve is None:
+            raise Exception('Cannot revert zero turbulence power curve')
+
+        self.relaxation_factory = self._reverted_relaxation_factory
+        self.relaxation = self._reverted_relaxation
+        self.simulatedPower = self._reverted_simulated_power
+        self.zeroTurbulencePowerCurve = self._reverted_zero_turbulence_power_curve
+
+        self._reverted_relaxation_factory = None
+        self._reverted_relaxation = None
+        self._reverted_simulated_power = None
+        self._reverted_zero_turbulence_power_curve = None
+
     def update_zero_ti(self, relaxation_factory=None):
+
+        self._reverted_relaxation_factory = self.relaxation_factory
+        self._reverted_relaxation = self.relaxation
+
+        if hasattr(self, 'simulatedPower'):
+            self._reverted_simulated_power = self.simulatedPower
+
+        if hasattr(self, 'zeroTurbulencePowerCurve'):
+            self._reverted_zero_turbulence_power_curve = self.zeroTurbulencePowerCurve
 
         if relaxation_factory is not None:
             self.set_relaxation_factory(relaxation_factory)
@@ -556,8 +585,12 @@ class AvailablePower(object):
 
     def power_coefficient(self, wind_speed, actual_power):
 
-        return actual_power / self.power(wind_speed)
+        power = self.power(wind_speed)
 
+        if power > 0:
+            return actual_power / self.power(wind_speed)
+        else:
+            return 0.0
 
 class ZeroTurbulencePowerCurve(object):
 
@@ -811,10 +844,12 @@ class SimulatedPower(object):
         self.integrationPowers = np.array(integration_powers)
         
     def power(self, wind_speed, turbulence):
-        standard_deviation = wind_speed * turbulence
-        integration_probabilities = self.integration_range.probabilities(wind_speed, standard_deviation)
-        return np.sum(integration_probabilities * self.integrationPowers) / np.sum(integration_probabilities)
-
+        if wind_speed > 0:
+            standard_deviation = wind_speed * turbulence
+            integration_probabilities = self.integration_range.probabilities(wind_speed, standard_deviation)
+            return np.sum(integration_probabilities * self.integrationPowers) / np.sum(integration_probabilities)
+        else:
+            return 0.0
 
 class SimulatedPowerCurve(object):
 

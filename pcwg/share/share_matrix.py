@@ -51,6 +51,7 @@ class PostProcessMatrices2D(object):
 
             if share.analysis is not None:
 
+                share.analysis.dataFrame.to_csv('matrix_debug.dat')
                 power_deviations = self.get_power_deviations(share.analysis)
 
                 deviation_matrix = power_deviations.deviation_matrix.fillna(0)
@@ -126,7 +127,7 @@ class PostProcessMatrices3D(PostProcessMatrices2D):
 class ShareMatrix(ShareXPortfolio):
 
     def __init__(self, portfolio_configuration):
-        self.available_inner_ranges = ['A']
+        self.available_inner_ranges = ['C']
         ShareXPortfolio.__init__(self, portfolio_configuration, ShareMatrixAnalysisFactory(self.available_inner_ranges))
 
     def new_share(self, dataset, output_zip):
@@ -228,7 +229,7 @@ class ShareAnalysisMatrix(ShareAnalysisBase):  # (ShareAnalysisBase):
     def calculate_power_deviation_matrices(self):
 
         Analysis.calculate_power_deviation_matrices(self)
-        self.baseline_power_deviations = self.corrected_deviations[self.corrections.keys()[0]]
+        #self.baseline_power_deviations = self.corrected_deviations[self.corrections.keys()[0]]
 
         self.baseline_power_deviations_3D = \
             self.calculated_power_deviation_matrix_definition_3D.new_deviation_matrix(self.dataFrame,
@@ -253,7 +254,7 @@ class ShareAnalysisMatrix(ShareAnalysisBase):  # (ShareAnalysisBase):
 
     def get_interpolation_mode(self):
         return "Marmander (Cubic Hermite)"
-        # return "Cubic Spline"
+        #return "Cubic Spline"
 
     def apply_settings(self, config):
 

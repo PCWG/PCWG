@@ -116,18 +116,36 @@ class PowerCurveConfigurationDialog(base_dialog.BaseConfigurationDialog):
                 
             for index in clip_board_df.index:
                 self.add_clip_board_row(clip_board_df.ix[index])
-        
+
+            self.validatedPowerCurveLevels.validate()
+
         def add_clip_board_row(self, row):
 
             if len(row) < 2:
                 return
 
-            speed = row[0]
-            power = row[1]
+            try:
+                speed = float(row[0])
+            except:
+                speed = 0.0
+
+            try:
+                power = float(row[1])
+            except:
+                power = 0.0
 
             if len(row) > 2:
-                turbulence = row[2]
+
+                if len(row[2]) > 0:
+                    if row[2][-1] == '%':
+                        turbulence = float(row[2][:-1]) * 0.01
+                    else:
+                        turbulence = float(row[2])
+                else:
+                    turbulence = 0.1
+
             else:
+
                 turbulence = 0.1
 
             self.power_curve_levels_grid_box.add_item(PowerCurveLevel(speed, power, turbulence))

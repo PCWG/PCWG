@@ -129,7 +129,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
 
     def add_advanced(self, master):
 
-        self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic Spline", "Cubic Hermite", "Marmander"], self.config.interpolationMode)
+        self.interpolationMode = self.addOption(master, "Interpolation Mode:", ["Linear", "Cubic Spline", "Cubic Hermite", "Marmander (Cubic Spline)", "Marmander (Cubic Hermite)"], self.config.interpolationMode)
 
         self.negative_power_period_treatment = self.addOption(master, "Negative Power Period Treatment", self.config.get_power_treatment_options(), self.config.negative_power_period_treatment)  
         self.negative_power_bin_average_treatment = self.addOption(master, "Negative Power Bin Average Treatment", self.config.get_power_treatment_options(), self.config.negative_power_bin_average_treatment)  
@@ -245,7 +245,7 @@ class AnalysisConfigurationDialog(base_dialog.BaseConfigurationDialog):
         self.config.densityCorrectionActive = bool(self.densityCorrectionActive.get())
 
         self.config.turbRenormActive = bool(self.turbulenceCorrectionActive.get())
-        self.config.augment_turbulence_correction = bool(self.self.augment_turbulence_correction.get())
+        self.config.augment_turbulence_correction = bool(self.augment_turbulence_correction.get())
 
         self.config.productionByHeightActive = bool(self.productionByHeightActive.get())
 

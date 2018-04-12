@@ -199,7 +199,7 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
     def above_fraction(self, parameter):
         return float(self.above_count_by_dimension[parameter]) / float(self.total_count)
 
-    def __getitem__(self, parameters):
+    def get_deviation(self, power, parameters):
 
         if len(self.dimensions) < 1:
             raise Exception("Matrix has zero dimensions")
@@ -208,6 +208,9 @@ class PowerDeviationMatrixConfiguration(base_configuration.XmlBase):
             self.reset_out_of_range_count()
 
         self.total_count += 1
+
+        if power <= 0.0:
+            return 0.0
 
         key_list = []
         out_of_range = False

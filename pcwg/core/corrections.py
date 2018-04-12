@@ -42,6 +42,13 @@ class PowerDeviationMatrixPowerCalculator:
         self.parameterColumns = parameterColumns
 
     def power(self, row):
+
+        base_power = self.powerCurve.power(row[self.windSpeedColumn])
+        deviation = self.get_deviation(base_power, row)
+        return base_power * (1.0 + deviation)
+
+    def get_deviation(self, base_power, row):
+
         parameters = {}
 
         for dimension in self.powerDeviationMatrix.dimensions:
@@ -49,9 +56,7 @@ class PowerDeviationMatrixPowerCalculator:
             value = row[column]
             parameters[dimension.parameter] = value
 
-        deviation = self.powerDeviationMatrix[parameters]
-
-        return self.powerCurve.power(row[self.windSpeedColumn]) * (1.0 + deviation)
+        return self.powerDeviationMatrix.get_deviation(base_power, parameters)
 
 
 class Source(object):
@@ -106,6 +111,7 @@ class PreDensityCorrectedSource(Source):
 
 
 class Correction(object):
+
     def __init__(self, correction_name, short_correction_name, source, wind_speed_based):
 
         if not self.can_chain(source):
@@ -122,6 +128,9 @@ class Correction(object):
         self.has_correction = True
 
         Status.add("Performing {0} Correction...".format(self.correction_name))
+
+    def is_matrix(self):
+        return False
 
     def calculate_name(self, source, source_correction_name, correction_name):
 
@@ -338,12 +347,13 @@ class PowerDeviationMatrixCorrection(PowerBasedCorrection):
 
         self.finalise(data_frame, calculator)
 
-        value_not_found_fraction = power_deviation_matrix.value_not_found_fraction()
+        self.value_not_found_fraction = power_deviation_matrix.value_not_found_fraction()
+        self.value_found_fraction = 1.0 - self.value_not_found_fraction
 
-        orange = (value_not_found_fraction > 0.05)
-        red = (value_not_found_fraction > 0.50)
+        orange = (self.value_not_found_fraction > 0.05)
+        red = (self.value_not_found_fraction > 0.50)
 
-        Status.add("Fraction of PDM values Not Found {0:.2f}%".format(value_not_found_fraction * 100.0), red=red,
+        Status.add("Fraction of PDM values Not Found {0:.2f}%".format(self.value_not_found_fraction * 100.0), red=red,
                    orange=orange)
 
         Status.add("-Fraction of PDM values in range unpopulated {0:.2f}%".format(
@@ -368,6 +378,8 @@ class PowerDeviationMatrixCorrection(PowerBasedCorrection):
                 "---{0:.2f}% values above".format(power_deviation_matrix.above_fraction(dimension.parameter) * 100.0),
                 red=red, orange=orange)
 
+    def is_matrix(self):
+        return True
 
 class ProductionByHeightCorrection(PowerBasedCorrection):
     def __init__(self, data_frame, source, original_datasets, power_curve):

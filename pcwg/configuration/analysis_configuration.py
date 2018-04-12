@@ -94,6 +94,8 @@ class AnalysisConfiguration(base_configuration.XmlBase):
 
             self.read_alternative_corrections(configurationNode)
 
+            self.augment_turbulence_correction = False
+
         else:
 
             self.isNew = True
@@ -110,7 +112,7 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.set_default_inner_range()
 
             self.rewsActive = False
-            self.rewsVeer = True
+            self.rewsVeer = False
             self.rewsUpflow = False
             self.rewsExponent = 3.0
 
@@ -126,6 +128,8 @@ class AnalysisConfiguration(base_configuration.XmlBase):
             self.calculated_power_deviation_matrix_dimensions = self.default_calculated_power_deviation_matrix_dimensions()
             self.power_deviation_matrix_minimum_count = 0
             self.power_deviation_matrix_method = 'Average of Deviations'
+
+            self.augment_turbulence_correction = False
 
             self.alternative_corrections = []
 

@@ -68,6 +68,8 @@ class ShareAnalysis3(ShareAnalysis2):
 
         self.register_correction(correction)
 
+        self.powerCurve.revert_zero_ti()
+
     def set_inner_range(self, inner_range_id):
 
         ShareAnalysis2.set_inner_range(self, inner_range_id)

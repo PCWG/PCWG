@@ -1,17 +1,31 @@
-add all range specific matrixes
-experiment with interpolation method cange impact on matrices
-matrix export all ranges
-round trip ABC matrixes
-record % of datapoints in matrix
-restore original zero ti after relxedcorrection
-test matrix export
 
+matrix export all ranges
+
+add all range (ABC) specific matrixes
+round trip ABC matrixes
+
+update matrix tests with latest matrices
+consider intial cut in wind speed issue
+
+build beta version
+
+final rerun of tests (with beta verion)
+automate tests
+
+later
+experiment with interpolation method cange impact on matrices
 profile?
 
+
+
+
 Done:
+record % of datapoints in matrix (exclude below 0 norm wind speed)
+test matrix export
 export of 3D matrices
 try/catch on inflection_point calc
 refine/finalisation empirical/relax correction and test
+restore original zero ti after relxedcorrection
 
 
 Share4
