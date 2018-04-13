@@ -1,0 +1,171 @@
+<?xml version="1.0" ?>
+<Configuration xmlns="http://www.pcwg.org">
+	<GeneralSettings>
+		<Name>Dataset 1 (with acutal power)</Name>
+		<StartDate>2011-10-07T12:50:00</StartDate>
+		<EndDate>2012-07-23T15:30:00</EndDate>
+		<HubWindSpeedMode>Specified</HubWindSpeedMode>
+		<CalibrationMethod></CalibrationMethod>
+		<DensityMode>Specified</DensityMode>
+	</GeneralSettings>
+	<RotorEquivalentWindSpeed>
+		<NumberOfRotorLevels>11</NumberOfRotorLevels>
+		<RotorMode>ProfileLevels</RotorMode>
+		<HubMode>PiecewiseExponent</HubMode>
+	</RotorEquivalentWindSpeed>
+	<Measurements>
+		<InputTimeSeriesPath>Dataset 1 (with actual power).dat</InputTimeSeriesPath>
+		<BadDataValue>-99.990000</BadDataValue>
+		<DateFormat>%d/%m/%Y %H:%M</DateFormat>
+		<Separator>TAB</Separator>
+		<Decimal>FULL STOP</Decimal>
+		<HeaderRows>0</HeaderRows>
+		<TimeStamp>Date &amp; Time Stamp</TimeStamp>
+		<TimeStepInSeconds>600</TimeStepInSeconds>
+		<ReferenceWindSpeed></ReferenceWindSpeed>
+		<ReferenceWindSpeedStdDev></ReferenceWindSpeedStdDev>
+		<ReferenceWindDirection>Mast - 92.1m Wind Direction Mean</ReferenceWindDirection>
+		<ReferenceWindDirectionOffset>0.000000</ReferenceWindDirectionOffset>
+		<Temperature></Temperature>
+		<Pressure></Pressure>
+		<Density>Turbine Density</Density>
+		<InflowAngle></InflowAngle>
+		<TurbineLocationWindSpeed></TurbineLocationWindSpeed>
+		<Power>Turbine Power</Power>
+		<PowerMin></PowerMin>
+		<PowerMax></PowerMax>
+		<PowerSD></PowerSD>
+		<HubWindSpeed>Mast - 96.0m Wind Speed Mean</HubWindSpeed>
+		<HubTurbulence>Mast - 96.0m Turbulence Intensity</HubTurbulence>
+	</Measurements>
+	<Shear>
+		<ShearCalibrationMethod>None</ShearCalibrationMethod>
+		<ReferenceShearMeasurements>
+			<ShearMeasurement>
+				<Height>89.100000</Height>
+				<WindSpeed>Mast - 89.1m Wind Speed Mean</WindSpeed>
+			</ShearMeasurement>
+			<ShearMeasurement>
+				<Height>40.000000</Height>
+				<WindSpeed>Mast - 40.0m Wind Speed Mean</WindSpeed>
+			</ShearMeasurement>
+		</ReferenceShearMeasurements>
+		<TurbineShearMeasurements/>
+	</Shear>
+	<ProfileLevels>
+		<ProfileLevel>
+			<Height>87.500000</Height>
+			<ProfileWindSpeed>LiDAR - 87.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 87.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 87.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>97.500000</Height>
+			<ProfileWindSpeed>LiDAR - 97.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 97.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 97.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>107.500000</Height>
+			<ProfileWindSpeed>LiDAR - 107.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 107.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 107.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>117.500000</Height>
+			<ProfileWindSpeed>LiDAR - 117.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 117.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 117.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>127.500000</Height>
+			<ProfileWindSpeed>LiDAR - 127.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 127.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 127.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>137.500000</Height>
+			<ProfileWindSpeed>LiDAR - 137.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 137.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 137.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>142.500000</Height>
+			<ProfileWindSpeed>LiDAR - 142.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 142.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 142.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>67.500000</Height>
+			<ProfileWindSpeed>LiDAR - 67.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 67.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 67.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>77.500000</Height>
+			<ProfileWindSpeed>LiDAR - 77.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 77.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 77.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+		<ProfileLevel>
+			<Height>52.500000</Height>
+			<ProfileWindSpeed>LiDAR - 52.5m Wind Speed Mean</ProfileWindSpeed>
+			<ProfileWindDirection>LiDAR - 52.5m Windvane Mean</ProfileWindDirection>
+			<ProfileUpflow>LiDAR - 52.5m Vertical Speed</ProfileUpflow>
+		</ProfileLevel>
+	</ProfileLevels>
+	<Calibration>
+		<CalibrationParameters>
+			<NumberOfSectors>0</NumberOfSectors>
+			<CenterOfFirstSector>0</CenterOfFirstSector>
+		</CalibrationParameters>
+		<CalibrationFilters/>
+		<CalibrationDirections/>
+	</Calibration>
+	<Filters>
+		<Filter>
+			<DataColumn>Mast - 92.1m Wind Direction Mean</DataColumn>
+			<FilterType>Below</FilterType>
+			<Inclusive>0</Inclusive>
+			<FilterValue>200.000000</FilterValue>
+			<Active>1</Active>
+		</Filter>
+		<Filter>
+			<DataColumn>Turbine Power</DataColumn>
+			<FilterType>Below</FilterType>
+			<Inclusive>0</Inclusive>
+			<FilterValue>0.000000</FilterValue>
+			<Active>1</Active>
+		</Filter>
+	</Filters>
+	<Exclusions/>
+	<Turbine>
+		<CutInWindSpeed>3.000000</CutInWindSpeed>
+		<CutOutWindSpeed>25.000000</CutOutWindSpeed>
+		<RatedPower>2000.000000</RatedPower>
+		<HubHeight>96.000000</HubHeight>
+		<Diameter>90.000000</Diameter>
+		<Tilt>5.000000</Tilt>
+	</Turbine>
+	<MetaData>
+		<DataType>Mast &amp; LiDAR</DataType>
+		<OutlineSiteClassification></OutlineSiteClassification>
+		<OutlineForestryClassification></OutlineForestryClassification>
+		<IECTerrainClassification></IECTerrainClassification>
+		<Continent>Europe</Continent>
+		<Country>Sweden</Country>
+		<ElevationAboveSeaLevel>33.000000</ElevationAboveSeaLevel>
+		<MeasurementCompliance>IEC 61400-12-1 (2006) Compliant</MeasurementCompliance>
+		<AnemometryType>Sonic</AnemometryType>
+		<AnemometryHeating>Heated</AnemometryHeating>
+		<TurbulenceMeasurementType>SoDAR</TurbulenceMeasurementType>
+		<PowerMeasurementType>SCADA</PowerMeasurementType>
+		<TurbineControlType>Pitch</TurbineControlType>
+		<TurbineTechnologyVintage>2012</TurbineTechnologyVintage>
+		<TimeZone>Local</TimeZone>
+	</MetaData>
+	<DensityPreCorrection>
+		<DensityPreCorrectionActive>0</DensityPreCorrectionActive>
+		<DensityPreCorrectionWindSpeed></DensityPreCorrectionWindSpeed>
+	</DensityPreCorrection>
+</Configuration>

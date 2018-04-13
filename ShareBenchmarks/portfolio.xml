@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<Portfolio xmlns="http://www.pcwg.org">
+	<Description>portfolio</Description>
+	<Datasets>
+		<Dataset>Dataset 1 config (with actual power).xml</Dataset>
+	</Datasets>
+</Portfolio>
