@@ -45,7 +45,6 @@ class PortfolioConfiguration(base_configuration.XmlBase):
 
     def get_active_datasets(self):
 
-        print self.actives
         datasets = []
 
         for dataset in self.datasets:

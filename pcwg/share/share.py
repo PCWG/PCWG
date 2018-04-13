@@ -32,6 +32,34 @@ from ..core.status import Status
 import version as ver
 
 
+class ValidRangeCache(object):
+
+    Paths = {}
+
+    @classmethod
+    def register(cls, path, range, valid):
+
+        if path not in ValidRangeCache.Paths:
+            ValidRangeCache.Paths[path] = {}
+
+        ValidRangeCache.Paths[path][range] = valid
+
+    @classmethod
+    def is_known(cls, path, range):
+
+        if not path in ValidRangeCache.Paths:
+            return False
+
+        if not range in ValidRangeCache.Paths[path]:
+            return False
+
+        return True
+
+    @classmethod
+    def is_valid(cls, path, range):
+        return ValidRangeCache.Paths[path][range]
+
+
 class ShareDataset(Dataset):
 
     def get_filters(self, config):
@@ -41,7 +69,6 @@ class ShareDataset(Dataset):
         config.filters.append(power_filter)
 
         return config.filters
-
 
 class ShareAnalysisBase(Analysis):
 
@@ -58,6 +85,7 @@ class ShareAnalysisBase(Analysis):
         self.dataset_configuration_unique_id = None
         self.dataset_time_series_unique_id = None
 
+        self.path = dataset.path
         self.datasetConfigs = [dataset]
         self.generate_unique_ids(dataset)
 
@@ -93,7 +121,7 @@ class ShareAnalysisBase(Analysis):
     def calculate_all_measured_power_curves(self):
         self.allMeasuredPowerCurve = None
 
-    def calculate_inner_outer_measured_power_curves(self):
+    def calculate_inner_outer_measured_power_curves(self, override_range=None):
 
         self.outerMeasuredPowerCurve = None
 
@@ -103,7 +131,7 @@ class ShareAnalysisBase(Analysis):
 
         self.innerMeasuredPowerCurve = self.calculate_inner_measured_power_curve()
 
-    def get_inner_ranges(self):
+    def get_inner_ranges(self, override_range=None):
         return ShareAnalysisBase.pcwg_inner_ranges
 
     def calculate_best_inner_range(self):
@@ -117,7 +145,9 @@ class ShareAnalysisBase(Analysis):
         for inner_range_id in sorted(self.get_inner_ranges()):
             
             power_curve, success, complete_bins = self.attempt_power_curve_calculation(inner_range_id)
-            
+
+            ValidRangeCache.register(self.path, inner_range_id, success)
+
             if success:
 
                 try:
@@ -144,16 +174,16 @@ class ShareAnalysisBase(Analysis):
             if success:
 
                 if successes == 0 or complete_bins > max_complete_bins:
-
                     max_complete_bins = complete_bins
                     max_complete_range_id = inner_range_id
                     max_complete_power_curve = power_curve
 
                 successes += 1
-           
-        if successes < 1:
+
+        if max_complete_range_id is None:
 
             error = "No successful calculation for any inner range (insufficient complete bins)"
+
             Status.add(error)
             raise Exception('Cannot complete share analysis: {0}'.format(error))
 
@@ -469,7 +499,7 @@ class ShareAnalysisBase(Analysis):
         return nme, mnae, data_count
 
 
-class PcwgShareX:
+class PcwgShareX(object):
     
     def __init__(self, dataset, output_zip, share_factory):
         
@@ -544,6 +574,7 @@ class ShareXPortfolio(object):
                                               self.portfolio_path.split('/')[-1].split('.')[0])
 
         self.portfolio = portfolio_configuration
+
         self.calculate()
 
     def new_share(self, dataset, output_zip):
@@ -600,7 +631,7 @@ class ShareXPortfolio(object):
                     
                     Status.add("Running: {0}".format(dataset.name))
                     share = self.new_share(dataset, output_zip)
-    
+
                     if share.success:
                         self.shares.append(share)
 
@@ -619,7 +650,7 @@ class ShareXPortfolio(object):
         Status.add("Portfolio Run Complete")
 
         time_message = "Time taken: {0}".format((end_time - start_time).total_seconds())
-        print(time_message)
+
         Status.add(time_message)
 
     def clean_up(self, zip_file):

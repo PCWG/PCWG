@@ -1,6 +1,4 @@
 
-matrix export all ranges
-
 add all range (ABC) specific matrixes
 round trip ABC matrixes
 
@@ -12,7 +10,9 @@ build beta version
 final rerun of tests (with beta verion)
 automate tests
 
-later
+investigate inflection speed issue
+
+LATER
 experiment with interpolation method cange impact on matrices
 profile?
 
@@ -20,6 +20,7 @@ profile?
 
 
 Done:
+matrix export all ranges
 record % of datapoints in matrix (exclude below 0 norm wind speed)
 test matrix export
 export of 3D matrices

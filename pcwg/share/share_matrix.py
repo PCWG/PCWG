@@ -1,7 +1,6 @@
 import os
 
 from share import ShareAnalysisBase
-# from share3 import ShareAnalysis3
 
 from share import ShareXPortfolio
 from share import PcwgShareX
@@ -17,13 +16,16 @@ from ..reporting.share_matrix_report import ShareMatrixReport3D
 
 class ShareMatrixAnalysisFactory(object):
 
-    def __init__(self, inner_ranges=None):
+    def __init__(self,):
         self.share_name = 'ShareMatrix'
-        self.inner_ranges = inner_ranges
+        self.active_inner_range = None
 
     def new_share_analysis(self, dataset):
 
-        return ShareAnalysisMatrix(dataset, self.inner_ranges)
+        if self.active_inner_range is None:
+            raise Exception('Active inner range not defined')
+
+        return ShareAnalysisMatrix(dataset, self.active_inner_range)
 
 
 class CombinedMatrix(object):
@@ -51,7 +53,7 @@ class PostProcessMatrices2D(object):
 
             if share.analysis is not None:
 
-                share.analysis.dataFrame.to_csv('matrix_debug.dat')
+                #share.analysis.dataFrame.to_csv('matrix_debug.dat')
                 power_deviations = self.get_power_deviations(share.analysis)
 
                 deviation_matrix = power_deviations.deviation_matrix.fillna(0)
@@ -127,8 +129,25 @@ class PostProcessMatrices3D(PostProcessMatrices2D):
 class ShareMatrix(ShareXPortfolio):
 
     def __init__(self, portfolio_configuration):
-        self.available_inner_ranges = ['C']
-        ShareXPortfolio.__init__(self, portfolio_configuration, ShareMatrixAnalysisFactory(self.available_inner_ranges))
+
+        self.report_count = 0
+
+        ShareXPortfolio.__init__(self, portfolio_configuration, ShareMatrixAnalysisFactory())
+
+    def active_inner_range(self):
+        return self.share_factory.active_inner_range
+
+    def calculate(self):
+
+        self.report_count = 0
+
+        for inner_range in sorted(ShareAnalysisBase.pcwg_inner_ranges):
+            Status.add('Calculating matrix for inner rnage {0}'.format(inner_range))
+            self.share_factory.active_inner_range = inner_range
+            ShareXPortfolio.calculate(self)
+
+        if self.report_count < 1:
+            Status.add("No results to export any Inner Range")
 
     def new_share(self, dataset, output_zip):
         return PcwgShareMatrix(dataset, output_zip=output_zip, share_factory=self.share_factory)
@@ -141,21 +160,25 @@ class ShareMatrix(ShareXPortfolio):
 
     def report_summary(self, summary_file, output_zip):
 
-        self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-2D'),
+        reported = self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-2D-Range{0}'.format(self.active_inner_range())),
                                  PostProcessMatrices2D,
                                  ShareMatrixReport2D)
 
-        self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-3D'),
+        self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-3D-Range{0}'.format(self.active_inner_range())),
                                  PostProcessMatrices3D,
                                  ShareMatrixReport3D)
+
+        if reported:
+            self.report_count += 1
+        else:
+            Status.add("No results to export for Inner Range {0}".format(self.share_factory.active_inner_range))
 
     def report_summary_base(self, summary_file, post_process_constructor, report_constructor):
 
         post_processed = post_process_constructor(self.shares)
 
         if not post_processed.valid:
-            Status.add("No results to export", red=True)
-            return
+            return False
 
         Status.add("Exporting excel results to {0}".format(summary_file))
         report = report_constructor()
@@ -168,26 +191,7 @@ class ShareMatrix(ShareXPortfolio):
 
         Status.add("Excel Report written to {0}".format(summary_file))
 
-        if len(self.available_inner_ranges) == 0:
-            raise Exception('No available inner ranges')
-        elif len(self.available_inner_ranges) == 1:
-            portfolio_tag = 'Inner Range {0}'.format(self.available_inner_ranges[0])
-        else:
-
-            portfolio_tag = 'Best From Inner Ranges '
-            sorted_ranges = sorted(self.available_inner_ranges)
-
-            for i in range(len(sorted_ranges)):
-
-                inner_range = sorted_ranges[i]
-                portfolio_tag += inner_range
-
-                if i < (len(sorted_ranges) - 2):
-                    portfolio_tag += inner_range + ', '
-                elif i < (len(sorted_ranges) - 1):
-                    portfolio_tag += inner_range + ' & '
-
-        xml_path = summary_file.replace('.xls', ' ({0}).xml'.format(portfolio_tag))
+        xml_path = summary_file.replace('.xls', '.xml')
 
         Status.add("Exporting  XML results to {0}".format(xml_path))
 
@@ -199,6 +203,7 @@ class ShareMatrix(ShareXPortfolio):
 
         Status.add("XML results written to {0}".format(xml_path))
 
+        return True
 
 class PcwgShareMatrix(PcwgShareX):
 
@@ -210,21 +215,14 @@ class ShareAnalysisMatrix(ShareAnalysisBase):  # (ShareAnalysisBase):
 
     MINIMUM_COUNT = 10
 
-    def __init__(self, dataset, inner_ranges):
-        self.inner_ranges = inner_ranges
+    def __init__(self, dataset, override_inner_range):
+
+        self.override_inner_range = override_inner_range
+
         ShareAnalysisBase.__init__(self, dataset)
 
     def get_inner_ranges(self):
-
-        if self.inner_ranges is None:
-            return ShareAnalysisBase.pcwg_inner_ranges
-
-        inner_ranges = {}
-
-        for inner_range in self.inner_ranges:
-            inner_ranges[inner_range] = ShareAnalysisBase.pcwg_inner_ranges[inner_range]
-
-        return inner_ranges
+        return {self.override_inner_range: ShareAnalysisBase.pcwg_inner_ranges[self.override_inner_range]}
 
     def calculate_power_deviation_matrices(self):
 

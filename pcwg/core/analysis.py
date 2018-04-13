@@ -170,6 +170,8 @@ class Analysis(object):
 
     def __init__(self, config):
 
+        self.rews_corrections = {}
+
         self.define_columns()
 
         self.apply_settings(config)
@@ -1053,7 +1055,10 @@ class Analysis(object):
 
         self.register_correction(correction)
 
-        self.rews_correction = correction
+        self.rews_corrections[self.get_rews_key(self.rewsVeer, self.rewsUpflow, self.rewsExponent)] = correction
+
+    def get_rews_key(self, rews_veer, rews_upflow, rews_exponent):
+        return (rews_veer, rews_upflow, rews_exponent)
 
     def should_calculate_turbulence_correction(self):
         return (self.turbRenormActive and self.hasTurbulence)
@@ -1067,7 +1072,8 @@ class Analysis(object):
         return self.should_calculate_turbulence_correction() and self.should_calculate_REWS()
 
     def calculate_combined_rews_and_turbulence_correction(self):
-        correction = corrections.TurbulenceCorrection(self.dataFrame, self.rews_correction, self.hubTurbulence, self.normalisedWS, self.powerCurve)
+        rews_correction = self.rews_corrections[self.get_rews_key(self.rewsVeer, self.rewsUpflow, self.rewsExponent)]
+        correction = corrections.TurbulenceCorrection(self.dataFrame, rews_correction, self.hubTurbulence, self.normalisedWS, self.powerCurve)
         self.register_correction(correction)
 
     def should_calculate_power_deviation_matrix_correction(self):
@@ -1136,7 +1142,8 @@ class Analysis(object):
         if self.hasActualPower:
 
             if self.rewsActive:
-                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.rews_correction.power_column])
+                rews_correction = self.rews_corrections[self.get_rews_key(self.rewsVeer, self.rewsUpflow, self.rewsExponent)]
+                self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[rews_correction.power_column])
             else:
                 self.dataFrame[self.measuredTurbulencePower] = (self.dataFrame[self.actualPower] - self.dataFrame[self.turbulencePower] + self.dataFrame[self.baseline.power_column])
 
