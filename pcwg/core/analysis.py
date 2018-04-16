@@ -180,6 +180,9 @@ class Analysis(object):
         Status.add("Power Curve Mode: %s" % self.powerCurveMode)
 
         self.load_data()
+        self.calculate_analysis()
+
+    def calculate_analysis(self):
 
         self.load_specified_power_curve()
 
@@ -268,13 +271,13 @@ class Analysis(object):
 
     def calculate_normalised_wind_speed(self):
 
-        self.zero_ti_rated_power = self.powerCurve.zeroTurbulencePowerCurve.initial_zero_turbulence_power_curve.selected_stats.rated_power
-        self.zero_ti_rated_wind_speed = self.powerCurve.zeroTurbulencePowerCurve.initial_zero_turbulence_power_curve.rated_wind_speed
-        self.zero_to_cut_in_wind_speed = self.powerCurve.zeroTurbulencePowerCurve.initial_zero_turbulence_power_curve.selected_stats.cut_in_wind_speed
+        self.zero_ti_rated_power = self.powerCurve.zeroTurbulencePowerCurve.zero_ti_rated_power
+        self.zero_ti_rated_wind_speed = self.powerCurve.zeroTurbulencePowerCurve.zero_ti_rated_wind_speed
+        self.zero_ti_cut_in_wind_speed = self.powerCurve.zeroTurbulencePowerCurve.zero_ti_cut_in_wind_speed
 
         Status.add("Zero TI Wind Speeds", verbosity=2)
         Status.add("Zero TI Rated Wind Speed: {0}".format(self.zero_ti_rated_wind_speed), verbosity=2)
-        Status.add("Zero TI Cut-In Wind Speed: {0}".format(self.zero_to_cut_in_wind_speed), verbosity=2)
+        Status.add("Zero TI Cut-In Wind Speed: {0}".format(self.zero_ti_cut_in_wind_speed), verbosity=2)
         Status.add("Zero TI Curve", verbosity=2)
 
         for i in range(len(self.powerCurve.zeroTurbulencePowerCurve.wind_speeds)):
@@ -282,7 +285,7 @@ class Analysis(object):
 
         self.normalisedWS = 'Normalised Wind Speed'
 
-        self.dataFrame.loc[:, self.normalisedWS] = (self.dataFrame.loc[:, self.baseline.wind_speed_column] - self.zero_to_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_to_cut_in_wind_speed)
+        self.dataFrame.loc[:, self.normalisedWS] = (self.dataFrame.loc[:, self.baseline.wind_speed_column] - self.zero_ti_cut_in_wind_speed) / (self.zero_ti_rated_wind_speed - self.zero_ti_cut_in_wind_speed)
 
     def calculate_power_coefficient(self):
 
@@ -596,7 +599,9 @@ class Analysis(object):
 
             datasetConfig = self.datasetConfigs[i]
 
+            Status.add("Loading component dataset {0}".format(i+1))
             data = self.load_dataset(datasetConfig)
+            Status.add("Component dataset {0} loaded".format(i+1))
 
             if self.should_store_original_datasets():
                 self.original_datasets.append(data)
@@ -648,7 +653,7 @@ class Analysis(object):
                 if datasetConfig.timeStepInSeconds <> self.timeStepInSeconds:
                     raise Exception ("Dataset time step (%d) does not match analysis (%d) time step" % (datasetConfig.timeStepInSeconds, self.timeStepInSeconds))
 
-                self.dataFrame = self.dataFrame.append(data.dataFrame, ignore_index = True)
+                self.dataFrame = self.dataFrame.append(data.dataFrame, ignore_index=True)
 
                 self.hasActualPower = self.hasActualPower & data.hasActualPower
                 self.hasAllPowers = self.hasAllPowers & data.hasAllPowers
@@ -674,12 +679,12 @@ class Analysis(object):
 
         self.timeStampHours = float(self.timeStepInSeconds) / 3600.0
 
-        #Derivce Turbine Parameters from Datasets
+        # Derive Turbine Parameters from Datasets
         self.rotorGeometry = turbine.RotorGeometry(self.datasetConfigs[0].diameter, self.datasetConfigs[0].hubHeight)
 
         for i in range(len(self.datasetConfigs)):
             if self.datasetConfigs[i].diameter != self.rotorGeometry.diameter \
-                and self.datasetConfigs[i].hubHeight != self.rotorGeometry.hub_height:
+               and self.datasetConfigs[i].hubHeight != self.rotorGeometry.hub_height:
                 raise Exception("Inconsistent turbine geometries within analysis datasets.")
 
         self.ratedPower = self.datasetConfigs[0].ratedPower
@@ -756,7 +761,7 @@ class Analysis(object):
 
         mask = self.get_base_filter()
 
-        #for day time power curve (between 7am and 8pm)
+        # for day time power curve (between 7am and 8pm)
         mask = mask & (self.dataFrame[self.timeStamp].dt.hour >= 7) & (self.dataFrame[self.timeStamp].dt.hour <= 20)
 
         return mask
@@ -765,7 +770,7 @@ class Analysis(object):
 
         mask = self.get_base_filter()
 
-        #for night time power curve (between 8pm and 7am)
+        # for night time power curve (between 8pm and 7am)
         mask = mask & ((self.dataFrame[self.timeStamp].dt.hour < 7) | (self.dataFrame[self.timeStamp].dt.hour > 20))
 
         return mask
@@ -876,7 +881,7 @@ class Analysis(object):
 
     def calculatePowerCurveScatterMetric(self, measuredPowerCurve, powerColumn, rows):
 
-        #this calculates a metric for the scatter of the all measured PC
+        # this calculates a metric for the scatter of the all measured PC
         
         try:
             
@@ -894,13 +899,14 @@ class Analysis(object):
             return np.nan
 
     def iec_2005_cat_A_power_curve_uncertainty(self):
+
         if self.turbRenormActive:
             pc = self.allMeasuredTurbCorrectedPowerCurve.powerCurveLevels
             pow_col = self.measuredTurbulencePower
         else:
             pc = self.allMeasuredPowerCurve.powerCurveLevels
             pow_col = self.actualPower
-        #pc['frequency'] = pc[self.dataCount] / pc[self.dataCount].sum()
+
         pc['s_i'] = pc[self.powerStandDev] / (pc[self.dataCount]**0.5) #from IEC 2005
         unc_MWh = (np.abs(pc['s_i']) * (pc[self.dataCount] / 6.)).sum()
         test_MWh = (np.abs(pc[pow_col]) * (pc[self.dataCount] / 6.)).sum()

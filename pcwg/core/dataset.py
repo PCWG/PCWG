@@ -265,20 +265,38 @@ class Dataset:
 
         self.set_columns(config)
 
+        Status.add('loading raw data')
         dataFrame = self.load_raw_data(config)
-        dataFrame = self.load_direction(config, dataFrame)
-        dataFrame = self.load_shear(config, dataFrame)
-        dataFrame = self.load_inflow(config, dataFrame)        
-        dataFrame = self.load_wind_speed(config, dataFrame)
-        dataFrame = self.load_density(config, dataFrame) 
-        dataFrame = self.load_pre_density(config, dataFrame)
-        dataFrame = self.load_power(config, dataFrame)       
 
+        Status.add('loading direction')
+        dataFrame = self.load_direction(config, dataFrame)
+
+        Status.add('loading shear')
+        dataFrame = self.load_shear(config, dataFrame)
+
+        Status.add('loading inflow')
+        dataFrame = self.load_inflow(config, dataFrame)
+
+        Status.add('loading wind speed')
+        dataFrame = self.load_wind_speed(config, dataFrame)
+
+        Status.add('loading density')
+        dataFrame = self.load_density(config, dataFrame)
+        dataFrame = self.load_pre_density(config, dataFrame)
+
+        Status.add('loading power')
+        dataFrame = self.load_power(config, dataFrame)
+
+        Status.add('applying filters')
         dataFrame = self.filterDataFrame(dataFrame, self.get_filters(config))
+
+        Status.add('applying exclusions')
         dataFrame = self.excludeData(dataFrame, config)
 
+        Status.add('calculating profile levels')
         self.profileLevels, self.profileHubWindSpeedCalculator = self.prepare_rews(config, self.rotorGeometry)
 
+        Status.add('finalising dataset')
         self.finalise_data(config, dataFrame)
 
     def get_filters(self, config):
@@ -435,8 +453,11 @@ class Dataset:
             self.verify_column_datatype(dataFrame, measurement.wind_speed_column)
 
         if not self.shearCalibration:
+            Status.add('Calibrating shear')
             dataFrame[self.shearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
         else:
+
+            Status.add('Calculating shear')
 
             dataFrame[self.turbineShearExponent] = dataFrame.apply(ShearExponentCalculator(config.turbineShearMeasurements).shearExponent, axis=1)
             dataFrame[self.referenceShearExponent] = dataFrame.apply(ShearExponentCalculator(config.referenceShearMeasurements).shearExponent, axis=1)
@@ -474,7 +495,9 @@ class Dataset:
 
         if config.calculateHubWindSpeed:
 
+            Status.add('Calculating hub wind speed')
             dataFrame = self.calculate_hub_wind_speed(config, dataFrame)
+            Status.add('Hub Wind Speed Calculated')
 
         else:
 
@@ -524,13 +547,15 @@ class Dataset:
         if dataFrame[config.referenceWindDirection].count() < 1:
             raise Exception("Reference wind direction column is empty: cannot apply calibration")
 
+        Status.add('Applying calibration')
         self.calibrationCalculator = self.createCalibration(dataFrame, config, config.timeStepInSeconds)
         dataFrame[self.hubWindSpeed] = dataFrame.apply(self.calibrationCalculator.turbineValue, axis=1)
 
         if dataFrame[self.hubWindSpeed].count() < 1:
             raise Exception("Hub wind speed column is empty after application of calibration")
 
-        if (config.hubTurbulence != ''):
+        Status.add('Calculating turbulence')
+        if config.hubTurbulence != '':
             dataFrame[self.hubTurbulence] = dataFrame[config.hubTurbulence]
         else:
             dataFrame[self.hubTurbulence] = dataFrame[config.referenceWindSpeedStdDev] / dataFrame[self.hubWindSpeedForTurbulence]
@@ -539,6 +564,7 @@ class Dataset:
 
         if config.calibrationMethod != "Specified":
 
+            Status.add('Calculating residual wind speed matrix')
             self.residualWindSpeedMatrix = ResidualWindSpeedMatrix(data_frame=dataFrame,
                                                                    actual_wind_speed_column=self.turbineLocationWindSpeed,
                                                                    modelled_wind_speed_column=self.hubWindSpeed,

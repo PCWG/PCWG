@@ -81,7 +81,7 @@ class TestCoreAnalysis:
         assert_true(self.analysis.turbRenormActive)
         assert_almost_equal(self.analysis.windSpeedAt85pctX1pnt5, 17.8942065491, delta=self.tolerance)
         assert_almost_equal(self.analysis.zero_ti_rated_power, 2000., delta=self.tolerance)
-        assert_almost_equal(self.analysis.zero_to_cut_in_wind_speed, 3., delta=self.tolerance)
+        assert_almost_equal(self.analysis.zero_ti_cut_in_wind_speed, 3., delta=self.tolerance)
 
     def test_measured_power_curve(self):
         pc = self.analysis.allMeasuredPowerCurve

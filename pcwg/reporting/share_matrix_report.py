@@ -3,7 +3,7 @@ from colour import ColourGradient
 from ..core.status import Status
 from power_deviation_matrix import PowerDeviationMatrixSheet
 
-class ShareMatrixReport2D(object):
+class ShareMatrixReport(object):
 
     def __init__(self):
 
@@ -20,33 +20,20 @@ class ShareMatrixReport2D(object):
         self.book = xlwt.Workbook()
         self.gradient = ColourGradient(-0.1, 0.1, 0.01, self.book)
 
-    def report(self, bins, shares, average_matrix, weighted_average_matrix, path):
-
-        interpolation_mode = None
-        ranges = {}
+    def report(self, bins, infos, results, average_matrix, weighted_average_matrix, path):
 
         self.write_sheet(bins, average_matrix, "Average of Matrices")
         self.write_sheet(bins, weighted_average_matrix, "Average of Deviations")
 
-        count = 1
+        for i in range(len(infos)):
 
-        for i in range(len(shares)):
+            info = infos[i]
+            result = results[i]
 
-            share = shares[i]
+            sheet_name = str(i+1)
+            self.write_sheet(bins, result.power_deviations, sheet_name)
 
-            if share.analysis is not None:
-
-                sheet_name = str(count)
-                self.write_sheet(bins, self.get_deviations(share.analysis), sheet_name)
-
-                if interpolation_mode is None:
-                    interpolation_mode = share.analysis.interpolationMode
-
-                ranges[count] = share.analysis.inner_range_id
-
-                count += 1
-
-        self.write_summary_sheet(self.book, interpolation_mode, ranges)
+        self.write_summary_sheet(self.book, infos)
 
         self.book.save(path)
 
@@ -58,34 +45,24 @@ class ShareMatrixReport2D(object):
         sheet = PowerDeviationMatrixSheet(bins)
         sheet.report(self.book, sheet_name, power_deviations, self.gradient)
 
-    def write_summary_sheet(self, book, interpolation_mode, inner_ranges):
+    def write_summary_sheet(self, book, infos):
 
         sheet = book.add_sheet('Summary', cell_overwrite_ok=True)
 
-        row = 1
-        sheet.write(row, 1, 'Interpolation Mode', self.bold_style)
-        sheet.write(row, 2, interpolation_mode, self.normal_style)
+        start_row = 1
 
-        row += 2
-        sheet.write(row, 1, 'Dataset', self.bold_style)
-        sheet.write(row, 2, 'Range', self.bold_style)
+        sheet.write(start_row, 1, 'Dataset', self.bold_style)
+        sheet.write(start_row, 2, 'Range', self.bold_style)
+        sheet.write(start_row, 3, 'Interpolation Mode', self.bold_style)
 
-        row += 1
-
-        for inner_range in sorted(inner_ranges):
-            sheet.write(row, 1, inner_range, self.no_dp_style)
-            sheet.write(row, 2, inner_ranges[inner_range], self.normal_style)
-            row += 1
+        for i in range(len(infos)):
+            row = start_row + 1 + i
+            info = infos[i]
+            sheet.write(row, 1, (i+1), self.no_dp_style)
+            sheet.write(row, 2, info.inner_range, self.normal_style)
+            sheet.write(row, 3, info.interpolation_mode, self.normal_style)
 
         sheet.col(0).width = 1000
         sheet.col(1).width = 3000
-        sheet.col(2).width = 7000
-
-    def get_deviations(self, analysis):
-        return analysis.baseline_power_deviations
-
-
-class ShareMatrixReport3D(ShareMatrixReport2D):
-
-    def get_deviations(self, analysis):
-        return analysis.baseline_power_deviations_3D
+        sheet.col(2).width = 3000
+        sheet.col(3).width = 7000

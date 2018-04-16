@@ -2,7 +2,7 @@
 from share import ShareAnalysisBase
 from share2 import ShareAnalysis2
 from ..core.corrections import TurbulenceCorrection
-from ..core.turbine import RelaxationFactory
+from ..core.turbine import Relaxation
 from ..core.analysis import Analysis
 from ..configuration.inner_range_configuration import InnerRangeDimension
 from ..core.path_builder import PathBuilder
@@ -46,12 +46,7 @@ class ShareAnalysis3(ShareAnalysis2):
 
     def calculate_augmented_turbulence_correction_with_relaxation(self):
 
-        if self.powerCurve.inflection_point is None:
-            Status.add("Inflection point not defined, "
-                       "cannot calculate turbulence correction with relaxation", red=True)
-            return
-
-        self.powerCurve.update_zero_ti(RelaxationFactory(0.7, 0.7))
+        self.powerCurve.update_zero_ti(Relaxation(0.7))
 
         Status.add("Relaxed Zero-TI Curve")
         for i in range(len(self.powerCurve.zeroTurbulencePowerCurve.wind_speeds)):

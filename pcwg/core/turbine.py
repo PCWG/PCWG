@@ -7,126 +7,26 @@ import pandas as pd
 from ..core.status import Status
 from empirical_turbulence import AugmentedTurbulenceCorrection
 
+
 class Relaxation(object):
 
-    def __init__(self, low_wind_speed_correction, high_wind_speed_correction, inflection_point):
+    def __init__(self, correction):
 
-        self.low_wind_speed_correction = low_wind_speed_correction
-        self.high_wind_speed_correction = high_wind_speed_correction
-
-        self.inflection_point = inflection_point
-        Status.add("Inflection point: {0}".format(self.inflection_point), verbosity=3)
+        self.correction = correction
 
     def relax(self, wind_speed, turbulence):
 
-        if wind_speed > self.inflection_point:
-            return self.high_wind_speed_correction * turbulence
-        else:
-            return self.low_wind_speed_correction * turbulence
-
-
-class RelaxationFactory(object):
-    
-    def __init__(self, low_wind_speed_correction, high_wind_speed_correction):
-
-        self.low_wind_speed_correction = low_wind_speed_correction
-        self.high_wind_speed_correction = high_wind_speed_correction
-        
-    def new_relaxation(self, inflection_point):
-                
-        return Relaxation(self.low_wind_speed_correction,
-                          self.high_wind_speed_correction,
-                          inflection_point)
-
-
-class NoRelaxationFactory(object):
-
-    def new_relaxation(self, inflection_point):
-
-        # suppress unused parameter message in PyCharm
-        _ = inflection_point
-
-        return NoRelaxation()
+        return self.correction * turbulence
 
 
 class NoRelaxation(object):
     
-    def relax(self, wind_speed, turbulence):
+    def relax(self, wind_speed,turbulence):
 
-        # supress unused parameter message in PyCharm
+        # suppress unused parameter message in PyCharm
         _ = wind_speed
 
         return turbulence
-
-
-class InflectionPoint:
-
-    def __init__(self, power_function, lower_wind_speed, upper_wind_speed, rated_power):
-        self.value = self.calculate(power_function, lower_wind_speed, upper_wind_speed, rated_power)
-
-    def calculate(self, power_function, lower_wind_speed, upper_wind_speed, rated_power):
-
-        derivative = None
-        previous_derivative = None
-        wind_speed = 0.0
-        delta = 0.1
-
-        minimum_power = 0.25 * rated_power
-        maximum_power = 0.75 * rated_power
-
-        Status.add("Determining Power Curve Inflection Point")
-
-        Status.add("LowerWindSpeed: {0}".format(lower_wind_speed), verbosity=2)
-        Status.add("UpperWindSpeed: {0}".format(upper_wind_speed), verbosity=2)
-
-        Status.add("WindSpeed SecondDerivative", verbosity=3)
-
-        while wind_speed < upper_wind_speed:
-
-            if wind_speed > lower_wind_speed:
-
-                power = power_function(wind_speed)
-
-                derivative = self.power_second_derivative(power_function, wind_speed, delta)
-
-                Status.add("{0} {1}".format(wind_speed, derivative), verbosity=3)
-
-                if minimum_power < power < maximum_power:
-                    if previous_derivative is not None:
-                        if abs(derivative) > 0.0 and abs(previous_derivative) > 0.0:
-                            if (derivative * previous_derivative) < 0.0:
-                                Status.add("Inflection point found: {0}".format(wind_speed))
-                                return wind_speed
-
-            wind_speed += delta
-            previous_derivative = derivative
-
-        raise Exception("Cannot calculate inflection point:\n"
-                        "lower wind speed: {0}\n"
-                        "upper wind speed: {1}\n"
-                        "derivative: {2}\n"
-                        "previous derivative: {3}\n"
-                        .format(lower_wind_speed, upper_wind_speed, derivative, previous_derivative))
-
-    def power_second_derivative(self, power_function, wind_speed, delta):
-
-        wind_speed_m = wind_speed - delta
-        wind_speed_p = wind_speed + delta
-
-        derivative_m = self.power_derivative(power_function, wind_speed_m, delta)
-        derivative_p = self.power_derivative(power_function, wind_speed_p, delta)
-
-        return (derivative_p - derivative_m) / (wind_speed_p - wind_speed_m)
-
-    def power_derivative(self, power_function, wind_speed, delta):
-
-        wind_speed_m = wind_speed - delta
-        wind_speed_p = wind_speed + delta
-
-        power_m = power_function(wind_speed_m)
-        power_p = power_function(wind_speed_p)
-
-        return (power_p - power_m) / (wind_speed_p - wind_speed_m)
 
 
 class PowerCurve(object):
@@ -145,7 +45,7 @@ class PowerCurve(object):
                  zero_ti_pc_required=False,
                  x_limits=None,
                  sub_power=None,
-                 relaxation_factory=NoRelaxationFactory()):
+                 relaxation=NoRelaxation()):
                 
         self.name = name
         self.interpolation_mode = interpolation_mode
@@ -189,21 +89,11 @@ class PowerCurve(object):
 
         self.rated_power = self.get_rated_power(rated_power, data_frame[self.power_column])
 
-        try:
-            self.inflection_point = InflectionPoint(self.power_function,
-                                                    self.cut_in_wind_speed,
-                                                    self.cut_out_wind_speed,
-                                                    self.rated_power).value
-        except Exception as e:
-            Status.add("Inflection point calculation failed: {0}".format(e), red=True)
-            self.inflection_point = None
-
-        self._reverted_relaxation_factory = None
         self._reverted_relaxation = None
         self._reverted_simulated_power = None
         self._reverted_zero_turbulence_power_curve = None
 
-        self.set_relaxation_factory(relaxation_factory)
+        self.relaxation = relaxation
 
         self.zero_ti_pc_required = zero_ti_pc_required
 
@@ -234,30 +124,21 @@ class PowerCurve(object):
 
         return self.data_frame[~padded_levels]
 
-    def set_relaxation_factory(self, relaxation_factory):
-
-        self.relaxation_factory = relaxation_factory
-
-        self.relaxation = self.relaxation_factory.new_relaxation(self.inflection_point)
-
     def revert_zero_ti(self):
 
         if self._reverted_zero_turbulence_power_curve is None:
             raise Exception('Cannot revert zero turbulence power curve')
 
-        self.relaxation_factory = self._reverted_relaxation_factory
         self.relaxation = self._reverted_relaxation
         self.simulatedPower = self._reverted_simulated_power
         self.zeroTurbulencePowerCurve = self._reverted_zero_turbulence_power_curve
 
-        self._reverted_relaxation_factory = None
         self._reverted_relaxation = None
         self._reverted_simulated_power = None
         self._reverted_zero_turbulence_power_curve = None
 
-    def update_zero_ti(self, relaxation_factory=None):
+    def update_zero_ti(self, relaxation=None):
 
-        self._reverted_relaxation_factory = self.relaxation_factory
         self._reverted_relaxation = self.relaxation
 
         if hasattr(self, 'simulatedPower'):
@@ -266,11 +147,11 @@ class PowerCurve(object):
         if hasattr(self, 'zeroTurbulencePowerCurve'):
             self._reverted_zero_turbulence_power_curve = self.zeroTurbulencePowerCurve
 
-        if relaxation_factory is not None:
-            self.set_relaxation_factory(relaxation_factory)
-
         Status.add("Zero TI Required: {0}".format(self.zero_ti_pc_required), verbosity=3)
-           
+
+        if relaxation is not None:
+            self.relaxation = relaxation
+
         if self.zero_ti_pc_required:
 
             Status.add("Calculating zero turbulence curve for {0} Power Curve".format(self.name), verbosity=3)
@@ -283,9 +164,9 @@ class PowerCurve(object):
                 err_msg = "Calculation of zero turbulence curve for {0}" \
                           " Power Curve unsuccessful: {1}".format(self.name, error)
                 raise Exception(err_msg)
-                
+
         else:
-            
+
             self.zeroTurbulencePowerCurve = None
             self.simulatedPower = None
 
@@ -444,7 +325,8 @@ class PowerCurve(object):
             reference_turbulence = self.reference_turbulence(wind_speed)
 
             simulated_power_site = self.simulatedPower.power(wind_speed,
-                                                             self.relaxation.relax(wind_speed, turbulence))
+                                                             self.relaxation.relax(wind_speed,
+                                                                                   turbulence))
 
             simulated_power_reference = self.simulatedPower.power(wind_speed,
                                                                   self.relaxation.relax(wind_speed,
@@ -641,7 +523,11 @@ class ZeroTurbulencePowerCurve(object):
             self.powers.append(power)
 
         self.powerFunction = scipy.interpolate.interp1d(self.wind_speeds, self.powers)
-        
+
+        self.zero_ti_rated_power = self.initial_zero_turbulence_power_curve.rated_power
+        self.zero_ti_rated_wind_speed = self.initial_zero_turbulence_power_curve.rated_wind_speed
+        self.zero_ti_cut_in_wind_speed = self.initial_zero_turbulence_power_curve.cut_in_wind_speed
+
         self.min_wind_speed = min(self.wind_speeds)
         self.df_power_levels = pd.DataFrame(self.powers, index=self.wind_speeds, columns=['Power'])
 
@@ -678,8 +564,8 @@ class InitialZeroTurbulencePowerCurve(object):
         self.relaxation = relaxation
 
         self.reference_power_curve_stats = IterationPowerCurveStats(reference_wind_speeds,
-                                                                    reference_powers,
-                                                                    available_power)
+                                                                         reference_powers,
+                                                                         available_power)
 
         self.selected_stats = self.solve(self.reference_power_curve_stats)
 
@@ -690,7 +576,11 @@ class InitialZeroTurbulencePowerCurve(object):
                                                                       self.selected_stats.cp_max,
                                                                       self.density)
 
+
         self.rated_wind_speed = selected_iteration.rated_wind_speed
+        self.rated_power = selected_iteration.rated_power
+        self.cut_in_wind_speed = selected_iteration.cut_in_wind_speed
+
         self.wind_speeds = selected_iteration.wind_speeds
         self.powers = selected_iteration.powers
         self.power = selected_iteration.power
@@ -788,7 +678,7 @@ class InitialZeroTurbulencePowerCurveIteration(object):
                 
         for wind_speed in self.wind_speeds:
             self.powers.append(self.power(wind_speed))
-        
+
     def power(self, wind_speed):
 
         if wind_speed > self.cut_in_wind_speed:
@@ -805,7 +695,7 @@ class IterationPowerCurveStats(object):
     def __init__(self, wind_speeds, powers, available_power):
 
         self.rated_power = max(powers)
-        
+
         threshold_power = self.rated_power * 0.001
 
         operating_wind_speeds = []
@@ -827,7 +717,7 @@ class IterationPowerCurveStats(object):
             self.cut_in_wind_speed = min(operating_wind_speeds)
         else:
             self.cut_in_wind_speed = 0.0
-                  
+
 
 class SimulatedPower(object):
 
@@ -851,11 +741,12 @@ class SimulatedPower(object):
         else:
             return 0.0
 
+
 class SimulatedPowerCurve(object):
 
     def __init__(self, wind_speeds, zero_turbulence_power_curve, turbulence_values, integration_range, relaxation):
 
-        simulated_power = SimulatedPower(zero_turbulence_power_curve, integration_range)
+        self.simulated_power = SimulatedPower(zero_turbulence_power_curve, integration_range)
 
         self.relaxation = relaxation
         self.wind_speeds = wind_speeds
@@ -865,7 +756,10 @@ class SimulatedPowerCurve(object):
         for i in range(len(wind_speeds)):
 
             wind_speed = wind_speeds[i]
-            turbulence = self.relaxation.relax(wind_speed, turbulence_values[i])
+
+            turbulence = self.relaxation.relax(wind_speed,
+                                               turbulence_values[i])
             
-            power = simulated_power.power(wind_speed, turbulence)
+            power = self.simulated_power.power(wind_speed, turbulence)
+
             self.powers.append(power)

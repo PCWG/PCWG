@@ -4,6 +4,8 @@ from os import remove
 
 from pcwg.share.share_factory import ShareAnalysisFactory
 from pcwg.share.share import ShareXPortfolio
+from pcwg.share.share_matrix import ShareMatrix
+
 from pcwg.configuration.portfolio_configuration import PortfolioConfiguration
 
 from xlrd import open_workbook
@@ -82,7 +84,7 @@ def compare_sheets(test_report, test_sheet, benchmark, benchmark_sheet='Manual',
                     print '- R{0}C{1} difference detected: {2:.4%} expected vs {3:.4%} actual'.format(row + 1,column + 1,benchmark_value,test_value)
             elif not is_string(test_value):
                     different += 1
-                    print '- R{0}C{1} difference detected: {2} expected vs {3.4%} actual'.format(row + 1,column + 1,benchmark_value,test_value)
+                    print '- R{0}C{1} difference detected: {2} expected vs {3:.4%} actual'.format(row + 1,column + 1,benchmark_value,test_value)
 
     fraction_different = float(different) / float(total)
 
@@ -120,6 +122,14 @@ def extract_test_file(zip_file_name, member, path):
     with ZipFile(zip_file_name) as z:
         z.extract(member=member, path=path)
 
+def test_matrix():
+
+    benchmark_folder = join(getcwd(), 'ShareBenchmarks')
+
+    portfolio_path = join(benchmark_folder, 'portfolio.xml')
+
+    portfolio = ShareMatrix(PortfolioConfiguration(portfolio_path))
+
 
 def test_share(rerun=True, cleanup=True):
 
@@ -144,30 +154,31 @@ def test_share(rerun=True, cleanup=True):
 
     extract_test_file(zip_path, member=test_report, path=benchmark_folder)
 
-    compare_sheets(test_path, 'Baseline',   join(benchmark_folder, 'Dataset 1 - Baseline - 01.xlsx'))
-    compare_sheets(test_path, 'Den & Turb', join(benchmark_folder, 'Dataset 1 - Turbulence Renormalisation - 01.xlsx'))
+    #compare_sheets(test_path, 'Baseline',   join(benchmark_folder, 'Dataset 1 - Baseline - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & Turb', join(benchmark_folder, 'Dataset 1 - Turbulence Renormalisation - 01.xlsx'))
 
-    compare_sheets(test_path, 'Den & REWS (S)', join(benchmark_folder, 'Dataset 1 - REWS - 01.xlsx'))
-    compare_sheets(test_path, 'Den & REWS (S+V)', join(benchmark_folder, 'Dataset 1 - REWS and Veer - 01.xlsx'))
-    compare_sheets(test_path, 'Den & REWS (S+V+U)', join(benchmark_folder, 'Dataset 1 - REWS and Veer and Upflow - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & REWS (S)', join(benchmark_folder, 'Dataset 1 - REWS - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & REWS (S+V)', join(benchmark_folder, 'Dataset 1 - REWS and Veer - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & REWS (S+V+U)', join(benchmark_folder, 'Dataset 1 - REWS and Veer and Upflow - 01.xlsx'))
 
-    compare_sheets(test_path, 'Den & P by H', join(benchmark_folder, 'Dataset 1 - Prod By Height - 01.xlsx'))
-    compare_sheets(test_path, 'Den & Aug Turb (Relaxed)', join(benchmark_folder, 'Dataset 1 - Turbulence Renormalisation Augmented - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & P by H', join(benchmark_folder, 'Dataset 1 - Prod By Height - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & Aug Turb (Relaxed)', join(benchmark_folder, 'Dataset 1 - Turbulence Renormalisation Augmented - 01.xlsx'))
 
-    compare_sheets(test_path, 'Den & RAWS (S)', join(benchmark_folder, 'Dataset 1 - RAWS - 01.xlsx'))
-    compare_sheets(test_path, 'Den & RAWS (S+V)', join(benchmark_folder, 'Dataset 1 - RAWS and Veer - 01.xlsx'))
-    compare_sheets(test_path, 'Den & RAWS (S+V+U)', join(benchmark_folder, 'Dataset 1 - RAWS and Veer and Upflow - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & RAWS (S)', join(benchmark_folder, 'Dataset 1 - RAWS - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & RAWS (S+V)', join(benchmark_folder, 'Dataset 1 - RAWS and Veer - 01.xlsx'))
+    #compare_sheets(test_path, 'Den & RAWS (S+V+U)', join(benchmark_folder, 'Dataset 1 - RAWS and Veer and Upflow - 01.xlsx'))
 
-    compare_sheets(test_path, 'Den, REWS (S) & Turb',join(benchmark_folder, 'Dataset 1 - REWS and Turbulence Renormalisation - 01.xlsx'))
-    compare_sheets(test_path, 'Den, REWS (S+V) & Turb',join(benchmark_folder, 'Dataset 1 - REWS (S+V) and Turbulence Renormalisation - 01.xlsx'))
-    compare_sheets(test_path, 'Den, REWS (S+V+U) & Turb',join(benchmark_folder, 'Dataset 1 - REWS (S+V+U) and Turbulence Renormalisation - 01.xlsx'))
+    #compare_sheets(test_path, 'Den, REWS (S) & Turb',join(benchmark_folder, 'Dataset 1 - REWS and Turbulence Renormalisation - 01.xlsx'))
+    #compare_sheets(test_path, 'Den, REWS (S+V) & Turb',join(benchmark_folder, 'Dataset 1 - REWS (S+V) and Turbulence Renormalisation - 01.xlsx'))
+    #compare_sheets(test_path, 'Den, REWS (S+V+U) & Turb',join(benchmark_folder, 'Dataset 1 - REWS (S+V+U) and Turbulence Renormalisation - 01.xlsx'))
 
     # not working
-    #compare_sheets(test_path, 'Den & 2D PDM', join(benchmark_folder, 'Dataset 1 - 2D Matrix - 01.xlsx'))
+    compare_sheets(test_path, 'Den & 2D PDM', join(benchmark_folder, 'Dataset 1 - 2D Matrix - 01.xlsx'))
     #compare_sheets(test_path, 'Den & 3D PDM', join(benchmark_folder, 'Dataset 1 - 3D Matrix - 01.xlsx'))
 
     if cleanup:
         remove(zip_path)
         remove(test_path)
 
-test_share(rerun=True, cleanup=True)
+if __name__ == "__main__":
+    test_share(rerun=True, cleanup=True)

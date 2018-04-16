@@ -91,6 +91,9 @@ class ShareAnalysisBase(Analysis):
 
         Analysis.__init__(self, config=None)
 
+
+    def calculate_analysis(self):
+        Analysis.calculate_analysis(self)
         self.pcwg_share_metrics_calc()
 
     def hash_file_contents(self, file_path):
@@ -537,7 +540,7 @@ class PcwgShareX(object):
             Status.add("Report written to {0}".format(temp_file_name))
             
             Status.add("Adding {0} to output zip.".format(temp_file_name))
-            output_zip.write(temp_file_name)
+            output_zip.write(temp_file_name, os.path.basename(temp_file_name))
             Status.add("{0} added to output zip.".format(temp_file_name))
 
             Status.add("Deleting {0}.".format(temp_file_name))
@@ -577,9 +580,6 @@ class ShareXPortfolio(object):
 
         self.calculate()
 
-    def new_share(self, dataset, output_zip):
-        return PcwgShareX(dataset, output_zip=output_zip, share_factory=self.share_factory)
-
     def output_paths_status(self, zip_file, summary_file):
         Status.add("Detailed results will be stored in: {0}".format(zip_file))
         Status.add("Summary results will be stored in: {0}".format(summary_file))
@@ -595,56 +595,33 @@ class ShareXPortfolio(object):
         start_time = datetime.datetime.now()
         Status.add("Running portfolio: {0}".format(self.portfolio_path))
         self.shares = []
-        
-        zip_file = self.get_zip_file_path()
+
         summary_file = self.get_summary_file_path()
-        
-        if os.path.exists(zip_file):
-            os.remove(zip_file)
-    
+
         if os.path.exists(summary_file):
             os.remove(summary_file)
-            
+
+        zip_file = self.get_zip_file_path()
+
+        if os.path.exists(zip_file):
+            os.remove(zip_file)
+
         self.output_paths_status(zip_file, summary_file)
 
         active_datasets = self.portfolio.get_active_datasets()
 
         Status.set_portfolio_status(0, len(active_datasets), False)
+        successful = 0
 
         with zipfile.ZipFile(zip_file, 'w') as output_zip:
 
-            for index, item in enumerate(active_datasets):
-
-                Status.add("Loading dataset {0}".format(index + 1)) 
-                dataset = DatasetConfiguration(item.absolute_path)                
-                Status.add("Dataset {0} loaded = ".format(index + 1, dataset.name)) 
-                
-                Status.add("Verifying dataset {0}".format(dataset.name))
-                
-                if not self.verify_share_configs(dataset):
-
-                    Status.add("Dataset Verification Failed for {0}".format(dataset.name), red=True)
-                    
-                else:
-                    
-                    Status.add("Dataset {0} Verified".format(dataset.name))
-                    
-                    Status.add("Running: {0}".format(dataset.name))
-                    share = self.new_share(dataset, output_zip)
-
-                    if share.success:
-                        self.shares.append(share)
-
-                Status.set_portfolio_status(index + 1, len(active_datasets), False)
-
-            if len(self.shares) < 1:
-                Status.add("No successful results to summarise")
+            successful = self.calculate_all_datasets(active_datasets, output_zip)
 
             self.report_summary(summary_file, output_zip)
 
         self.clean_up(zip_file)
 
-        Status.set_portfolio_status(len(self.shares), len(active_datasets), True)
+        Status.set_portfolio_status(successful, len(active_datasets), True)
 
         end_time = datetime.datetime.now()
         Status.add("Portfolio Run Complete")
@@ -652,6 +629,48 @@ class ShareXPortfolio(object):
         time_message = "Time taken: {0}".format((end_time - start_time).total_seconds())
 
         Status.add(time_message)
+
+    def calculate_all_datasets(self, active_datasets, output_zip):
+
+        successful = 0
+
+        for index, item in enumerate(active_datasets):
+
+            Status.set_portfolio_status(index + 1, len(active_datasets), False)
+
+            Status.add("Loading dataset {0}".format(index + 1))
+            dataset = DatasetConfiguration(item.absolute_path)
+            Status.add("Dataset {0} loaded = ".format(index + 1, dataset.name))
+
+            Status.add("Verifying dataset {0}".format(dataset.name))
+
+            if not self.verify_share_configs(dataset):
+
+                Status.add("Dataset Verification Failed for {0}".format(dataset.name), red=True)
+
+            else:
+
+                Status.add("Dataset {0} Verified".format(dataset.name))
+
+                Status.add("Running: {0}".format(dataset.name))
+
+                if self.calculate_dataset(dataset, output_zip):
+                    successful += 1
+
+        return successful
+
+        if len(self.shares) < 1:
+            Status.add("No successful results to summarise")
+
+    def calculate_dataset(self, dataset, output_zip):
+
+        share = PcwgShareX(dataset, output_zip=output_zip, share_factory=self.share_factory)
+
+        if share.success:
+            self.shares.append(share)
+            return True
+        else:
+            return Falsee
 
     def clean_up(self, zip_file):
         pass
@@ -734,17 +753,9 @@ class ShareXPortfolio(object):
         report.report(self.shares, summary_file)
         Status.add("Report written to {0}".format(summary_file))
 
-        summary_file_for_zip = "Summary.xls"
+        Status.add("Adding {0} to output zip.".format(summary_file))
+        output_zip.write(summary_file, os.path.basename(summary_file))
+        Status.add("{0} added to output zip.".format(summary_file))
 
-        if os.path.isfile(summary_file_for_zip):
-            os.remove(summary_file_for_zip)
-        
-        Status.add("Copying to {0}".format(summary_file_for_zip))
-        copyfile(summary_file, summary_file_for_zip)
-
-        Status.add("Adding {0} to output zip.".format(summary_file_for_zip))
-        output_zip.write(summary_file_for_zip)
-        Status.add("{0} added to output zip.".format(summary_file_for_zip))
-
-        Status.add("Deleting {0}".format(summary_file_for_zip))
-        os.remove(summary_file_for_zip)
+        Status.add("Deleting {0}".format(summary_file))
+        os.remove(summary_file)

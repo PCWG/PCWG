@@ -6,26 +6,23 @@ from share import ShareXPortfolio
 from share import PcwgShareX
 
 from ..core.analysis import Analysis
-from ..core.status import Status
 from ..core.power_deviation_matrix import DeviationMatrixDefinition
 from ..configuration.power_deviation_matrix_configuration import PowerDeviationMatrixDimension
 from ..configuration.power_deviation_matrix_configuration import PowerDeviationMatrixConfiguration
-from ..reporting.share_matrix_report import ShareMatrixReport2D
-from ..reporting.share_matrix_report import ShareMatrixReport3D
+from ..reporting.share_matrix_report import ShareMatrixReport
+
+from ..core.status import Status
+from ..exceptions.handling import ExceptionHandler
 
 
 class ShareMatrixAnalysisFactory(object):
 
-    def __init__(self,):
+    def __init__(self):
         self.share_name = 'ShareMatrix'
-        self.active_inner_range = None
 
     def new_share_analysis(self, dataset):
 
-        if self.active_inner_range is None:
-            raise Exception('Active inner range not defined')
-
-        return ShareAnalysisMatrix(dataset, self.active_inner_range)
+        return ShareAnalysisMatrix(dataset)
 
 
 class CombinedMatrix(object):
@@ -35,11 +32,11 @@ class CombinedMatrix(object):
         self.count_matrix = count_matrix
 
 
-class PostProcessMatrices2D(object):
+class PostProcessMatrices(object):
 
-    def __init__(self, shares):
+    def __init__(self, results):
 
-        self.shares = shares
+        self.results = results
 
         average_of_matrices = None
         average_of_deviations = None
@@ -49,43 +46,38 @@ class PostProcessMatrices2D(object):
 
         bins = None
 
-        for share in self.shares:
+        for result in self.results:
 
-            if share.analysis is not None:
+            deviation_matrix = result.power_deviations.deviation_matrix.fillna(0)
+            count_matrix = result.power_deviations.count_matrix.fillna(0)
 
-                #share.analysis.dataFrame.to_csv('matrix_debug.dat')
-                power_deviations = self.get_power_deviations(share.analysis)
+            mask = count_matrix < ShareAnalysisMatrix.MINIMUM_COUNT
+            count_matrix[mask] = 0
 
-                deviation_matrix = power_deviations.deviation_matrix.fillna(0)
-                count_matrix = power_deviations.count_matrix.fillna(0)
+            count_matrix_average_of_matrices = count_matrix.copy()
+            count_matrix_average_of_matrices[~mask] = 1
 
-                mask = count_matrix < ShareAnalysisMatrix.MINIMUM_COUNT
-                count_matrix[mask] = 0
+            if bins is None:
 
-                count_matrix_average_of_matrices = count_matrix.copy()
-                count_matrix_average_of_matrices[~mask] = 1
+                average_of_deviations = deviation_matrix * count_matrix
+                average_of_matrices = deviation_matrix
+                total_average_of_deviations = count_matrix
+                total_average_of_matrices = count_matrix_average_of_matrices
+                bins = result.bins
 
-                if bins is None:
+            else:
 
-                    average_of_deviations = deviation_matrix * count_matrix
-                    average_of_matrices = deviation_matrix
-                    total_average_of_deviations = count_matrix
-                    total_average_of_matrices = count_matrix_average_of_matrices
-                    bins = self.get_bins(share.analysis)
-
-                else:
-
-                    average_of_deviations = average_of_deviations.add(deviation_matrix * count_matrix,
-                                                                      fill_value=0.0)
-
-                    average_of_matrices = average_of_matrices.add(deviation_matrix * count_matrix_average_of_matrices,
+                average_of_deviations = average_of_deviations.add(deviation_matrix * count_matrix,
                                                                   fill_value=0.0)
 
-                    total_average_of_deviations = total_average_of_deviations.add(count_matrix,
-                                                                                  fill_value=0.0)
+                average_of_matrices = average_of_matrices.add(deviation_matrix * count_matrix_average_of_matrices,
+                                                              fill_value=0.0)
 
-                    total_average_of_matrices = total_average_of_matrices.add(count_matrix_average_of_matrices,
+                total_average_of_deviations = total_average_of_deviations.add(count_matrix,
                                                                               fill_value=0.0)
+
+                total_average_of_matrices = total_average_of_matrices.add(count_matrix_average_of_matrices,
+                                                                          fill_value=0.0)
 
         if bins is not None:
 
@@ -110,86 +102,134 @@ class PostProcessMatrices2D(object):
             self.average_of_matrices_matrix = None
             self.average_of_deviations_matrix = None
 
-    def get_power_deviations(self, analysis):
-        return analysis.baseline_power_deviations
 
-    def get_bins(self, analysis):
-        return analysis.calculated_power_deviation_matrix_definition.bins
+class ShareMatrixResults(object):
 
+    def __init__(self, deviations, bins):
+        self.power_deviations = deviations
+        self.bins = bins
 
-class PostProcessMatrices3D(PostProcessMatrices2D):
+class ShareMatrixInfo(object):
 
-    def get_power_deviations(self, analysis):
-        return analysis.baseline_power_deviations_3D
-
-    def get_bins(self, analysis):
-        return analysis.calculated_power_deviation_matrix_definition_3D.bins
-
+    def __init__(self, share):
+        self.interpolation_mode = share.analysis.interpolationMode
+        self.inner_range = share.analysis.matrix_inner_range
 
 class ShareMatrix(ShareXPortfolio):
 
     def __init__(self, portfolio_configuration):
 
-        self.report_count = 0
+        self.results_by_range_2D = {}
+        self.results_by_range_3D = {}
+        self.infos_by_range = {}
 
-        ShareXPortfolio.__init__(self, portfolio_configuration, ShareMatrixAnalysisFactory())
+        ShareXPortfolio.__init__(self, portfolio_configuration, share_factory=ShareMatrixAnalysisFactory())
 
-    def active_inner_range(self):
-        return self.share_factory.active_inner_range
+    def calculate_dataset(self, dataset, output_zip):
 
-    def calculate(self):
-
-        self.report_count = 0
+        share = PcwgShareMatrix(dataset, output_zip=output_zip)
+        success = False
 
         for inner_range in sorted(ShareAnalysisBase.pcwg_inner_ranges):
-            Status.add('Calculating matrix for inner rnage {0}'.format(inner_range))
-            self.share_factory.active_inner_range = inner_range
-            ShareXPortfolio.calculate(self)
 
-        if self.report_count < 1:
-            Status.add("No results to export any Inner Range")
+            if inner_range not in self.infos_by_range:
+                self.infos_by_range[inner_range] = []
+                self.results_by_range_2D[inner_range] = []
+                self.results_by_range_3D[inner_range] = []
 
-    def new_share(self, dataset, output_zip):
-        return PcwgShareMatrix(dataset, output_zip=output_zip, share_factory=self.share_factory)
+            Status.add('Calculating matrix for inner range {0}'.format(inner_range))
+
+            share.calculate_for_range(inner_range)
+
+            if share.success:
+
+                results_2D = ShareMatrixResults(share.analysis.baseline_power_deviations,
+                                                share.analysis.calculated_power_deviation_matrix_definition.bins)
+
+                results_3D = ShareMatrixResults(share.analysis.baseline_power_deviations,
+                                                share.analysis.calculated_power_deviation_matrix_definition.bins)
+
+                self.infos_by_range[inner_range].append(ShareMatrixInfo(share))
+                self.results_by_range_2D[inner_range].append(results_2D)
+                self.results_by_range_3D[inner_range].append(results_3D)
+
+                success = True
+
+        return success
 
     def output_paths_status(self, zip_file, summary_file):
         Status.add("Matrix results will be stored in: {0}".format(summary_file))
 
-    def clean_up(self, zip_file):
-        os.remove(zip_file)
-
     def report_summary(self, summary_file, output_zip):
 
-        reported = self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-2D-Range{0}'.format(self.active_inner_range())),
-                                 PostProcessMatrices2D,
-                                 ShareMatrixReport2D)
+        report_count_2D = 0
+        report_count_3D = 0
 
-        self.report_summary_base(summary_file.replace('ShareMatrix', 'ShareMatrix-3D-Range{0}'.format(self.active_inner_range())),
-                                 PostProcessMatrices3D,
-                                 ShareMatrixReport3D)
+        for inner_range in sorted(ShareAnalysisBase.pcwg_inner_ranges):
 
-        if reported:
-            self.report_count += 1
+            if self.report_dimensionality(summary_file, output_zip, inner_range, '2D'):
+                report_count_2D += 1
+
+            if self.report_dimensionality(summary_file, output_zip, inner_range, '3D'):
+                report_count_3D += 1
+
+        if report_count_2D < 1:
+            Status.add("No 2D results to export for any Inner Range {0}")
+
+        if report_count_3D < 1:
+            Status.add("No 3D results to export for any Inner Range {0}")
+
+    def report_dimensionality(self, summary_file, output_zip, inner_range, dimensionality):
+
+        if dimensionality == '2D':
+            results = self.results_by_range_2D[inner_range]
+        elif dimensionality == '3D':
+            results = self.results_by_range_3D[inner_range]
         else:
-            Status.add("No results to export for Inner Range {0}".format(self.share_factory.active_inner_range))
+            raise Exception('Unexpected dimensionality: {0}'.format(dimensionality))
 
-    def report_summary_base(self, summary_file, post_process_constructor, report_constructor):
+        count = len(results)
+        infos = self.infos_by_range[inner_range]
 
-        post_processed = post_process_constructor(self.shares)
+        if count > 0:
+
+            out_file = summary_file.replace('ShareMatrix', 'ShareMatrix-{0}-Range{1}'.format(dimensionality, inner_range))
+
+            return self.report_summary_base(output_zip,
+                                            out_file,
+                                            infos,
+                                            results)
+
+        else:
+
+            Status.add("No 2D results to export for Inner Range {0}".format(inner_range))
+            return False
+
+    def report_summary_base(self, output_zip, summary_file, infos, results):
+
+        post_processed = PostProcessMatrices(results)
 
         if not post_processed.valid:
             return False
 
         Status.add("Exporting excel results to {0}".format(summary_file))
-        report = report_constructor()
+        report = ShareMatrixReport()
 
         report.report(post_processed.bins,
-                      post_processed.shares,
+                      infos,
+                      results,
                       post_processed.average_of_matrices_matrix,
                       post_processed.average_of_deviations_matrix,
                       summary_file)
 
         Status.add("Excel Report written to {0}".format(summary_file))
+
+        Status.add("Adding {0} to output zip.".format(summary_file))
+        output_zip.write(summary_file, os.path.basename(summary_file))
+        Status.add("{0} added to output zip.".format(summary_file))
+
+        Status.add("Deleting {0}".format(summary_file))
+        os.remove(summary_file)
 
         xml_path = summary_file.replace('.xls', '.xml')
 
@@ -199,35 +239,68 @@ class ShareMatrix(ShareXPortfolio):
 
         pdm_output.save(xml_path,
                         post_processed.bins,
-                        post_processed.average_of_deviations_matrix)
+                        post_processed.average_of_matrices_matrix)
 
         Status.add("XML results written to {0}".format(xml_path))
+
+        Status.add("Adding {0} to output zip.".format(xml_path))
+        output_zip.write(xml_path, os.path.basename(xml_path))
+        Status.add("{0} added to output zip.".format(xml_path))
+
+        Status.add("Deleting {0}".format(xml_path))
+        os.remove(xml_path)
 
         return True
 
 class PcwgShareMatrix(PcwgShareX):
 
+    def __init__(self, dataset, output_zip):
+
+        PcwgShareX.__init__(self, dataset, output_zip, ShareMatrixAnalysisFactory())
+
     def export_report(self, output_zip):
         pass
 
+    def calculate_for_range(self, inner_range):
 
-class ShareAnalysisMatrix(ShareAnalysisBase):  # (ShareAnalysisBase):
+        self.analysis.calculate_for_range(inner_range)
+        self.success = self.analysis.success
+
+        if not self.success:
+            Status.add("Could not calculate Share Matrix for range {0}.".format(inner_range))
+        else:
+            Status.add("Share Matrix generated for range {0}.".format(inner_range))
+
+
+class ShareAnalysisMatrix(ShareAnalysisBase):
 
     MINIMUM_COUNT = 10
 
-    def __init__(self, dataset, override_inner_range):
+    def __init__(self, dataset):
 
-        self.override_inner_range = override_inner_range
+        self.success = False
+
+        self.matrix_inner_range = None
 
         ShareAnalysisBase.__init__(self, dataset)
 
+    def calculate_analysis(self):
+        pass
+
+    def calculate_for_range(self, inner_range):
+        try:
+            self.matrix_inner_range = inner_range
+            ShareAnalysisBase.calculate_analysis(self)
+            self.success = True
+        except ExceptionHandler.ExceptionType as e:
+            self.success = False
+
     def get_inner_ranges(self):
-        return {self.override_inner_range: ShareAnalysisBase.pcwg_inner_ranges[self.override_inner_range]}
+        return {self.matrix_inner_range: ShareAnalysisBase.pcwg_inner_ranges[self.matrix_inner_range]}
 
     def calculate_power_deviation_matrices(self):
 
         Analysis.calculate_power_deviation_matrices(self)
-        #self.baseline_power_deviations = self.corrected_deviations[self.corrections.keys()[0]]
 
         self.baseline_power_deviations_3D = \
             self.calculated_power_deviation_matrix_definition_3D.new_deviation_matrix(self.dataFrame,
