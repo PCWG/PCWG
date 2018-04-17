@@ -284,6 +284,14 @@ class ShareAnalysisMatrix(ShareAnalysisBase):
 
         ShareAnalysisBase.__init__(self, dataset)
 
+    def calculate_pcwg_overall_metrics(self):
+        # speed optimisation
+        pass
+
+    def calculate_pcwg_binned_metrics(self):
+        # speed optimisation
+        pass
+
     def calculate_analysis(self):
         pass
 
