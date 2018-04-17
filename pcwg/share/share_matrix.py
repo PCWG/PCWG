@@ -146,8 +146,8 @@ class ShareMatrix(ShareXPortfolio):
                 results_2D = ShareMatrixResults(share.analysis.baseline_power_deviations,
                                                 share.analysis.calculated_power_deviation_matrix_definition.bins)
 
-                results_3D = ShareMatrixResults(share.analysis.baseline_power_deviations,
-                                                share.analysis.calculated_power_deviation_matrix_definition.bins)
+                results_3D = ShareMatrixResults(share.analysis.baseline_power_deviations_3D,
+                                                share.analysis.calculated_power_deviation_matrix_definition_3D.bins)
 
                 self.infos_by_range[inner_range].append(ShareMatrixInfo(share))
                 self.results_by_range_2D[inner_range].append(results_2D)

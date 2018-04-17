@@ -622,6 +622,8 @@ class Dataset:
 
         if config.calibrationMethod == "Specified":
 
+            Status.add('Applying specificing calibration')
+
             calibrationSlopes = {}
             calibrationOffsets = {}
             calibrationActives = {}
@@ -645,7 +647,7 @@ class Dataset:
                 raise Exception("The specified slopes have different bin centres to that specified by siteCalibrationCenterOfFirstSector which is: {0}".format(config.siteCalibrationCenterOfFirstSector))
         else:
 
-            df = dataFrame.copy()
+            Status.add('Calculating calibration')
 
             calibration = self.getCalibrationMethod(config.calibrationMethod,config.referenceWindSpeed, config.turbineLocationWindSpeed, timeStepInSeconds, dataFrame)
 
@@ -662,7 +664,6 @@ class Dataset:
 
             siteCalibCalc = self.createSiteCalibrationCalculator(dataFrame,config.referenceWindSpeed, calibration)
             self._v_ratio_convergence_check()
-            dataFrame = df
 
             return siteCalibCalc
             

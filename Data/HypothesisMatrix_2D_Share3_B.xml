@@ -25,36 +25,10 @@
 				</CellDimension>
 				<CellDimension>
 					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.020000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.223019</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.100000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.030000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.175907</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.100000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.146173</Value>
+			<Value>-0.051927</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -67,7 +41,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.097175</Value>
+			<Value>-0.072257</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -80,7 +54,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.108384</Value>
+			<Value>-0.036650</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -93,7 +67,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.027761</Value>
+			<Value>-0.000194</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -106,7 +80,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.009511</Value>
+			<Value>0.019261</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -119,7 +93,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.035251</Value>
+			<Value>0.058986</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -132,7 +106,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.017975</Value>
+			<Value>0.046183</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -145,7 +119,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.033552</Value>
+			<Value>0.060332</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -158,7 +132,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.051143</Value>
+			<Value>0.033481</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -171,7 +145,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.069006</Value>
+			<Value>0.050606</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -184,7 +158,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.088415</Value>
+			<Value>0.108681</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -197,7 +171,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.081762</Value>
+			<Value>0.074416</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -210,7 +184,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.125320</Value>
+			<Value>0.045905</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -223,7 +197,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.115971</Value>
+			<Value>0.063143</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -236,7 +210,7 @@
 					<BinCenter>0.180000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.103544</Value>
+			<Value>0.167249</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -249,7 +223,7 @@
 					<BinCenter>0.190000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.191439</Value>
+			<Value>0.217676</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -262,20 +236,7 @@
 					<BinCenter>0.200000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.048292</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.100000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.210000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.299035</Value>
+			<Value>0.035292</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -288,7 +249,7 @@
 					<BinCenter>0.020000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.177161</Value>
+			<Value>-0.119433</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -301,7 +262,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.172846</Value>
+			<Value>-0.108392</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -314,7 +275,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.135321</Value>
+			<Value>-0.064346</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -327,7 +288,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.099730</Value>
+			<Value>-0.037027</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -340,7 +301,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.055298</Value>
+			<Value>-0.050952</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -353,7 +314,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.034141</Value>
+			<Value>-0.007177</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -366,7 +327,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.024920</Value>
+			<Value>-0.016261</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -379,7 +340,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.008630</Value>
+			<Value>0.021332</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -392,7 +353,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000766</Value>
+			<Value>-0.003017</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -405,7 +366,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.007548</Value>
+			<Value>0.005631</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -418,7 +379,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.019249</Value>
+			<Value>0.004084</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -431,7 +392,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.036727</Value>
+			<Value>0.032102</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -444,7 +405,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.057430</Value>
+			<Value>0.029712</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -457,7 +418,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.066870</Value>
+			<Value>0.041061</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -470,7 +431,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.093633</Value>
+			<Value>0.027928</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -483,7 +444,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.100919</Value>
+			<Value>0.027454</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -496,7 +457,7 @@
 					<BinCenter>0.180000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.097279</Value>
+			<Value>0.143465</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -509,7 +470,7 @@
 					<BinCenter>0.190000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.086252</Value>
+			<Value>0.066517</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -522,33 +483,7 @@
 					<BinCenter>0.200000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.107174</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.200000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.210000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.136666</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.200000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.220000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.120785</Value>
+			<Value>0.114345</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -561,7 +496,7 @@
 					<BinCenter>0.020000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.126739</Value>
+			<Value>-0.132746</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -574,7 +509,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.137024</Value>
+			<Value>-0.136967</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -587,7 +522,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.127532</Value>
+			<Value>-0.087184</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -600,7 +535,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.072219</Value>
+			<Value>-0.046560</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -613,7 +548,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.059466</Value>
+			<Value>-0.030365</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -626,7 +561,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.032334</Value>
+			<Value>-0.014234</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -639,7 +574,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.013537</Value>
+			<Value>-0.001297</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -652,7 +587,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.005014</Value>
+			<Value>0.002402</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -665,7 +600,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000465</Value>
+			<Value>0.022889</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -678,7 +613,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.023498</Value>
+			<Value>0.032693</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -691,7 +626,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.028733</Value>
+			<Value>0.039862</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -704,7 +639,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.049558</Value>
+			<Value>0.053234</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -717,7 +652,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.027271</Value>
+			<Value>0.016496</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -730,7 +665,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.048682</Value>
+			<Value>0.036896</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -743,7 +678,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.086393</Value>
+			<Value>0.082280</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -756,7 +691,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.074321</Value>
+			<Value>0.111735</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -769,7 +704,7 @@
 					<BinCenter>0.180000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.122585</Value>
+			<Value>0.124091</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -782,7 +717,7 @@
 					<BinCenter>0.190000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.137423</Value>
+			<Value>0.074165</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -795,7 +730,7 @@
 					<BinCenter>0.200000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.063077</Value>
+			<Value>0.070737</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -808,20 +743,7 @@
 					<BinCenter>0.210000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.121876</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.300000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.220000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.042817</Value>
+			<Value>0.148781</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -834,7 +756,7 @@
 					<BinCenter>0.020000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.143402</Value>
+			<Value>-0.130568</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -847,7 +769,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.153823</Value>
+			<Value>-0.168652</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -860,7 +782,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.097198</Value>
+			<Value>-0.080603</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -873,7 +795,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.082135</Value>
+			<Value>-0.055449</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -886,7 +808,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.048394</Value>
+			<Value>-0.035088</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -899,7 +821,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.028000</Value>
+			<Value>-0.018123</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -912,7 +834,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003483</Value>
+			<Value>0.010724</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -925,7 +847,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.001978</Value>
+			<Value>-0.000965</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -938,7 +860,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.015886</Value>
+			<Value>0.035904</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -951,7 +873,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.014523</Value>
+			<Value>0.006152</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -964,7 +886,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.021448</Value>
+			<Value>0.027692</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -977,7 +899,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.039350</Value>
+			<Value>0.031212</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -990,7 +912,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.042620</Value>
+			<Value>0.039133</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1003,7 +925,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.063556</Value>
+			<Value>0.068373</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1016,7 +938,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.086259</Value>
+			<Value>0.043625</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1029,7 +951,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.066249</Value>
+			<Value>0.076693</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1042,7 +964,7 @@
 					<BinCenter>0.180000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.115135</Value>
+			<Value>0.104039</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1055,20 +977,7 @@
 					<BinCenter>0.190000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.141850</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.400000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.200000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.127569</Value>
+			<Value>0.072053</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1081,20 +990,7 @@
 					<BinCenter>0.210000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.133517</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.400000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.220000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.165363</Value>
+			<Value>0.085760</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1107,7 +1003,7 @@
 					<BinCenter>0.020000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.163998</Value>
+			<Value>-0.155549</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1120,7 +1016,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.133505</Value>
+			<Value>-0.157670</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1133,7 +1029,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.111583</Value>
+			<Value>-0.092461</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1146,7 +1042,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.076498</Value>
+			<Value>-0.077392</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1159,7 +1055,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.049802</Value>
+			<Value>-0.042136</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1172,7 +1068,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.028477</Value>
+			<Value>-0.021325</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1185,7 +1081,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.017365</Value>
+			<Value>-0.011951</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1198,7 +1094,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.012662</Value>
+			<Value>-0.013080</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1211,7 +1107,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.005330</Value>
+			<Value>0.001814</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1224,7 +1120,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.003667</Value>
+			<Value>0.012652</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1237,7 +1133,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.019938</Value>
+			<Value>0.019124</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1250,7 +1146,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.029908</Value>
+			<Value>0.019804</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1263,7 +1159,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.027878</Value>
+			<Value>0.024269</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1276,7 +1172,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.048001</Value>
+			<Value>0.038830</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1289,7 +1185,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.051181</Value>
+			<Value>0.040102</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1302,72 +1198,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.079976</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.500000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.180000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.121742</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.500000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.190000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.101875</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.500000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.200000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.107157</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.500000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.210000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.150323</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.500000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.220000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.138551</Value>
+			<Value>0.050318</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1380,7 +1211,7 @@
 					<BinCenter>0.020000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.145450</Value>
+			<Value>-0.156565</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1393,7 +1224,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.119600</Value>
+			<Value>-0.123023</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1406,7 +1237,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.084939</Value>
+			<Value>-0.097194</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1419,7 +1250,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.063051</Value>
+			<Value>-0.066424</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1432,7 +1263,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.039565</Value>
+			<Value>-0.029272</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1445,7 +1276,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.026513</Value>
+			<Value>-0.016433</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1458,7 +1289,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.022537</Value>
+			<Value>-0.013361</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1471,7 +1302,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.008546</Value>
+			<Value>-0.006770</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1484,7 +1315,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.001883</Value>
+			<Value>0.011493</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1497,7 +1328,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000204</Value>
+			<Value>0.012679</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1510,7 +1341,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.012058</Value>
+			<Value>0.018541</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1523,7 +1354,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.025811</Value>
+			<Value>0.040388</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1536,7 +1367,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.028874</Value>
+			<Value>0.035079</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1549,7 +1380,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.037359</Value>
+			<Value>0.045579</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1562,7 +1393,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.033426</Value>
+			<Value>0.018309</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1575,20 +1406,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.045471</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.600000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.180000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.097063</Value>
+			<Value>0.042098</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1601,20 +1419,7 @@
 					<BinCenter>0.190000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.008179</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.600000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.200000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.075340</Value>
+			<Value>-0.079768</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1627,7 +1432,7 @@
 					<BinCenter>0.020000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.132872</Value>
+			<Value>-0.076969</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1640,7 +1445,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.083872</Value>
+			<Value>-0.065764</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1653,7 +1458,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.054876</Value>
+			<Value>-0.032666</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1666,7 +1471,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.040064</Value>
+			<Value>-0.029596</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1679,7 +1484,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.026852</Value>
+			<Value>-0.010347</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1692,7 +1497,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.014450</Value>
+			<Value>-0.011797</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1705,7 +1510,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.010244</Value>
+			<Value>-0.000931</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1718,7 +1523,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003244</Value>
+			<Value>0.011765</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1731,7 +1536,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000167</Value>
+			<Value>0.018487</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1744,7 +1549,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.008048</Value>
+			<Value>0.021539</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1757,7 +1562,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.020264</Value>
+			<Value>0.035541</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1770,7 +1575,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.018981</Value>
+			<Value>0.022104</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1783,7 +1588,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.025294</Value>
+			<Value>0.032229</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1796,7 +1601,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.018677</Value>
+			<Value>0.025959</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1809,7 +1614,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.032578</Value>
+			<Value>0.039392</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1822,46 +1627,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.041665</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.700000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.180000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.065237</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.700000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.190000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.057377</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.700000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.200000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.058977</Value>
+			<Value>0.029115</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1874,7 +1640,7 @@
 					<BinCenter>0.010000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.054638</Value>
+			<Value>-0.043784</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1887,7 +1653,7 @@
 					<BinCenter>0.020000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.108747</Value>
+			<Value>-0.107806</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1900,7 +1666,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.068681</Value>
+			<Value>-0.063007</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1913,7 +1679,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.032464</Value>
+			<Value>-0.029936</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1926,7 +1692,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.030118</Value>
+			<Value>-0.037446</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1939,7 +1705,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.020970</Value>
+			<Value>-0.012423</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1952,7 +1718,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.013058</Value>
+			<Value>-0.008724</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1965,7 +1731,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.007965</Value>
+			<Value>-0.007074</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1978,7 +1744,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.001457</Value>
+			<Value>0.007340</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -1991,7 +1757,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000755</Value>
+			<Value>0.009798</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2004,7 +1770,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.003875</Value>
+			<Value>0.011154</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2017,7 +1783,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.009814</Value>
+			<Value>0.005576</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2030,7 +1796,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.020073</Value>
+			<Value>0.011201</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2043,7 +1809,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.004984</Value>
+			<Value>-0.005104</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2056,7 +1822,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.023512</Value>
+			<Value>-0.006512</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2069,7 +1835,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.013037</Value>
+			<Value>-0.005951</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2082,46 +1848,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.033074</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.800000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.180000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.062255</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.800000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.190000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.055399</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>0.900000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.020000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.064680</Value>
+			<Value>-0.047595</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2134,7 +1861,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.031512</Value>
+			<Value>-0.052699</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2147,7 +1874,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.016231</Value>
+			<Value>-0.027414</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2160,7 +1887,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.004939</Value>
+			<Value>-0.011557</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2173,7 +1900,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.005865</Value>
+			<Value>-0.004436</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2186,7 +1913,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000026</Value>
+			<Value>0.008106</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2199,7 +1926,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000941</Value>
+			<Value>-0.001506</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2212,7 +1939,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003238</Value>
+			<Value>-0.004665</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2225,7 +1952,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.005977</Value>
+			<Value>-0.007970</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2238,7 +1965,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.001185</Value>
+			<Value>-0.004554</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2251,7 +1978,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000504</Value>
+			<Value>0.000695</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2264,7 +1991,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.002920</Value>
+			<Value>-0.001499</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2277,7 +2004,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.002959</Value>
+			<Value>-0.013716</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2290,7 +2017,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.004517</Value>
+			<Value>-0.023432</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2303,7 +2030,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.005913</Value>
+			<Value>-0.028046</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2316,7 +2043,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.011781</Value>
+			<Value>-0.039138</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2329,7 +2056,7 @@
 					<BinCenter>0.030000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.016495</Value>
+			<Value>0.007818</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2342,7 +2069,7 @@
 					<BinCenter>0.040000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.019073</Value>
+			<Value>-0.024554</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2355,7 +2082,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.008276</Value>
+			<Value>-0.000039</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2368,7 +2095,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.016624</Value>
+			<Value>0.001723</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2381,7 +2108,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.008589</Value>
+			<Value>0.000043</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2394,7 +2121,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.009537</Value>
+			<Value>-0.003191</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2407,7 +2134,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.008833</Value>
+			<Value>-0.006289</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2420,7 +2147,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.007832</Value>
+			<Value>-0.006969</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2433,7 +2160,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.002319</Value>
+			<Value>-0.006555</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2446,7 +2173,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.002668</Value>
+			<Value>-0.011197</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2459,7 +2186,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.008411</Value>
+			<Value>-0.023179</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2472,7 +2199,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.009247</Value>
+			<Value>-0.024769</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2485,7 +2212,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.022576</Value>
+			<Value>-0.033606</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2498,7 +2225,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.009478</Value>
+			<Value>-0.024696</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2511,20 +2238,7 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.024765</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.000000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.180000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.021321</Value>
+			<Value>-0.063050</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2537,7 +2251,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.029126</Value>
+			<Value>0.015309</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2550,7 +2264,7 @@
 					<BinCenter>0.060000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.025884</Value>
+			<Value>0.011017</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2563,7 +2277,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.021875</Value>
+			<Value>0.003458</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2576,7 +2290,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.014488</Value>
+			<Value>-0.000578</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2589,7 +2303,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.009498</Value>
+			<Value>-0.006368</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2602,7 +2316,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000530</Value>
+			<Value>-0.016933</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2615,7 +2329,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000366</Value>
+			<Value>-0.020857</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2628,7 +2342,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.006051</Value>
+			<Value>-0.023815</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2641,7 +2355,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.010299</Value>
+			<Value>-0.027548</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2654,7 +2368,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.016836</Value>
+			<Value>-0.038800</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2667,7 +2381,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.015333</Value>
+			<Value>-0.050530</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2680,7 +2394,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.014767</Value>
+			<Value>-0.034955</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2693,7 +2407,20 @@
 					<BinCenter>0.170000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.037294</Value>
+			<Value>-0.074272</Value>
+		</Cell>
+		<Cell>
+			<CellDimensions>
+				<CellDimension>
+					<Parameter>Normalised Wind Speed</Parameter>
+					<BinCenter>1.200000</BinCenter>
+				</CellDimension>
+				<CellDimension>
+					<Parameter>Hub Turbulence</Parameter>
+					<BinCenter>0.060000</BinCenter>
+				</CellDimension>
+			</CellDimensions>
+			<Value>0.007787</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2706,7 +2433,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.010854</Value>
+			<Value>0.001680</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2719,7 +2446,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.010319</Value>
+			<Value>0.001755</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2732,7 +2459,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.006453</Value>
+			<Value>-0.004251</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2745,7 +2472,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000674</Value>
+			<Value>-0.015799</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2758,7 +2485,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003459</Value>
+			<Value>-0.018856</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2771,7 +2498,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.008764</Value>
+			<Value>-0.028410</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2784,7 +2511,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.010033</Value>
+			<Value>-0.030493</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2797,7 +2524,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.014546</Value>
+			<Value>-0.034839</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2810,7 +2537,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.018469</Value>
+			<Value>-0.040082</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2823,20 +2550,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.018273</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.200000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.170000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.021051</Value>
+			<Value>-0.052685</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2849,7 +2563,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.010292</Value>
+			<Value>0.003334</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2862,7 +2576,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.006792</Value>
+			<Value>0.000046</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2875,7 +2589,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.005554</Value>
+			<Value>-0.002411</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2888,7 +2602,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000913</Value>
+			<Value>-0.008195</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2901,7 +2615,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.002285</Value>
+			<Value>-0.012688</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2914,7 +2628,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003709</Value>
+			<Value>-0.015744</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2927,7 +2641,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.006900</Value>
+			<Value>-0.020554</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2940,7 +2654,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.009468</Value>
+			<Value>-0.025687</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2953,7 +2667,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.014088</Value>
+			<Value>-0.040000</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2966,20 +2680,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.009987</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.300000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.170000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.014722</Value>
+			<Value>-0.038300</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -2992,7 +2693,7 @@
 					<BinCenter>0.050000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000576</Value>
+			<Value>0.000248</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3005,7 +2706,7 @@
 					<BinCenter>0.070000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.004997</Value>
+			<Value>0.001658</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3018,7 +2719,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.003723</Value>
+			<Value>0.000219</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3031,7 +2732,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.002964</Value>
+			<Value>-0.002955</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3044,7 +2745,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000764</Value>
+			<Value>-0.002628</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3057,7 +2758,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.001783</Value>
+			<Value>-0.009825</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3070,7 +2771,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.004168</Value>
+			<Value>-0.008575</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3083,7 +2784,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003652</Value>
+			<Value>-0.014257</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3096,7 +2797,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.006835</Value>
+			<Value>-0.018105</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3109,7 +2810,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.009784</Value>
+			<Value>-0.019351</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3122,20 +2823,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.004106</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.400000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.170000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.002310</Value>
+			<Value>-0.022772</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3148,7 +2836,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.001762</Value>
+			<Value>0.000649</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3161,7 +2849,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000529</Value>
+			<Value>-0.001219</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3174,7 +2862,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000075</Value>
+			<Value>-0.001818</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3187,7 +2875,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000495</Value>
+			<Value>-0.003959</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3200,7 +2888,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.001419</Value>
+			<Value>-0.005081</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3213,7 +2901,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003949</Value>
+			<Value>-0.007569</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3226,7 +2914,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000684</Value>
+			<Value>-0.009367</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3239,7 +2927,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000298</Value>
+			<Value>-0.018235</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3252,7 +2940,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.002714</Value>
+			<Value>-0.024626</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3265,7 +2953,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.002929</Value>
+			<Value>-0.000060</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3278,7 +2966,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000841</Value>
+			<Value>-0.000036</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3291,7 +2979,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000548</Value>
+			<Value>-0.002917</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3304,7 +2992,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000369</Value>
+			<Value>-0.002003</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3317,7 +3005,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000895</Value>
+			<Value>-0.002430</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3330,7 +3018,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.002587</Value>
+			<Value>-0.005233</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3343,7 +3031,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003262</Value>
+			<Value>-0.007094</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3356,7 +3044,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000289</Value>
+			<Value>-0.008967</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3369,7 +3057,7 @@
 					<BinCenter>0.160000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.004155</Value>
+			<Value>-0.011921</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3382,7 +3070,7 @@
 					<BinCenter>0.080000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000613</Value>
+			<Value>0.000235</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3395,7 +3083,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000585</Value>
+			<Value>-0.000109</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3408,7 +3096,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000583</Value>
+			<Value>-0.000834</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3421,7 +3109,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000279</Value>
+			<Value>-0.001812</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3434,7 +3122,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000734</Value>
+			<Value>-0.001738</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3447,7 +3135,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000972</Value>
+			<Value>-0.003577</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3460,7 +3148,7 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000348</Value>
+			<Value>-0.003332</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3473,20 +3161,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.004862</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.700000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.160000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>0.003350</Value>
+			<Value>-0.007951</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3499,7 +3174,7 @@
 					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000535</Value>
+			<Value>-0.000370</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3512,7 +3187,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000004</Value>
+			<Value>-0.000169</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3525,7 +3200,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000386</Value>
+			<Value>-0.000619</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3538,7 +3213,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000043</Value>
+			<Value>-0.001194</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3551,7 +3226,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000896</Value>
+			<Value>-0.002617</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3564,33 +3239,20 @@
 					<BinCenter>0.140000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.001186</Value>
+			<Value>-0.002328</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
 				<CellDimension>
 					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.800000</BinCenter>
+					<BinCenter>1.900000</BinCenter>
 				</CellDimension>
 				<CellDimension>
 					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.150000</BinCenter>
+					<BinCenter>0.090000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003213</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.800000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.160000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.000421</Value>
+			<Value>0.000062</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3603,7 +3265,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000077</Value>
+			<Value>0.000141</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3616,7 +3278,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000032</Value>
+			<Value>-0.000696</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3629,7 +3291,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000870</Value>
+			<Value>-0.001303</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3642,20 +3304,7 @@
 					<BinCenter>0.130000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000723</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>1.900000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.140000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.001651</Value>
+			<Value>-0.001681</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3668,7 +3317,7 @@
 					<BinCenter>0.150000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.003303</Value>
+			<Value>-0.004253</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3681,7 +3330,7 @@
 					<BinCenter>0.100000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>0.000654</Value>
+			<Value>-0.000558</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3694,7 +3343,7 @@
 					<BinCenter>0.110000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.000668</Value>
+			<Value>-0.001367</Value>
 		</Cell>
 		<Cell>
 			<CellDimensions>
@@ -3707,20 +3356,7 @@
 					<BinCenter>0.120000</BinCenter>
 				</CellDimension>
 			</CellDimensions>
-			<Value>-0.001680</Value>
-		</Cell>
-		<Cell>
-			<CellDimensions>
-				<CellDimension>
-					<Parameter>Normalised Wind Speed</Parameter>
-					<BinCenter>2.000000</BinCenter>
-				</CellDimension>
-				<CellDimension>
-					<Parameter>Hub Turbulence</Parameter>
-					<BinCenter>0.140000</BinCenter>
-				</CellDimension>
-			</CellDimensions>
-			<Value>-0.001010</Value>
+			<Value>-0.003518</Value>
 		</Cell>
 	</Cells>
 </PowerDeviationMatrix>
