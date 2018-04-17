@@ -670,7 +670,7 @@ class ShareXPortfolio(object):
             self.shares.append(share)
             return True
         else:
-            return Falsee
+            return False
 
     def clean_up(self, zip_file):
         pass
