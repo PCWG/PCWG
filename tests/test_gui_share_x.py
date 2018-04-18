@@ -45,32 +45,62 @@ class TestUserInterfaceShareX:
     def test_share_1(self):
         xls_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='01', ext='xls'))
         zip_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='01', ext='zip'))
+        summary_file = 'Summary.xls'
+
         self.mock_app.PCWG_Share_1_Portfolio()
-        assert_true(os.path.isfile(xls_out))
+
         assert_true(os.path.isfile(zip_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
         self.check_zip_file_contains_n_files(zip_out, 3)
-        self.check_zip_file_contains_file_of_name(zip_out, 'Summary.xls')
+        self.check_zip_file_contains_file_of_name(zip_out, summary_file)
+
+        zip_out.extract(path=xls_out, member=summary_file)
+        assert_true(os.path.isfile(xls_out))
+        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
 
     def test_share_1_dot_1(self):
         xls_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='01.1', ext='xls'))
         zip_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='01.1', ext='zip'))
+        summary_file = 'Summary.xls'
+
         self.mock_app.PCWG_Share_1_dot_1_Portfolio()
-        assert_true(os.path.isfile(xls_out))
+
         assert_true(os.path.isfile(zip_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
         self.check_zip_file_contains_n_files(zip_out, 3)
-        self.check_zip_file_contains_file_of_name(zip_out, 'Summary.xls')
+        self.check_zip_file_contains_file_of_name(zip_out, summary_file)
+
+        zip_out.extract(path=xls_out, member=summary_file)
+        assert_true(os.path.isfile(xls_out))
+        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
 
     def test_share_2(self):
         xls_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='02', ext='xls'))
         zip_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='02', ext='zip'))
+
+        summary_file = 'Summary.xls'
         self.mock_app.PCWG_Share_2_Portfolio()
-        assert_true(os.path.isfile(xls_out))
+
         assert_true(os.path.isfile(zip_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
         self.check_zip_file_contains_n_files(zip_out, 3)
-        self.check_zip_file_contains_file_of_name(zip_out, 'Summary.xls')
+        self.check_zip_file_contains_file_of_name(zip_out, summary_file)
+
+        zip_out.extract(path=xls_out, member=summary_file)
+        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+        assert_true(os.path.isfile(xls_out))
+
+    def test_share_3(self):
+        xls_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='03', ext='xls'))
+        zip_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='03', ext='zip'))
+
+        summary_file = 'Summary.xls'
+        self.mock_app.PCWG_Share_3_Portfolio()
+
+        assert_true(os.path.isfile(zip_out))
+        self.check_zip_file_contains_n_files(zip_out, 3)
+        self.check_zip_file_contains_file_of_name(zip_out, summary_file)
+
+        zip_out.extract(path=xls_out, member=summary_file)
+        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+        assert_true(os.path.isfile(xls_out))
 
     @classmethod
     def teardown_class(cls):
