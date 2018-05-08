@@ -55,9 +55,10 @@ class TestUserInterfaceShareX:
         self.check_zip_file_contains_n_files(zip_out, 3)
         self.check_zip_file_contains_file_of_name(zip_out, xls_out)
 
-        zip_out.extract(path=xls_out, member=summary_file)
-        assert_true(os.path.isfile(xls_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+        with ZipFile(zip_out) as z:
+            z.extract(path=xls_out, member=summary_file)
+            assert_true(os.path.isfile(xls_out))
+            self.check_output_xls_file_has_n_valid_results(xls_out, 2)
 
     def test_share_1_dot_1(self):
 
@@ -72,9 +73,10 @@ class TestUserInterfaceShareX:
         self.check_zip_file_contains_n_files(zip_out, 3)
         self.check_zip_file_contains_file_of_name(zip_out, xls_out_file)
 
-        zip_out.extract(path=xls_out, member=xls_out_file)
-        assert_true(os.path.isfile(xls_out))
-        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+        with ZipFile(zip_out) as z:
+            z.extract(path=xls_out, member=xls_out_file)
+            assert_true(os.path.isfile(xls_out))
+            self.check_output_xls_file_has_n_valid_results(xls_out, 2)
 
     def test_share_2(self):
 
@@ -89,9 +91,10 @@ class TestUserInterfaceShareX:
         self.check_zip_file_contains_n_files(zip_out, 3)
         self.check_zip_file_contains_file_of_name(zip_out, xls_out_file)
 
-        zip_out.extract(path=xls_out, member=xls_out_file)
-        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
-        assert_true(os.path.isfile(xls_out))
+        with ZipFile(zip_out) as z:
+            z.extract(path=xls_out, member=xls_out_file)
+            self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+            assert_true(os.path.isfile(xls_out))
 
     def test_share_3(self):
 
@@ -106,9 +109,10 @@ class TestUserInterfaceShareX:
         self.check_zip_file_contains_n_files(zip_out, 3)
         self.check_zip_file_contains_file_of_name(zip_out, xls_out_file)
 
-        zip_out.extract(path=xls_out, member=xls_out_file)
-        self.check_output_xls_file_has_n_valid_results(xls_out, 2)
-        assert_true(os.path.isfile(xls_out))
+        with ZipFile(zip_out) as z:
+            z.extract(path=xls_out, member=xls_out_file)
+            self.check_output_xls_file_has_n_valid_results(xls_out, 2)
+            assert_true(os.path.isfile(xls_out))
 
     @classmethod
     def teardown_class(cls):
