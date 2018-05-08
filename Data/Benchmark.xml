@@ -88,7 +88,7 @@
 				</ExpectedResult>
 
 				<ExpectedResult>
-					<Field>zero_to_cut_in_wind_speed</Field>
+					<Field>zero_ti_cut_in_wind_speed</Field>
 					<Value>4.012920</Value>
 				</ExpectedResult>
 
