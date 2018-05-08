@@ -231,12 +231,12 @@ class DatasetConfiguration(base_configuration.XmlBase):
         self.iec_terrain_classification = self.getNodeValue(meta_data_node, "IECTerrainClassification")
         
         if self.nodeExists(meta_data_node, "Latitude"):
-            self.latitude = self.getNodeValue(meta_data_node, "Latitude")
+            self.latitude = self.getNodeFloat(meta_data_node, "Latitude")
         else:
             self.latitude = None
 
         if self.nodeExists(meta_data_node, "Longitude"):           
-            self.longitude = self.getNodeValue(meta_data_node, "Longitude")
+            self.longitude = self.getNodeFloat(meta_data_node, "Longitude")
         else:
             self.longitude = None
 
