@@ -410,7 +410,7 @@ class RotorGeometry:
         self.tilt = tilt        
 
     def within_rotor(self, height):
-        return (height > self.lower_tip) and (height < self.upper_tip)
+        return (height >= self.lower_tip) and (height <= self.upper_tip)
 
 
 class IntegrationProbabilities:
