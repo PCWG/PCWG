@@ -44,16 +44,16 @@ class TestUserInterfaceShareX:
 
     def test_share_1(self):
 
-        xls_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='01', ext='xls'))
         zip_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='01', ext='zip'))
 
-        summary_file = 'Summary.xls'
+        xls_out_file = self.output_file_name.format(share_num='01.1', ext='xls')
+        xls_out = os.path.join(FILE_DIR, 'data', xls_out_file)
 
         self.mock_app.PCWG_Share_1_Portfolio()
 
         assert_true(os.path.isfile(zip_out))
         self.check_zip_file_contains_n_files(zip_out, 3)
-        self.check_zip_file_contains_file_of_name(zip_out, xls_out)
+        self.check_zip_file_contains_file_of_name(zip_out, xls_out_file)
 
         with ZipFile(zip_out) as z:
             z.extract(path=xls_out, member=summary_file)
