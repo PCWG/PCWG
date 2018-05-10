@@ -42,7 +42,7 @@ class TestUserInterfaceShareX:
             files_in_zip = [f.filename for f in z.filelist]
             assert_in(file_name, files_in_zip)
 
-    def test_share_X(self, name, method):
+    def share_X(self, name, method):
 
         output_folder = os.path.join(FILE_DIR, 'data')
         zip_out = os.path.join(output_folder, self.output_file_name.format(share_num=name, ext='zip'))
@@ -63,19 +63,19 @@ class TestUserInterfaceShareX:
 
     def test_share_1(self):
 
-        self.test_share_X('01', self.mock_app.PCWG_Share_1_Portfolio)
+        self.share_X('01', self.mock_app.PCWG_Share_1_Portfolio)
 
     def test_share_1_dot_1(self):
 
-        self.test_share_X('01.1', self.mock_app.PCWG_Share_1_dot_1_Portfolio)
+        self.share_X('01.1', self.mock_app.PCWG_Share_1_dot_1_Portfolio)
 
     def test_share_2(self):
 
-        self.test_share_X('02', self.mock_app.PCWG_Share_2_Portfolio)
+        self.share_X('02', self.mock_app.PCWG_Share_2_Portfolio)
 
     def test_share_3(self):
 
-        self.test_share_X('03', self.mock_app.PCWG_Share_3_Portfolio)
+        self.share_X('03', self.mock_app.PCWG_Share_3_Portfolio)
 
     @classmethod
     def teardown_class(cls):
