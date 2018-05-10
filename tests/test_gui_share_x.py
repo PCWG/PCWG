@@ -46,7 +46,7 @@ class TestUserInterfaceShareX:
 
         zip_out = os.path.join(FILE_DIR, 'data', self.output_file_name.format(share_num='01', ext='zip'))
 
-        xls_out_file = self.output_file_name.format(share_num='01.1', ext='xls')
+        xls_out_file = self.output_file_name.format(share_num='01', ext='xls')
         xls_out = os.path.join(FILE_DIR, 'data', xls_out_file)
 
         self.mock_app.PCWG_Share_1_Portfolio()
@@ -56,7 +56,7 @@ class TestUserInterfaceShareX:
         self.check_zip_file_contains_file_of_name(zip_out, xls_out_file)
 
         with ZipFile(zip_out) as z:
-            z.extract(path=xls_out, member=summary_file)
+            z.extract(path=xls_out, member=xls_out_file)
             assert_true(os.path.isfile(xls_out))
             self.check_output_xls_file_has_n_valid_results(xls_out, 2)
 
@@ -116,7 +116,7 @@ class TestUserInterfaceShareX:
 
     @classmethod
     def teardown_class(cls):
-        for share_n in ('01', '01.1', '02'):
+        for share_n in ('01', '01.1', '02', '03'):
             for ext in ('xls', 'zip'):
                 full_file_path = os.path.join(FILE_DIR, 'data', cls.output_file_name.format(share_num=share_n, ext=ext))
                 if os.path.isfile(full_file_path):
