@@ -5,6 +5,7 @@ For more information please visit the [PCWG Website](http://www.pcwg.org).
 ## Current Version & Releases
 
 Current release version:
+
 [![GitHub (pre-)release](https://img.shields.io/github/release/peterdougstuart/PCWG/all.svg)](https://github.com/peterdougstuart/PCWG/releases)
 
 A full history of release versions can be found [here](https://github.com/peterdougstuart/PCWG/releases).
